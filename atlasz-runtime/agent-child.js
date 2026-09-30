@@ -23,8 +23,7 @@ let state = {
   lastError: GEMINI_API_KEY ? null : "GEMINI_API_KEY missing",
   memory: [],
   provider: "Google Gemini",
-  model: GEMINI_MODEL
-};
+  model: GEMINI_MODEL,\n  business: { opportunitiesFound:0, qualifiedOpportunities:0, outreachPrepared:0, outreachSent:0, repliesReceived:0, proposalsSent:0, proposalValueUsd:0, contractsWon:0, verifiedRevenueUsd:0, lastOpportunity:null, lastOutreachAt:null, lastReplyAt:null, nextAction:null }\n};
 
 const themes = [
   "AI automation","software development","web development","no-code automation","data research",
@@ -215,7 +214,7 @@ async function cycle(){
       send("fallback",{theme,error:String(state.lastError).slice(0,300),decision:result.parsed,candidates:result.compact});
     }
 
-    state.lastDecision=result.parsed;
+    state.lastDecision=result.parsed;\n    const chosen=(result.parsed?.bestIndexes||[]).map(i=>result.compact?.[i]).filter(Boolean);\n    const outreach=Array.isArray(result.parsed?.outreachTasks)?result.parsed.outreachTasks:[];\n    state.business.opportunitiesFound += chosen.length;\n    state.business.qualifiedOpportunities += chosen.length;\n    state.business.outreachPrepared += outreach.length;\n    state.business.lastOpportunity = chosen[0] ? {title:chosen[0].title||null,company:chosen[0].company||null,url:chosen[0].url||null,estimatedValueUsd:chosen[0].estimatedValueUsd??null,foundAt:new Date().toISOString()} : state.business.lastOpportunity;\n    state.business.nextAction = outreach.length ? "USER_APPROVAL_OR_AUTHORIZED_SEND_REQUIRED" : (chosen.length ? "FIND_VERIFIED_CONTACT_OR_APPLICATION_PATH" : "CONTINUE_SEARCH");
     state.memory.push({at:new Date().toISOString(),theme,decision:result.parsed});
     if(state.memory.length>20) state.memory.shift();
     state.completed++;
