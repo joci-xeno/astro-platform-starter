@@ -6,7 +6,9 @@ const pod = id<=10?"A":id<=20?"B":"C";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 const LOOP_MS = Number(process.env.ATLASZ_AGENT_LOOP_MS || 600000);
-const START_STAGGER_MS = Number(process.env.ATLASZ_START_STAGGER_MS || 2000);
+const START_STAGGER_MS = Number(process.env.ATLASZ_START_STAGGER_MS || 15000);
+const RETRY_BASE_MS = Number(process.env.ATLASZ_RETRY_BASE_MS || 65000);
+const MAX_RETRIES = Number(process.env.ATLASZ_MAX_RETRIES || 6);
 
 let state = {
   id, team, pod,
@@ -80,6 +82,13 @@ async function askModel(theme, items){
   return {parsed, compact};
 }
 
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+function parseRetryMs(message){
+  const m=String(message||"").match(/retry in ([0-9.]+)s/i);
+  return m ? Math.ceil(Number(m[1])*1000) : null;
+}
+
 async function cycle(){
   if(!GEMINI_API_KEY){
     state.status="BLOCKED_NO_KEY";
@@ -99,7 +108,43 @@ async function cycle(){
   try{
     const source=sources[(id-1+round)%sources.length];
     const items=await source(theme);
-    const result=await askModel(theme,items);
+
+    let result=null;
+    let lastErr=null;
+    for(let attempt=1; attempt<=MAX_RETRIES; attempt++){
+      try{
+        state.status = attempt===1 ? "RUNNING" : "RETRY_WAIT";
+        state.heartbeat=new Date().toISOString();
+        send("heartbeat",{attempt});
+        result=await askModel(theme,items);
+        lastErr=null;
+        break;
+      }catch(e){
+        lastErr=String(e?.message||e);
+        state.lastError=lastErr;
+        state.heartbeat=new Date().toISOString();
+
+        const is429=/Gemini 429/.test(lastErr);
+        const is503=/Gemini 503/.test(lastErr);
+        if(!(is429||is503) || attempt===MAX_RETRIES) break;
+
+        const serverRetry=parseRetryMs(lastErr);
+        const jitter=(id%7)*1000;
+        const waitMs=Math.max(serverRetry||0, RETRY_BASE_MS*Math.min(attempt,3)) + jitter;
+        state.status="RETRY_WAIT";
+        send("retry",{attempt,waitMs,error:lastErr.slice(0,300)});
+        await sleep(waitMs);
+      }
+    }
+
+    if(!result){
+      state.status="RETRY_WAIT";
+      state.lastError=lastErr||"Gemini call failed after retries";
+      state.heartbeat=new Date().toISOString();
+      send("error");
+      return;
+    }
+
     state.lastDecision=result.parsed;
     state.memory.push({at:new Date().toISOString(),theme,decision:result.parsed});
     if(state.memory.length>20) state.memory.shift();
@@ -109,7 +154,7 @@ async function cycle(){
     state.heartbeat=new Date().toISOString();
     send("decision",{theme,decision:result.parsed,candidates:result.compact});
   }catch(e){
-    state.status="BLOCKED";
+    state.status="RETRY_WAIT";
     state.lastError=String(e?.message||e);
     state.heartbeat=new Date().toISOString();
     send("error");
@@ -117,12 +162,11 @@ async function cycle(){
 }
 
 async function loop(){
-  await new Promise(r=>setTimeout(r,id*START_STAGGER_MS));
+  await sleep((id-1)*START_STAGGER_MS);
   while(true){
     await cycle();
-    const blocked429 = state.lastError && /Gemini 429/.test(state.lastError);
-    const waitMs = blocked429 ? Math.max(LOOP_MS, 900000) : Math.max(60000,LOOP_MS+(id%10)*1000);
-    await new Promise(r=>setTimeout(r,waitMs));
+    const waitMs=Math.max(60000,LOOP_MS+(id%10)*5000);
+    await sleep(waitMs);
   }
 }
 
