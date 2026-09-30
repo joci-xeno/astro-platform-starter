@@ -46,7 +46,7 @@ const server=http.createServer((req,res)=>{
     res.end(JSON.stringify({ok:true,agents:AGENT_COUNT,processes:workers.size,counts,modelKeyConfigured:Boolean(process.env.GEMINI_API_KEY),model:process.env.GEMINI_MODEL||"gemini-3.8-flash"}));
     return;
   }
-  if(req.url==="/events"){
+  if(req.url==="/revenue"){\n    const ledger=agents.map(a=>({id:a.id,status:a.status,currentTask:a.currentTask||null,business:a.business||{}}));\n    const totals=ledger.reduce((t,a)=>{ const b=a.business||{}; for(const k of ["opportunitiesFound","qualifiedOpportunities","outreachPrepared","outreachSent","repliesReceived","proposalsSent","proposalValueUsd","contractsWon","verifiedRevenueUsd"]) t[k]+=(Number(b[k])||0); return t; },{opportunitiesFound:0,qualifiedOpportunities:0,outreachPrepared:0,outreachSent:0,repliesReceived:0,proposalsSent:0,proposalValueUsd:0,contractsWon:0,verifiedRevenueUsd:0});\n    res.end(JSON.stringify({rule:"Only verified received money counts as revenue",totals,ledger})); return;\n  }\n  if(req.url==="/events"){
     res.end(JSON.stringify({events:events.slice(0,200)}));
     return;
   }
@@ -76,6 +76,6 @@ setInterval(()=>{
     agentsWithSuccessfulModelCalls:withCalls.length,
     totalAiCalls:totalCalls,
     statuses:agents.reduce((m,a)=>(m[a.status]=(m[a.status]||0)+1,m),{}),
-    perAgent:agents.map(a=>({id:a.id,status:a.status,aiCalls:a.aiCalls||0,completed:a.completed||0,currentTask:a.currentTask||null,lastError:a.lastError||null}))
+    businessTotals:agents.reduce((t,a)=>{const b=a.business||{};t.opportunitiesFound+=(Number(b.opportunitiesFound)||0);t.outreachPrepared+=(Number(b.outreachPrepared)||0);t.repliesReceived+=(Number(b.repliesReceived)||0);t.proposalValueUsd+=(Number(b.proposalValueUsd)||0);t.verifiedRevenueUsd+=(Number(b.verifiedRevenueUsd)||0);return t;},{opportunitiesFound:0,outreachPrepared:0,repliesReceived:0,proposalValueUsd:0,verifiedRevenueUsd:0}),\n    perAgent:agents.map(a=>({id:a.id,status:a.status,aiCalls:a.aiCalls||0,completed:a.completed||0,currentTask:a.currentTask||null,business:a.business||null,lastError:a.lastError||null}))
   }));
 },30000);
