@@ -95,6 +95,70 @@ function parseRetryMs(message){
   return m ? Math.ceil(Number(m[1])*1000) : null;
 }
 
+function extractMoney(text){
+  const vals=[];
+  for(const m of String(text||"").matchAll(/(?:USD\s*|CAD\s*|\$)\s*([0-9]{2,7})(?:,([0-9]{3}))?/gi)){
+    const n=Number(String(m[1])+(m[2]||""));
+    if(Number.isFinite(n)) vals.push(n);
+  }
+  return vals.length?Math.max(...vals):null;
+}
+
+function localFallback(theme,items){
+  const compact=items.slice(0,25).map((x,i)=>{
+    const raw=String(x.description||x.content||x.story_text||"").replace(/<[^>]*>/g," ");
+    const title=x.title||x.position||x.name||"";
+    const company=x.company_name||x.company||"";
+    const url=x.url||x.apply_url||x.absolute_url||"";
+    const emails=[...new Set((raw.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)||[]).map(v=>v.toLowerCase()))];
+    const hay=(title+" "+company+" "+raw).toLowerCase();
+    const value=extractMoney(hay);
+    const themeWords=theme.toLowerCase().split(/\s+/).filter(Boolean);
+    let score=0;
+    for(const w of themeWords) if(hay.includes(w)) score+=3;
+    if(/remote|worldwide|anywhere|canada/.test(hay)) score+=2;
+    if(/freelance|contract|project|hiring|seeking|looking for|apply/.test(hay)) score+=3;
+    if(/urgent|asap|immediate|start now|this week/.test(hay)) score+=2;
+    if(emails.length) score+=3;
+    if(value!=null){
+      if(value>=10000) score+=6;
+      else if(value>=5000) score+=5;
+      else if(value>=3000) score+=4;
+      else if(value>=1500) score+=3;
+      else if(value>=1000) score+=2;
+      else if(value>=500) score+=1;
+      else score-=10;
+    }
+    return {i,title,company,url,description:raw.slice(0,900),emails:emails.slice(0,5),estimatedValueUsd:value,score};
+  });
+
+  const ranked=compact
+    .filter(x=>x.estimatedValueUsd==null || x.estimatedValueUsd>=MIN_JOB_VALUE)
+    .sort((a,b)=>b.score-a.score || (b.estimatedValueUsd||0)-(a.estimatedValueUsd||0))
+    .slice(0,5);
+
+  const outreachTasks=ranked
+    .filter(x=>x.emails.length)
+    .map(x=>({
+      index:x.i,
+      to:x.emails[0],
+      subject:`Regarding ${x.title || "your project"}`,
+      body:`Hello, I found your posting for ${x.title || "this project"}. We are interested in discussing the work and can review the scope, timeline, and deliverables with you. We do not want to overstate experience or make assumptions, so please send any requirements or documents you would like us to review. Best regards, ATLASZ Project Team`,
+      estimatedValueUsd:x.estimatedValueUsd
+    }));
+
+  return {
+    parsed:{
+      bestIndexes:ranked.map(x=>x.i),
+      rationale:"Local fallback ranking used because the Gemini API was unavailable or rate-limited. Ranked for relevance, buyer intent, contactability and value; explicit values below the $500 floor were excluded.",
+      nextTheme:theme,
+      outreachAngle:"Direct, factual project inquiry with no fabricated qualifications.",
+      outreachTasks
+    },
+    compact
+  };
+}
+
 async function cycle(){
   if(!GEMINI_API_KEY){
     state.status="BLOCKED_NO_KEY";
@@ -144,11 +208,11 @@ async function cycle(){
     }
 
     if(!result){
-      state.status="RETRY_WAIT";
-      state.lastError=lastErr||"Gemini call failed after retries";
+      result=localFallback(theme,items);
+      state.lastError=lastErr||"Gemini unavailable; local fallback used";
+      state.status="FALLBACK_ACTIVE";
       state.heartbeat=new Date().toISOString();
-      send("error");
-      return;
+      send("fallback",{theme,error:String(state.lastError).slice(0,300),decision:result.parsed,candidates:result.compact});
     }
 
     state.lastDecision=result.parsed;
@@ -156,7 +220,7 @@ async function cycle(){
     if(state.memory.length>20) state.memory.shift();
     state.completed++;
     state.status="QUEUED";
-    state.lastError=null;
+    if(!String(state.lastError||"").includes("Gemini")) state.lastError=null;
     state.heartbeat=new Date().toISOString();
     send("decision",{theme,decision:result.parsed,candidates:result.compact});
   }catch(e){
