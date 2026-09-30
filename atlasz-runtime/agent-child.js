@@ -237,7 +237,8 @@ async function cycle(){
 
     state.lastDecision=result.parsed;
     const chosen=(result.parsed?.bestIndexes||[]).map(i=>result.compact?.[i]).filter(Boolean);
-    const outreach=Array.isArray(result.parsed?.outreachTasks)?result.parsed.outreachTasks:[];\n    const bizOpps=Array.isArray(result.parsed?.businessOpportunities)?result.parsed.businessOpportunities:[];
+    const outreach=Array.isArray(result.parsed?.outreachTasks)?result.parsed.outreachTasks:[];
+    const bizOpps=Array.isArray(result.parsed?.businessOpportunities)?result.parsed.businessOpportunities:[];
     state.business.opportunitiesFound += chosen.length + bizOpps.length;
     state.business.qualifiedOpportunities += chosen.length + bizOpps.length;
     state.business.outreachPrepared += outreach.length;
