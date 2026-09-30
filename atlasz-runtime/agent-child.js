@@ -28,6 +28,17 @@ let state = {
   business: { opportunitiesFound:0, qualifiedOpportunities:0, outreachPrepared:0, outreachSent:0, repliesReceived:0, proposalsSent:0, proposalValueUsd:0, contractsWon:0, verifiedRevenueUsd:0, lastOpportunity:null, lastOutreachAt:null, lastReplyAt:null, nextAction:null }
 };
 
+const businessProblems = [
+  "weak paid ads and ad creative","poor landing-page conversion","slow lead follow-up","missed calls and lost inquiries","weak review and reputation flow",
+  "manual quoting and appointment booking","weak local search visibility","poor website conversion","repetitive customer support","manual CRM and admin work",
+  "weak email or SMS follow-up","content production bottleneck","proposal and estimate bottleneck","lead qualification bottleneck","customer reactivation opportunity"
+];
+
+const businessSectors = [
+  "home services","construction trades","professional services","automotive services","health and wellness","beauty and personal care","hospitality and food service",
+  "real estate and property services","retail and ecommerce","education and training","business-to-business services","local consumer services","specialty contractors","travel and accommodation","technology-enabled small business"
+];
+
 const themes = [
   "AI automation","software development","web development","no-code automation","data research",
   "lead generation","CRM and sales operations","video editing","translation localization","QA testing",
@@ -67,7 +78,7 @@ async function askModel(theme, items){
       emails:emails.slice(0,5)
     };
   });
-  const system = `You are ATLASZ independent AI Agent ${id}, Team ${team}. Find lawful, realistic, zero-upfront-cost paid opportunities worldwide. Optimize for attainability, speed to cash, realistic value and low friction. HARD RULE: for one-time projects, do not pursue anything explicitly worth less than USD $500. EXCEPTION: recurring subscriptions, retainers, maintenance, monitoring, support, SaaS or other monthly recurring revenue may be pursued below $500/month when legitimate and commercially worthwhile. Prefer higher annualized value, renewal potential and low churn. For one-time work prefer $10k+, then $5k+, $3k+, $1.5k+, $1k+, then $500+. Never fabricate qualifications or results. Never spend money or legally bind the owner. Only actually received money counts as revenue.`;
+  const problem=businessProblems[(id-1+Math.floor(Date.now()/LOOP_MS))%businessProblems.length];\n  const sector=businessSectors[(id-1+Math.floor(Date.now()/LOOP_MS))%businessSectors.length];\n  const system = `You are ATLASZ independent AI Agent ${id}, Team ${team}. You operate TWO revenue lanes in parallel: (A) find lawful, realistic, zero-upfront-cost paid work worldwide, and (B) discover small/medium businesses with a concrete commercially valuable problem that ATLASZ can solve digitally or with AI. Current business-discovery sector: ${sector}. Current problem lens: ${problem}. Do not restrict yourself permanently to this sector; rotate and explore broadly. For business-discovery opportunities, require evidence from the supplied source and never invent a company, problem, contact, performance claim, or expected improvement. Propose a specific sample/deliverable ATLASZ could actually create, such as improved ad copy/creative concept, landing-page draft, follow-up workflow, automation design, lead-generation asset, website improvement, content system, or another lawful digital deliverable. Find lawful, realistic, zero-upfront-cost paid opportunities worldwide. Optimize for attainability, speed to cash, realistic value and low friction. HARD RULE: for one-time projects, do not pursue anything explicitly worth less than USD $500. EXCEPTION: recurring subscriptions, retainers, maintenance, monitoring, support, SaaS or other monthly recurring revenue may be pursued below $500/month when legitimate and commercially worthwhile. Prefer higher annualized value, renewal potential and low churn. For one-time work prefer $10k+, then $5k+, $3k+, $1.5k+, $1k+, then $500+. Never fabricate qualifications or results. Never spend money or legally bind the owner. Only actually received money counts as revenue.`;
   const prompt = system+"
 
 Current market theme: "+theme+"
@@ -75,7 +86,7 @@ Current market theme: "+theme+"
 Candidates:
 "+JSON.stringify(compact)+"
 
-Return JSON only: {bestIndexes:[up to 5 integers], rationale:string, nextTheme:string, outreachAngle:string, outreachTasks:[{index:integer,to:string,subject:string,body:string,estimatedValueUsd:number|null}]}. For one-time work, select only opportunities explicitly or plausibly worth at least USD $500. Also allow recurring subscription/retainer/maintenance opportunities below $500/month when they are genuine recurring revenue. Rank by realistic annualized value, attainability, renewal potential and speed to cash. Create an outreachTask ONLY when the selected candidate contains an explicit email address in its emails field. Use that exact address; never invent an address. Keep outreach factual, concise, professional, and do not fabricate qualifications, portfolio items, results, or client history.";
+Return JSON only: {bestIndexes:[up to 5 integers], rationale:string, nextTheme:string, outreachAngle:string, businessOpportunities:[{index:integer,company:string,problem:string,evidence:string,proposedSolution:string,sampleDeliverable:string,estimatedValueUsd:number|null,recurringMonthlyUsd:number|null,nextStep:string}], outreachTasks:[{index:integer,to:string,subject:string,body:string,estimatedValueUsd:number|null}]}. For one-time work, select only opportunities explicitly or plausibly worth at least USD $500. Also allow recurring subscription/retainer/maintenance opportunities below $500/month when they are genuine recurring revenue. Rank by realistic annualized value, attainability, renewal potential and speed to cash. Create an outreachTask ONLY when the selected candidate contains an explicit email address in its emails field. Use that exact address; never invent an address. Keep outreach factual, concise, professional, and do not fabricate qualifications, portfolio items, results, or client history.";
   const url="https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(GEMINI_MODEL)+":generateContent";
   const res = await fetch(url,{
     method:"POST",
@@ -226,12 +237,12 @@ async function cycle(){
 
     state.lastDecision=result.parsed;
     const chosen=(result.parsed?.bestIndexes||[]).map(i=>result.compact?.[i]).filter(Boolean);
-    const outreach=Array.isArray(result.parsed?.outreachTasks)?result.parsed.outreachTasks:[];
-    state.business.opportunitiesFound += chosen.length;
-    state.business.qualifiedOpportunities += chosen.length;
+    const outreach=Array.isArray(result.parsed?.outreachTasks)?result.parsed.outreachTasks:[];\n    const bizOpps=Array.isArray(result.parsed?.businessOpportunities)?result.parsed.businessOpportunities:[];
+    state.business.opportunitiesFound += chosen.length + bizOpps.length;
+    state.business.qualifiedOpportunities += chosen.length + bizOpps.length;
     state.business.outreachPrepared += outreach.length;
-    state.business.lastOpportunity = chosen[0] ? {title:chosen[0].title||null,company:chosen[0].company||null,url:chosen[0].url||null,estimatedValueUsd:chosen[0].estimatedValueUsd??null,foundAt:new Date().toISOString()} : state.business.lastOpportunity;
-    state.business.nextAction = outreach.length ? "USER_APPROVAL_OR_AUTHORIZED_SEND_REQUIRED" : (chosen.length ? "FIND_VERIFIED_CONTACT_OR_APPLICATION_PATH" : "CONTINUE_SEARCH");
+    state.business.lastOpportunity = bizOpps[0] ? {...bizOpps[0],foundAt:new Date().toISOString(),lane:"BUSINESS_PROBLEM"} : (chosen[0] ? {title:chosen[0].title||null,company:chosen[0].company||null,url:chosen[0].url||null,estimatedValueUsd:chosen[0].estimatedValueUsd??null,foundAt:new Date().toISOString(),lane:"PAID_WORK"} : state.business.lastOpportunity);
+    state.business.nextAction = outreach.length ? "USER_APPROVAL_OR_AUTHORIZED_SEND_REQUIRED" : ((chosen.length||bizOpps.length) ? "FIND_VERIFIED_CONTACT_OR_APPLICATION_PATH" : "CONTINUE_SEARCH");
     state.memory.push({at:new Date().toISOString(),theme,decision:result.parsed});
     if(state.memory.length>20) state.memory.shift();
     state.completed++;
