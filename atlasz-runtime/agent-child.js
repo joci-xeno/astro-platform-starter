@@ -9,7 +9,7 @@ const LOOP_MS = Number(process.env.ATLASZ_AGENT_LOOP_MS || 600000);
 const START_STAGGER_MS = Number(process.env.ATLASZ_START_STAGGER_MS || 15000);
 const RETRY_BASE_MS = Number(process.env.ATLASZ_RETRY_BASE_MS || 65000);
 const MAX_RETRIES = Number(process.env.ATLASZ_MAX_RETRIES || 1);
-const MIN_JOB_VALUE = Number(process.env.ATLASZ_MIN_JOB_VALUE || 500);
+const MIN_JOB_VALUE = Number(process.env.ATLASZ_MIN_JOB_VALUE || 500);\nconst MIN_RECURRING_MONTHLY = Number(process.env.ATLASZ_MIN_RECURRING_MONTHLY || 100);
 
 let state = {
   id, team, pod,
@@ -65,8 +65,8 @@ async function askModel(theme, items){
       emails:emails.slice(0,5)
     };
   });
-  const system = `You are ATLASZ independent AI Agent ${id}, Team ${team}. Find lawful, realistic, zero-upfront-cost paid opportunities worldwide. Optimize for attainability, speed to cash, realistic value and low friction. HARD RULE: do not pursue any opportunity explicitly worth less than USD $500. Prefer the highest realistic value first ($10k+, then $5k+, $3k+, $1.5k+, $1k+, then $500+). Never fabricate qualifications or results. Never spend money or legally bind the owner. Only actually received money counts as revenue.`;
-  const prompt = system+"\n\nCurrent market theme: "+theme+"\n\nCandidates:\n"+JSON.stringify(compact)+"\n\nReturn JSON only: {bestIndexes:[up to 5 integers], rationale:string, nextTheme:string, outreachAngle:string, outreachTasks:[{index:integer,to:string,subject:string,body:string,estimatedValueUsd:number|null}]}. Select only opportunities that are explicitly or plausibly worth at least USD $500; rank higher-value realistic opportunities first. Create an outreachTask ONLY when the selected candidate contains an explicit email address in its emails field. Use that exact address; never invent an address. Keep outreach factual, concise, professional, and do not fabricate qualifications, portfolio items, results, or client history.";
+  const system = `You are ATLASZ independent AI Agent ${id}, Team ${team}. Find lawful, realistic, zero-upfront-cost paid opportunities worldwide. Optimize for attainability, speed to cash, realistic value and low friction. HARD RULE: for one-time projects, do not pursue anything explicitly worth less than USD $500. EXCEPTION: recurring subscriptions, retainers, maintenance, monitoring, support, SaaS or other monthly recurring revenue may be pursued below $500/month when legitimate and commercially worthwhile. Prefer higher annualized value, renewal potential and low churn. For one-time work prefer $10k+, then $5k+, $3k+, $1.5k+, $1k+, then $500+. Never fabricate qualifications or results. Never spend money or legally bind the owner. Only actually received money counts as revenue.`;
+  const prompt = system+"\n\nCurrent market theme: "+theme+"\n\nCandidates:\n"+JSON.stringify(compact)+"\n\nReturn JSON only: {bestIndexes:[up to 5 integers], rationale:string, nextTheme:string, outreachAngle:string, outreachTasks:[{index:integer,to:string,subject:string,body:string,estimatedValueUsd:number|null}]}. For one-time work, select only opportunities explicitly or plausibly worth at least USD $500. Also allow recurring subscription/retainer/maintenance opportunities below $500/month when they are genuine recurring revenue. Rank by realistic annualized value, attainability, renewal potential and speed to cash. Create an outreachTask ONLY when the selected candidate contains an explicit email address in its emails field. Use that exact address; never invent an address. Keep outreach factual, concise, professional, and do not fabricate qualifications, portfolio items, results, or client history.";
   const url="https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(GEMINI_MODEL)+":generateContent";
   const res = await fetch(url,{
     method:"POST",
