@@ -53,15 +53,20 @@ function send(type, extra={}) {
 }
 
 async function askModel(theme, items){
-  const compact = items.slice(0,15).map((x,i)=>({
-    i,
-    title:x.title||x.position||x.name||"",
-    company:x.company_name||x.company||"",
-    url:x.url||x.apply_url||x.absolute_url||"",
-    description:String(x.description||x.content||x.story_text||"").replace(/<[^>]*>/g," ").slice(0,700)
-  }));
+  const compact = items.slice(0,15).map((x,i)=>{
+    const raw=String(x.description||x.content||x.story_text||"").replace(/<[^>]*>/g," ");
+    const emails=[...new Set((raw.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)||[]).map(v=>v.toLowerCase()))];
+    return {
+      i,
+      title:x.title||x.position||x.name||"",
+      company:x.company_name||x.company||"",
+      url:x.url||x.apply_url||x.absolute_url||"",
+      description:raw.slice(0,900),
+      emails:emails.slice(0,5)
+    };
+  });
   const system = `You are ATLASZ independent AI Agent ${id}, Team ${team}. Find lawful, realistic, zero-upfront-cost paid opportunities worldwide. Optimize for attainability, speed to cash, realistic value and low friction. HARD RULE: do not pursue any opportunity explicitly worth less than USD $500. Prefer the highest realistic value first ($10k+, then $5k+, $3k+, $1.5k+, $1k+, then $500+). Never fabricate qualifications or results. Never spend money or legally bind the owner. Only actually received money counts as revenue.`;
-  const prompt = system+"\n\nCurrent market theme: "+theme+"\n\nCandidates:\n"+JSON.stringify(compact)+"\n\nReturn JSON only: {bestIndexes:[up to 5 integers], rationale:string, nextTheme:string, outreachAngle:string}. Select only opportunities that are explicitly or plausibly worth at least USD $500; rank higher-value realistic opportunities first.";
+  const prompt = system+"\n\nCurrent market theme: "+theme+"\n\nCandidates:\n"+JSON.stringify(compact)+"\n\nReturn JSON only: {bestIndexes:[up to 5 integers], rationale:string, nextTheme:string, outreachAngle:string, outreachTasks:[{index:integer,to:string,subject:string,body:string,estimatedValueUsd:number|null}]}. Select only opportunities that are explicitly or plausibly worth at least USD $500; rank higher-value realistic opportunities first. Create an outreachTask ONLY when the selected candidate contains an explicit email address in its emails field. Use that exact address; never invent an address. Keep outreach factual, concise, professional, and do not fabricate qualifications, portfolio items, results, or client history.";
   const url="https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(GEMINI_MODEL)+":generateContent";
   const res = await fetch(url,{
     method:"POST",
