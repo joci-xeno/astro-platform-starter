@@ -3,7 +3,7 @@ import http from "node:http";
 const PORT = Number(process.env.PORT || 3000);
 const AGENT_COUNT = 30;
 const LOOP_MS = Number(process.env.ATLASZ_LOOP_MS || 180000);
-const MAX_OPPS = 500;
+const MAX_OPPS = 5000;
 
 const policy = {
   version: "atlasz-competition-v1",
@@ -79,25 +79,61 @@ async function sourceHN(query){
 }
 const sources=[sourceRemotive,sourceArbeitnow,sourceRemoteOK,sourceHN];
 
-function score(job, theme){
-  const text=(job.title+" "+job.company+" "+job.description+" "+job.category).toLowerCase();
-  const words=theme.toLowerCase().split(/\s+/).filter(Boolean);
-  let s=0;
-  for(const w of words) if(text.includes(w)) s+=3;
-  if(/freelance|contract|contractor|project|part-time|remote/.test(text)) s+=3;
-  if(/hiring|looking for|needed|seeking|apply/.test(text)) s+=2;
-  return s;
+function moneyValue(text){
+  const m=[...text.matchAll(/(?:\$|CAD\s*|USD\s*)\s?(\d{2,6})(?:[,.](\d{3}))?/gi)];
+  if(!m.length) return null;
+  return Math.max(...m.map(x=>Number(String(x[1])+(x[2]||""))).filter(Number.isFinite));
 }
 
-function addOpportunity(agent,theme,job,s){
+function score(job, theme){
+  const text=(job.title+" "+job.company+" "+job.description+" "+job.category+" "+job.location).toLowerCase();
+  const words=theme.toLowerCase().split(/\s+/).filter(Boolean);
+  let fit=0;
+  for(const w of words) if(text.includes(w)) fit+=3;
+
+  const remote=/remote|worldwide|anywhere|canada/.test(text) ? 2 : 0;
+  const buyerIntent=/hiring|looking for|needed|seeking|apply|contract|freelance|project/.test(text) ? 4 : 0;
+  const directness=/apply|email|contact|submit|proposal/.test(text) ? 3 : 0;
+  const lowFriction=/no fee|free to apply|direct email|contact us/.test(text) ? 3 : 0;
+  const friction=/paid connect|membership fee|subscription required|identity verification/.test(text) ? 4 : 0;
+  const speed=/urgent|asap|immediate|start now|this week|quick/.test(text) ? 3 : 0;
+  const publishedValue=moneyValue(text);
+
+  const valueScore = publishedValue == null ? 0 :
+    publishedValue >= 10000 ? 4 :
+    publishedValue >= 2000 ? 3 :
+    publishedValue >= 500 ? 2 : 1;
+
+  const priorityScore=Math.max(0,fit+remote+buyerIntent+directness+lowFriction+speed+valueScore-friction);
+
+  return {
+    fitScore:fit,
+    buyerIntentScore:buyerIntent,
+    speedScore:speed,
+    lowFrictionScore:Math.max(0,directness+lowFriction-friction),
+    publishedValue,
+    priorityScore
+  };
+}
+
+function addOpportunity(agent,theme,job,sc){
   const key=(job.url||job.title+"|"+job.company).toLowerCase();
   if(!key || seen.has(key)) return false;
   seen.add(key);
-  opportunities.unshift({
+  opportunities.push({
     id:`${Date.now()}-${agent.id}`,
-    agentId:agent.id, team:agent.team, pod:agent.pod, theme, score:s,
+    agentId:agent.id, team:agent.team, pod:agent.pod, theme,
+    score:sc.priorityScore,
+    fitScore:sc.fitScore,
+    buyerIntentScore:sc.buyerIntentScore,
+    speedScore:sc.speedScore,
+    lowFrictionScore:sc.lowFrictionScore,
+    publishedValue:sc.publishedValue,
+    priorityClass: sc.priorityScore>=12 ? "A" : sc.priorityScore>=7 ? "B" : "C",
+    status:"NEW",
     foundAt:new Date().toISOString(), ...job
   });
+  opportunities.sort((a,b)=>b.score-a.score || (b.publishedValue||0)-(a.publishedValue||0));
   if(opportunities.length>MAX_OPPS) opportunities.length=MAX_OPPS;
   return true;
 }
@@ -115,8 +151,8 @@ async function runAgent(agent){
     const jobs=await source(theme);
     let added=0;
     for(const job of jobs){
-      const s=score(job,theme);
-      if(s>=3 && addOpportunity(agent,theme,job,s)) added++;
+      const sc=score(job,theme);
+      if(sc.priorityScore>=1 && addOpportunity(agent,theme,job,sc)) added++;
     }
     agent.found+=added;
     agent.completed++;
@@ -161,7 +197,11 @@ const server=http.createServer((req,res)=>{
     return;
   }
   if(req.url==="/opportunities"){
-    res.end(JSON.stringify({count:opportunities.length,opportunities:opportunities.slice(0,100)}));
+    res.end(JSON.stringify({
+      count:opportunities.length,
+      topActionable:opportunities.filter(o=>o.priorityClass==="A").slice(0,50),
+      opportunities:opportunities.slice(0,500)
+    }));
     return;
   }
   const counts=agents.reduce((m,a)=>(m[a.status]=(m[a.status]||0)+1,m),{});
@@ -171,7 +211,7 @@ const server=http.createServer((req,res)=>{
     supervisor,
     counts,
     agents,
-    opportunities:opportunities.slice(0,50)
+    opportunities:opportunities.slice(0,100)
   }));
 });
 server.listen(PORT,()=>console.log(JSON.stringify({event:"server_started",port:PORT,agents:AGENT_COUNT,policy:policy.version})));
