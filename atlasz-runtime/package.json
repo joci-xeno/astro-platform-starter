@@ -1,12 +1,8 @@
 {
-  "name": "atlasz-30-runtime",
-  "version": "1.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "start": "node worker.js"
-  },
-  "engines": {
-    "node": ">=20"
-  }
+  "name":"atlasz-30-independent",
+  "version":"2.0.0",
+  "private":true,
+  "type":"module",
+  "scripts":{"start":"node supervisor.js"},
+  "engines":{"node":">=20"}
 }
