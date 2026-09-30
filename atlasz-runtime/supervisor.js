@@ -43,7 +43,7 @@ const server=http.createServer((req,res)=>{
   const agents=Array.from({length:AGENT_COUNT},(_,i)=>states.get(i+1)||{id:i+1,status:"BOOTING"});
   const counts=agents.reduce((m,a)=>(m[a.status]=(m[a.status]||0)+1,m),{});
   if(req.url==="/health"){
-    res.end(JSON.stringify({ok:true,agents:AGENT_COUNT,processes:workers.size,counts,aiKeyConfigured:Boolean(process.env.OPENAI_API_KEY),model:process.env.OPENAI_MODEL||"gpt-5-mini"}));
+    res.end(JSON.stringify({ok:true,agents:AGENT_COUNT,processes:workers.size,counts,modelKeyConfigured:Boolean(process.env.GEMINI_API_KEY),model:process.env.GEMINI_MODEL||"gemini-3.8-flash"}));
     return;
   }
   if(req.url==="/events"){
@@ -52,16 +52,17 @@ const server=http.createServer((req,res)=>{
   }
   res.end(JSON.stringify({
     system:"ATLASZ-30-INDEPENDENT",
-    architecture:"30 independent Node worker_threads; each owns separate state, memory and model-call loop",
-    aiKeyConfigured:Boolean(process.env.OPENAI_API_KEY),
-    model:process.env.OPENAI_MODEL||"gpt-5-mini",
+    architecture:"30 independent Node worker_threads; each owns separate state, memory and Gemini model-call loop",
+    provider:"Google Gemini",
+    modelKeyConfigured:Boolean(process.env.GEMINI_API_KEY),
+    model:process.env.GEMINI_MODEL||"gemini-3.8-flash",
     processes:workers.size,
     counts,
     agents,
     recentEvents:events.slice(0,100)
   }));
 });
-server.listen(PORT,()=>console.log(JSON.stringify({event:"atlasz_independent_boot",agents:AGENT_COUNT,port:PORT,aiKeyConfigured:Boolean(process.env.OPENAI_API_KEY)})));
+server.listen(PORT,()=>console.log(JSON.stringify({event:"atlasz_independent_boot",agents:AGENT_COUNT,port:PORT,modelKeyConfigured:Boolean(process.env.GEMINI_API_KEY)})));
 
 
 setInterval(()=>{
