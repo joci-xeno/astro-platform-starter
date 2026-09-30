@@ -78,14 +78,16 @@ async function cycle(){
     return;
   }
   state.status="RUNNING";
-  const theme=themes[(id-1+state.completed)%themes.length];
-  const nextTheme=themes[(id+state.completed)%themes.length];
+  // Global round keeps all 30 agents on 30 different lanes at the same time.
+  const round=Math.floor(Date.now()/LOOP_MS);
+  const theme=themes[(id-1+round)%themes.length];
+  const nextTheme=themes[(id+round)%themes.length];
   state.currentTask="Independent AI evaluation: "+theme;
   state.nextTask="Independent AI evaluation: "+nextTheme;
   state.heartbeat=new Date().toISOString();
   send("heartbeat");
   try{
-    const source=sources[(id-1+state.completed)%sources.length];
+    const source=sources[(id-1+round)%sources.length];
     const items=await source(theme);
     const result=await askModel(theme,items);
     state.lastDecision=result.parsed;
