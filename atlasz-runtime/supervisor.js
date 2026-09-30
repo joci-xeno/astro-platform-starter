@@ -62,3 +62,19 @@ const server=http.createServer((req,res)=>{
   }));
 });
 server.listen(PORT,()=>console.log(JSON.stringify({event:"atlasz_independent_boot",agents:AGENT_COUNT,port:PORT,aiKeyConfigured:Boolean(process.env.OPENAI_API_KEY)})));
+
+
+setInterval(()=>{
+  const agents=Array.from({length:AGENT_COUNT},(_,i)=>states.get(i+1)||{id:i+1,status:"BOOTING",aiCalls:0});
+  const withCalls=agents.filter(a=>(a.aiCalls||0)>0);
+  const totalCalls=agents.reduce((s,a)=>s+(a.aiCalls||0),0);
+  console.log(JSON.stringify({
+    event:"atlasz_ai_summary",
+    at:new Date().toISOString(),
+    processes:workers.size,
+    agentsWithSuccessfulModelCalls:withCalls.length,
+    totalAiCalls:totalCalls,
+    statuses:agents.reduce((m,a)=>(m[a.status]=(m[a.status]||0)+1,m),{}),
+    perAgent:agents.map(a=>({id:a.id,status:a.status,aiCalls:a.aiCalls||0,completed:a.completed||0,currentTask:a.currentTask||null,lastError:a.lastError||null}))
+  }));
+},30000);
