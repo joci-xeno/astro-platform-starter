@@ -8,7 +8,8 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 const LOOP_MS = Number(process.env.ATLASZ_AGENT_LOOP_MS || 600000);
 const START_STAGGER_MS = Number(process.env.ATLASZ_START_STAGGER_MS || 15000);
 const RETRY_BASE_MS = Number(process.env.ATLASZ_RETRY_BASE_MS || 65000);
-const MAX_RETRIES = Number(process.env.ATLASZ_MAX_RETRIES || 6);
+const MAX_RETRIES = Number(process.env.ATLASZ_MAX_RETRIES || 1);
+const MIN_JOB_VALUE = Number(process.env.ATLASZ_MIN_JOB_VALUE || 500);
 
 let state = {
   id, team, pod,
@@ -30,7 +31,7 @@ const themes = [
   "lead generation","CRM and sales operations","video editing","translation localization","QA testing",
   "customer support","virtual assistance","ecommerce operations","SEO content operations","API integrations",
   "market research","tender RFP research","proposal support","spreadsheet reporting","digital services",
-  "micro freelance projects","recurring retainers","business process automation","documentation","AI evaluation",
+  "high-value freelance projects","recurring retainers","business process automation","documentation","AI evaluation",
   "design production","research assistance","workflow setup","content operations","global remote work"
 ];
 
@@ -59,8 +60,8 @@ async function askModel(theme, items){
     url:x.url||x.apply_url||x.absolute_url||"",
     description:String(x.description||x.content||x.story_text||"").replace(/<[^>]*>/g," ").slice(0,700)
   }));
-  const system = `You are ATLASZ independent AI Agent ${id}, Team ${team}. Find lawful, realistic, zero-upfront-cost paid opportunities worldwide. Optimize for attainability, speed to cash, realistic value and low friction. Small jobs count. Never fabricate qualifications or results. Never spend money or legally bind the owner. Only actually received money counts as revenue.`;
-  const prompt = system+"\n\nCurrent market theme: "+theme+"\n\nCandidates:\n"+JSON.stringify(compact)+"\n\nReturn JSON only: {bestIndexes:[up to 5 integers], rationale:string, nextTheme:string, outreachAngle:string}.";
+  const system = `You are ATLASZ independent AI Agent ${id}, Team ${team}. Find lawful, realistic, zero-upfront-cost paid opportunities worldwide. Optimize for attainability, speed to cash, realistic value and low friction. HARD RULE: do not pursue any opportunity explicitly worth less than USD $500. Prefer the highest realistic value first ($10k+, then $5k+, $3k+, $1.5k+, $1k+, then $500+). Never fabricate qualifications or results. Never spend money or legally bind the owner. Only actually received money counts as revenue.`;
+  const prompt = system+"\n\nCurrent market theme: "+theme+"\n\nCandidates:\n"+JSON.stringify(compact)+"\n\nReturn JSON only: {bestIndexes:[up to 5 integers], rationale:string, nextTheme:string, outreachAngle:string}. Select only opportunities that are explicitly or plausibly worth at least USD $500; rank higher-value realistic opportunities first.";
   const url="https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(GEMINI_MODEL)+":generateContent";
   const res = await fetch(url,{
     method:"POST",
