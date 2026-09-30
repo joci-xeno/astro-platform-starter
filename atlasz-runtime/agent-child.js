@@ -3,21 +3,24 @@ import { parentPort, workerData } from "node:worker_threads";
 const id = workerData.id;
 const team = Math.floor((id-1)/5)+1;
 const pod = id<=10?"A":id<=20?"B":"C";
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
-const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-5-mini";
-const LOOP_MS = Number(process.env.ATLASZ_AGENT_LOOP_MS || 180000);
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+const LOOP_MS = Number(process.env.ATLASZ_AGENT_LOOP_MS || 600000);
+const START_STAGGER_MS = Number(process.env.ATLASZ_START_STAGGER_MS || 2000);
 
 let state = {
   id, team, pod,
-  status: OPENAI_API_KEY ? "STARTING" : "BLOCKED_NO_KEY",
+  status: GEMINI_API_KEY ? "STARTING" : "BLOCKED_NO_KEY",
   heartbeat: new Date().toISOString(),
   completed: 0,
   aiCalls: 0,
   currentTask: null,
   nextTask: null,
   lastDecision: null,
-  lastError: OPENAI_API_KEY ? null : "OPENAI_API_KEY missing",
-  memory: []
+  lastError: GEMINI_API_KEY ? null : "GEMINI_API_KEY missing",
+  memory: [],
+  provider: "Google Gemini",
+  model: GEMINI_MODEL
 };
 
 const themes = [
@@ -56,14 +59,21 @@ async function askModel(theme, items){
   }));
   const system = `You are ATLASZ independent AI Agent ${id}, Team ${team}. Find lawful, realistic, zero-upfront-cost paid opportunities worldwide. Optimize for attainability, speed to cash, realistic value and low friction. Small jobs count. Never fabricate qualifications or results. Never spend money or legally bind the owner. Only actually received money counts as revenue.`;
   const prompt = system+"\n\nCurrent market theme: "+theme+"\n\nCandidates:\n"+JSON.stringify(compact)+"\n\nReturn JSON only: {bestIndexes:[up to 5 integers], rationale:string, nextTheme:string, outreachAngle:string}.";
-  const res = await fetch("https://api.openai.com/v1/responses",{
+  const url="https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(GEMINI_MODEL)+":generateContent";
+  const res = await fetch(url,{
     method:"POST",
-    headers:{"Authorization":"Bearer "+OPENAI_API_KEY,"Content-Type":"application/json"},
-    body:JSON.stringify({model:OPENAI_MODEL,input:prompt})
+    headers:{"x-goog-api-key":GEMINI_API_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({
+      contents:[{parts:[{text:prompt}]}],
+      generationConfig:{
+        responseMimeType:"application/json",
+        thinkingConfig:{thinkingLevel:"medium"}
+      }
+    })
   });
-  if(!res.ok) throw new Error("OpenAI "+res.status+": "+(await res.text()).slice(0,300));
+  if(!res.ok) throw new Error("Gemini "+res.status+": "+(await res.text()).slice(0,500));
   const data = await res.json();
-  const txt = data.output_text || data.output?.flatMap(x=>x.content||[]).map(x=>x.text||"").join("") || "";
+  const txt = data?.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("") || "";
   let parsed;
   try { parsed=JSON.parse(txt); } catch { parsed={raw:txt}; }
   state.aiCalls++;
@@ -71,7 +81,7 @@ async function askModel(theme, items){
 }
 
 async function cycle(){
-  if(!OPENAI_API_KEY){
+  if(!GEMINI_API_KEY){
     state.status="BLOCKED_NO_KEY";
     state.heartbeat=new Date().toISOString();
     send("heartbeat");
@@ -107,9 +117,12 @@ async function cycle(){
 }
 
 async function loop(){
+  await new Promise(r=>setTimeout(r,id*START_STAGGER_MS));
   while(true){
     await cycle();
-    await new Promise(r=>setTimeout(r,Math.max(30000,LOOP_MS+(id%10)*1000)));
+    const blocked429 = state.lastError && /Gemini 429/.test(state.lastError);
+    const waitMs = blocked429 ? Math.max(LOOP_MS, 900000) : Math.max(60000,LOOP_MS+(id%10)*1000);
+    await new Promise(r=>setTimeout(r,waitMs));
   }
 }
 
