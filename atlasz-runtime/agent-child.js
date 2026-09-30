@@ -9,7 +9,8 @@ const LOOP_MS = Number(process.env.ATLASZ_AGENT_LOOP_MS || 600000);
 const START_STAGGER_MS = Number(process.env.ATLASZ_START_STAGGER_MS || 15000);
 const RETRY_BASE_MS = Number(process.env.ATLASZ_RETRY_BASE_MS || 65000);
 const MAX_RETRIES = Number(process.env.ATLASZ_MAX_RETRIES || 1);
-const MIN_JOB_VALUE = Number(process.env.ATLASZ_MIN_JOB_VALUE || 500);\nconst MIN_RECURRING_MONTHLY = Number(process.env.ATLASZ_MIN_RECURRING_MONTHLY || 100);
+const MIN_JOB_VALUE = Number(process.env.ATLASZ_MIN_JOB_VALUE || 500);
+const MIN_RECURRING_MONTHLY = Number(process.env.ATLASZ_MIN_RECURRING_MONTHLY || 100);
 
 let state = {
   id, team, pod,
@@ -23,7 +24,9 @@ let state = {
   lastError: GEMINI_API_KEY ? null : "GEMINI_API_KEY missing",
   memory: [],
   provider: "Google Gemini",
-  model: GEMINI_MODEL,\n  business: { opportunitiesFound:0, qualifiedOpportunities:0, outreachPrepared:0, outreachSent:0, repliesReceived:0, proposalsSent:0, proposalValueUsd:0, contractsWon:0, verifiedRevenueUsd:0, lastOpportunity:null, lastOutreachAt:null, lastReplyAt:null, nextAction:null }\n};
+  model: GEMINI_MODEL,
+  business: { opportunitiesFound:0, qualifiedOpportunities:0, outreachPrepared:0, outreachSent:0, repliesReceived:0, proposalsSent:0, proposalValueUsd:0, contractsWon:0, verifiedRevenueUsd:0, lastOpportunity:null, lastOutreachAt:null, lastReplyAt:null, nextAction:null }
+};
 
 const themes = [
   "AI automation","software development","web development","no-code automation","data research",
@@ -65,7 +68,14 @@ async function askModel(theme, items){
     };
   });
   const system = `You are ATLASZ independent AI Agent ${id}, Team ${team}. Find lawful, realistic, zero-upfront-cost paid opportunities worldwide. Optimize for attainability, speed to cash, realistic value and low friction. HARD RULE: for one-time projects, do not pursue anything explicitly worth less than USD $500. EXCEPTION: recurring subscriptions, retainers, maintenance, monitoring, support, SaaS or other monthly recurring revenue may be pursued below $500/month when legitimate and commercially worthwhile. Prefer higher annualized value, renewal potential and low churn. For one-time work prefer $10k+, then $5k+, $3k+, $1.5k+, $1k+, then $500+. Never fabricate qualifications or results. Never spend money or legally bind the owner. Only actually received money counts as revenue.`;
-  const prompt = system+"\n\nCurrent market theme: "+theme+"\n\nCandidates:\n"+JSON.stringify(compact)+"\n\nReturn JSON only: {bestIndexes:[up to 5 integers], rationale:string, nextTheme:string, outreachAngle:string, outreachTasks:[{index:integer,to:string,subject:string,body:string,estimatedValueUsd:number|null}]}. For one-time work, select only opportunities explicitly or plausibly worth at least USD $500. Also allow recurring subscription/retainer/maintenance opportunities below $500/month when they are genuine recurring revenue. Rank by realistic annualized value, attainability, renewal potential and speed to cash. Create an outreachTask ONLY when the selected candidate contains an explicit email address in its emails field. Use that exact address; never invent an address. Keep outreach factual, concise, professional, and do not fabricate qualifications, portfolio items, results, or client history.";
+  const prompt = system+"
+
+Current market theme: "+theme+"
+
+Candidates:
+"+JSON.stringify(compact)+"
+
+Return JSON only: {bestIndexes:[up to 5 integers], rationale:string, nextTheme:string, outreachAngle:string, outreachTasks:[{index:integer,to:string,subject:string,body:string,estimatedValueUsd:number|null}]}. For one-time work, select only opportunities explicitly or plausibly worth at least USD $500. Also allow recurring subscription/retainer/maintenance opportunities below $500/month when they are genuine recurring revenue. Rank by realistic annualized value, attainability, renewal potential and speed to cash. Create an outreachTask ONLY when the selected candidate contains an explicit email address in its emails field. Use that exact address; never invent an address. Keep outreach factual, concise, professional, and do not fabricate qualifications, portfolio items, results, or client history.";
   const url="https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(GEMINI_MODEL)+":generateContent";
   const res = await fetch(url,{
     method:"POST",
@@ -214,7 +224,14 @@ async function cycle(){
       send("fallback",{theme,error:String(state.lastError).slice(0,300),decision:result.parsed,candidates:result.compact});
     }
 
-    state.lastDecision=result.parsed;\n    const chosen=(result.parsed?.bestIndexes||[]).map(i=>result.compact?.[i]).filter(Boolean);\n    const outreach=Array.isArray(result.parsed?.outreachTasks)?result.parsed.outreachTasks:[];\n    state.business.opportunitiesFound += chosen.length;\n    state.business.qualifiedOpportunities += chosen.length;\n    state.business.outreachPrepared += outreach.length;\n    state.business.lastOpportunity = chosen[0] ? {title:chosen[0].title||null,company:chosen[0].company||null,url:chosen[0].url||null,estimatedValueUsd:chosen[0].estimatedValueUsd??null,foundAt:new Date().toISOString()} : state.business.lastOpportunity;\n    state.business.nextAction = outreach.length ? "USER_APPROVAL_OR_AUTHORIZED_SEND_REQUIRED" : (chosen.length ? "FIND_VERIFIED_CONTACT_OR_APPLICATION_PATH" : "CONTINUE_SEARCH");
+    state.lastDecision=result.parsed;
+    const chosen=(result.parsed?.bestIndexes||[]).map(i=>result.compact?.[i]).filter(Boolean);
+    const outreach=Array.isArray(result.parsed?.outreachTasks)?result.parsed.outreachTasks:[];
+    state.business.opportunitiesFound += chosen.length;
+    state.business.qualifiedOpportunities += chosen.length;
+    state.business.outreachPrepared += outreach.length;
+    state.business.lastOpportunity = chosen[0] ? {title:chosen[0].title||null,company:chosen[0].company||null,url:chosen[0].url||null,estimatedValueUsd:chosen[0].estimatedValueUsd??null,foundAt:new Date().toISOString()} : state.business.lastOpportunity;
+    state.business.nextAction = outreach.length ? "USER_APPROVAL_OR_AUTHORIZED_SEND_REQUIRED" : (chosen.length ? "FIND_VERIFIED_CONTACT_OR_APPLICATION_PATH" : "CONTINUE_SEARCH");
     state.memory.push({at:new Date().toISOString(),theme,decision:result.parsed});
     if(state.memory.length>20) state.memory.shift();
     state.completed++;
