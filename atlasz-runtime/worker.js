@@ -143,6 +143,7 @@ function addOpportunity(agent,theme,job,sc){
     estimatedValueUsd:sc.estimatedValueUsd,
     emails,
     nextAction,
+    reviewStatus:"PENDING",
     foundAt:new Date().toISOString(),
     ...job
   });
@@ -221,25 +222,22 @@ const server=http.createServer((req,res)=>{
   if(req.url==="/actionable"){
     const actionable=opportunities
       .filter(o=>o.priorityClass==="A")
-      .slice(0,50)
-      .map(o=>({
-        id:o.id,
-        title:o.title,
-        company:o.company,
-        source:o.source,
-        url:o.url,
-        location:o.location,
-        theme:o.theme,
-        score:o.score,
-        estimatedValueUsd:o.estimatedValueUsd,
-        emails:o.emails,
-        nextAction:o.nextAction,
-        foundAt:o.foundAt
-      }));
+      .slice(0,100);
     res.end(JSON.stringify({
-      rule:"A = strongest immediately actionable opportunities; B = good; C = weak",
+      rule:"A is a priority label only. No B or C opportunity is discarded.",
       actionableCount:actionable.length,
       actionable
+    }));
+    return;
+  }
+  if(req.url==="/workqueue"){
+    const countsByClass=opportunities.reduce((m,o)=>(m[o.priorityClass]=(m[o.priorityClass]||0)+1,m),{A:0,B:0,C:0});
+    res.end(JSON.stringify({
+      rule:"KEEP ALL. A/B/C controls review order only; nothing is automatically rejected.",
+      total:opportunities.length,
+      countsByClass,
+      pendingReview:opportunities.filter(o=>o.reviewStatus==="PENDING").length,
+      workqueue:opportunities
     }));
     return;
   }
@@ -262,5 +260,15 @@ setInterval(()=>{
   const counts=agents.reduce((m,a)=>(m[a.status]=(m[a.status]||0)+1,m),{});
   const priority=opportunities.reduce((m,o)=>(m[o.priorityClass]=(m[o.priorityClass]||0)+1,m),{A:0,B:0,C:0});
   const actionable=opportunities.filter(o=>o.priorityClass==="A").slice(0,10).map(o=>({title:o.title,company:o.company,score:o.score,estimatedValueUsd:o.estimatedValueUsd,nextAction:o.nextAction,url:o.url}));
-  console.log(JSON.stringify({event:"atlasz_status",at:new Date().toISOString(),counts,opportunities:opportunities.length,priority,completed:agents.reduce((s,a)=>s+a.completed,0),topActionable:actionable}));
+  console.log(JSON.stringify({
+    event:"atlasz_status",
+    at:new Date().toISOString(),
+    counts,
+    opportunities:opportunities.length,
+    retained:opportunities.length,
+    pendingReview:opportunities.filter(o=>o.reviewStatus==="PENDING").length,
+    priority,
+    completed:agents.reduce((s,a)=>s+a.completed,0),
+    topActionable:actionable
+  }));
 },60000);
