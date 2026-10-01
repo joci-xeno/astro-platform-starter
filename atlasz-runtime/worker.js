@@ -79,24 +79,77 @@ async function sourceHN(query){
 }
 const sources=[sourceRemotive,sourceArbeitnow,sourceRemoteOK,sourceHN];
 
-function score(job, theme){
-  const text=(job.title+" "+job.company+" "+job.description+" "+job.category).toLowerCase();
-  const words=theme.toLowerCase().split(/\s+/).filter(Boolean);
-  let s=0;
-  for(const w of words) if(text.includes(w)) s+=3;
-  if(/freelance|contract|contractor|project|part-time|remote/.test(text)) s+=3;
-  if(/hiring|looking for|needed|seeking|apply/.test(text)) s+=2;
-  return s;
+function extractEmails(text=""){
+  return [...new Set((String(text).match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)||[]).map(x=>x.toLowerCase()))].slice(0,5);
 }
 
-function addOpportunity(agent,theme,job,s){
+function extractValue(text=""){
+  const vals=[];
+  for(const m of String(text).matchAll(/(?:USD\s*|CAD\s*|\$)\s*([0-9]{2,7})(?:,([0-9]{3}))?/gi)){
+    const n=Number(String(m[1])+(m[2]||""));
+    if(Number.isFinite(n)) vals.push(n);
+  }
+  return vals.length?Math.max(...vals):null;
+}
+
+function score(job, theme){
+  const text=(job.title+" "+job.company+" "+job.description+" "+job.category+" "+job.location).toLowerCase();
+  const words=theme.toLowerCase().split(/\s+/).filter(Boolean);
+  let fit=0;
+  for(const w of words) if(text.includes(w)) fit+=3;
+
+  const buyerIntent=/hiring|looking for|needed|seeking|apply|contract|freelance|project/.test(text)?4:0;
+  const remote=/remote|worldwide|anywhere|canada/.test(text)?2:0;
+  const direct=/apply|email|contact|submit|proposal/.test(text)?3:0;
+  const urgent=/urgent|asap|immediate|start now|this week|quick/.test(text)?2:0;
+  const friction=/paid connect|membership fee|subscription required|identity verification/.test(text)?4:0;
+  const estimatedValueUsd=extractValue(text);
+
+  let valueScore=0;
+  if(estimatedValueUsd!=null){
+    if(estimatedValueUsd>=10000) valueScore=5;
+    else if(estimatedValueUsd>=5000) valueScore=4;
+    else if(estimatedValueUsd>=2000) valueScore=3;
+    else if(estimatedValueUsd>=1000) valueScore=2;
+    else if(estimatedValueUsd>=500) valueScore=1;
+    else valueScore=-8;
+  }
+
+  const score=Math.max(0,fit+buyerIntent+remote+direct+urgent+valueScore-friction);
+  const priorityClass=score>=12?"A":score>=7?"B":"C";
+  return {score,fit,buyerIntent,remote,direct,urgent,friction,estimatedValueUsd,priorityClass};
+}
+
+function addOpportunity(agent,theme,job,sc){
   const key=(job.url||job.title+"|"+job.company).toLowerCase();
   if(!key || seen.has(key)) return false;
   seen.add(key);
-  opportunities.unshift({
+
+  const emails=extractEmails(job.description);
+  const nextAction=emails.length
+    ? "PREPARE_OUTREACH_FOR_APPROVAL"
+    : job.url
+      ? "REVIEW_APPLICATION_PAGE"
+      : "FIND_VERIFIED_CONTACT";
+
+  opportunities.push({
     id:`${Date.now()}-${agent.id}`,
-    agentId:agent.id, team:agent.team, pod:agent.pod, theme, score:s,
-    foundAt:new Date().toISOString(), ...job
+    agentId:agent.id,
+    team:agent.team,
+    pod:agent.pod,
+    theme,
+    score:sc.score,
+    priorityClass:sc.priorityClass,
+    estimatedValueUsd:sc.estimatedValueUsd,
+    emails,
+    nextAction,
+    foundAt:new Date().toISOString(),
+    ...job
+  });
+
+  opportunities.sort((a,b)=>{
+    const rank={A:3,B:2,C:1};
+    return (rank[b.priorityClass]-rank[a.priorityClass]) || (b.score-a.score) || ((b.estimatedValueUsd||0)-(a.estimatedValueUsd||0));
   });
   if(opportunities.length>MAX_OPPS) opportunities.length=MAX_OPPS;
   return true;
@@ -115,8 +168,8 @@ async function runAgent(agent){
     const jobs=await source(theme);
     let added=0;
     for(const job of jobs){
-      const s=score(job,theme);
-      if(s>=3 && addOpportunity(agent,theme,job,s)) added++;
+      const sc=score(job,theme);
+      if(sc.score>=1 && addOpportunity(agent,theme,job,sc)) added++;
     }
     agent.found+=added;
     agent.completed++;
@@ -161,7 +214,33 @@ const server=http.createServer((req,res)=>{
     return;
   }
   if(req.url==="/opportunities"){
-    res.end(JSON.stringify({count:opportunities.length,opportunities:opportunities.slice(0,100)}));
+    const countsByClass=opportunities.reduce((m,o)=>(m[o.priorityClass]=(m[o.priorityClass]||0)+1,m),{A:0,B:0,C:0});
+    res.end(JSON.stringify({count:opportunities.length,countsByClass,opportunities:opportunities.slice(0,200)}));
+    return;
+  }
+  if(req.url==="/actionable"){
+    const actionable=opportunities
+      .filter(o=>o.priorityClass==="A")
+      .slice(0,50)
+      .map(o=>({
+        id:o.id,
+        title:o.title,
+        company:o.company,
+        source:o.source,
+        url:o.url,
+        location:o.location,
+        theme:o.theme,
+        score:o.score,
+        estimatedValueUsd:o.estimatedValueUsd,
+        emails:o.emails,
+        nextAction:o.nextAction,
+        foundAt:o.foundAt
+      }));
+    res.end(JSON.stringify({
+      rule:"A = strongest immediately actionable opportunities; B = good; C = weak",
+      actionableCount:actionable.length,
+      actionable
+    }));
     return;
   }
   const counts=agents.reduce((m,a)=>(m[a.status]=(m[a.status]||0)+1,m),{});
@@ -181,5 +260,7 @@ supervisorLoop();
 
 setInterval(()=>{
   const counts=agents.reduce((m,a)=>(m[a.status]=(m[a.status]||0)+1,m),{});
-  console.log(JSON.stringify({event:"atlasz_status",at:new Date().toISOString(),counts,opportunities:opportunities.length,completed:agents.reduce((s,a)=>s+a.completed,0)}));
+  const priority=opportunities.reduce((m,o)=>(m[o.priorityClass]=(m[o.priorityClass]||0)+1,m),{A:0,B:0,C:0});
+  const actionable=opportunities.filter(o=>o.priorityClass==="A").slice(0,10).map(o=>({title:o.title,company:o.company,score:o.score,estimatedValueUsd:o.estimatedValueUsd,nextAction:o.nextAction,url:o.url}));
+  console.log(JSON.stringify({event:"atlasz_status",at:new Date().toISOString(),counts,opportunities:opportunities.length,priority,completed:agents.reduce((s,a)=>s+a.completed,0),topActionable:actionable}));
 },60000);
