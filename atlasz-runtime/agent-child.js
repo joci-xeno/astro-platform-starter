@@ -4,6 +4,12 @@ const id = workerData.id;
 const team = Math.floor((id-1)/5)+1;
 const pod = id<=10?"A":id<=20?"B":"C";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
+const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-5.6";
+const XAI_API_KEY = process.env.XAI_API_KEY || "";
+const XAI_MODEL = process.env.XAI_MODEL || "grok-4.7";
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || "";
+const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-flash";
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 const LOOP_MS = Number(process.env.ATLASZ_AGENT_LOOP_MS || 600000);
 const START_STAGGER_MS = Number(process.env.ATLASZ_START_STAGGER_MS || 15000);
@@ -14,17 +20,17 @@ const MIN_RECURRING_MONTHLY = Number(process.env.ATLASZ_MIN_RECURRING_MONTHLY ||
 
 let state = {
   id, team, pod,
-  status: GEMINI_API_KEY ? "STARTING" : "BLOCKED_NO_KEY",
+  status: (GEMINI_API_KEY||OPENAI_API_KEY||XAI_API_KEY||DEEPSEEK_API_KEY) ? "STARTING" : "BLOCKED_NO_KEY",
   heartbeat: new Date().toISOString(),
   completed: 0,
   aiCalls: 0,
   currentTask: null,
   nextTask: null,
   lastDecision: null,
-  lastError: GEMINI_API_KEY ? null : "GEMINI_API_KEY missing",
+  lastError: (GEMINI_API_KEY||OPENAI_API_KEY||XAI_API_KEY||DEEPSEEK_API_KEY) ? null : "No AI provider key configured",
   memory: [],
-  provider: "Google Gemini",
-  model: GEMINI_MODEL,
+  provider: GEMINI_API_KEY ? "Google Gemini" : OPENAI_API_KEY ? "OpenAI" : XAI_API_KEY ? "xAI Grok" : DEEPSEEK_API_KEY ? "DeepSeek" : "None",
+  model: GEMINI_API_KEY ? GEMINI_MODEL : OPENAI_API_KEY ? OPENAI_MODEL : XAI_API_KEY ? XAI_MODEL : DEEPSEEK_API_KEY ? DEEPSEEK_MODEL : null,
   business: { opportunitiesFound:0, qualifiedOpportunities:0, outreachPrepared:0, outreachSent:0, repliesReceived:0, proposalsSent:0, proposalValueUsd:0, contractsWon:0, verifiedRevenueUsd:0, lastOpportunity:null, lastOutreachAt:null, lastReplyAt:null, nextAction:null }
 };
 
@@ -80,25 +86,28 @@ async function askModel(theme, items){
   });
   const problem=businessProblems[(id-1+Math.floor(Date.now()/LOOP_MS))%businessProblems.length];
   const sector=businessSectors[(id-1+Math.floor(Date.now()/LOOP_MS))%businessSectors.length];\n  const system = `You are ATLASZ independent AI Agent ${id}, Team ${team}. You operate TWO revenue lanes in parallel: (A) find lawful, realistic, zero-upfront-cost paid work worldwide, and (B) discover small/medium businesses with a concrete commercially valuable problem that ATLASZ can solve digitally or with AI. Current business-discovery sector: ${sector}. Current problem lens: ${problem}. Do not restrict yourself permanently to this sector; rotate and explore broadly. For business-discovery opportunities, require evidence from the supplied source and never invent a company, problem, contact, performance claim, or expected improvement. Propose a specific sample/deliverable ATLASZ could actually create, such as improved ad copy/creative concept, landing-page draft, follow-up workflow, automation design, lead-generation asset, website improvement, content system, or another lawful digital deliverable. Find lawful, realistic, zero-upfront-cost paid opportunities worldwide. Optimize for attainability, speed to cash, realistic value and low friction. HARD RULE: for one-time projects, do not pursue anything explicitly worth less than USD $500. EXCEPTION: recurring subscriptions, retainers, maintenance, monitoring, support, SaaS or other monthly recurring revenue may be pursued below $500/month when legitimate and commercially worthwhile. Prefer higher annualized value, renewal potential and low churn. For one-time work prefer $10k+, then $5k+, $3k+, $1.5k+, $1k+, then $500+. Never fabricate qualifications or results. Never spend money or legally bind the owner. Only actually received money counts as revenue.`;
-  const prompt = system+"\n\nCurrent market theme: "+theme+"\n\nCandidates:\n"+JSON.stringify(compact)+"\n\nReturn JSON only: {bestIndexes:[up to 5 integers], rationale:string, nextTheme:string, outreachAngle:string, businessOpportunities:[{index:integer,company:string,problem:string,evidence:string,proposedSolution:string,sampleDeliverable:string,estimatedValueUsd:number|null,recurringMonthlyUsd:number|null,nextStep:string}], outreachTasks:[{index:integer,to:string,subject:string,body:string,estimatedValueUsd:number|null}]}. For one-time work, select only opportunities explicitly or plausibly worth at least USD $500. Also allow recurring subscription/retainer/maintenance opportunities below $500/month when they are genuine recurring revenue. Rank by realistic annualized value, attainability, renewal potential and speed to cash. Create an outreachTask ONLY when the selected candidate contains an explicit email address in its emails field. Use that exact address; never invent an address. Keep outreach factual, concise, professional, and do not fabricate qualifications, portfolio items, results, or client history.";\n  const url="https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(GEMINI_MODEL)+":generateContent";
-  const res = await fetch(url,{
-    method:"POST",
-    headers:{"x-goog-api-key":GEMINI_API_KEY,"Content-Type":"application/json"},
-    body:JSON.stringify({
-      contents:[{parts:[{text:prompt}]}],
-      generationConfig:{
-        responseMimeType:"application/json",
-        thinkingConfig:{thinkingLevel:"medium"}
-      }
-    })
-  });
-  if(!res.ok) throw new Error("Gemini "+res.status+": "+(await res.text()).slice(0,500));
-  const data = await res.json();
-  const txt = data?.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("") || "";
-  let parsed;
-  try { parsed=JSON.parse(txt); } catch { parsed={raw:txt}; }
-  state.aiCalls++;
-  return {parsed, compact};
+  const prompt = system+"\n\nCurrent market theme: "+theme+"\n\nCandidates:\n"+JSON.stringify(compact)+"\n\nReturn JSON only: {bestIndexes:[up to 5 integers], rationale:string, nextTheme:string, outreachAngle:string, businessOpportunities:[{index:integer,company:string,problem:string,evidence:string,proposedSolution:string,sampleDeliverable:string,estimatedValueUsd:number|null,recurringMonthlyUsd:number|null,nextStep:string}], outreachTasks:[{index:integer,to:string,subject:string,body:string,estimatedValueUsd:number|null}]}. For one-time work, select only opportunities explicitly or plausibly worth at least USD $500. Also allow recurring subscription/retainer/maintenance opportunities below $500/month when they are genuine recurring revenue. Rank by realistic annualized value, attainability, renewal potential and speed to cash. Create an outreachTask ONLY when the selected candidate contains an explicit email address in its emails field. Use that exact address; never invent an address. Keep outreach factual, concise, professional, and do not fabricate qualifications, portfolio items, results, or client history.";\n  const providers = [
+    OPENAI_API_KEY && {name:"OpenAI",model:OPENAI_MODEL,url:"https://api.openai.com/v1/responses",headers:{"Authorization":"Bearer "+OPENAI_API_KEY,"Content-Type":"application/json"},body:{model:OPENAI_MODEL,input:prompt}},
+    XAI_API_KEY && {name:"xAI Grok",model:XAI_MODEL,url:"https://api.x.ai/v1/responses",headers:{"Authorization":"Bearer "+XAI_API_KEY,"Content-Type":"application/json"},body:{model:XAI_MODEL,input:prompt}},
+    DEEPSEEK_API_KEY && {name:"DeepSeek",model:DEEPSEEK_MODEL,url:"https://api.deepseek.com/responses",headers:{"Authorization":"Bearer "+DEEPSEEK_API_KEY,"Content-Type":"application/json"},body:{model:DEEPSEEK_MODEL,input:prompt}},
+    GEMINI_API_KEY && {name:"Google Gemini",model:GEMINI_MODEL,url:"https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(GEMINI_MODEL)+":generateContent",headers:{"x-goog-api-key":GEMINI_API_KEY,"Content-Type":"application/json"},body:{contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:"application/json",thinkingConfig:{thinkingLevel:"medium"}}]}}
+  ].filter(Boolean);
+  if(!providers.length) throw new Error("No AI provider key configured");
+  let lastErr=null;
+  for(const p of providers){
+    try{
+      const res=await fetch(p.url,{method:"POST",headers:p.headers,body:JSON.stringify(p.body)});
+      if(!res.ok){lastErr=new Error(p.name+" "+res.status+": "+(await res.text()).slice(0,500)); continue;}
+      const data=await res.json();
+      const txt=p.name==="Google Gemini"
+        ? (data?.candidates?.[0]?.content?.parts?.map(x=>x.text||"").join("")||"")
+        : (data?.output_text || data?.output?.flatMap(x=>x.content||[]).map(x=>x.text||"").join("") || data?.choices?.[0]?.message?.content || "");
+      let parsed; try {parsed=JSON.parse(txt);} catch {parsed={raw:txt};}
+      state.provider=p.name; state.model=p.model; state.aiCalls++;
+      return {parsed,compact};
+    }catch(e){lastErr=e;}
+  }
+  throw lastErr||new Error("All AI providers failed");
 }
 
 function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
