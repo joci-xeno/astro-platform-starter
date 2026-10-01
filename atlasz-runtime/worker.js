@@ -259,7 +259,7 @@ supervisorLoop();
 setInterval(()=>{
   const counts=agents.reduce((m,a)=>(m[a.status]=(m[a.status]||0)+1,m),{});
   const priority=opportunities.reduce((m,o)=>(m[o.priorityClass]=(m[o.priorityClass]||0)+1,m),{A:0,B:0,C:0});
-  const actionable=opportunities.filter(o=>o.priorityClass==="A").slice(0,10).map(o=>({title:o.title,company:o.company,score:o.score,estimatedValueUsd:o.estimatedValueUsd,nextAction:o.nextAction,url:o.url}));
+  const actionable=opportunities.filter(o=>o.priorityClass==="A").slice(0,50).map(o=>({title:o.title,company:o.company,score:o.score,estimatedValueUsd:o.estimatedValueUsd,nextAction:o.nextAction,url:o.url,source:o.source,theme:o.theme,location:o.location}));
   console.log(JSON.stringify({
     event:"atlasz_status",
     at:new Date().toISOString(),
