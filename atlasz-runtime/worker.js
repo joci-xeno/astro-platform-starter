@@ -3,7 +3,7 @@ import http from "node:http";
 const PORT = Number(process.env.PORT || 3000);
 const AGENT_COUNT = 30;
 const LOOP_MS = Number(process.env.ATLASZ_LOOP_MS || 180000);
-const MAX_OPPS = 500;
+const MAX_OPPS = Number(process.env.ATLASZ_MAX_OPPS || 1000);
 
 const policy = {
   version: "atlasz-competition-v1",
