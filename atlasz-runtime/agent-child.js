@@ -9,6 +9,8 @@ const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-5.6";
 const XAI_API_KEY = process.env.XAI_API_KEY || "";
 const XAI_MODEL = process.env.XAI_MODEL || "grok-4.7";
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || "";
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || "";
+const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6";
 const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-flash";
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 const LOOP_MS = Number(process.env.ATLASZ_AGENT_LOOP_MS || 600000);
@@ -20,17 +22,17 @@ const MIN_RECURRING_MONTHLY = Number(process.env.ATLASZ_MIN_RECURRING_MONTHLY ||
 
 let state = {
   id, team, pod,
-  status: (GEMINI_API_KEY||OPENAI_API_KEY||XAI_API_KEY||DEEPSEEK_API_KEY) ? "STARTING" : "BLOCKED_NO_KEY",
+  status: (GEMINI_API_KEY||OPENAI_API_KEY||XAI_API_KEY||DEEPSEEK_API_KEY||ANTHROPIC_API_KEY) ? "STARTING" : "BLOCKED_NO_KEY",
   heartbeat: new Date().toISOString(),
   completed: 0,
   aiCalls: 0,
   currentTask: null,
   nextTask: null,
   lastDecision: null,
-  lastError: (GEMINI_API_KEY||OPENAI_API_KEY||XAI_API_KEY||DEEPSEEK_API_KEY) ? null : "No AI provider key configured",
+  lastError: (GEMINI_API_KEY||OPENAI_API_KEY||XAI_API_KEY||DEEPSEEK_API_KEY||ANTHROPIC_API_KEY) ? null : "No AI provider key configured",
   memory: [],
-  provider: GEMINI_API_KEY ? "Google Gemini" : OPENAI_API_KEY ? "OpenAI" : XAI_API_KEY ? "xAI Grok" : DEEPSEEK_API_KEY ? "DeepSeek" : "None",
-  model: GEMINI_API_KEY ? GEMINI_MODEL : OPENAI_API_KEY ? OPENAI_MODEL : XAI_API_KEY ? XAI_MODEL : DEEPSEEK_API_KEY ? DEEPSEEK_MODEL : null,
+  provider: GEMINI_API_KEY ? "Google Gemini" : OPENAI_API_KEY ? "OpenAI" : XAI_API_KEY ? "xAI Grok" : DEEPSEEK_API_KEY ? "DeepSeek" : ANTHROPIC_API_KEY ? "Anthropic Claude" : "None",
+  model: GEMINI_API_KEY ? GEMINI_MODEL : OPENAI_API_KEY ? OPENAI_MODEL : XAI_API_KEY ? XAI_MODEL : DEEPSEEK_API_KEY ? DEEPSEEK_MODEL : ANTHROPIC_API_KEY ? ANTHROPIC_MODEL : null,
   business: { opportunitiesFound:0, qualifiedOpportunities:0, outreachPrepared:0, outreachSent:0, repliesReceived:0, proposalsSent:0, proposalValueUsd:0, contractsWon:0, verifiedRevenueUsd:0, lastOpportunity:null, lastOutreachAt:null, lastReplyAt:null, nextAction:null }
 };
 
@@ -90,6 +92,7 @@ async function askModel(theme, items){
     OPENAI_API_KEY && {name:"OpenAI",model:OPENAI_MODEL,url:"https://api.openai.com/v1/responses",headers:{"Authorization":"Bearer "+OPENAI_API_KEY,"Content-Type":"application/json"},body:{model:OPENAI_MODEL,input:prompt}},
     XAI_API_KEY && {name:"xAI Grok",model:XAI_MODEL,url:"https://api.x.ai/v1/responses",headers:{"Authorization":"Bearer "+XAI_API_KEY,"Content-Type":"application/json"},body:{model:XAI_MODEL,input:prompt}},
     DEEPSEEK_API_KEY && {name:"DeepSeek",model:DEEPSEEK_MODEL,url:"https://api.deepseek.com/responses",headers:{"Authorization":"Bearer "+DEEPSEEK_API_KEY,"Content-Type":"application/json"},body:{model:DEEPSEEK_MODEL,input:prompt}},
+    ANTHROPIC_API_KEY && {name:"Anthropic Claude",model:ANTHROPIC_MODEL,url:"https://api.anthropic.com/v1/messages",headers:{"x-api-key":ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01","content-type":"application/json"},body:{model:ANTHROPIC_MODEL,max_tokens:4096,messages:[{role:"user",content:prompt}]}},
     GEMINI_API_KEY && {name:"Google Gemini",model:GEMINI_MODEL,url:"https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(GEMINI_MODEL)+":generateContent",headers:{"x-goog-api-key":GEMINI_API_KEY,"Content-Type":"application/json"},body:{contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:"application/json",thinkingConfig:{thinkingLevel:"medium"}}]}}
   ].filter(Boolean);
   if(!providers.length) throw new Error("No AI provider key configured");
