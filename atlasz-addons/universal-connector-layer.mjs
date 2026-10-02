@@ -1,0 +1,4 @@
+const connectors=new Map();
+export function registerConnector({id,tenantId,capabilities=[],permissions=[],status="UNTESTED",adapter=null}={}){if(!id||!tenantId)throw new Error("CONNECTOR_ID_TENANT_REQUIRED");const c={id,tenantId,capabilities:[...new Set(capabilities)],permissions:[...new Set(permissions)],status,adapter,updatedAt:new Date().toISOString()};connectors.set(tenantId+"|"+id,c);return c;}
+export function resolveConnector({tenantId,capability,permission}={}){return [...connectors.values()].filter(c=>c.tenantId===tenantId&&c.status==="TESTED"&&c.capabilities.includes(capability)&&(!permission||c.permissions.includes(permission)));}
+export function connectorHealth(tenantId){const x=[...connectors.values()].filter(c=>c.tenantId===tenantId);return {total:x.length,tested:x.filter(c=>c.status==="TESTED").length,blocked:x.filter(c=>c.status==="BLOCKED").length,connectors:x.map(({adapter,...v})=>v)};}
