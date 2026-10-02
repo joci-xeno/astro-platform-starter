@@ -191,6 +191,9 @@ function localFallback(theme,items){
 }
 
 async function cycle(){
+  if(process.env.ATLASZ_LEGACY_AI_APPROVED!=="true"){
+    state.status="BLOCKED";state.lastError="CENTRAL_SHARED_BUDGET_REQUIRED";state.heartbeat=new Date().toISOString();send("heartbeat");return;
+  }
   if(!(OPENAI_API_KEY || GEMINI_API_KEY || DEEPSEEK_API_KEY)){
     state.status="BLOCKED_NO_KEY";
     state.heartbeat=new Date().toISOString();
