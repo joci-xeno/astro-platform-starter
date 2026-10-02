@@ -2,6 +2,7 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
+import { createInternalAddonHub } from "../atlasz-addons/internal-integration-hub.mjs";
 
 export const VERSION = "3.1.0";
 const now = () => new Date().toISOString();
@@ -38,6 +39,7 @@ export function qualify(candidate) {
   };
 }
 export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./data", persistent = Boolean(process.env.RAILWAY_VOLUME_MOUNT_PATH), fetchImpl = fetch } = {}) {
+  const addons = createInternalAddonHub({ tenantId: "ATLASZ-MAIN", dailyBudgetUsd: 0 });
   fs.mkdirSync(dataDir, { recursive: true });
   const file = path.join(dataDir, "atlasz-state.json");
   let state = { version: VERSION, startedAt: now(), lastSystemRun: null, searchCycles: 0, candidates: [], leads: [], artifacts: [], events: [], sourceErrors: {}, agents: [] };
@@ -52,6 +54,7 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
     lastActivity: now(), nextTask: i < 5 ? "DISCOVER_PROJECT_REQUESTS" : "QUALIFY_DISCOVERED_REQUEST",
     results: 0, blocker: null, nextAction: null
   }));
+  for (const agent of state.agents) addons.onAgentRegistered(agent);
   const seen = new Set(state.candidates.map(c => c.id));
   const timers = new Set();
   let stopping = false;
@@ -64,6 +67,7 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
     const entry = { at: now(), type, ...details };
     state.events.push(entry);
     if (state.events.length > 300) state.events.splice(0, state.events.length - 300);
+    addons.onRuntimeEvent(type, details);
     console.log(JSON.stringify(entry));
   }
   function update(agent, status, task, blocker = null) {
@@ -114,6 +118,7 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
     try {
       const assessment = qualify(candidate);
       candidate.assessment = assessment;
+      addons.onCandidate(candidate, assessment);
       candidate.processedAt = now();
       candidate.processedBy = agent.id;
       candidate.status = assessment.reject.length ? "REJECTED" : "NEEDS_VERIFICATION";
@@ -131,10 +136,12 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
         state.artifacts.push({ id: artifactId, leadId: candidate.id, type: "SCOPE_REVIEW", createdAt: now(), createdBy: agent.id, qa: content.includes(candidate.url) && content.includes("No offer has been sent.") ? "PASSED_SOURCE_LINK_CHECK" : "FAILED", content });
       }
       agent.results++;
+      addons.onAgentResult({ agentId: agent.id, success: true, qaPassed: !assessment.reject.length });
       update(agent, "SCHEDULED", "Screening complete: " + candidate.status);
       event("screening_completed", { agentId: agent.id, candidateId: candidate.id, result: candidate.status, reasons: assessment.reject });
     } catch (e) {
       candidate.status = "NEW";
+      addons.onAgentResult({ agentId: agent.id, success: false, qaPassed: false, error: true });
       update(agent, "BLOCKED", "Screening failed; task returned to queue", String(e.message));
     }
     state.lastSystemRun = now();
@@ -156,7 +163,7 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
       metrics: { candidatesFound: state.candidates.length, activeLeads: state.leads.length, qualifiedOpportunities: 0, scopeReviews: state.artifacts.length, outreachSent: 0, replies: 0, won: 0, inProgress: 0, delivered: 0, awaitingPayment: 0, confirmedPaid: 0, costs: null, verifiedNetProfit: null, monthlyRecurringRevenue: 0 },
       lastSystemRun: state.lastSystemRun, searchCycles: state.searchCycles,
       persistence: { savedLocally: true, durableVolume: persistent },
-      agents: state.agents, blockers, sourceErrors: state.sourceErrors
+      agents: state.agents, blockers, sourceErrors: state.sourceErrors, internalAddons: addons.snapshot()
     };
   }
   function schedule(fn, delay) {
