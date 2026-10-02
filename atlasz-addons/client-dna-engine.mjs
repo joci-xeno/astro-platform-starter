@@ -1,0 +1,4 @@
+const profiles=new Map();
+export function createClientDNA({tenantId,clientId,voice={},rules=[],prohibitions=[],products=[],workflows=[],preferences={},evidence=[]}={}){if(!tenantId||!clientId)throw new Error("CLIENT_DNA_FIELDS_REQUIRED");const p={tenantId,clientId,voice,rules,prohibitions,products,workflows,preferences,evidence,version:1,updatedAt:new Date().toISOString()};profiles.set(tenantId+"|"+clientId,p);return p;}
+export function updateClientDNA(tenantId,clientId,patch={}){const k=tenantId+"|"+clientId,p=profiles.get(k);if(!p)throw new Error("CLIENT_DNA_NOT_FOUND");const n={...p,...patch,tenantId,clientId,version:p.version+1,updatedAt:new Date().toISOString()};profiles.set(k,n);return n;}
+export function getClientDNA(tenantId,clientId){return profiles.get(tenantId+"|"+clientId)||null;}
