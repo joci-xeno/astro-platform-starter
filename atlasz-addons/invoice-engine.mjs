@@ -7,4 +7,4 @@ export function createInvoice({invoiceId,dealId,client,items=[],currency="USD",d
  return {invoiceId,dealId,client,items:normalized,currency,subtotal,total:subtotal,dueAt,paymentMethod,status:"DRAFT",createdAt:new Date().toISOString()};
 }
 export function approveInvoice(inv,{ownerApproved=false}={}){if(!ownerApproved)throw new Error("OWNER_APPROVAL_REQUIRED");return {...inv,status:"APPROVED",approvedAt:new Date().toISOString()};}
-export function markInvoiceSent(inv,{externalReference=null}={}){if(inv.status!=="APPROVED")throw new Error("INVOICE_NOT_APPROVED");return {...inv,status:"SENT",externalReference,sentAt:new Date().toISOString()};}
+export function markInvoiceSent(inv,{externalReference=null}={}){if(inv.status!=="APPROVED")throw new Error("INVOICE_NOT_APPROVED");if(!externalReference)throw new Error("INVOICE_SEND_EXTERNAL_EVIDENCE_REQUIRED");return {...inv,status:"SENT",externalReference,sentAt:new Date().toISOString()};}
