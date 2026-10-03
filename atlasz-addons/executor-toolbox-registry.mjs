@@ -1,5 +1,5 @@
 const tools=new Map();
-export const TOOL_CATEGORIES=["FILES","CODE","TEST","WEB","DATA","SPREADSHEET","DOCUMENT","MEDIA","EMAIL","CRM","RESEARCH","DELIVERY"];
+export const TOOL_CATEGORIES=["FILES","CODE","TEST","WEB","COMPUTER","DATA","SPREADSHEET","DOCUMENT","MEDIA","EMAIL","CRM","RESEARCH","DELIVERY","PRODUCTIVITY","DEVOPS","DESIGN","VOICE","FINANCE"];
 export function registerTool({id,category,capabilities=[],available=false,requiresApproval=false,costClass="UNKNOWN",adapter=null}={}){
  if(!id||!TOOL_CATEGORIES.includes(category))throw new Error("VALID_TOOL_ID_CATEGORY_REQUIRED");
  const t={id,category,capabilities:[...new Set(capabilities)],available:Boolean(available),requiresApproval:Boolean(requiresApproval),costClass,adapter,updatedAt:new Date().toISOString()};tools.set(id,t);return t;
