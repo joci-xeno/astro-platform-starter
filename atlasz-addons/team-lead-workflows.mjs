@@ -1,0 +1,3 @@
+// Team lead coordination without changing the fixed 5 SEARCH + 25 EXECUTION topology.
+export function createTeamLeadWorkflow({teamId,leadAgentId,memberAgentIds=[],objective,taskIds=[]}={}){if(!teamId||!leadAgentId||!objective)throw new Error("TEAM_LEAD_FIELDS_REQUIRED");return {teamId,leadAgentId,memberAgentIds:[...new Set(memberAgentIds)],objective,taskIds:[...taskIds],status:"ACTIVE",createdAt:new Date().toISOString()};}
+export function teamLeadDispatch(workflow,{taskId,agentId}={}){if(!workflow.taskIds.includes(taskId))return {allowed:false,reason:"TASK_NOT_IN_MASTER_WORKFLOW"};if(!workflow.memberAgentIds.includes(agentId))return {allowed:false,reason:"AGENT_NOT_IN_TEAM"};return {allowed:true,assignment:{taskId,agentId,teamId:workflow.teamId}};}
