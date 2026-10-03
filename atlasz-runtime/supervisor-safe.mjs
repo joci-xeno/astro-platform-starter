@@ -2,9 +2,9 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
-import { createInternalAddonHub } from "./atlasz-addons/internal-integration-hub.mjs";
+import { createInternalAddonHub } from "../atlasz-addons/internal-integration-hub.mjs";
 
-export const VERSION = "3.1.0";
+export const VERSION = "3.2.0";
 const now = () => new Date().toISOString();
 const clean = x => String(x || "").replace(/<[^>]*>/g, " ").replace(/&quot;/g, '"').replace(/&#x27;|&#39;/g, "'").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
 const topics = ["website", "automation", "data", "translation", "video", "spreadsheet", "API", "research", "design", "testing"];
