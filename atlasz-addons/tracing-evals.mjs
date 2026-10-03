@@ -4,8 +4,9 @@ const redact=v=>String(v??"").replace(/(?:sk-|key-|token-)[A-Za-z0-9_.-]{8,}/g,"
 export function traceEvent({traceId,agentId,dealId,jobId,type,tool,status,durationMs,costUsd=0,details={}}={}){
  const at=new Date().toISOString();
  const id=traceId||createHash("sha256").update(at+Math.random()).digest("hex").slice(0,16);
+ const duration=Number(durationMs),cost=Number(costUsd);if(!Number.isFinite(duration)||duration<0)throw new Error("INVALID_TRACE_DURATION");if(!Number.isFinite(cost)||cost<0)throw new Error("INVALID_TRACE_COST");
  return {traceId:id,at,agentId:agentId||null,dealId:dealId||null,jobId:jobId||null,type:type||"EVENT",
-  tool:tool||null,status:status||null,durationMs:Number(durationMs||0),costUsd:Number(costUsd||0),
+  tool:tool||null,status:status||null,durationMs:duration,costUsd:cost,
   details:JSON.parse(redact(JSON.stringify(details)))};
 }
 export function evaluate({output,criteria=[],evidence=[]}={}){
