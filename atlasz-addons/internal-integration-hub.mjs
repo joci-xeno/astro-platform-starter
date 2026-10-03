@@ -46,6 +46,11 @@ import { TOOL_FABRIC_CATALOG, connectFabricTool, toolFabricList, toolFabricGet, 
 import { createComputerUseFabric, OWNER_AUTHORITY, COMPUTER_ACTION_LEVELS, classifyComputerAction } from "./computer-use-fabric.mjs";
 import { seedAtlaszCompletionRegistry, trackCompletion, completionGet, completionList, completionSummary, COMPLETION_STATES } from "./completion-registry.mjs";
 import { createToolBridge } from "./tool-bridge.mjs";
+import { createMasterPlan, planReadySteps, routePlanStep, advanceMasterPlan, replanMasterPlan } from "./master-planner-orchestrator.mjs";
+import { createProject, updateProject, projectGet, projectList, attachProjectEvidence } from "./shared-project-registry.mjs";
+import { emergencyStatus, setEmergencyMode, emergencyGate } from "./emergency-stop.mjs";
+import { buildProfitStatement, validateMoneyEntry } from "./profit-accounting-engine.mjs";
+import { createSkillDefinition, testSkill, skillGet, skillList } from "./skill-factory.mjs";
 
 const safe=(fn,...args)=>{try{return {ok:true,value:fn(...args)}}catch(e){return {ok:false,error:String(e?.message||e)}}};
 export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}={}){
@@ -81,7 +86,7 @@ export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}
     return safe(recordAgentResult,{agentId,success,qaPassed,durationMs,costUsd:0,valueUsd:0,error});
   }
   function snapshot(){
-    return {enabled:true,mode:"INTERNAL_ONLY",externalSideEffects:false,eventsObserved:local.events,errors:local.errors,portfolio:safe(rankAgents).value||[],control:safe(controlPlaneStatus).value||null,budget:safe(budgetStatus,tenantId).value||null,generalCapabilities:generalCapabilities.summary(),voice:voice.status(),toolFabric:toolFabricSummary(),computerUse:computerUse.status(),completion:completionSummary()};
+    return {enabled:true,mode:"INTERNAL_ONLY",externalSideEffects:false,eventsObserved:local.events,errors:local.errors,portfolio:safe(rankAgents).value||[],control:safe(controlPlaneStatus).value||null,budget:safe(budgetStatus,tenantId).value||null,generalCapabilities:generalCapabilities.summary(),voice:voice.status(),toolFabric:toolFabricSummary(),computerUse:computerUse.status(),completion:completionSummary(),emergency:emergencyStatus(),projects:{count:projectList().length},skills:{count:skillList().length}};
   }
   return {onAgentRegistered,onRuntimeEvent,onCandidate,onAgentResult,snapshot,
     adapters:{
@@ -109,6 +114,11 @@ export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}
       VOICE_CAPABILITY,voiceStatus:voice.status,voiceTranscribe:voice.transcribe,voiceSpeak:voice.speak,
       TOOL_FABRIC_CATALOG,connectFabricTool,toolFabricList,toolFabricGet,toolFabricPlan,toolFabricSummary,
       OWNER_AUTHORITY,COMPUTER_ACTION_LEVELS,classifyComputerAction,computerUseStatus:computerUse.status,computerUseAuthorize:computerUse.authorize,computerUseExecute:computerUse.execute,computerUseAudit:computerUse.audit,
-      COMPLETION_STATES,trackCompletion,completionGet,completionList,completionSummary,toolBridgeAttach:toolBridge.attach
+      COMPLETION_STATES,trackCompletion,completionGet,completionList,completionSummary,toolBridgeAttach:toolBridge.attach,
+      createMasterPlan,planReadySteps,routePlanStep,advanceMasterPlan,replanMasterPlan,
+      createProject,updateProject,projectGet,projectList,attachProjectEvidence,
+      emergencyStatus,setEmergencyMode,emergencyGate,
+      buildProfitStatement,validateMoneyEntry,
+      createSkillDefinition,testSkill,skillGet,skillList
     }};
 }
