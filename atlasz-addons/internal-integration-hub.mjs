@@ -23,6 +23,23 @@ import { registerAgentControl, authorize, controlPlaneStatus } from "./enterpris
 import { setBudget, recordUsage, budgetStatus } from "./budget-consumption-governor.mjs";
 import { reviewQA } from "./qa-reviewer.mjs";
 import { summarizeProfit } from "./profit-ledger.mjs";
+import { createAgentBlueprint, validateBlueprint, instantiateAgent, cloneBlueprint } from "./agent-factory.mjs";
+import { buildBuyerQuery, normalizeContact, rankContacts, contactReady } from "./buyer-decision-maker-finder.mjs";
+import { transition as transitionDeal } from "./deal-state.mjs";
+import { createDelivery, requestDeliveryApproval, approveDelivery, markDelivered } from "./delivery-engine.mjs";
+import { ingestKnowledge, retrieveKnowledge, buildGroundedContext, knowledgeHealth } from "./enterprise-knowledge-agentic-rag.mjs";
+import { createExecutionJob, assignExecution, advanceExecution, executionToolPlan } from "./execution-factory.mjs";
+import { registerTool, toolsFor, executionPlan, listTools } from "./executor-toolbox-registry.mjs";
+import { nextFollowUp, stopOnReply } from "./follow-up-engine.mjs";
+import { createInvoice, approveInvoice, markInvoiceSent } from "./invoice-engine.mjs";
+import { assessMessage, negotiationNextAction, markAgreement } from "./negotiation-engine.mjs";
+import { qualifyOpportunity, rankOpportunities, dedupeOpportunities } from "./opportunity-qualification-engine.mjs";
+import { normalizePaymentEvent, confirmPaid } from "./payment-confirmation-adapter.mjs";
+import { buildProposal, validateProposal, approveProposal } from "./proposal-quote-engine.mjs";
+import { recoveryPlan } from "./recovery.mjs";
+import { TaxAccountingEngine, taxIntentHint, TAX_CAPABILITY, TAX_STATES } from "./tax-accounting-engine.mjs";
+import { traceEvent, evaluate, aggregateTraces } from "./tracing-evals.mjs";
+import { registerConnector, resolveConnector, connectorHealth } from "./universal-connector-layer.mjs";
 
 const safe=(fn,...args)=>{try{return {ok:true,value:fn(...args)}}catch(e){return {ok:false,error:String(e?.message||e)}}};
 export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}={}){
@@ -56,5 +73,26 @@ export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}
     return {enabled:true,mode:"INTERNAL_ONLY",externalSideEffects:false,eventsObserved:local.events,errors:local.errors,portfolio:safe(rankAgents).value||[],control:safe(controlPlaneStatus).value||null,budget:safe(budgetStatus,tenantId).value||null};
   }
   return {onAgentRegistered,onRuntimeEvent,onCandidate,onAgentResult,snapshot,
-    adapters:{createCheckpoint,createTaskLedger,addProgress,detectStall,remember,chooseRoute,deadLetter,checkGuardrail,runEvalSuite,recordExperience,lessonsFor,createClientDNA,getClientDNA,compileOutcome,validateOutcomePlan,authorize,reviewQA,summarizeProfit,entityView,next,recordUsage}};
+    adapters:{
+      createCheckpoint,createTaskLedger,addProgress,detectStall,remember,chooseRoute,deadLetter,checkGuardrail,runEvalSuite,
+      recordExperience,lessonsFor,createClientDNA,getClientDNA,compileOutcome,validateOutcomePlan,authorize,reviewQA,summarizeProfit,
+      entityView,next,recordUsage,
+      createAgentBlueprint,validateBlueprint,instantiateAgent,cloneBlueprint,
+      buildBuyerQuery,normalizeContact,rankContacts,contactReady,
+      transitionDeal,
+      createDelivery,requestDeliveryApproval,approveDelivery,markDelivered,
+      ingestKnowledge,retrieveKnowledge,buildGroundedContext,knowledgeHealth,
+      createExecutionJob,assignExecution,advanceExecution,executionToolPlan,
+      registerTool,toolsFor,executionPlan,listTools,
+      nextFollowUp,stopOnReply,
+      createInvoice,approveInvoice,markInvoiceSent,
+      assessMessage,negotiationNextAction,markAgreement,
+      qualifyOpportunity,rankOpportunities,dedupeOpportunities,
+      normalizePaymentEvent,confirmPaid,
+      buildProposal,validateProposal,approveProposal,
+      recoveryPlan,
+      TaxAccountingEngine,taxIntentHint,TAX_CAPABILITY,TAX_STATES,
+      traceEvent,evaluate,aggregateTraces,
+      registerConnector,resolveConnector,connectorHealth
+    }};
 }
