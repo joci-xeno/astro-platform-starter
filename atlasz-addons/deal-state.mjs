@@ -8,10 +8,11 @@ WON:["EXECUTING","BLOCKED"],EXECUTING:["QA","BLOCKED"],QA:["EXECUTING","DELIVERY
 DELIVERY_APPROVAL:["DELIVERED","EXECUTING","BLOCKED"],DELIVERED:["INVOICED","AWAITING_PAYMENT","BLOCKED"],
 INVOICED:["AWAITING_PAYMENT","PAID","BLOCKED"],AWAITING_PAYMENT:["PAID","BLOCKED"],BLOCKED:["NEW","QUALIFIED","CONTACT_READY","CONTACTED","REPLIED","NEGOTIATING","PROPOSED","AGREED","WON","EXECUTING","QA","DELIVERY_APPROVAL","DELIVERED","INVOICED","AWAITING_PAYMENT"]
 };
-export function transition(deal,next,{ownerApproved=false,paymentConfirmed=false}={}){
+export function transition(deal,next,{ownerApproved=false,paymentConfirmed=false,externalEvidence=null}={}){
  if(!DEAL_STATES.includes(next)) throw new Error("UNKNOWN_DEAL_STATE");
  if(!(allowed[deal.status]||[]).includes(next)) throw new Error("INVALID_DEAL_TRANSITION");
  if(["AGREED","WON","DELIVERY_APPROVAL"].includes(next)&&!ownerApproved) throw new Error("OWNER_APPROVAL_REQUIRED");
- if(next==="PAID"&&!paymentConfirmed) throw new Error("PAYMENT_CONFIRMATION_REQUIRED");
+ if(["CONTACTED","DELIVERED","INVOICED"].includes(next)&&!externalEvidence) throw new Error("EXTERNAL_EVIDENCE_REQUIRED_FOR_"+next);
+ if(next==="PAID"&&(!paymentConfirmed||!externalEvidence)) throw new Error("PAYMENT_CONFIRMATION_AND_EVIDENCE_REQUIRED");
  return {...deal,status:next,updatedAt:new Date().toISOString()};
 }
