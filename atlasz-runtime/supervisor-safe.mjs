@@ -4,7 +4,7 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 import { createInternalAddonHub } from "../atlasz-addons/internal-integration-hub.mjs";
 
-export const VERSION = "3.2.0";
+export const VERSION = "3.3.0";
 const now = () => new Date().toISOString();
 const clean = x => String(x || "").replace(/<[^>]*>/g, " ").replace(/&quot;/g, '"').replace(/&#x27;|&#39;/g, "'").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
 const topics = ["website", "automation", "data", "translation", "video", "spreadsheet", "API", "research", "design", "testing"];
@@ -40,6 +40,7 @@ export function qualify(candidate) {
 }
 export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./data", persistent = Boolean(process.env.RAILWAY_VOLUME_MOUNT_PATH), fetchImpl = fetch } = {}) {
   const addons = createInternalAddonHub({ tenantId: "ATLASZ-MAIN", dailyBudgetUsd: 0 });
+  const addonSnapshot = () => addons.snapshot();
   fs.mkdirSync(dataDir, { recursive: true });
   const file = path.join(dataDir, "atlasz-state.json");
   let state = { version: VERSION, startedAt: now(), lastSystemRun: null, searchCycles: 0, candidates: [], leads: [], artifacts: [], events: [], sourceErrors: {}, agents: [] };
@@ -157,13 +158,19 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
     if (!persistent) blockers.push({ code: "DURABLE_VOLUME_MISSING", detail: "State is saved on local disk and restored on process restart; redeploy durability is not guaranteed." });
     return {
       system: "ATLASZ-30", version: VERSION, status: "PARTIAL_BLOCKED",
-      capabilities: { publicSearch: true, sourceScreening: true, scopePreparation: true, aiExecution: false, emailSending: false, paymentVerification: false },
+      capabilities: {
+        publicSearch: true, sourceScreening: true, scopePreparation: true,
+        aiExecution: addonSnapshot().models.live > 0,
+        emailSending: false, paymentVerification: false,
+        computerUse: addonSnapshot().computerUse?.state === "LIVE",
+        voice: addonSnapshot().voice?.state === "LIVE"
+      },
       search: { configured: 5, runningOrScheduled: state.agents.slice(0, 5).filter(a => ["RUNNING", "SCHEDULED"].includes(a.status)).length },
       execution: { configured: 25, clientJobsRunning: 0, screeningTasksCompleted: state.agents.slice(5).reduce((s, a) => s + a.results, 0) },
       metrics: { candidatesFound: state.candidates.length, activeLeads: state.leads.length, qualifiedOpportunities: 0, scopeReviews: state.artifacts.length, outreachSent: 0, replies: 0, won: 0, inProgress: 0, delivered: 0, awaitingPayment: 0, confirmedPaid: 0, costs: null, verifiedNetProfit: null, monthlyRecurringRevenue: 0 },
       lastSystemRun: state.lastSystemRun, searchCycles: state.searchCycles,
       persistence: { savedLocally: true, durableVolume: persistent },
-      agents: state.agents, blockers, sourceErrors: state.sourceErrors, internalAddons: addons.snapshot()
+      agents: state.agents, blockers, sourceErrors: state.sourceErrors, internalAddons: addonSnapshot()
     };
   }
   function schedule(fn, delay) {
