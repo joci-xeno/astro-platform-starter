@@ -3,7 +3,7 @@
 import { priorityScore } from "./money-supervisor.mjs";
 import { createCheckpoint } from "./checkpoint-engine.mjs";
 import { createTaskLedger } from "./task-ledger.mjs";
-import { addProgress } from "./progress-ledger.mjs";
+import { progressEntry, summarizeProgress } from "./progress-ledger.mjs";
 import { detectStall } from "./stall-replanner.mjs";
 import { registerCapability } from "./capability-registry.mjs";
 import { publish } from "./event-bus.mjs";
@@ -85,7 +85,7 @@ export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}
   }
   return {onAgentRegistered,onRuntimeEvent,onCandidate,onAgentResult,snapshot,
     adapters:{
-      createCheckpoint,createTaskLedger,addProgress,detectStall,remember,chooseRoute,deadLetter,checkGuardrail,runEvalSuite,
+      createCheckpoint,createTaskLedger,progressEntry,summarizeProgress,detectStall,remember,chooseRoute,deadLetter,checkGuardrail,runEvalSuite,
       recordExperience,lessonsFor,createClientDNA,getClientDNA,compileOutcome,validateOutcomePlan,authorize,reviewQA,summarizeProfit,
       entityView,next,recordUsage,
       createAgentBlueprint,validateBlueprint,instantiateAgent,cloneBlueprint,
