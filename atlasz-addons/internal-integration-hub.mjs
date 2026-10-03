@@ -41,6 +41,7 @@ import { TaxAccountingEngine, taxIntentHint, TAX_CAPABILITY, TAX_STATES } from "
 import { traceEvent, evaluate, aggregateTraces } from "./tracing-evals.mjs";
 import { registerConnector, resolveConnector, connectorHealth } from "./universal-connector-layer.mjs";
 import { createGeneralCapabilityExtension, GENERAL_CAPABILITY_SLOTS } from "./general-intelligence-extensions.mjs";
+import { createVoiceInterface, VOICE_CAPABILITY } from "./voice-interface.mjs";
 
 const safe=(fn,...args)=>{try{return {ok:true,value:fn(...args)}}catch(e){return {ok:false,error:String(e?.message||e)}}};
 export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}={}){
@@ -48,6 +49,7 @@ export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}
   setBudget({scopeId:tenantId,period:"DAILY",limitUsd:Number(dailyBudgetUsd),warnAt:.8});
   const local={events:0,errors:[],startedAt:new Date().toISOString()};
   const generalCapabilities=createGeneralCapabilityExtension();
+  const voice=createVoiceInterface();
   function onAgentRegistered(agent){
     safe(registerAgentControl,{tenantId,agentId:agent.id,owner:"OWNER",permissions:["INTERNAL_STATE"],tools:[],risk:"NORMAL"});
     safe(registerCapability,agent.id,{capabilities:[agent.role==="SEARCH"?"DISCOVERY":"SCREENING"],tools:[],limits:["NO_EXTERNAL_SEND","NO_SPEND"]});
@@ -72,7 +74,7 @@ export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}
     return safe(recordAgentResult,{agentId,success,qaPassed,durationMs,costUsd:0,valueUsd:0,error});
   }
   function snapshot(){
-    return {enabled:true,mode:"INTERNAL_ONLY",externalSideEffects:false,eventsObserved:local.events,errors:local.errors,portfolio:safe(rankAgents).value||[],control:safe(controlPlaneStatus).value||null,budget:safe(budgetStatus,tenantId).value||null,generalCapabilities:generalCapabilities.summary()};
+    return {enabled:true,mode:"INTERNAL_ONLY",externalSideEffects:false,eventsObserved:local.events,errors:local.errors,portfolio:safe(rankAgents).value||[],control:safe(controlPlaneStatus).value||null,budget:safe(budgetStatus,tenantId).value||null,generalCapabilities:generalCapabilities.summary(),voice:voice.status()};
   }
   return {onAgentRegistered,onRuntimeEvent,onCandidate,onAgentResult,snapshot,
     adapters:{
@@ -96,6 +98,7 @@ export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}
       TaxAccountingEngine,taxIntentHint,TAX_CAPABILITY,TAX_STATES,
       traceEvent,evaluate,aggregateTraces,
       registerConnector,resolveConnector,connectorHealth,
-      GENERAL_CAPABILITY_SLOTS,generalCapabilityList:generalCapabilities.list,generalCapabilityGet:generalCapabilities.get,generalCapabilitySummary:generalCapabilities.summary
+      GENERAL_CAPABILITY_SLOTS,generalCapabilityList:generalCapabilities.list,generalCapabilityGet:generalCapabilities.get,generalCapabilitySummary:generalCapabilities.summary,
+      VOICE_CAPABILITY,voiceStatus:voice.status,voiceTranscribe:voice.transcribe,voiceSpeak:voice.speak
     }};
 }
