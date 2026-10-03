@@ -10,7 +10,7 @@ import { publish } from "./event-bus.mjs";
 import { remember } from "./business-memory.mjs";
 import { chooseRoute } from "./cost-model-router.mjs";
 import { deadLetter } from "./dead-letter-queue.mjs";
-import { checkGuardrail } from "./guardrail-engine.mjs";
+import { guardAction, assertAllowed } from "./guardrail-engine.mjs";
 import { runEvalSuite } from "./regression-eval-suite.mjs";
 import { trace } from "./observability-black-box.mjs";
 import { recordAgentResult, rankAgents } from "./agent-portfolio-manager.mjs";
@@ -85,7 +85,7 @@ export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}
   }
   return {onAgentRegistered,onRuntimeEvent,onCandidate,onAgentResult,snapshot,
     adapters:{
-      createCheckpoint,createTaskLedger,progressEntry,summarizeProgress,detectStall,remember,chooseRoute,deadLetter,checkGuardrail,runEvalSuite,
+      createCheckpoint,createTaskLedger,progressEntry,summarizeProgress,detectStall,remember,chooseRoute,deadLetter,guardAction,assertAllowed,runEvalSuite,
       recordExperience,lessonsFor,createClientDNA,getClientDNA,compileOutcome,validateOutcomePlan,authorize,reviewQA,summarizeProfit,
       entityView,next,recordUsage,
       createAgentBlueprint,validateBlueprint,instantiateAgent,cloneBlueprint,
