@@ -45,6 +45,7 @@ import { createVoiceInterface, VOICE_CAPABILITY } from "./voice-interface.mjs";
 import { TOOL_FABRIC_CATALOG, connectFabricTool, toolFabricList, toolFabricGet, toolFabricPlan, toolFabricSummary } from "./tool-fabric.mjs";
 import { createComputerUseFabric, OWNER_AUTHORITY, COMPUTER_ACTION_LEVELS, classifyComputerAction } from "./computer-use-fabric.mjs";
 import { seedAtlaszCompletionRegistry, trackCompletion, completionGet, completionList, completionSummary, COMPLETION_STATES } from "./completion-registry.mjs";
+import { createToolBridge } from "./tool-bridge.mjs";
 
 const safe=(fn,...args)=>{try{return {ok:true,value:fn(...args)}}catch(e){return {ok:false,error:String(e?.message||e)}}};
 export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}={}){
@@ -54,6 +55,7 @@ export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}
   const generalCapabilities=createGeneralCapabilityExtension();
   const voice=createVoiceInterface();
   const computerUse=createComputerUseFabric();
+  const toolBridge=createToolBridge({registerConnector,connectFabricTool,registerTool});
   seedAtlaszCompletionRegistry();
   function onAgentRegistered(agent){
     safe(registerAgentControl,{tenantId,agentId:agent.id,owner:"OWNER",permissions:["INTERNAL_STATE"],tools:[],risk:"NORMAL"});
@@ -107,6 +109,6 @@ export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}
       VOICE_CAPABILITY,voiceStatus:voice.status,voiceTranscribe:voice.transcribe,voiceSpeak:voice.speak,
       TOOL_FABRIC_CATALOG,connectFabricTool,toolFabricList,toolFabricGet,toolFabricPlan,toolFabricSummary,
       OWNER_AUTHORITY,COMPUTER_ACTION_LEVELS,classifyComputerAction,computerUseStatus:computerUse.status,computerUseAuthorize:computerUse.authorize,computerUseExecute:computerUse.execute,computerUseAudit:computerUse.audit,
-      COMPLETION_STATES,trackCompletion,completionGet,completionList,completionSummary
+      COMPLETION_STATES,trackCompletion,completionGet,completionList,completionSummary,toolBridgeAttach:toolBridge.attach
     }};
 }
