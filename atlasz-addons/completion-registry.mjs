@@ -35,7 +35,15 @@ export function seedAtlaszCompletionRegistry(){
  ["market-intelligence","Continuous Market Intelligence + evidence-based trend signals for SEARCH strategy","RESEARCH","PLANNED"],
  ["self-healing-loop","Bounded Self-Healing Loop: detect > diagnose > retry/replan > verify > escalate","RECOVERY","PLANNED"],
  ["adaptive-sales","Evidence-based Adaptive Sales Personalization with truthful, non-manipulative messaging","SALES","PLANNED"],
- ["master-orchestration","Master Orchestration: dynamic priority/capacity allocation between SEARCH and EXECUTION","MASTER","PLANNED"]
+ ["master-orchestration","Master Orchestration: dynamic priority/capacity allocation between SEARCH and EXECUTION","MASTER","PLANNED"],
+ ["strategic-planning-engine","Strategic Planning Engine: decompose complex work into executable steps and route through MASTER","INTELLIGENCE","STRUCTURALLY_WIRED"],
+ ["text-structure-analysis","Text and Structure Analysis: inspect documents, data, code and processes for errors, gaps and optimization","INTELLIGENCE","STRUCTURALLY_WIRED"],
+ ["dynamic-prompt-protocol","Dynamic Prompt and Protocol Writer: generate task-specific agent instructions and protocols under MASTER rules","INTELLIGENCE","STRUCTURALLY_WIRED"],
+ ["external-data-search","External Data and Real-Time Search capability for SEARCH/RESEARCH workflows","RESEARCH","STRUCTURALLY_WIRED"],
+ ["workspace-files","Workspace and File Management: read, organize, create and update task files through connected tools","FILES","STRUCTURALLY_WIRED"],
+ ["coding-system-design","Coding and System Design: create, inspect, test and maintain code, APIs and automation","CODE","STRUCTURALLY_WIRED"],
+ ["structure-transformer","Structure Transformer: convert raw information into clear plans, specifications, reports and deliverables","DOCUMENT","STRUCTURALLY_WIRED"],
+ ["firecrawl-tool","Firecrawl web extraction adapter for clean content, structured extraction, batch/crawl and page evidence","TOOLS","PLANNED"]
  ];
  for(const [id,title,area,state] of seed)trackCompletion({id,title,area,state});
  return completionSummary();
