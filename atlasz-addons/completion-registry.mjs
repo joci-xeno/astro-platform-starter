@@ -31,7 +31,11 @@ export function seedAtlaszCompletionRegistry(){
  ["multi-model","Multi-model routing/providers","MODELS","CONNECTED_UNTESTED"],
  ["commercial-build","Sanitized commercial distribution build","PRODUCT","PLANNED"],
  ["licensing","Recurring technology licensing controls","COMMERCIAL","PLANNED"],
- ["e2e-revenue","End-to-end won > execute > QA > deliver > paid proof","E2E","BLOCKED"]
+ ["e2e-revenue","End-to-end won > execute > QA > deliver > paid proof","E2E","BLOCKED"],
+ ["market-intelligence","Continuous Market Intelligence + evidence-based trend signals for SEARCH strategy","RESEARCH","PLANNED"],
+ ["self-healing-loop","Bounded Self-Healing Loop: detect > diagnose > retry/replan > verify > escalate","RECOVERY","PLANNED"],
+ ["adaptive-sales","Evidence-based Adaptive Sales Personalization with truthful, non-manipulative messaging","SALES","PLANNED"],
+ ["master-orchestration","Master Orchestration: dynamic priority/capacity allocation between SEARCH and EXECUTION","MASTER","PLANNED"]
  ];
  for(const [id,title,area,state] of seed)trackCompletion({id,title,area,state});
  return completionSummary();
