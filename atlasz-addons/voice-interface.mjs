@@ -9,12 +9,12 @@ export function createVoiceInterface({stt=null,tts=null}={}){
   const status=()=>({
     ...VOICE_CAPABILITY,
     stt:stt?.name||null, tts:tts?.name||null,
-    state:(stt&&tts)?"CONNECTED_UNTESTED":"PLACEHOLDER_UNCONNECTED",
-    live:false, tested:false
+    state:(stt?.tested&&tts?.tested)?"LIVE":(stt&&tts)?"CONNECTED_UNTESTED":"PLACEHOLDER_UNCONNECTED",
+    live:Boolean(stt?.tested&&tts?.tested), tested:Boolean(stt?.tested&&tts?.tested)
   });
   return {
     status,
-    async transcribe(input){if(!stt?.transcribe) throw new Error("VOICE_STT_UNAVAILABLE"); return stt.transcribe(input);},
-    async speak(text){if(!tts?.speak) throw new Error("VOICE_TTS_UNAVAILABLE"); return tts.speak(text);}
+    async transcribe(input){if(!stt?.transcribe) throw new Error("VOICE_STT_UNAVAILABLE");if(!stt?.tested)throw new Error("VOICE_STT_UNTESTED");return stt.transcribe(input);},
+    async speak(text){if(!tts?.speak) throw new Error("VOICE_TTS_UNAVAILABLE");if(!tts?.tested)throw new Error("VOICE_TTS_UNTESTED");return tts.speak(text);}
   };
 }
