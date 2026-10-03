@@ -51,6 +51,11 @@ import { createProject, updateProject, projectGet, projectList, attachProjectEvi
 import { emergencyStatus, setEmergencyMode, emergencyGate } from "./emergency-stop.mjs";
 import { buildProfitStatement, validateMoneyEntry } from "./profit-accounting-engine.mjs";
 import { createSkillDefinition, testSkill, skillGet, skillList } from "./skill-factory.mjs";
+import { selfHeal } from "./self-healing-loop.mjs";
+import { inspectCoordination } from "./anti-collusion-guard.mjs";
+import { registerModelProvider, modelProviderList, modelProviderHealth, selectModel, invokeModel, independentJudgePlan } from "./multi-model-brain.mjs";
+import { analyzeMarketSignals, proposeSearchStrategy } from "./market-intelligence-engine.mjs";
+import { createTeamLeadWorkflow, teamLeadDispatch } from "./team-lead-workflows.mjs";
 
 const safe=(fn,...args)=>{try{return {ok:true,value:fn(...args)}}catch(e){return {ok:false,error:String(e?.message||e)}}};
 export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}={}){
@@ -86,7 +91,7 @@ export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}
     return safe(recordAgentResult,{agentId,success,qaPassed,durationMs,costUsd:0,valueUsd:0,error});
   }
   function snapshot(){
-    return {enabled:true,mode:"INTERNAL_ONLY",externalSideEffects:false,eventsObserved:local.events,errors:local.errors,portfolio:safe(rankAgents).value||[],control:safe(controlPlaneStatus).value||null,budget:safe(budgetStatus,tenantId).value||null,generalCapabilities:generalCapabilities.summary(),voice:voice.status(),toolFabric:toolFabricSummary(),computerUse:computerUse.status(),completion:completionSummary(),emergency:emergencyStatus(),projects:{count:projectList().length},skills:{count:skillList().length}};
+    return {enabled:true,mode:"INTERNAL_ONLY",externalSideEffects:false,eventsObserved:local.events,errors:local.errors,portfolio:safe(rankAgents).value||[],control:safe(controlPlaneStatus).value||null,budget:safe(budgetStatus,tenantId).value||null,generalCapabilities:generalCapabilities.summary(),voice:voice.status(),toolFabric:toolFabricSummary(),computerUse:computerUse.status(),completion:completionSummary(),emergency:emergencyStatus(),projects:{count:projectList().length},skills:{count:skillList().length},models:modelProviderHealth()};
   }
   return {onAgentRegistered,onRuntimeEvent,onCandidate,onAgentResult,snapshot,
     adapters:{
@@ -119,6 +124,10 @@ export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}
       createProject,updateProject,projectGet,projectList,attachProjectEvidence,
       emergencyStatus,setEmergencyMode,emergencyGate,
       buildProfitStatement,validateMoneyEntry,
-      createSkillDefinition,testSkill,skillGet,skillList
+      createSkillDefinition,testSkill,skillGet,skillList,
+      selfHeal,inspectCoordination,
+      registerModelProvider,modelProviderList,modelProviderHealth,selectModel,invokeModel,independentJudgePlan,
+      analyzeMarketSignals,proposeSearchStrategy,
+      createTeamLeadWorkflow,teamLeadDispatch
     }};
 }
