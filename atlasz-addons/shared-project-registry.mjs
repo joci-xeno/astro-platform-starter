@@ -1,0 +1,7 @@
+// ATLASZ Shared Project Registry v1.0 - in-process canonical state; durable storage adapter can replace persistence later.
+const projects=new Map();
+export function createProject({projectId,objective,owner="JOCI",metadata={}}={}){if(!projectId||!objective)throw new Error("PROJECT_ID_OBJECTIVE_REQUIRED");if(projects.has(projectId))throw new Error("PROJECT_EXISTS");const p={projectId,objective,owner,metadata,status:"ACTIVE",tasks:[],files:[],agents:[],evidence:[],approvals:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};projects.set(projectId,p);return structuredClone(p);}
+export function updateProject(projectId,patch={}){const p=projects.get(projectId);if(!p)throw new Error("PROJECT_NOT_FOUND");const next={...p,...patch,projectId:p.projectId,owner:p.owner,updatedAt:new Date().toISOString()};projects.set(projectId,next);return structuredClone(next);}
+export function projectGet(projectId){const p=projects.get(projectId);return p?structuredClone(p):null;}
+export function projectList(){return [...projects.values()].map(structuredClone);}
+export function attachProjectEvidence(projectId,evidence){const p=projects.get(projectId);if(!p)throw new Error("PROJECT_NOT_FOUND");p.evidence.push({...evidence,at:new Date().toISOString()});p.updatedAt=new Date().toISOString();return structuredClone(p);}
