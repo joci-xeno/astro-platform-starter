@@ -2,7 +2,7 @@ export const KNOWLEDGE_LAYER_VERSION="1.0.0";
 const store=new Map();
 const uid=()=>globalThis.crypto?.randomUUID?.()||("knowledge-"+Date.now()+"-"+Math.random().toString(16).slice(2));
 export function ingestKnowledge({id,tenantId,sourceId,sourceType="DOCUMENT",title,text,uri=null,classification="INTERNAL",allowedRoles=["*"],verified=false,freshnessAt=null,metadata={}}={}){
- if(!tenantId||!sourceId||!text)throw new Error("TENANT_SOURCE_TEXT_REQUIRED");
+ if(!tenantId||!sourceId||!text)throw new Error("TENANT_SOURCE_TEXT_REQUIRED");if(!Array.isArray(allowedRoles)||allowedRoles.length===0)throw new Error("KNOWLEDGE_ALLOWED_ROLES_REQUIRED");if(freshnessAt&&!Number.isFinite(Date.parse(freshnessAt)))throw new Error("INVALID_KNOWLEDGE_FRESHNESS");
  const item={id:id||uid(),tenantId,sourceId,sourceType,title:title||sourceId,text,uri,classification,allowedRoles:[...new Set(allowedRoles)],verified:Boolean(verified),freshnessAt:freshnessAt||new Date().toISOString(),metadata,createdAt:new Date().toISOString()};
  store.set(item.id,item); return item;
 }
