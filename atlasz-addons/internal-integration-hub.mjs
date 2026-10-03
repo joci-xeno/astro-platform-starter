@@ -44,6 +44,7 @@ import { createGeneralCapabilityExtension, GENERAL_CAPABILITY_SLOTS } from "./ge
 import { createVoiceInterface, VOICE_CAPABILITY } from "./voice-interface.mjs";
 import { TOOL_FABRIC_CATALOG, connectFabricTool, toolFabricList, toolFabricGet, toolFabricPlan, toolFabricSummary } from "./tool-fabric.mjs";
 import { createComputerUseFabric, OWNER_AUTHORITY, COMPUTER_ACTION_LEVELS, classifyComputerAction } from "./computer-use-fabric.mjs";
+import { seedAtlaszCompletionRegistry, trackCompletion, completionGet, completionList, completionSummary, COMPLETION_STATES } from "./completion-registry.mjs";
 
 const safe=(fn,...args)=>{try{return {ok:true,value:fn(...args)}}catch(e){return {ok:false,error:String(e?.message||e)}}};
 export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}={}){
@@ -53,6 +54,7 @@ export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}
   const generalCapabilities=createGeneralCapabilityExtension();
   const voice=createVoiceInterface();
   const computerUse=createComputerUseFabric();
+  seedAtlaszCompletionRegistry();
   function onAgentRegistered(agent){
     safe(registerAgentControl,{tenantId,agentId:agent.id,owner:"OWNER",permissions:["INTERNAL_STATE"],tools:[],risk:"NORMAL"});
     safe(registerCapability,agent.id,{capabilities:[agent.role==="SEARCH"?"DISCOVERY":"SCREENING"],tools:[],limits:["NO_EXTERNAL_SEND","NO_SPEND"]});
@@ -77,7 +79,7 @@ export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}
     return safe(recordAgentResult,{agentId,success,qaPassed,durationMs,costUsd:0,valueUsd:0,error});
   }
   function snapshot(){
-    return {enabled:true,mode:"INTERNAL_ONLY",externalSideEffects:false,eventsObserved:local.events,errors:local.errors,portfolio:safe(rankAgents).value||[],control:safe(controlPlaneStatus).value||null,budget:safe(budgetStatus,tenantId).value||null,generalCapabilities:generalCapabilities.summary(),voice:voice.status(),toolFabric:toolFabricSummary(),computerUse:computerUse.status()};
+    return {enabled:true,mode:"INTERNAL_ONLY",externalSideEffects:false,eventsObserved:local.events,errors:local.errors,portfolio:safe(rankAgents).value||[],control:safe(controlPlaneStatus).value||null,budget:safe(budgetStatus,tenantId).value||null,generalCapabilities:generalCapabilities.summary(),voice:voice.status(),toolFabric:toolFabricSummary(),computerUse:computerUse.status(),completion:completionSummary()};
   }
   return {onAgentRegistered,onRuntimeEvent,onCandidate,onAgentResult,snapshot,
     adapters:{
@@ -104,6 +106,7 @@ export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}
       GENERAL_CAPABILITY_SLOTS,generalCapabilityList:generalCapabilities.list,generalCapabilityGet:generalCapabilities.get,generalCapabilitySummary:generalCapabilities.summary,
       VOICE_CAPABILITY,voiceStatus:voice.status,voiceTranscribe:voice.transcribe,voiceSpeak:voice.speak,
       TOOL_FABRIC_CATALOG,connectFabricTool,toolFabricList,toolFabricGet,toolFabricPlan,toolFabricSummary,
-      OWNER_AUTHORITY,COMPUTER_ACTION_LEVELS,classifyComputerAction,computerUseStatus:computerUse.status,computerUseAuthorize:computerUse.authorize,computerUseExecute:computerUse.execute,computerUseAudit:computerUse.audit
+      OWNER_AUTHORITY,COMPUTER_ACTION_LEVELS,classifyComputerAction,computerUseStatus:computerUse.status,computerUseAuthorize:computerUse.authorize,computerUseExecute:computerUse.execute,computerUseAudit:computerUse.audit,
+      COMPLETION_STATES,trackCompletion,completionGet,completionList,completionSummary
     }};
 }
