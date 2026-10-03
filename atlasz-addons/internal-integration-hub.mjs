@@ -31,7 +31,7 @@ export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}
   const local={events:0,errors:[],startedAt:new Date().toISOString()};
   function onAgentRegistered(agent){
     safe(registerAgentControl,{tenantId,agentId:agent.id,owner:"OWNER",permissions:["INTERNAL_STATE"],tools:[],risk:"NORMAL"});
-    safe(registerCapability,{agentId:agent.id,capabilities:[agent.role==="SEARCH"?"DISCOVERY":"SCREENING"],tools:[],limits:["NO_EXTERNAL_SEND","NO_SPEND"]});
+    safe(registerCapability,agent.id,{capabilities:[agent.role==="SEARCH"?"DISCOVERY":"SCREENING"],tools:[],limits:["NO_EXTERNAL_SEND","NO_SPEND"]});
     safe(upsertEntity,{tenantId,type:"AGENT",id:agent.id,attributes:{role:agent.role,status:agent.status},source:"supervisor-safe"});
   }
   function onRuntimeEvent(type,details={}){
