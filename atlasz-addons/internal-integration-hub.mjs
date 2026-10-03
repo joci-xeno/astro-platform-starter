@@ -1,7 +1,7 @@
 // ATLASZ internal add-on integration hub.
 // Additive bridge only: no external sends, payments, deployments, secrets, or paid API calls.
 import { priorityScore } from "./money-supervisor.mjs";
-import { createCheckpoint } from "./checkpoint-engine.mjs";
+import { checkpoint as createCheckpoint } from "./checkpoint-engine.mjs";
 import { createTaskLedger } from "./task-ledger.mjs";
 import { progressEntry, summarizeProgress } from "./progress-ledger.mjs";
 import { detectStall } from "./stall-replanner.mjs";
@@ -12,7 +12,7 @@ import { chooseRoute } from "./cost-model-router.mjs";
 import { deadLetter } from "./dead-letter-queue.mjs";
 import { guardAction, assertAllowed } from "./guardrail-engine.mjs";
 import { runEvalSuite } from "./regression-eval-suite.mjs";
-import { trace } from "./observability-black-box.mjs";
+import { blackBoxRecord as trace } from "./observability-black-box.mjs";
 import { recordAgentResult, rankAgents } from "./agent-portfolio-manager.mjs";
 import { enqueue, next, configureLimit, acquire } from "./priority-queue-rate-limit-governor.mjs";
 import { upsertEntity, linkEntities, entityView } from "./unified-entity-graph.mjs";
@@ -21,8 +21,8 @@ import { createClientDNA, getClientDNA } from "./client-dna-engine.mjs";
 import { compileOutcome, validateOutcomePlan } from "./outcome-compiler.mjs";
 import { registerAgentControl, authorize, controlPlaneStatus } from "./enterprise-control-plane.mjs";
 import { setBudget, recordUsage, budgetStatus } from "./budget-consumption-governor.mjs";
-import { reviewQA } from "./qa-reviewer.mjs";
-import { summarizeProfit } from "./profit-ledger.mjs";
+import { reviewResult as reviewQA } from "./qa-reviewer.mjs";
+import { summarize as summarizeProfit } from "./profit-ledger.mjs";
 import { createAgentBlueprint, validateBlueprint, instantiateAgent, cloneBlueprint } from "./agent-factory.mjs";
 import { buildBuyerQuery, normalizeContact, rankContacts, contactReady } from "./buyer-decision-maker-finder.mjs";
 import { transition as transitionDeal } from "./deal-state.mjs";
