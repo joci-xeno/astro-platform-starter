@@ -560,3 +560,110 @@ A. CAPABILITY EVIDENCE REPORT — every capability and its actual status.
 B. REQUIREMENT TRACEABILITY REPORT — every requirement mapped to implementation/test/evidence/blocker.
 
 If any item from the cumulative ATLASZ specification has no mapping, the build is NOT complete.
+
+
+## Disaster Recovery / Point-in-Time Restore / Reinstall Architecture — MANDATORY
+Treat ATLASZ recovery as a first-class subsystem separate from ordinary self-healing. The objective is that loss or corruption of a Windows client, an ATLASZ deployment, or both does not force ATLASZ to be rebuilt from scratch.
+
+### Three physically/logically separated layers
+1. **ATLASZ SERVER / CORE**
+   - MASTER, 5 SEARCH + 25 EXECUTION, Money Engine, durable workflow state, databases/memory, provider configuration references, audit/evidence and server-side services.
+   - Must not depend on one Windows laptop remaining alive.
+   - Approved long-running server work may continue while the desktop client is offline.
+
+2. **ATLASZ WINDOWS APP / CONTROL CENTER**
+   - Deliver a signed/versioned installer target such as `ATLASZ-Setup.exe` when the Windows build is ready.
+   - A replacement Windows machine must be able to install the client, authenticate JOCI and securely reconnect to the existing ATLASZ Core without rebuilding the Core.
+   - Client-local caches/configuration must be treated as replaceable; authoritative durable state belongs in protected durable storage/server systems.
+
+3. **ATLASZ RECOVERY PACKAGE**
+   - Maintain a separate recovery package suitable for protected offline/off-site storage.
+   - It may contain installer/recovery tooling, manifests, version/SHA information, restore instructions, backup metadata and encrypted recovery material where appropriate.
+   - NEVER place plaintext API keys, banking passwords, access tokens or other secrets in the recovery package/USB.
+   - Recovery credentials/keys require secure encryption, least privilege and owner-controlled recovery procedures.
+
+### Two primary recovery commands/modes
+**CONNECT TO EXISTING ATLASZ**
+Use when the laptop/client is lost or replaced but the ATLASZ Core is healthy:
+NEW/REPAIRED WINDOWS MACHINE -> INSTALL ATLASZ CLIENT -> STRONG JOCI AUTH -> DISCOVER/SELECT OWN ATLASZ CORE -> SECURE RECONNECT -> VERIFY IDENTITY/CORE -> SYNC SAFE CLIENT STATE -> HEALTH CHECK -> READY.
+
+**DISASTER RECOVERY**
+Use when the server/core or durable state is damaged:
+FREEZE/ISOLATE BAD STATE -> IDENTIFY LAST VERIFIED HEALTHY RESTORE POINT -> RESTORE CODE/CONFIG/DATA AS APPROPRIATE -> RECONNECT REQUIRED SERVICES -> RUN ACCEPTANCE/HEALTH TESTS -> JUDGE -> PROMOTE RESTORED STATE OR ROLLBACK/ESCALATE.
+
+### Point-in-Time Restore (PITR)
+Maintain multiple restore points rather than only "latest backup". Retention must be configurable and evidence-driven. At minimum support the concept of:
+- latest verified healthy checkpoint;
+- previous healthy checkpoint(s);
+- daily restore points;
+- longer-lived stable release checkpoints.
+A useful default policy may expose restore choices such as yesterday / ~3 days / ~7 days / stable release, but exact retention must be configurable based on storage/provider capability and cost approval.
+
+Never automatically restore to a point merely because it is newer. Prefer the newest **verified healthy** compatible point.
+
+### Restore domains must be separable
+A recovery operation must explicitly identify what is being restored:
+- source code / Git commit;
+- application release/build;
+- Railway/service deployment configuration where reproducibly captured;
+- durable databases/state;
+- workflow/checkpoint state;
+- non-secret configuration;
+- evidence/audit indexes;
+- desktop client configuration;
+- provider connection metadata.
+Secrets must be restored/reconnected through secure secret-management/re-authentication mechanisms, not copied from plaintext backups.
+
+Do not blindly roll back customer/payment/audit facts. Financial evidence and immutable audit records require special preservation/reconciliation so a code rollback cannot erase the historical truth of a received payment, invoice, approval or external action.
+
+### Change-safe restore-point workflow
+Before consequential system changes:
+PRECHECK -> CREATE/CAPTURE RESTORE POINT -> VERIFY BACKUP/RESTORE METADATA -> APPLY CHANGE -> TEST -> HEALTH CHECK -> INDEPENDENT JUDGE -> MARK HEALTHY.
+
+On failure:
+DETECT -> STOP/QUARANTINE -> DIAGNOSE -> SELECT LAST COMPATIBLE VERIFIED HEALTHY POINT -> RESTORE -> RETEST -> if PASS mark recovered; if FAIL rollback/escalate to JOCI.
+
+A backup that has never been restore-tested is not sufficient proof of disaster recovery.
+
+### Three failure classes must be acceptance-tested
+A. **Laptop failure only**
+Server Core remains healthy. Prove a clean/replacement Windows environment can install, strongly authenticate and reconnect without rebuilding ATLASZ.
+
+B. **Server/Core failure only**
+Client may remain healthy. Prove restoration to a verified healthy server restore point, followed by runtime/provider/5+25/Money Engine health validation.
+
+C. **Combined laptop + server loss**
+Prove that the protected recovery package plus durable/off-site backups and documented infrastructure/configuration can reconstruct/reconnect the authorized ATLASZ environment without relying on the failed laptop/server.
+
+### Recovery integrity and safety
+- Encrypt backups at rest and in transit where supported.
+- Use integrity hashes/manifests and version/SHA provenance.
+- Keep at least one backup copy logically separated from the live system so a live-system failure or destructive bug cannot erase all recovery points.
+- Apply retention/versioning and protect backups from ordinary agent deletion.
+- Restore actions that affect production, secrets, payments, owner authentication or irreversible external state require the applicable JOCI approval.
+- Recovery cannot weaken JOCI authority, Guardrails, audit or financial controls.
+- Record who/what initiated recovery, selected restore point, evidence, test result and final state.
+
+### Recovery Mission Control
+Mission Control must eventually show runtime-derived recovery status:
+- last successful backup/checkpoint;
+- last verified restore test;
+- latest verified healthy restore point;
+- available restore-point ranges;
+- backup integrity/health;
+- recovery blockers;
+- current client/core version;
+- rollback target;
+- recovery drill status.
+Do not display hard-coded green status.
+
+### Recovery acceptance evidence
+Do not mark Disaster Recovery or PITR LIVE until real restore drills prove the relevant path. Required evidence includes restore-point identifier/time, source commit/release, backup integrity verification, restored durable-state check, startup logs, /health and /status, exact 5 SEARCH + 25 EXECUTION verification, critical provider state, owner-control tests and post-restore Money Engine truth checks.
+
+### Recovery is not the same as Self-Healing
+Self-Healing handles bounded operational faults in the running system.
+Rollback handles a bad change/release.
+Point-in-Time Restore recovers earlier durable state.
+Client Reinstall/Reconnect handles a failed/replaced Windows machine.
+Disaster Recovery reconstructs service after major loss.
+Keep these concepts separately visible and separately testable even when they share underlying tooling.
