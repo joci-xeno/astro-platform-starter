@@ -2,8 +2,11 @@
 const uid=()=>globalThis.crypto?.randomUUID?.()||("plan-"+Date.now());
 export function createMasterPlan({objective,constraints=[],doneDefinition=[],context={},steps=[]}={}){
  if(!objective)throw new Error("OBJECTIVE_REQUIRED");
- const normalized=(steps.length?steps:[{title:objective,requires:[],dependsOn:[]}]).map((s,i)=>({id:s.id||`STEP-${i+1}`,title:s.title||`Step ${i+1}`,goal:s.goal||s.title||objective,requires:[...(s.requires||[])],dependsOn:[...(s.dependsOn||[])],role:s.role||null,status:"PLANNED"}));
- return {planId:uid(),objective,constraints:[...constraints],doneDefinition:[...doneDefinition],context,steps:normalized,status:"PLANNED",createdAt:new Date().toISOString()};
+ if(!Array.isArray(constraints)||!Array.isArray(doneDefinition)||!Array.isArray(steps))throw new Error("PLAN_ARRAYS_REQUIRED");
+ const normalized=(steps.length?steps:[{title:objective,requires:[],dependsOn:[]}]).map((s,i)=>{if(!Array.isArray(s.requires||[])||!Array.isArray(s.dependsOn||[]))throw new Error("PLAN_STEP_ARRAYS_REQUIRED");return {id:s.id||`STEP-${i+1}`,title:s.title||`Step ${i+1}`,goal:s.goal||s.title||objective,requires:[...new Set(s.requires||[])],dependsOn:[...new Set(s.dependsOn||[])],role:s.role||null,status:"PLANNED"};});
+ const ids=normalized.map(s=>s.id);if(new Set(ids).size!==ids.length)throw new Error("DUPLICATE_PLAN_STEP_ID");const known=new Set(ids);for(const s of normalized){if(s.dependsOn.includes(s.id)||s.dependsOn.some(d=>!known.has(d)))throw new Error("INVALID_PLAN_DEPENDENCY");}
+ const visit=(id,trail=new Set())=>{if(trail.has(id))throw new Error("CYCLIC_PLAN_DEPENDENCY");const next=new Set(trail);next.add(id);for(const d of normalized.find(s=>s.id===id).dependsOn)visit(d,next);};ids.forEach(id=>visit(id));
+ return {planId:uid(),objective,constraints:structuredClone(constraints),doneDefinition:structuredClone(doneDefinition),context:structuredClone(context),steps:normalized,status:"PLANNED",createdAt:new Date().toISOString()};
 }
 export function planReadySteps(plan){const done=new Set(plan.steps.filter(s=>s.status==="DONE").map(s=>s.id));return plan.steps.filter(s=>["PLANNED","RETRY"].includes(s.status)&&s.dependsOn.every(d=>done.has(d)));}
 export function routePlanStep(step,{capabilityPlanner,agents=[]}={}){
