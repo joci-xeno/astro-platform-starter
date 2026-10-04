@@ -12,7 +12,8 @@ export function routePlanStep(step,{capabilityPlanner,agents=[]}={}){
  return {stepId:step.id,toolPlan,agentId:candidates[0]?.id||null,ready:toolPlan.ready&&candidates.length>0,blockers:[...(toolPlan.missing||[]),...(candidates.length?[]:["NO_AGENT"])]};
 }
 export function advanceMasterPlan(plan,{stepId,result,qa}={}){
- const steps=plan.steps.map(s=>s.id!==stepId?s:{...s,status:qa?.status==="PASS"?"DONE":"RETRY",result:qa?.status==="PASS"?result:null,lastQA:qa||null,updatedAt:new Date().toISOString()});
+ if(!plan?.steps?.some(s=>s.id===stepId))throw new Error("PLAN_STEP_NOT_FOUND");if(!qa||!["PASS","FAIL"].includes(qa.status))throw new Error("VALID_QA_RESULT_REQUIRED");
+ const steps=plan.steps.map(s=>s.id!==stepId?s:{...s,status:qa.status==="PASS"?"DONE":"RETRY",result:qa.status==="PASS"?result:null,lastQA:qa,updatedAt:new Date().toISOString()});
  const complete=steps.every(s=>s.status==="DONE");return {...plan,steps,status:complete?"DONE":"ACTIVE",updatedAt:new Date().toISOString()};
 }
 export function replanMasterPlan(plan,{reason,newSteps=[]}={}){return {...plan,status:"REPLANNED",replanReason:reason||"NEW_INFORMATION",steps:[...plan.steps,...newSteps.map((s,i)=>({id:s.id||`REPLAN-${Date.now()}-${i+1}`,...s,status:"PLANNED"}))],updatedAt:new Date().toISOString()};}
