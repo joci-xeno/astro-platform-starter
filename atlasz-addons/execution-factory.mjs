@@ -3,16 +3,16 @@ export const EXECUTION_STAGES=["PLAN","EXECUTE","TEST","QA","FIX","PACKAGE","DEL
 
 export function createExecutionJob({jobId,dealId,client,scope,acceptanceCriteria=[],deadline=null,toolProfile="GENERIC"}={}){
   if(!jobId||!dealId||!scope) throw new Error("EXECUTION_JOB_REQUIRES_JOB_DEAL_SCOPE");
-  return {jobId,dealId,client:client||null,scope,acceptanceCriteria,deadline,toolProfile,
+  if(!Array.isArray(acceptanceCriteria))throw new Error("ACCEPTANCE_CRITERIA_ARRAY_REQUIRED");if(deadline&&!Number.isFinite(Date.parse(deadline)))throw new Error("INVALID_EXECUTION_DEADLINE");return {jobId,dealId,client:client||null,scope,acceptanceCriteria:[...acceptanceCriteria],deadline,toolProfile,
     stage:"PLAN",status:"QUEUED",attempt:0,artifacts:[],testResults:[],qa:null,
     createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
 }
 export function assignExecution(job,agentId){
-  if(!agentId) throw new Error("EXECUTION_AGENT_REQUIRED");
+  if(!job?.jobId)throw new Error("VALID_EXECUTION_JOB_REQUIRED");if(!agentId) throw new Error("EXECUTION_AGENT_REQUIRED");
   return {...job,executionAgent:agentId,status:"IN_PROGRESS",updatedAt:new Date().toISOString()};
 }
 export function advanceExecution(job,next,{qaPassed=false,ownerApproved=false}={}){
-  const i=EXECUTION_STAGES.indexOf(job.stage), n=EXECUTION_STAGES.indexOf(next);
+  if(!job?.jobId||!EXECUTION_STAGES.includes(job.stage))throw new Error("VALID_EXECUTION_JOB_REQUIRED");const i=EXECUTION_STAGES.indexOf(job.stage), n=EXECUTION_STAGES.indexOf(next);
   if(n<0) throw new Error("UNKNOWN_EXECUTION_STAGE");
   if(next==="READY_TO_DELIVER"&&!ownerApproved) throw new Error("OWNER_DELIVERY_APPROVAL_REQUIRED");
   if(next==="DELIVERY_APPROVAL"&&!qaPassed) throw new Error("QA_PASS_REQUIRED");
