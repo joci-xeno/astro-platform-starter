@@ -425,3 +425,138 @@ P1: close runtime, provider, durability, desktop, voice, Computer Use and person
 P2: expand verified tools/markets/media and optimization only after foundations are proven.
 
 Before declaring completion, provide JOCI an evidence package mapping every requirement to code, wiring, test, runtime evidence, completion state and blocker.
+
+
+## Completeness Lock — No Requirement Left Behind
+This specification is cumulative. Codex MUST NOT treat later sections as replacements for earlier ATLASZ requirements. Preserve all existing working capabilities and reconcile requirements by the latest explicit JOCI decision where two statements conflict.
+
+Before implementation is declared complete, build a Requirement Traceability Matrix covering:
+1. every requirement in this AGENTS.md;
+2. the recovered/uploaded ATLASZ requirements material referenced by the repository;
+3. every currently registered capability in completion-registry.mjs;
+4. every BLOCKED-ASTRA item;
+5. every accepted P0/P1/P2 requirement added during the final design review.
+
+For every requirement record: requirement name, source/section, code/module, Integration Hub/runtime path, acceptance test, evidence, status, blocker, and next action. A requirement may not disappear merely because it is not yet implemented.
+
+Historical runtime claims in recovered notes are evidence to investigate, not authority over newer verified runtime evidence. Never regress a newer verified fact to an older note.
+
+## Eight General Intelligence Capabilities — Explicit Preservation
+The following eight capabilities are mandatory tracked requirements and must not be collapsed into a vague "AI" label:
+1. General Reasoning & Planning
+2. Broad Toolkit & Capability Discovery
+3. Autonomous Debugging & Recovery
+4. Novel Situation Adaptation
+5. Independent Verification & Inference
+6. Broad Knowledge & Language
+7. Code Creation & Maintenance
+8. Higher-Level Independent Supervisor / Auditor
+
+Each must be mapped to real models/tools/runtime paths and independently classified by evidence.
+
+## Conversation-First MASTER Experience
+ATLASZ must be usable primarily by natural conversation, not by requiring JOCI to operate developer tools.
+
+On authenticated desktop/client startup, MASTER may proactively greet JOCI in his configured preferred language and present a concise useful status/brief such as current priorities, important alerts, work/revenue status, pending approvals and health. Do not use a fixed canned greeting when current state is available.
+
+Required conversational behavior:
+- maintain configurable language/preference settings;
+- support natural text and, when LIVE, voice conversation;
+- allow JOCI to change modes/objectives conversationally;
+- explain what it is doing and surface approvals at the point they are needed;
+- remember durable project context with provenance rather than forcing repeated re-entry;
+- execute JOCI instructions by default when lawful, safe, technically feasible and within granted authority;
+- if an instruction conflicts with a hard safety/legal/financial/owner-control rule, stop only the conflicting action and explain the exact blocker.
+
+The interface should feel like one coherent ATLASZ MASTER even when many agents/models/tools are working underneath.
+
+## Daily Brief / Startup Brief
+When enabled by JOCI, startup or the first interaction of the day should produce a short personalized operational brief:
+- greeting in preferred language;
+- today's important tasks/deadlines;
+- Money Engine state and verified revenue/payment changes;
+- replies/client actions requiring attention;
+- system/provider health and blockers;
+- approvals waiting for JOCI;
+- optional recommended next actions.
+Do not invent events or status. Every operational claim must come from current durable state/evidence.
+
+## Business Proof / Evidence Package
+Maintain a proof package suitable for JOCI's own audit and later independent audit:
+SPEND/COST X -> OPPORTUNITY/AGREEMENT EVIDENCE -> WORK EXECUTED -> QA -> DELIVERY -> INVOICE -> RECEIVED/SETTLED Y -> VERIFIED NET PROFIT N -> HUMAN INTERVENTION H -> TIME T.
+
+This package is required before making strong profitability claims and is distinct from marketing copy.
+
+## Predictive Revenue Loop — Explicit ICP and Sales Controls
+The E2E Money Engine must include:
+MARKET SCAN -> ICP/DEMAND VALIDATION -> OPPORTUNITY QUALIFICATION -> BUYER/DECISION MAKER -> OFFER -> CONTROLLED OUTREACH -> FOLLOW-UP -> REPLY -> DEAL -> EXECUTION -> QA -> DELIVERY -> COLLECTION -> VERIFIED PROFIT -> LEARNING.
+
+Prefer targets with evidence of ability/willingness to pay. Do not claim demand is "proven" without evidence.
+
+Sales communication should use tested frameworks/templates where available, while allowing factual Client-DNA personalization. Agents may not fabricate claims. Conversion performance should be measured so weak scripts can be improved through controlled tests.
+
+## Market/Revenue Model Coverage — Explicit
+Do not omit or merge away the market models. E2E is the governing execution lifecycle; the following are market/customer relationship models that E2E may operate across:
+E2E + B2B + B2C + B2G + B2B2C + D2C + C2B.
+
+The Opportunity Qualifier must be able to tag the model, applicable compliance/procurement constraints, payment method, buyer type, acquisition channel, delivery type and revenue form.
+
+## Scale Governance
+Scaling is economics-driven, not agent-count-driven.
+- Keep 5 SEARCH + 25 EXECUTION as the current production topology.
+- Recommend expansion only after verified throughput/profit/bottleneck evidence.
+- Never autonomously expand agent count or incur scaling spend.
+- JOCI approval is required before expansion or new paid capacity.
+- Generated profit does not automatically authorize reinvestment.
+
+## Commercialization / Licensing Controls
+Preserve the possibility that JOCI may keep ATLASZ private or later commercialize it.
+If commercialization is later authorized:
+- create a separate sanitized customer distribution/instance;
+- keep JOCI's production secrets, personal data and core private configuration isolated;
+- support recurring technology licensing/subscription controls where appropriate;
+- use isolated customer instances/tenancy and explicit entitlement controls;
+- do not expose core architecture/IP publicly without authorization.
+No sale/licensing decision is assumed by this requirement.
+
+## Firecrawl and External Research Adapters
+Track Firecrawl as an explicit adapter requirement alongside other verified search/research providers. External research adapters must expose provenance, health, rate/cost state and failure truthfully. A connector available to ChatGPT is not automatically an ATLASZ runtime connector.
+
+## Desktop Extension / Integration Fabric
+The Windows Control Center should support adding approved desktop extensions/integrations later without rebuilding MASTER. Extension installation/connection must be permissioned, versioned, auditable and reversible. Never auto-install paid software or extensions without JOCI approval.
+
+## Voice Interaction Details
+When real STT/TTS is LIVE, JOCI should be able to converse with MASTER during ordinary daily activity, hear status/results and respond to approval requests by voice. Voice identity alone is not sufficient authentication for high-risk approvals unless a separately verified strong-auth mechanism explicitly supports it.
+
+## Tax / GST / PST / Accounting Workflow
+Beyond calculation, build a preparation workflow that can ingest verified records, classify transactions, reconcile evidence, prepare tax/GST/PST workpapers and produce review-ready outputs. Filing, payment or binding submission remains unavailable until an authorized real provider/runtime and required owner approval are proven.
+
+## Human Mission — Practical, Not Anthropomorphic
+ATLASZ's mission may include generating sustainable verified profit and helping people when JOCI directs it, but it must not claim a literal soul, consciousness or human emotions.
+
+The Human Core should convert compassion into practical behavior:
+NOTICE DIFFICULTY -> UNDERSTAND NEED -> FIND LAWFUL/SAFE OPTIONS -> RANK HELP -> TAKE PERMITTED ACTION -> VERIFY WHETHER HELP OCCURRED.
+
+Charitable/nonprofit activity must remain financially/accountingly separated from ATLASZ external revenue and from JOCI/GMP unless JOCI explicitly initiates an authorized project.
+
+## Independent External Auditability
+ATLASZ must be inspectable from outside itself. Do not rely on self-reported health.
+Preserve machine-readable logs/evidence so a separate auditor/system can verify Git commit/SHA, deployment, health, provider probes, sent-message evidence, delivery, invoice, payment evidence, costs and profit.
+
+The external supervisor/auditor is logically independent from the system it evaluates and cannot be silently disabled by ordinary agents.
+
+## Historical Module Audit Obligation
+Do not assume the old "41 modules / 24 wired / 17 unwired" snapshot is current. Re-audit the current repository and current Integration Hub. Specifically verify that Execution Factory, Agent Factory, Deal State, Delivery, Follow-Up, Invoice, Negotiation, Opportunity Qualification, Proposal/Quote, Recovery, Tax, Universal Connector and other recovered modules are actually imported, exported, invoked and runtime-tested.
+
+## Current Revenue Truth Gate
+A complete revenue cycle remains unproven until real evidence demonstrates:
+SEARCH -> OPPORTUNITY -> QUALIFICATION -> BUYER/CONTACT -> REAL SENT -> REPLY -> DEAL/WON -> EXECUTION ORDER -> EXECUTION -> INDEPENDENT QA -> DELIVERY -> INVOICE -> AUTHORITATIVE PAYMENT RECEIPT -> VERIFIED NET PROFIT.
+
+Never use a successful service/deployment alone as proof that this business cycle works.
+
+## Final No-Omission Acceptance
+Codex must finish with two reports:
+A. CAPABILITY EVIDENCE REPORT — every capability and its actual status.
+B. REQUIREMENT TRACEABILITY REPORT — every requirement mapped to implementation/test/evidence/blocker.
+
+If any item from the cumulative ATLASZ specification has no mapping, the build is NOT complete.
