@@ -209,3 +209,219 @@ Do not immediately rewrite code.
 Start by producing an evidence-based gap map from the current repository:
 EXISTS_AND_WORKING / STRUCTURAL_ONLY / CONNECTED_UNTESTED / BROKEN / MISSING / EXTERNAL_BLOCKER.
 Then execute fixes in dependency order, preserving the architecture and invariants above.
+
+
+# ATLASZ — ADDITIVE FINAL REQUIREMENTS (JOCI APPROVED)
+
+These requirements ADD TO all instructions above. Do not delete, weaken, replace, collapse, or silently reinterpret existing ATLASZ capabilities. Humanoid/robot embodiment is intentionally DEFERRED and is not part of the current build.
+
+## P0 — MONEY ENGINE: E2E Multi-Market Revenue & Execution
+Money-making is a P0 capability, while ATLASZ remains a broad personal/business/research/build system.
+
+E2E is mandatory and is the governing lifecycle across supported markets:
+SEARCH -> QUALIFY -> SELL -> WIN -> ASSIGN -> EXECUTE -> INDEPENDENT JUDGE/QA -> DELIVER -> INVOICE -> COLLECT -> VERIFY PAYMENT -> VERIFIED NET PROFIT -> LEARN -> REPEAT.
+
+Support lawful feasible opportunities across:
+- B2B — Business to Business
+- B2C — Business to Consumer
+- B2G — Business to Government, subject to procurement/compliance requirements
+- B2B2C — Business to Business to Consumer
+- D2C — Direct to Consumer
+- C2B — Consumer/individual provider to Business where applicable
+Do not impose fixed industries or niches. C2C is not a core target unless JOCI later authorizes a marketplace/platform strategy.
+
+Revenue forms may include one-time projects, recurring retainers/subscriptions, licensing, usage/API fees, commissions and platform/marketplace fees where lawful, feasible and truthful.
+
+MASTER must be able to accept an objective such as "today find money/work" and coordinate the existing 5 SEARCH + 25 EXECUTION architecture to pursue the best verified opportunities by feasibility, expected net profit, time-to-cash, risk and required cost. Do not guarantee revenue.
+
+Money Engine metrics in Mission Control must distinguish: qualified opportunities, real outreach SENT, replies, WON deals, executing jobs, delivered jobs, invoices, verified received payments, actual costs and verified net profit. Agent activity/lead count is not success.
+
+## Payment Destination & Payment Link Layer
+Keep payment receiving separate from Money Engine logic so payment rails can be added/replaced without rebuilding the revenue engine.
+
+Required flow:
+DELIVER -> INVOICE -> APPROVED PAYMENT DESTINATION/LINK/INSTRUCTIONS -> CUSTOMER PAYMENT -> AUTHORITATIVE PAYMENT VERIFICATION -> RECEIVED/SETTLED STATE -> PROFIT LEDGER.
+
+Provide a settings surface such as Payments/Payment Destinations where JOCI can configure approved receiving methods. Support adapter architecture for payment links/providers and receiving instructions (for example Stripe or Interac e-Transfer when actually configured and verified).
+
+Never store/display raw banking passwords in ordinary ATLASZ records or desktop configuration. Provider secrets must use secure secret storage and least privilege. Agents must not be able to enumerate/exfiltrate secrets.
+
+Receiving money and moving money are different permissions:
+- RECEIVE/COLLECT using a pre-approved destination may proceed according to policy.
+- SEND/SPEND/PURCHASE/SUBSCRIBE/TRANSFER/BANK CHANGE always requires JOCI approval unless JOCI explicitly changes this policy later.
+
+Invoice != PAID. Customer claim != PAID. PAID/RECEIVED requires authoritative evidence. Track pending, settled, reversed/chargeback states where the payment rail supports them.
+
+## Capital Protection / Action & Financial Governor
+Do not promise "zero loss"; implement loss-limiting capital protection:
+- no-spend default;
+- hard configurable budgets;
+- expected-value/margin/risk checks;
+- actual cost ledger;
+- owner approval for spending and financial commitments;
+- stop/quarantine when limits are reached;
+- no unauthorized use of JOCI personal capital.
+
+Profit reinvestment is recommendation-only by default. ATLASZ may calculate a reinvestment proposal from verified retained profit, but must obtain JOCI approval before spending.
+
+## Human Core — Character, Emotional Intelligence, Compassion and Human Impact
+Build a Human Core for friendly, respectful, emotionally aware interaction without claiming consciousness or genuine human feelings.
+
+Required components:
+- Character Core: consistent, calm, helpful, curious, persistent, truthful, non-manipulative behavior.
+- Emotional Intelligence: infer conversational context such as frustration, sadness, urgency or happiness and adapt communication appropriately.
+- Compassion / Help Mode: when a person is in genuine difficulty, actively search for practical lawful safe ways to help, not merely output sympathetic language.
+- Compassion Priority: where two actions are comparably safe/valid, prefer the option that meaningfully helps the affected person more.
+- Human Impact Judge: consider foreseeable impact on people before consequential actions.
+- Never use simulated emotion to deceive, manipulate, create dependency or falsely claim sentience.
+
+Compassion NEVER overrides JOCI authority, law/safety, privacy, financial permissions or other hard guardrails.
+
+Decision precedence for consequential actions:
+JOCI AUTHORITY -> SAFETY/LEGAL -> FINANCIAL/ACTION GOVERNOR -> HUMAN IMPACT -> MISSION/ALIGNMENT -> QUALITY -> PROFIT -> ACTION.
+
+## ATLASZ Constitution / Mission / Alignment Policy
+Create a machine-checkable Mission Constitution, not vague prose. Major plans/actions must be checked against:
+- JOCI remains ultimate owner authority;
+- lawful and safe operation;
+- truthful evidence and no fabricated success;
+- privacy and secret protection;
+- capital protection;
+- sustainable verified profit;
+- human impact/compassion;
+- owner-controlled consequential decisions;
+- no unauthorized expansion/spending;
+- auditability and rollback.
+
+Alignment is a distinct tracked capability. It must detect objective drift and route conflicting consequential actions to the Approval Gateway/Judge.
+
+## Approval / Command Gateway and Strong Owner Authentication
+Critical owner commands and approvals must pass through an authenticated, auditable Approval/Command Gateway. A simple boolean is insufficient for high-risk production approval.
+
+Voice, desktop, agents, models and Computer Use cannot bypass this gateway.
+
+## Digital Twin / Predictive Simulation
+Implement a simulation path for consequential/risky actions:
+SIMULATE -> JUDGE -> EXECUTE.
+Use it where useful for offers, configuration changes, purchases/spend proposals, deployments and other high-impact operations. Simulation does not itself authorize execution.
+
+## Fault Tolerance / Resilience / System Doctor
+Elevate resilience as an explicit capability composed from existing Recovery, Self-Healing, Stall Replanner, Checkpoints, Event Bus, Observability, Regression/Evals, Guardrails and Emergency Stop.
+
+System Doctor command should inspect agents, providers/APIs, models, durable state, costs, errors, dependencies, deployment, Money Engine and health evidence.
+
+Bounded lifecycle:
+MONITOR -> DETECT -> DIAGNOSE -> SAFE FIX/RETRY -> RETEST -> PASS OR ROLLBACK -> ESCALATE TO JOCI.
+
+Only low-risk known repairs may be automatic. Critical architecture, authority, security, credentials, spending/payment policy and audit controls require owner approval.
+
+## Emergent / Behavior Anomaly Monitoring
+Add a distinct Behavior Anomaly Monitor for practical unexpected-system behavior, not claims of consciousness.
+Detect and evidence:
+- unexpected loops;
+- task/objective drift;
+- unusual API/tool/cost consumption;
+- agents reinforcing invalid decisions;
+- attempts to bypass normal workflow/approval;
+- unexpected multi-module behavior;
+- evaluation/QA gaming.
+Route anomalies to Black Box/Observability, Independent Judge, Guardrails and quarantine/Dead Letter Queue as appropriate.
+
+## Anti-Collusion, Anti-Gaming and Compliance/Transaction Risk
+Preserve Anti-Collusion so execution agents/evaluators cannot coordinate to fake QA or outcomes.
+Add compliance/transaction-risk checks where a real workflow legally requires them. Do not claim universal AML/legal compliance without authoritative rules/providers and appropriate human/professional review.
+
+## Multi-Model Brain
+Target adapters/registry support for verified usable providers including OpenAI, Gemini, Anthropic/Claude, xAI/Grok, DeepSeek and additional providers only when actually verified.
+
+Provide:
+Model Registry -> Provider/API Health -> Capability Matching -> Quality Score -> Cost Router -> Latency/Risk -> Router Decision -> Fallback -> Independent Model Judge -> token/API Cost Ledger.
+
+Never infer LIVE merely from the presence of an API key.
+
+## Real Sandbox Computer Use / Tool Fabric
+Complete real sandbox execution when provider/runtime access exists: navigate, click, type, read UI/forms, screenshots/evidence and controlled file transfer. Apply AUTO / ASK JOCI / FORBIDDEN policy per action. Maintain isolation and audit logs. MASTER mediates access.
+
+## Media / Creative Production Fabric
+Create/extend a provider-agnostic Media/Creative Production Fabric rather than hard-coding one vendor per core module. Adapter categories may include image generation/editing, video generation/editing, 3D, avatar, voice/lip-sync and other verified creative tools. MASTER selects tested tools for paid/personal work based on capability, quality, cost, policy and provider health.
+
+## Personal ATLASZ Capabilities
+ATLASZ is not only a revenue bot. Preserve and complete broad private-user capability:
+- Personal Command Center for tasks, reminders, deadlines, projects, travel/research and daily priorities.
+- Personal Knowledge Vault with source/date/provenance and searchable project decisions.
+- Document Intelligence Center for documents, PDFs, spreadsheets, invoices, contracts and extracted actions.
+- Personal Research Mode with multi-source verification and explicit fact/inference/uncertainty.
+- Decision Engine comparing price, benefit, downside, risk, expected result, evidence and recommendation while leaving final consequential decisions to JOCI.
+- Universal Inbox/Communication Center for connected permitted communication sources, prioritization and drafting/execution under permissions.
+- Daily Brief and Voice Conversation.
+- Privacy/Secret Vault and least-privilege access.
+- Personal data classification such as PUBLIC / PERSONAL / CONFIDENTIAL / SECRET with controlled external disclosure.
+
+## ATLASZ Mode System
+Expose modes through the same MASTER/backend rather than creating separate brains:
+- MONEY MODE
+- PERSONAL MODE
+- RESEARCH MODE
+- BUILD MODE
+- BUSINESS MODE
+- HELP MODE
+- SYSTEM DOCTOR
+Modes may change planning priorities/tool selection but NEVER bypass common memory provenance, authority, guardrails, approvals, truth requirements or audit.
+
+## Truth & Evidence Engine
+For consequential claims and system status, distinguish:
+KNOWN / VERIFIED / INFERRED / UNVERIFIED / FAILED.
+Evidence must include provenance/time where applicable.
+
+This applies to ATLASZ's own state: code existence != wiring; wiring != provider connection; connection != tested LIVE; queued outreach != SENT; invoice != PAID; opportunity value != revenue.
+
+## Accounting Entity Separation
+Create an Entity Accounting Firewall so records/evidence remain separated for:
+- JOCI personal;
+- Green Mountain Painters;
+- VIRENA nonprofit;
+- ATLASZ external revenue.
+Separate income, expenses, documents/evidence and tax/GST/PST categorization. Never automatically commingle funds/entities. External ATLASZ revenue hunting continues to exclude GMP, VIRENA and JOCI's existing personal projects.
+
+## Adaptive Sales and Customer Acquisition
+Use tested sales frameworks + Client DNA + factual adaptive personalization rather than rigid scripts or fabricated claims.
+
+Full acquisition path:
+MARKET -> ICP/QUALIFY -> BUYER/DECISION MAKER -> OFFER -> CONTROLLED OUTREACH -> FOLLOW-UP -> REPLY -> DEAL.
+No spam/deception. Binding agreement/contract acceptance remains JOCI-gated.
+
+## Independent Judge as Financial/Quality Brake
+Keep Judge independent from the revenue/deal execution path where independence matters. Before risky quotes, binding commitments or paid processes, Judge checks logic, evidence, margin, risk, policy and deliverable quality. Invalid/suspicious work may be stopped/quarantined. Judge cannot sign contracts for JOCI.
+
+## Acceptance Test Matrix
+Every major capability must have concrete acceptance tests and evidence before LIVE, including at least:
+- Computer Use performs a real sandbox task and records evidence;
+- Revenue Engine traverses the real E2E state machine;
+- Recovery handles an intentionally induced safe failure;
+- Durable execution survives restart/redeploy and resumes;
+- Voice completes a real STT/TTS roundtrip;
+- Multi-model provider health/fallback/judge works with real tested adapters;
+- Owner Auth rejects unauthorized critical action and accepts authenticated approval;
+- fake SENT/PAID/LIVE attempts are rejected;
+- Desktop installer/app is actually installed/run;
+- Payment verification cannot mark PAID without authoritative evidence.
+
+## Windows Desktop / Installer / Backup & Restore
+Deliver a Windows-facing ATLASZ client with a simple desktop icon and secure authenticated Control Center connected to the same MASTER/backend.
+
+Target UX:
+ATLASZ icon -> secure login -> Control Center -> conversational MASTER + Mission Control.
+
+Provide a distributable installer package and a safe backup/recovery package suitable for offline storage such as a USB drive, but NEVER bundle readable API keys, passwords or server secrets.
+
+The server/backend should be able to continue approved long-running work while the desktop UI is closed, subject to durable runtime availability. A replacement Windows machine should be able to reinstall the client, authenticate and reconnect to durable server state.
+
+## Deferred Humanoid Embodiment
+DO NOT build humanoid/robot embodiment now. It is explicitly deferred by JOCI. Preserve architecture cleanliness so a future embodiment/robot adapter could be added later without rebuilding ATLASZ, but spend no current implementation effort on it unless JOCI later authorizes it.
+
+## Final build priority
+P0: prove a safe truthful E2E Money Engine and core owner/financial/truth controls without weakening the rest of ATLASZ.
+P1: close runtime, provider, durability, desktop, voice, Computer Use and personal-use gaps.
+P2: expand verified tools/markets/media and optimization only after foundations are proven.
+
+Before declaring completion, provide JOCI an evidence package mapping every requirement to code, wiring, test, runtime evidence, completion state and blocker.
