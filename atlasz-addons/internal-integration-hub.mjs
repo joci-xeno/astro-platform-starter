@@ -56,6 +56,7 @@ import { inspectCoordination } from "./anti-collusion-guard.mjs";
 import { registerModelProvider, modelProviderList, modelProviderHealth, selectModel, invokeModel, independentJudgePlan } from "./multi-model-brain.mjs";
 import { analyzeMarketSignals, proposeSearchStrategy } from "./market-intelligence-engine.mjs";
 import { createTeamLeadWorkflow, teamLeadDispatch } from "./team-lead-workflows.mjs";
+import { createApprovalGateway } from "./approval-command-gateway.mjs";
 
 const safe=(fn,...args)=>{try{return {ok:true,value:fn(...args)}}catch(e){return {ok:false,error:String(e?.message||e)}}};
 export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}={}){
@@ -66,6 +67,7 @@ export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}
   const voice=createVoiceInterface();
   const computerUse=createComputerUseFabric();
   const toolBridge=createToolBridge({registerConnector,connectFabricTool,registerTool});
+  const approvalGateway=createApprovalGateway();
   seedAtlaszCompletionRegistry();
   function onAgentRegistered(agent){
     safe(registerAgentControl,{tenantId,agentId:agent.id,owner:"JOCI",permissions:["INTERNAL_STATE"],tools:[],risk:"NORMAL"});
@@ -91,7 +93,7 @@ export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}
     return safe(recordAgentResult,{agentId,success,qaPassed,durationMs,costUsd:0,valueUsd:0,error});
   }
   function snapshot(){
-    return {enabled:true,mode:"INTERNAL_ONLY",externalSideEffects:false,eventsObserved:local.events,errors:local.errors,portfolio:safe(rankAgents).value||[],control:safe(controlPlaneStatus).value||null,budget:safe(budgetStatus,tenantId).value||null,generalCapabilities:generalCapabilities.summary(),voice:voice.status(),toolFabric:toolFabricSummary(),computerUse:computerUse.status(),completion:completionSummary(),emergency:emergencyStatus(),projects:{count:projectList().length},skills:{count:skillList().length},models:modelProviderHealth()};
+    return {enabled:true,mode:"INTERNAL_ONLY",externalSideEffects:false,eventsObserved:local.events,errors:local.errors,portfolio:safe(rankAgents).value||[],control:safe(controlPlaneStatus).value||null,budget:safe(budgetStatus,tenantId).value||null,generalCapabilities:generalCapabilities.summary(),voice:voice.status(),toolFabric:toolFabricSummary(),computerUse:computerUse.status(),completion:completionSummary(),emergency:emergencyStatus(),projects:{count:projectList().length},skills:{count:skillList().length},models:modelProviderHealth(),approvalGateway:approvalGateway.status()};
   }
   return {onAgentRegistered,onRuntimeEvent,onCandidate,onAgentResult,snapshot,
     adapters:{
@@ -128,6 +130,7 @@ export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}
       selfHeal,inspectCoordination,
       registerModelProvider,modelProviderList,modelProviderHealth,selectModel,invokeModel,independentJudgePlan,
       analyzeMarketSignals,proposeSearchStrategy,
-      createTeamLeadWorkflow,teamLeadDispatch
+      createTeamLeadWorkflow,teamLeadDispatch,
+      approvalGatewayStatus:approvalGateway.status,approvalGatewayVerify:approvalGateway.verify,approvalGatewayAudit:approvalGateway.audit
     }};
 }
