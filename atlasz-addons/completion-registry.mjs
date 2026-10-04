@@ -4,8 +4,8 @@
 const items=new Map();
 export const COMPLETION_STATES=Object.freeze(["PLANNED","CODE_ADDED","STRUCTURALLY_WIRED","CONNECTED_UNTESTED","LIVE","BLOCKED"]);
 export function trackCompletion({id,title,area,state="PLANNED",owner="MASTER",evidence=[],blockedBy=[]}={}){
- if(!id||!title||!area||!COMPLETION_STATES.includes(state))throw new Error("VALID_COMPLETION_ITEM_REQUIRED");
- const x={id,title,area,state,owner,evidence:[...evidence],blockedBy:[...blockedBy],updatedAt:new Date().toISOString()};
+ if(!id||!title||!area||!COMPLETION_STATES.includes(state))throw new Error("VALID_COMPLETION_ITEM_REQUIRED");if(!Array.isArray(evidence)||!Array.isArray(blockedBy))throw new Error("COMPLETION_ARRAYS_REQUIRED");
+ const x={id,title,area,state,owner,evidence:structuredClone(evidence),blockedBy:[...blockedBy],updatedAt:new Date().toISOString()};
  items.set(id,x);return {...x};
 }
 export function completionGet(id){const x=items.get(id);return x?{...x}:null;}
