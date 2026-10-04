@@ -1,8 +1,8 @@
 export const PROPOSAL_ENGINE_VERSION="1.0.0";
 export function buildProposal({dealId,client,scope,deliverables=[],priceUsd,deadline,assumptions=[],exclusions=[],evidence=[]}={}){
  if(!dealId||!scope||!Number.isFinite(Number(priceUsd))||Number(priceUsd)<=0) throw new Error("PROPOSAL_MISSING_REQUIRED_FIELDS");
- return {dealId,client:client||null,scope,deliverables,priceUsd:Number(priceUsd),deadline:deadline||null,
-  assumptions,exclusions,evidence,status:"DRAFT",binding:false,createdAt:new Date().toISOString()};
+ if(!Array.isArray(deliverables)||!Array.isArray(assumptions)||!Array.isArray(exclusions)||!Array.isArray(evidence))throw new Error("PROPOSAL_ARRAY_FIELDS_REQUIRED");if(deadline&&!Number.isFinite(Date.parse(deadline)))throw new Error("INVALID_PROPOSAL_DEADLINE");return {dealId,client:client||null,scope,deliverables:[...deliverables],priceUsd:Number(priceUsd),deadline:deadline||null,
+  assumptions:[...assumptions],exclusions:[...exclusions],evidence:[...evidence],status:"DRAFT",binding:false,createdAt:new Date().toISOString()};
 }
 export function validateProposal(p){
  const errors=[];
