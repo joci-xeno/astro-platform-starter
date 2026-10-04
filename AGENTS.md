@@ -667,3 +667,17 @@ Point-in-Time Restore recovers earlier durable state.
 Client Reinstall/Reconnect handles a failed/replaced Windows machine.
 Disaster Recovery reconstructs service after major loss.
 Keep these concepts separately visible and separately testable even when they share underlying tooling.
+
+
+## JOCI Launch Phrase / Startup Signature
+JOCI's preferred ATLASZ launch phrase is:
+
+**"Indul a mandula!"**
+
+Treat this as a friendly startup signature/activation phrase in the future conversational desktop/voice experience when JOCI enables it. It is not a security credential and must never substitute for strong authentication or approval.
+
+A future authenticated startup experience may greet JOCI naturally in his configured language and include the phrase, for example:
+"Hello Joci — indul a mandula!"
+Then immediately continue with the truthful Daily/Startup Brief and current priorities.
+
+The wording/greeting must remain configurable by JOCI.
