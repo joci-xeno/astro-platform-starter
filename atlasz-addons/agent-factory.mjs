@@ -3,7 +3,7 @@ const ROLES=new Set(["SEARCH","EXECUTION","REVIEWER","PLANNER","RESEARCH","SUPPO
 const uid=()=>globalThis.crypto?.randomUUID?.()||("agent-"+Date.now()+"-"+Math.random().toString(16).slice(2));
 export function createAgentBlueprint({name,role,goal,capabilities=[],tools=[],guardrails=[],modelPolicy="ROUTER",approvalPolicy="HUMAN_FOR_HIGH_RISK",metadata={}}={}){
  if(!name||!goal||!ROLES.has(role)) throw new Error("VALID_NAME_ROLE_GOAL_REQUIRED");
- return {schemaVersion:AGENT_FACTORY_VERSION,agentId:uid(),name,role,goal,capabilities:[...new Set(capabilities)],tools:[...new Set(tools)],guardrails:[...new Set(guardrails)],modelPolicy,approvalPolicy,metadata,status:"BLUEPRINT",createdAt:new Date().toISOString()};
+ if(!Array.isArray(capabilities)||!Array.isArray(tools)||!Array.isArray(guardrails))throw new Error("AGENT_FACTORY_ARRAYS_REQUIRED");return {schemaVersion:AGENT_FACTORY_VERSION,agentId:uid(),name,role,goal,capabilities:[...new Set(capabilities)],tools:[...new Set(tools)],guardrails:[...new Set(guardrails)],modelPolicy,approvalPolicy,metadata:{...metadata},status:"BLUEPRINT",createdAt:new Date().toISOString()};
 }
 export function validateBlueprint(a={}){
  const errors=[];
