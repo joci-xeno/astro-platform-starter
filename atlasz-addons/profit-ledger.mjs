@@ -6,7 +6,8 @@ export function recordMoney(entry){
  return {...entry,amountUsd:amount,costUsd:cost,recordedAt:new Date().toISOString()};
 }
 export function summarize(entries=[]){
- const paid=entries.filter(x=>x.stage==="PAID"&&x.confirmedReceived).reduce((s,x)=>s+Number(x.amountUsd||0),0);
- const costs=entries.reduce((s,x)=>s+Number(x.costUsd||0),0);
+ if(!Array.isArray(entries))throw new Error("MONEY_ENTRIES_ARRAY_REQUIRED");const valid=entries.map(recordMoney);
+ const paid=valid.filter(x=>x.stage==="PAID"&&x.confirmedReceived&&x.externalEvidence).reduce((s,x)=>s+x.amountUsd,0);
+ const costs=valid.reduce((s,x)=>s+x.costUsd,0);
  return {confirmedPaidUsd:paid,costsUsd:costs,verifiedNetProfitUsd:paid-costs};
 }
