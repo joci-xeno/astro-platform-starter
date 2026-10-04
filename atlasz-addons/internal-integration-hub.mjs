@@ -68,7 +68,7 @@ export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}
   const toolBridge=createToolBridge({registerConnector,connectFabricTool,registerTool});
   seedAtlaszCompletionRegistry();
   function onAgentRegistered(agent){
-    safe(registerAgentControl,{tenantId,agentId:agent.id,owner:"OWNER",permissions:["INTERNAL_STATE"],tools:[],risk:"NORMAL"});
+    safe(registerAgentControl,{tenantId,agentId:agent.id,owner:"JOCI",permissions:["INTERNAL_STATE"],tools:[],risk:"NORMAL"});
     safe(registerCapability,agent.id,{capabilities:[agent.role==="SEARCH"?"DISCOVERY":"SCREENING"],tools:[],limits:["NO_EXTERNAL_SEND","NO_SPEND"]});
     safe(upsertEntity,{tenantId,type:"AGENT",id:agent.id,attributes:{role:agent.role,status:agent.status},source:"supervisor-safe"});
   }
@@ -81,7 +81,7 @@ export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}
     return {accepted:true};
   }
   function onCandidate(candidate,assessment){
-    const score=safe(priorityScore,{value:assessment?.leadValue?.amount||0,probability:assessment?.score?Math.min(1,assessment.score/100):0,timeHours:1,friction:assessment?.reject?.length||0,recurring:false});
+    const score=safe(priorityScore,{estimatedValueUsd:assessment?.leadValue?.amount||0,winProbability:assessment?.score?Math.min(1,assessment.score/100):0,hoursToCash:24,frictionPenalty:assessment?.reject?.length||0,recurringMonthlyUsd:0});
     safe(upsertEntity,{tenantId,type:"OPPORTUNITY",id:candidate.id,attributes:{status:candidate.status,score:score.value||0,source:candidate.source,url:candidate.url},source:"qualification"});
     if(candidate.foundBy)safe(linkEntities,{tenantId,fromType:"AGENT",fromId:candidate.foundBy,toType:"OPPORTUNITY",toId:candidate.id,relation:"FOUND",evidence:candidate.url});
     safe(enqueue,{id:candidate.id,type:"OPPORTUNITY"},{priority:Number(score.value||0),kind:"QUALIFICATION",dedupeKey:candidate.id});
