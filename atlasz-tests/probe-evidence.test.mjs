@@ -32,3 +32,15 @@ test("voice and computer-use: bare tested flag is not LIVE", () => {
   assert.equal(createComputerUseFabric({ provider: { name: "p", tested: true } }).status().state, "CONNECTED_UNTESTED");
   assert.equal(createComputerUseFabric({ provider: { name: "p", tested: true, probeEvidence: good } }).status().state, "LIVE");
 });
+
+import { registerConnector, resolveConnector } from "../atlasz-addons/universal-connector-layer.mjs";
+import { registerTool, toolsFor } from "../atlasz-addons/executor-toolbox-registry.mjs";
+
+test("connector layer and toolbox registry: TESTED/available need probe evidence", () => {
+  assert.throws(() => registerConnector({ id: "c1", tenantId: "T", capabilities: ["x"], status: "TESTED", adapter }), /PROBE_EVIDENCE/);
+  assert.throws(() => registerTool({ id: "t1", category: "WEB", capabilities: ["x"], available: true, adapter }), /PROBE_EVIDENCE/);
+  registerConnector({ id: "c2", tenantId: "T", capabilities: ["x"], status: "TESTED", adapter, probeEvidence: good });
+  assert.equal(resolveConnector({ tenantId: "T", capability: "x" }).length, 1);
+  registerTool({ id: "t2", category: "WEB", capabilities: ["y"], available: true, adapter, probeEvidence: good });
+  assert.equal(toolsFor(["y"]).length, 1);
+});

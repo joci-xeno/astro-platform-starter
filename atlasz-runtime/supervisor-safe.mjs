@@ -4,6 +4,12 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 import { createInternalAddonHub } from "../atlasz-addons/internal-integration-hub.mjs";
 import { emergencyGate, emergencyStatus } from "../atlasz-addons/emergency-stop.mjs";
+import { createDurableQueue } from "../atlasz-addons/durable-queue.mjs";
+import { createSafeMode } from "../atlasz-addons/safe-mode.mjs";
+import { createWatchdog } from "../atlasz-addons/watchdog.mjs";
+import { runStartupSelfCheck } from "../atlasz-addons/startup-self-check.mjs";
+import { createSecretVault } from "../atlasz-addons/secret-vault.mjs";
+import { getDefaultOwnerAuth } from "../atlasz-addons/owner-auth.mjs";
 
 export const VERSION = "3.3.0";
 const now = () => new Date().toISOString();
@@ -43,6 +49,12 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
   const addons = createInternalAddonHub({ tenantId: "ATLASZ-MAIN", dailyBudgetUsd: 0 });
   const addonSnapshot = () => addons.snapshot();
   fs.mkdirSync(dataDir, { recursive: true });
+  // ---- V7.3 safety layer: self-check -> safe mode -> durable queue -> watchdog (fixed topology 5 SEARCH + 25 EXECUTION) ----
+  const ownerAuth = getDefaultOwnerAuth();
+  const vault = createSecretVault({ dir: path.join(dataDir, "vault"), ownerAuth });
+  const safeMode = createSafeMode({ statePath: path.join(dataDir, "safe-mode.json"), auditPath: path.join(dataDir, "safe-mode-audit.jsonl"), ownerAuth });
+  const selfCheck = runStartupSelfCheck({ stateDir: dataDir, ownerAuth, vault, expectedAgents: { search: 5, execution: 25 } });
+  if (selfCheck.level === "FAIL") safeMode.enter("SELF_CHECK_FAILED", { failed: selfCheck.checks.filter(c => c.status === "FAIL").map(c => c.id) });
   const file = path.join(dataDir, "atlasz-state.json");
   let state = { version: VERSION, startedAt: now(), lastSystemRun: null, searchCycles: 0, candidates: [], leads: [], artifacts: [], events: [], sourceErrors: {}, agents: [] };
   if (fs.existsSync(file)) {
@@ -53,6 +65,10 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
   // Stall recovery (V7.3 §52 #10/#11): a crash mid-screening leaves candidates stuck in PROCESSING forever.
   let recoveredStalled = 0;
   for (const c of state.candidates) if (c.status === "PROCESSING") { c.status = "NEW"; recoveredStalled++; }
+  // Durable queue/checkpoint: every unprocessed candidate has exactly one journaled job. Leases left by a dead process are requeued.
+  const queue = createDurableQueue({ dir: path.join(dataDir, "queue"), maxAttempts: 3, leaseMs: 120000 });
+  const recoveredQueue = queue.resume().length;
+  for (const c of state.candidates) if (c.status === "NEW") queue.enqueue({ id: c.id, payload: { candidateId: c.id } });
   state.agents = Array.from({ length: 30 }, (_, i) => ({
     id: i < 5 ? "SEARCH-" + (i + 1) : "EXECUTION-" + (i - 4),
     role: i < 5 ? "SEARCH" : "EXECUTION", status: "STARTING", currentTask: null,
@@ -81,7 +97,9 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
   }
   async function search(index) {
     const agent = state.agents[index];
-    const gate = !emergencyGate({ external: true }).allowed ? emergencyGate({ external: true }) : updateGate({ external: true });
+    watchdog.beat("scheduler");
+    const eg = emergencyGate({ external: true }), sg = safeMode.gate({ external: true });
+    const gate = !eg.allowed ? eg : !sg.allowed ? sg : updateGate({ external: true });
     if (!gate.allowed) { update(agent, "HALTED_BY_OWNER_STOP", "Owner emergency stop active", gate.reason); event("dispatch_blocked", { agentId: agent.id, reason: gate.reason }); return; }
     const round = Math.floor(state.searchCycles / 5);
     const query = queryLanes[(index + round) % queryLanes.length] + (round % 2 ? " " + topics[(index + round) % topics.length] : "");
@@ -99,6 +117,7 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
         if (seen.has(id)) continue;
         seen.add(id);
         state.candidates.push({ id, title: clean(hit.story_title || hit.title), description: clean(hit.comment_text || hit.story_text).slice(0, 16000), published: hit.created_at, url: "https://news.ycombinator.com/item?id=" + encodeURIComponent(hit.objectID), source: "Hacker News public comments", status: "NEW", foundAt: now(), foundBy: agent.id });
+        queue.enqueue({ id, payload: { candidateId: id } });
         added++;
       }
       agent.results += added;
@@ -116,13 +135,18 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
   }
   function execute(index) {
     const agent = state.agents[index];
-    const gate = emergencyGate({ external: false });
-    if (!gate.allowed) { update(agent, "HALTED_BY_OWNER_STOP", "Owner emergency stop active", gate.reason); return; }
-    const candidate = state.candidates.find(c => c.status === "NEW");
-    if (!candidate) {
+    watchdog.beat("scheduler");
+    const eg = emergencyGate({ external: false }), sg = safeMode.gate({ write: true });
+    const gate = !eg.allowed ? eg : sg;
+    if (!gate.allowed) { update(agent, "HALTED_BY_OWNER_STOP", eg.allowed ? "Safe Mode active" : "Owner emergency stop active", gate.reason); return; }
+    const job = queue.lease({ worker: agent.id });
+    if (!job) {
       update(agent, "WAITING_FOR_INPUT", "No unprocessed project request", "NO_QUALIFICATION_TASK_OR_CLIENT_JOB");
       return;
     }
+    const candidate = state.candidates.find(c => c.id === job.id);
+    if (!candidate || candidate.status !== "NEW") { queue.ack(job.id); return; }   // already handled before a crash between save and ack
+    let nacked = false;
     candidate.status = "PROCESSING";
     update(agent, "RUNNING", "Evidence-based screening: " + candidate.id);
     try {
@@ -151,11 +175,14 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
       event("screening_completed", { agentId: agent.id, candidateId: candidate.id, result: candidate.status, reasons: assessment.reject });
     } catch (e) {
       candidate.status = "NEW";
+      const r = queue.nack(job.id, { error: String(e.message) }); nacked = true;
+      if (r.state === "DEAD") candidate.status = "FAILED_DEAD_LETTER";
       addons.onAgentResult({ agentId: agent.id, success: false, qaPassed: false, error: true });
       update(agent, "BLOCKED", "Screening failed; task returned to queue", String(e.message));
     }
     state.lastSystemRun = now();
     save();
+    if (!nacked) queue.ack(job.id);                 // checkpoint first (save), acknowledge second: a crash in between is replayed idempotently
   }
   function dashboard() {
     const blockers = [
@@ -179,9 +206,14 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
       metrics: { candidatesFound: state.candidates.length, activeLeads: state.leads.length, qualifiedOpportunities: 0, scopeReviews: state.artifacts.length, outreachSent: 0, replies: 0, won: 0, inProgress: 0, delivered: 0, awaitingPayment: 0, confirmedPaid: 0, costs: null, verifiedNetProfit: null, monthlyRecurringRevenue: 0 },
       lastSystemRun: state.lastSystemRun, searchCycles: state.searchCycles,
       persistence: { savedLocally: true, durableVolume: persistent },
-      agents: state.agents, blockers, sourceErrors: state.sourceErrors, emergency: emergencyStatus(), internalAddons: addonSnapshot()
+      agents: state.agents, blockers, sourceErrors: state.sourceErrors, emergency: emergencyStatus(), safeMode: safeMode.status(), queue: queue.stats(), watchdog: watchdog.status(),
+      selfCheck: { level: selfCheck.level, problems: selfCheck.checks.filter(c => c.status !== "OK").map(c => ({ id: c.id, status: c.status, detail: c.detail })) },
+      vault: vault.status(), internalAddons: addonSnapshot()
     };
   }
+  const watchdog = createWatchdog({ onEscalate: e => safeMode.enter("WATCHDOG:" + e.id, { detail: e.detail }) });
+  watchdog.register({ id: "scheduler", critical: true, heartbeatMaxAgeMs: 120000 });
+  watchdog.register({ id: "queue", critical: true, probe: () => ({ ok: queue.stats().total >= 0 }) });
   function schedule(fn, delay) {
     const timer = setTimeout(async () => {
       timers.delete(timer);
@@ -192,6 +224,9 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
     timers.add(timer);
   }
   async function start() {
+    safeMode.recordBoot();
+    watchdog.start(15000);
+    const healthy = setTimeout(() => safeMode.markHealthy(), 60000); healthy.unref?.();
     event("runtime_started", { version: VERSION, searchAgents: 5, executionAgents: 25, paidAiCallsEnabled: false });
     for (let i = 0; i < 5; i++) {
       void search(i);
@@ -199,8 +234,8 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
     }
     for (let i = 5; i < 30; i++) schedule(() => execute(i), 1000 + (i - 5) * 50);
   }
-  function stop() { stopping = true; for (const t of timers) clearTimeout(t); save(); }
-  return { state, search, execute, dashboard, save, start, stop, recoveredStalled };
+  function stop() { stopping = true; watchdog.stop(); for (const t of timers) clearTimeout(t); save(); }
+  return { state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, safeMode, watchdog, selfCheck, vault };
 }
 
 if (process.env.ATLASZ_TEST_MODE !== "1") {
@@ -212,7 +247,7 @@ if (process.env.ATLASZ_TEST_MODE !== "1") {
     if (req.method !== "GET") { res.writeHead(405); res.end('{"error":"read_only"}'); return; }
     const dashboard = runtime.dashboard();
     if (route === "/health") {
-      res.end(JSON.stringify({ ok: true, version: VERSION, status: dashboard.status, search: dashboard.search, lastSystemRun: dashboard.lastSystemRun }));
+      res.end(JSON.stringify({ ok: true, version: VERSION, status: dashboard.status, safeMode: dashboard.safeMode.mode, selfCheck: dashboard.selfCheck.level, search: dashboard.search, lastSystemRun: dashboard.lastSystemRun }));
     } else if (route === "/opportunities") {
       res.end(JSON.stringify({ count: runtime.state.leads.length, topActionable: [], opportunities: runtime.state.leads.map(({ description, assessment, ...l }) => ({ ...l, score: assessment.score, checks: assessment.checks })), warning: "Unverified candidates are not approved for outreach." }));
     } else if (route === "/events") {

@@ -1,7 +1,8 @@
+import {validProbeEvidence} from "./probe-evidence.mjs";
 const tools=new Map();
 export const TOOL_CATEGORIES=["FILES","CODE","TEST","WEB","COMPUTER","DATA","SPREADSHEET","DOCUMENT","MEDIA","EMAIL","CRM","RESEARCH","DELIVERY","PRODUCTIVITY","DEVOPS","DESIGN","VOICE","FINANCE"];
-export function registerTool({id,category,capabilities=[],available=false,requiresApproval=false,costClass="UNKNOWN",adapter=null}={}){
- if(!id||!TOOL_CATEGORIES.includes(category))throw new Error("VALID_TOOL_ID_CATEGORY_REQUIRED");if(available&&!adapter)throw new Error("AVAILABLE_TOOL_REQUIRES_ADAPTER");
+export function registerTool({id,category,capabilities=[],available=false,requiresApproval=false,costClass="UNKNOWN",adapter=null,probeEvidence=null}={}){
+ if(!id||!TOOL_CATEGORIES.includes(category))throw new Error("VALID_TOOL_ID_CATEGORY_REQUIRED");if(available&&!adapter)throw new Error("AVAILABLE_TOOL_REQUIRES_ADAPTER");if(available&&!validProbeEvidence(probeEvidence))throw new Error("AVAILABLE_TOOL_REQUIRES_PROBE_EVIDENCE");
  const t={id,category,capabilities:[...new Set(capabilities)],available:Boolean(available),requiresApproval:Boolean(requiresApproval),costClass,adapter,updatedAt:new Date().toISOString()};tools.set(id,t);return t;
 }
 export function toolsFor(required=[]){return [...tools.values()].filter(t=>t.available&&required.every(r=>t.capabilities.includes(r)));}
