@@ -74,10 +74,10 @@
   }
  },
  "summary": {
-  "MISSING": 18,
+  "MISSING": 15,
   "PARTIAL": 42,
   "EXTERNAL_BLOCKER": 23,
-  "VERIFIED_WORKING": 2,
+  "VERIFIED_WORKING": 5,
   "total": 85
  },
  "capabilities": [
@@ -505,8 +505,8 @@
    ],
    "modules": "connector-catalog.mjs; universal-connector-layer.mjs; tool-bridge.mjs; secret-vault.mjs",
    "status": "PARTIAL",
-   "evidence": "connector-catalog.test (BLOCKED_NO_CREDENTIALS, probe-only LIVE)",
-   "missing": "MCP protocol client (capability discovery, auth, approval) \u2014 no MCP code exists",
+   "evidence": "connector-catalog.test + typed-tools.test (typed descriptors, approval classes, timeout/failure containment)",
+   "missing": "MCP transport/protocol client and capability discovery against a real MCP server (EXTERNAL: no server available)",
    "integration_gaps": "Tool Bridge has no tests; MCP transport missing",
    "security": "Credentials only via vault; each MCP tool call approval-classed",
    "plan": "Define MCP-style tool descriptor + typed invocation over the shared registry; transport blocked until an MCP server is available",
@@ -792,14 +792,14 @@
     "V73-S09-018"
    ],
    "modules": "capability-registry.mjs; executor-toolbox-registry.mjs; tool-bridge.mjs",
-   "status": "MISSING",
-   "evidence": "No typed schema/argument validation exists (agent-factory validates definitions only)",
-   "missing": "Typed schemas, input/output validation, permission checks per function",
+   "status": "VERIFIED_WORKING",
+   "evidence": "typed-tools.test (5 tests, 7 mutation checks caught: input/output validation, chain gate, additionalProperties, type check, schema keyword allowlist, timeout); money-engine-hosted.test (hosted built-ins through the control chain). No live model calls these yet (no provider) - the schema/permission layer itself is verified.",
+   "missing": "Live model attachment (EXTERNAL); more built-in tools",
    "integration_gaps": "No validator",
    "security": "Every call classified by owner-authority",
    "plan": "Build typed tool registry with strict schema validation (shared with GE08/P14)",
    "tests_required": "reject extra/missing/typed-wrong args, output validation, permission class, unknown tool refused",
-   "final_status": "MISSING",
+   "final_status": "VERIFIED_WORKING",
    "shared_infrastructure": [
     "TYPED_TOOLS_AND_SCHEMAS"
    ]
@@ -1113,14 +1113,14 @@
     "V73-S09-018"
    ],
    "modules": "see G06",
-   "status": "MISSING",
-   "evidence": "None",
-   "missing": "see G06",
+   "status": "VERIFIED_WORKING",
+   "evidence": "typed-tools.test (5 tests, 7 mutation checks caught: input/output validation, chain gate, additionalProperties, type check, schema keyword allowlist, timeout); money-engine-hosted.test (hosted built-ins through the control chain)",
+   "missing": "Live model attachment (EXTERNAL)",
    "integration_gaps": "see G06",
    "security": "see G06",
    "plan": "Shared with G06",
    "tests_required": "see G06",
-   "final_status": "MISSING",
+   "final_status": "VERIFIED_WORKING",
    "shared_infrastructure": [
     "TYPED_TOOLS_AND_SCHEMAS"
    ]
@@ -1828,14 +1828,14 @@
     "ATLASZ-OSC-015"
    ],
    "modules": "business/qa-factory.mjs (QA only)",
-   "status": "MISSING",
-   "evidence": "None",
-   "missing": "Schema enforcement with rejection",
+   "status": "VERIFIED_WORKING",
+   "evidence": "typed-tools.test (5 tests, 7 mutation checks caught: input/output validation, chain gate, additionalProperties, type check, schema keyword allowlist, timeout); money-engine-hosted.test (hosted built-ins through the control chain); parseStructured rejects non-JSON, extra fields and out-of-enum values without repair",
+   "missing": "Domain schemas for every module output (incremental)",
    "integration_gaps": "none",
    "security": "Reject invalid, never coerce silently",
    "plan": "Shared schema validator (see G06)",
    "tests_required": "accept/reject matrix, no coercion",
-   "final_status": "MISSING",
+   "final_status": "VERIFIED_WORKING",
    "shared_infrastructure": [
     "TYPED_TOOLS_AND_SCHEMAS"
    ]

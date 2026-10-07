@@ -41,3 +41,17 @@ test("runtime backpressure: a full work queue pauses SEARCH (no source fetch, vi
     const l = rt.queue.lease({ worker: "t" }); rt.queue.ack(l.id); await rt.search(0); assert.equal(fetches, 1);
   } finally { delete process.env.ATLASZ_QUEUE_MAX_PENDING; rm(dir); }
 });
+
+test("hosted typed tools: read-only built-ins work through the control chain; bad args, unknown tools and unregistered external effects are refused", async () => {
+  const dir = tmp("tt-");
+  try {
+    const rt = createRuntime({ dataDir: dir, retryBaseMs: 0, fetchImpl: async () => ({ ok: false, status: 500, json: async () => ({}), text: async () => "" }) });
+    const names = rt.tools.describe().map(t => t.name).sort(); assert.deepEqual(names, ["atlasz.queue", "inbox.summary", "money.panel"]);
+    const A = { actor: { type: "AGENT", id: "E1" } };
+    const q = await rt.tools.invoke("atlasz.queue", {}, A); assert.equal(q.status, "OK"); assert.equal(typeof q.result.full, "boolean");
+    const mp = await rt.tools.invoke("money.panel", {}, A); assert.equal(mp.status, "OK"); assert.equal(mp.result.money.verifiedRevenueUsd, 0);
+    assert.equal((await rt.tools.invoke("money.panel", { x: 1 }, A)).status, "INVALID_ARGUMENTS");
+    assert.equal((await rt.tools.invoke("inbox.send_all", {}, A)).status, "UNKNOWN_TOOL");
+    assert.equal(rt.tools.stats().tools, 3);
+  } finally { rm(dir); }
+});

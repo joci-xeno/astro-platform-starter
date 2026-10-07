@@ -95,7 +95,7 @@
     52
    ]
   },
-  "item_verified_count": 910
+  "item_verified_count": 911
  },
  "requirements": [
   {
@@ -22842,6 +22842,33 @@
    "test_status": "TESTED_SANDBOX",
    "classification": "SANDBOX",
    "next_action": "Add tasks/deadlines, provider health and recovery status lines once those sources exist"
+  },
+  {
+   "id": "ATLASZ-PKG84-021",
+   "title": "Typed tool registry + strict schema validation (85-cap G06/GE08/P14/C06): exact-schema args and outputs (no coercion, no extra keys), unsupported schema keywords refused at registration, every call classified by the control chain, owner approval bound to exact args, timeout/handler errors contained, manifest exposes schemas only; hosted with 3 read-only built-ins",
+   "level": "item",
+   "section": 77,
+   "description": "Typed tool registry + strict schema validation (85-cap G06/GE08/P14/C06): exact-schema args and outputs (no coercion, no extra keys), unsupported schema keywords refused at registration, every call classified by the control chain, owner approval bound to exact args, timeout/handler errors contained, manifest exposes schemas only; hosted with 3 read-only built-ins",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/typed-tools.mjs; atlasz-runtime/supervisor-safe.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/typed-tools.test.mjs",
+    "atlasz-tests/money-engine-hosted.test.mjs"
+   ],
+   "evidence": [
+    "5+1 tests, 7 mutation checks caught; no live model calls these yet; no MCP transport"
+   ],
+   "blocker": "No live model provider; no MCP server",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Register more domain tools (documents, CRM) and attach a model when a provider is live"
   }
  ]
 }

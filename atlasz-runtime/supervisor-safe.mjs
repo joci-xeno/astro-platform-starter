@@ -19,6 +19,7 @@ import { createBrainSystem } from "../atlasz-addons/brain/brain-system.mjs";
 import { createSearchPipeline } from "../atlasz-addons/brain/search-pipeline.mjs";
 import { createMoneyEngine } from "../atlasz-addons/business/money-engine.mjs";
 import { createUniversalInbox } from "../atlasz-addons/universal-inbox.mjs";
+import { createToolRegistry } from "../atlasz-addons/typed-tools.mjs";
 import { createInboxPipeline } from "../atlasz-addons/business/inbox-pipeline.mjs";
 import { createOwnerControlSystem } from "../atlasz-addons/owner-control/owner-control-system.mjs";
 
@@ -114,6 +115,13 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
   const inbox = createUniversalInbox({ dir: path.join(dataDir, "inbox"), ownerAuth, now });
   const inboxPipeline = createInboxPipeline({ inbox, security: brain.security, graph: brain.entityGraph, tenantId: "ATLASZ", file: path.join(dataDir, "inbox", "pipeline.json"), blackBox: brain.blackBox, now,
     lookups: { deal: id => moneyEngine.engines.deals.get(id), job: id => moneyEngine.engines.jobs.get(id) }, handlers: { recordReply: (dealId, inbound) => moneyEngine.recordReply(dealId, inbound) } });
+  // Typed tool surface (G06/GE08): the ONLY way a model/agent calls an ATLASZ function. Schema-checked in and out, classified by the control chain
+  // on every call. These built-ins are READ-ONLY views of persisted state; any external-effect tool must declare a gated operation.
+  const EMPTY = { type: "object", properties: {} };
+  const tools = createToolRegistry({ chain: ownerControl.chain, blackBox: brain.blackBox, now });
+  tools.register({ name: "atlasz.queue", description: "Durable queue pressure (ready/leased/dead counts).", operation: "READ_STATUS", input: EMPTY, output: { type: "object", properties: { full: { type: "boolean" } }, additionalProperties: true }, handler: () => queue.pressure() });
+  tools.register({ name: "money.panel", description: "Money Engine panel (LIVE vs SANDBOX separate; verified vs claimed).", operation: "READ_STATUS", input: EMPTY, output: { type: "object", properties: {}, additionalProperties: true }, handler: () => moneyEngine.panel() });
+  tools.register({ name: "inbox.summary", description: "Inbox pipeline summary (counts only, no message bodies).", operation: "READ_STATUS", input: EMPTY, output: { type: "object", properties: {}, additionalProperties: true }, handler: () => inboxPipeline.summary() });
   const brainSafe = fn => { try { return fn(); } catch (e) { try { console.log(JSON.stringify({ at: now(), type: "brain_error", error: String(e.message).slice(0, 120) })); } catch { /* ignore */ } return null; } };
   brainSafe(() => brain.dispatch?.resumeAll());                           // restart: in-flight governed jobs go back to QUEUED (attempts, plans, checkpoints preserved)
   const seen = new Set(state.candidates.map(c => c.id));
@@ -351,7 +359,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
     schedule(() => brainSafe(() => brain.behavior.scan()), 60000);          // behaviour anomaly scan over the tamper-evident Black Box (detect + recommend only)
   }
   function stop() { stopping = true; watchdog.stop(); for (const t of timers) clearTimeout(t); save(); }
-  return { inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
+  return { tools, inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
 }
 
 if (process.env.ATLASZ_TEST_MODE !== "1") {

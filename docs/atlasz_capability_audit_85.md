@@ -1,6 +1,6 @@
 # ATLASZ V7.3 — 85-capability audit
 
-Statuses: MISSING 18, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 2, total 85
+Statuses: MISSING 15, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 5, total 85
 
 ## M01 — Universal AI Browser Sidebar — **MISSING**
 - Registry links (candidates): V73-S19-001, V73-S19-002, V73-S19-003, V73-S19-004, V73-S19-005, V73-S19-006
@@ -185,8 +185,8 @@ Statuses: MISSING 18, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 2, total
 ## C06 — MCP Integration Framework — **PARTIAL**
 - Registry links (candidates): V73-S02-001, V73-S02-002, V73-S12-006, V73-S18-010, V73-S18-014, V73-S20-001
 - Modules: connector-catalog.mjs; universal-connector-layer.mjs; tool-bridge.mjs; secret-vault.mjs
-- Evidence: connector-catalog.test (BLOCKED_NO_CREDENTIALS, probe-only LIVE)
-- Missing: MCP protocol client (capability discovery, auth, approval) — no MCP code exists
+- Evidence: connector-catalog.test + typed-tools.test (typed descriptors, approval classes, timeout/failure containment)
+- Missing: MCP transport/protocol client and capability discovery against a real MCP server (EXTERNAL: no server available)
 - Integration gaps / blockers: Tool Bridge has no tests; MCP transport missing
 - Security: Credentials only via vault; each MCP tool call approval-classed
 - Plan: Define MCP-style tool descriptor + typed invocation over the shared registry; transport blocked until an MCP server is available
@@ -312,11 +312,11 @@ Statuses: MISSING 18, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 2, total
 - Plan: Shared with M06
 - Tests required: see M06
 
-## G06 — Function Calling — **MISSING**
+## G06 — Function Calling — **VERIFIED_WORKING**
 - Registry links (candidates): V73-S02-001, V73-S03-007, V73-S03-013, V73-S09-016, V73-S09-017, V73-S09-018
 - Modules: capability-registry.mjs; executor-toolbox-registry.mjs; tool-bridge.mjs
-- Evidence: No typed schema/argument validation exists (agent-factory validates definitions only)
-- Missing: Typed schemas, input/output validation, permission checks per function
+- Evidence: typed-tools.test (5 tests, 7 mutation checks caught: input/output validation, chain gate, additionalProperties, type check, schema keyword allowlist, timeout); money-engine-hosted.test (hosted built-ins through the control chain). No live model calls these yet (no provider) - the schema/permission layer itself is verified.
+- Missing: Live model attachment (EXTERNAL); more built-in tools
 - Integration gaps / blockers: No validator
 - Security: Every call classified by owner-authority
 - Plan: Build typed tool registry with strict schema validation (shared with GE08/P14)
@@ -462,11 +462,11 @@ Statuses: MISSING 18, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 2, total
 - Plan: Shared with M06/M07
 - Tests required: see M07
 
-## GE08 — Structured Tool Invocation — **MISSING**
+## GE08 — Structured Tool Invocation — **VERIFIED_WORKING**
 - Registry links (candidates): V73-S02-001, V73-S03-007, V73-S03-013, V73-S09-016, V73-S09-017, V73-S09-018
 - Modules: see G06
-- Evidence: None
-- Missing: see G06
+- Evidence: typed-tools.test (5 tests, 7 mutation checks caught: input/output validation, chain gate, additionalProperties, type check, schema keyword allowlist, timeout); money-engine-hosted.test (hosted built-ins through the control chain)
+- Missing: Live model attachment (EXTERNAL)
 - Integration gaps / blockers: see G06
 - Security: see G06
 - Plan: Shared with G06
@@ -782,11 +782,11 @@ Statuses: MISSING 18, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 2, total
 - Plan: Comparison over fetched snapshots (injected fetcher) with structured differences
 - Tests required: diff correctness, injection screened
 
-## P14 — Strict Structured Output Engine — **MISSING**
+## P14 — Strict Structured Output Engine — **VERIFIED_WORKING**
 - Registry links (candidates): V73-S24-005, V73-S34-001, V73-S43-006, V73-S51-011, ATLASZ-OSC-014, ATLASZ-OSC-015
 - Modules: business/qa-factory.mjs (QA only)
-- Evidence: None
-- Missing: Schema enforcement with rejection
+- Evidence: typed-tools.test (5 tests, 7 mutation checks caught: input/output validation, chain gate, additionalProperties, type check, schema keyword allowlist, timeout); money-engine-hosted.test (hosted built-ins through the control chain); parseStructured rejects non-JSON, extra fields and out-of-enum values without repair
+- Missing: Domain schemas for every module output (incremental)
 - Integration gaps / blockers: none
 - Security: Reject invalid, never coerce silently
 - Plan: Shared schema validator (see G06)
