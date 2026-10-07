@@ -36,10 +36,10 @@ test("costs need evidence when > 0; verified net profit = verified receipts - do
   l.recordRevenue({ jobId: "j1", amountUsd: 100, stage: "REVERSED", evidence: ev("cb_1") });
   assert.equal(l.summary().revenue.verifiedReceivedUsd, 0);
 });
-test("entities never commingle: GMP/VIRENA/personal records are excluded from ATLASZ_EXTERNAL profit", () => {
+test("entities never commingle: other-entity/personal records are excluded from ATLASZ_EXTERNAL profit", () => {
   const l = createFinancialLedger({ dir: tmp() });
-  l.recordRevenue({ entity: "GREEN_MOUNTAIN_PAINTERS", jobId: "g1", amountUsd: 900, stage: "PAID", confirmedReceived: true, evidence: ev("g_1") });
-  assert.equal(l.summary().revenue.verifiedReceivedUsd, 0); assert.equal(l.summary({ entity: "GREEN_MOUNTAIN_PAINTERS" }).revenue.verifiedReceivedUsd, 900);
+  l.recordRevenue({ entity: "OTHER_ENTITY_1", jobId: "g1", amountUsd: 900, stage: "PAID", confirmedReceived: true, evidence: ev("g_1") });
+  assert.equal(l.summary().revenue.verifiedReceivedUsd, 0); assert.equal(l.summary({ entity: "OTHER_ENTITY_1" }).revenue.verifiedReceivedUsd, 900);
   assert.throws(() => l.recordCost({ entity: "SOMEONE_ELSE", amountUsd: 0 }), /UNKNOWN_ENTITY/);
 });
 test("durable and tamper-evident: reload sees entries; editing the file is detected", () => {

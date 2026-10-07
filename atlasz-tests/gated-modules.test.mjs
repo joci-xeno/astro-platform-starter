@@ -66,7 +66,8 @@ test("computer-use: ask-owner actions wait for signed approval; forbidden always
   assert.equal(f.authorize({ agentId: "A", action: "spend-money", ownerApproved: true }).decision, "WAIT_OWNER");
   assert.equal(f.authorize({ agentId: "A", action: "spend-money", ownerApproved: sign("COMPUTER_SPEND_MONEY") }).decision, "ALLOW");
   assert.equal(f.authorize({ agentId: "A", action: "disable-audit-log", ownerApproved: sign("COMPUTER_DISABLE_AUDIT_LOG") }).decision, "DENY");
-  await assert.rejects(f.execute({ agentId: "A", action: "open-page" }), /COMPUTER_USE_PROVIDER_UNAVAILABLE/);
+  await assert.rejects(f.execute({ agentId: "A", action: "navigate" }), /COMPUTER_USE_PROVIDER_UNAVAILABLE/);
+  assert.equal((await f.execute({ agentId: "A", action: "open-page" })).decision, "WAIT_OWNER");   // unlisted action fails closed
   assert.equal(f.status().state, "PLACEHOLDER_UNCONNECTED");
 });
 test("approval gateway status derives from owner-auth (never caller-asserted)", () => {

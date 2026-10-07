@@ -19,6 +19,12 @@ import { buildDailyBrief, answerQuery, DEFAULT_PREFS } from "../atlasz-addons/ma
 import { assessImpact } from "../atlasz-addons/human-core.mjs";
 import { createMobileApi } from "../atlasz-addons/mobile-api.mjs";
 import { createApprovalRequests } from "../atlasz-addons/approval-requests.mjs";
+import { createDocumentCenter } from "../atlasz-addons/document-center.mjs";
+import { createUniversalInbox } from "../atlasz-addons/universal-inbox.mjs";
+import { createVoiceSession } from "../atlasz-addons/voice-session.mjs";
+import { createConnectorCatalog } from "../atlasz-addons/connector-catalog.mjs";
+import { createSecretVault } from "../atlasz-addons/secret-vault.mjs";
+import { createTechWatch } from "../atlasz-addons/tech-watch.mjs";
 import { createOwnerKeystore, signWithKeystore, keystoreStatus } from "../atlasz-addons/owner-keystore.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -215,6 +221,14 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   const remedy = c => ({ "owner-auth": "Provision the owner key in Owner Controls.", "secret-vault": "Set ATLASZ_VAULT_KEY on the host (needed before any credential is stored).", "emergency-stop": "Resume via Owner Controls when it is safe.",
     "queue-journal": "Do not delete. Restore from last known good.", "runtime-state": "Do not overwrite. Restore from last known good.", "disk-free": "Free disk space.", topology: "Fixed topology must be 5 SEARCH + 25 EXECUTION." }[c.id] ?? "See detail.");
 
+  // ---- Documents / Inbox / Voice / Connectors / Tech Watch (read-mostly views over the durable modules) ----
+  const docCenter = () => createDocumentCenter({ dir: path.join(stateDir, "documents") });
+  const documents = () => { const d = docCenter(); return { summary: d.summary(), items: d.list({ tenantId: "JOCI", role: "OWNER" }).slice(0, 100) }; };
+  const inboxMod = () => createUniversalInbox({ dir: path.join(stateDir, "inbox"), ownerAuth: ownerAuth() });
+  const inbox = () => { const i = inboxMod(); return { counts: i.counts(), chain: i.verify(), items: i.list().slice(0, 100), note: "Drafts are never sent from here. Sending needs a proven connector, an open kill switch and your signed approval." }; };
+  const voice = () => { const v = createVoiceSession({}); const st = v.status(); return { ...st, note: st.live ? null : "BLOCKED: no tested speech-to-text and text-to-speech provider is attached, so voice is not live. Voice can never approve anything." }; };
+  const connectors = () => { let vault; try { vault = createSecretVault({ dir: path.join(stateDir, "vault") }); } catch (e) { return { error: String(e.message), connectors: [] }; } return createConnectorCatalog({ vault }).health(); };
+  const techWatch = () => createTechWatch({ feedDir: path.join(configDir, "tech-watch"), installed: () => uc().viewModel().components.map(c => ({ componentId: c.id, version: c.version })) }).scan();
   // ---- Update Center (same flow as the CLI/tests; no real detector adapters yet => honest BLOCKED) ----
   const plugins = () => createPluginManager({ roots: [path.join(configDir, "plugins"), path.join(packDir, "plugins")], stateDir: path.join(stateDir, "plugins"), ownerAuth: ownerAuth() });
   const pluginActions = {
@@ -236,6 +250,6 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
     unfreeze: ({ passphrase }) => act(() => uc().unfreeze({ ownerApproval: sign(passphrase, "UPDATE_UNFREEZE", uc().freezeStatus().updateId) }))
   };
 
-  return { mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }

@@ -184,9 +184,23 @@ const views = {
         h("button", { class: "btn", disabled: !x.actions.rollback, onclick: async () => { const r = await ask({ title: "Rollback " + x.id, fields: [PASS] }); if (r) act("Rollback", "/api/updates/rollback", { id: x.id, passphrase: r.passphrase }); } }, "Rollback"))])));
     return out;
   },
-  async voice() { return [h("h2", {}, "Speak-to-Speak / Live Voice"), note("NOT BUILT (V7.3 §5). No STT/TTS provider is attached, so voice is never shown LIVE. Planned for a later development round.")]; }
+  async voice() { const v = await api("/api/voice"); return [h("h2", {}, "Speak-to-Speak / Live Voice"), note(v.note ?? "Voice providers are attached.", v.live ? "" : "warn"),
+    table(["State", "Enabled", "Mode", "Live"], [[pill(v.state), String(v.enabled), v.mode, pill(v.live ? "LIVE" : "NOT LIVE")]])]; },
+  async documents() { const d = await api("/api/documents");
+    return [h("h2", {}, "Document Center"), note("Total " + d.summary.total + " · unsupported formats " + d.summary.unsupported + " · secret " + d.summary.secret),
+      table(["Name", "Type", "Class", "Extraction", "Job"], d.items.map(x => [x.name, x.type, pill(x.classification), pill(x.extraction?.status), x.jobId ?? "—"]))]; },
+  async inbox() { const i = await api("/api/inbox");
+    return [h("h2", {}, "Universal Inbox"), note(i.note), note("Total " + i.counts.total + " · new " + i.counts.new + " · critical " + i.counts.critical + " · chain " + (i.chain.ok === false ? "BROKEN" : "OK"), i.chain.ok === false ? "bad" : ""),
+      table(["Priority", "Source", "Status", "Subject"], i.items.map(x => [pill(x.priority), x.source, pill(x.status), String(x.subject ?? x.title ?? "").slice(0, 120)]))]; },
+  async connectors() { const c = await api("/api/connectors");
+    return [h("h2", {}, "Connectors"), note("A connector is LIVE only after its own read-only probe passes. Live " + (c.live ?? 0) + " of " + (c.total ?? 0) + "; blocked (no credentials) " + (c.blockedNoCredentials ?? 0) + "; no safe probe " + (c.noSafeProbe ?? 0) + "."),
+      table(["Connector", "State", "Needs"], (c.connectors ?? []).map(x => [x.id, pill(x.state), x.needs ?? x.note ?? ""]))]; },
+  async techwatch() { const t = await api("/api/techwatch");
+    return [h("h2", {}, "Tech Watch"), note(t.status === "NO_FEED" ? "NO_FEED: no feed files in the tech-watch folder, so no external news is claimed." : "Feeds: " + t.feeds.join(", ")),
+      table(["Component", "Installed", "Available", "Severity", "Compatibility"], t.advisories.map(a => [a.componentId, a.installed, a.available, pill(a.severity), a.compatibility])),
+      h("h3", {}, "Capability gaps (" + t.capabilityGaps.notLive + " not LIVE)"), table(["Item", "State"], t.capabilityGaps.items.map(g => [g.title ?? g.id, pill(g.state)]))]; }
 };
-const NAMES = { home: "Home", overview: "Overview", plugins: "Plugins / Themes", finance: "Revenue / Costs / Profit", evidence: "Evidence / Audit", agents: "Agents (5+25)", jobs: "Jobs / Opportunities", money: "Money Engine", approvals: "Approvals", providers: "Model / Tool health", errors: "Errors & Blockers", owner: "Owner Controls", backup: "Backup / Restore / LKG", doctor: "System Doctor", updates: "Update Center", voice: "Voice (planned)" };
+const NAMES = { home: "Home", overview: "Overview", plugins: "Plugins / Themes", finance: "Revenue / Costs / Profit", evidence: "Evidence / Audit", agents: "Agents (5+25)", jobs: "Jobs / Opportunities", money: "Money Engine", approvals: "Approvals", providers: "Model / Tool health", errors: "Errors & Blockers", owner: "Owner Controls", backup: "Backup / Restore / LKG", doctor: "System Doctor", updates: "Update Center", voice: "Voice", documents: "Documents", inbox: "Inbox", connectors: "Connectors", techwatch: "Tech Watch" };
 let current = "home";
 async function render() {
   $("#nav").replaceChildren(h("h1", {}, "ATLASZ"), ...Object.entries(NAMES).map(([k, n]) => h("button", { "aria-current": k === current ? "page" : null, onclick: () => { current = k; render(); } }, n)));

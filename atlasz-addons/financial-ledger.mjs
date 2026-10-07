@@ -5,7 +5,7 @@
 import path from "node:path";
 import { createAuditChain } from "./audit-chain.mjs";
 
-export const ENTITIES = Object.freeze(["ATLASZ_EXTERNAL", "JOCI_PERSONAL", "GREEN_MOUNTAIN_PAINTERS", "VIRENA"]);
+export const ENTITIES = Object.freeze(["ATLASZ_EXTERNAL", "JOCI_PERSONAL", "OTHER_ENTITY_1", "OTHER_ENTITY_2"]);
 export const REVENUE_STAGES = Object.freeze(["PROPOSED", "AGREED", "INVOICED", "PAID", "REVERSED"]);
 const num = (v, code) => { const n = Number(v); if (!Number.isFinite(n) || n < 0) throw new Error(code); return n; };
 const evOk = e => Boolean(e && typeof e === "object" && e.source && e.reference && Number.isFinite(Date.parse(e.verifiedAt)));

@@ -17,7 +17,7 @@ export function createControlCenterServer(opts = {}) {
   const token = opts.token ?? randomBytes(24).toString("hex");
   let port = 0;
   const get = { "/api/status": () => core.status(), "/api/opportunities": () => core.opportunities(), "/api/approvals": () => core.approvals(), "/api/backups": () => core.backups(),
-    "/api/finance": () => core.finance(), "/api/evidence": () => core.evidence(), "/api/brief": () => core.brief(), "/api/prefs": () => core.prefs(), "/api/plugins": () => core.plugins(), "/api/theme": () => core.theme(), "/api/doctor": () => core.doctor(), "/api/updates": () => core.updates() };
+    "/api/finance": () => core.finance(), "/api/documents": () => core.documents(), "/api/inbox": () => core.inbox(), "/api/voice": () => core.voice(), "/api/connectors": () => core.connectors(), "/api/techwatch": () => core.techWatch(), "/api/evidence": () => core.evidence(), "/api/brief": () => core.brief(), "/api/prefs": () => core.prefs(), "/api/plugins": () => core.plugins(), "/api/theme": () => core.theme(), "/api/doctor": () => core.doctor(), "/api/updates": () => core.updates() };
   const post = {
     "/api/owner-key": b => core.provisionOwnerKey(b), "/api/approvals/decide": b => core.decideApproval(b), "/api/emergency": b => core.setEmergency(b), "/api/safe-mode/exit": b => core.exitSafeMode(b),
     "/api/runtime/start": () => core.startRuntime(), "/api/runtime/stop": () => core.stopRuntime(),
