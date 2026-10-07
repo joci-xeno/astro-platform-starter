@@ -12,15 +12,17 @@ import { runStartupSelfCheck } from "../atlasz-addons/startup-self-check.mjs";
 import { createBackup, verifyBackup, recoveryDrill, createLkgRegistry, rollbackToLastKnownGood, restoreBackup, LKG_CRITERIA } from "../atlasz-addons/backup-recovery.mjs";
 import { createUpdateCenter } from "../atlasz-addons/update-center.mjs";
 import { readAuditFile, verifyChain } from "../atlasz-addons/audit-chain.mjs";
+import { createFinancialLedger } from "../atlasz-addons/financial-ledger.mjs";
+import { createLocalUpdateAdapters, SELFTEST } from "../atlasz-addons/local-update-adapters.mjs";
 import { createApprovalRequests } from "../atlasz-addons/approval-requests.mjs";
 import { createOwnerKeystore, signWithKeystore, keystoreStatus } from "../atlasz-addons/owner-keystore.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const RUNTIME_ENTRY = path.join(HERE, "..", "atlasz-runtime", "supervisor-safe.mjs");
-const AUDITS = ["owner-auth-audit.jsonl", "emergency-audit.jsonl", "update-center-audit.jsonl", "safe-mode-audit.jsonl", "vault/vault-audit.jsonl"];
+const AUDITS = ["owner-auth-audit.jsonl", "emergency-audit.jsonl", "update-center-audit.jsonl", "safe-mode-audit.jsonl", "vault/vault-audit.jsonl", "ledger/ledger.jsonl"];
 
 export function createControlCenterCore({ stateDir, configDir, backupRoot = path.join(configDir, "backups"), port = 8080, fetchImpl = fetch,
-  updateAdapters = {}, runtimeEntry = RUNTIME_ENTRY, nodeBin = process.execPath } = {}) {
+  updateAdapters = null, localUpdates = true, runtimeEntry = RUNTIME_ENTRY, nodeBin = process.execPath, evidenceDir = process.env.ATLASZ_EVIDENCE_DIR || null } = {}) {
   if (!stateDir || !configDir) throw new Error("STATE_DIR_AND_CONFIG_DIR_REQUIRED");
   fs.mkdirSync(stateDir, { recursive: true }); fs.mkdirSync(configDir, { recursive: true });
   let child = null, childExit = null;
@@ -35,7 +37,23 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   const safeMode = () => createSafeMode({ statePath: path.join(stateDir, "safe-mode.json"), auditPath: path.join(stateDir, "safe-mode-audit.jsonl"), ownerAuth: ownerAuth() });
   const lkg = () => createLkgRegistry({ file: path.join(backupRoot, "lkg-registry.jsonl") });
   let updateCenter = null;
-  const uc = () => (updateCenter ??= createUpdateCenter({ stateDir: path.join(stateDir, "updates"), backupRoot: path.join(backupRoot, "updates"), adapters: updateAdapters, ownerAuth: ownerAuth(), lkgRegistry: lkg() }));
+  // Real local adapters (offline hash-verified packages in <state>/updates/inbox) unless the caller injects its own or disables them.
+  const localAdapters = !updateAdapters && localUpdates ? createLocalUpdateAdapters({ inboxDir: path.join(stateDir, "updates", "inbox") }) : null;
+  const adapters = updateAdapters ?? localAdapters?.adapters ?? {};
+  const packDir = path.join(configDir, "extension-pack");
+  function ensureComponents(center) {
+    if (!localAdapters) return;
+    if (!fs.existsSync(packDir)) {                                           // baseline extension pack: version file + self-test so a rollback can be verified
+      fs.mkdirSync(path.join(packDir, "plugins"), { recursive: true });
+      fs.writeFileSync(path.join(packDir, "VERSION"), "1.0.0\n");
+      fs.writeFileSync(path.join(packDir, SELFTEST), "import fs from 'node:fs'; const v=fs.readFileSync('VERSION','utf8').trim(); process.exit(/^\\d+\\.\\d+\\.\\d+$/.test(v)?0:2);\n");
+    }
+    const have = new Set(center.viewModel().components.map(c => c.id));
+    if (!have.has("atlasz-extension-pack")) center.registerComponent({ id: "atlasz-extension-pack", kind: "PLUGIN", version: fs.readFileSync(path.join(packDir, "VERSION"), "utf8").trim(), installDir: packDir });
+    const decl = path.join(stateDir, "updates", "components.json");           // owner-declared components (never auto-created from a package)
+    if (fs.existsSync(decl)) for (const c of JSON.parse(fs.readFileSync(decl, "utf8"))) if (!have.has(c.id)) center.registerComponent(c);
+  }
+  const uc = () => { if (!updateCenter) { updateCenter = createUpdateCenter({ stateDir: path.join(stateDir, "updates"), backupRoot: path.join(backupRoot, "updates"), adapters, ownerAuth: ownerAuth(), lkgRegistry: lkg() }); ensureComponents(updateCenter); } return updateCenter; };
 
   async function runtimeDashboard() {
     try {
@@ -57,10 +75,24 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
       emergency: emergency().status(), safeMode: safeMode().status(),
       agents: d ? { search: d.agents.filter(a => a.role === "SEARCH"), execution: d.agents.filter(a => a.role === "EXECUTION") } : { search: [], execution: [] },
       topology: { expectedSearch: 5, expectedExecution: 25, actualSearch: d ? d.agents.filter(a => a.role === "SEARCH").length : 0, actualExecution: d ? d.agents.filter(a => a.role === "EXECUTION").length : 0 },
-      metrics: d?.metrics ?? null, queue: d?.queue ?? null, blockers: d?.blockers ?? [], sourceErrors: d?.sourceErrors ?? {},
+      uptime: d?.uptime ?? null, metrics: d?.metrics ?? null, queue: d?.queue ?? null, blockers: d?.blockers ?? [], sourceErrors: d?.sourceErrors ?? {},
       providers: d?.internalAddons ?? null, capabilities: d?.capabilities ?? null,
-      money: { note: "Verified revenue counts ONLY with authoritative payment evidence. None is connected.", confirmedPaidUsd: 0, outreachSent: d?.metrics?.outreachSent ?? 0, won: d?.metrics?.won ?? 0 }
+      money: { note: "Verified revenue counts ONLY with authoritative payment evidence recorded in the ledger.", confirmedPaidUsd: finance().revenue.verifiedReceivedUsd, outreachSent: d?.metrics?.outreachSent ?? 0, won: d?.metrics?.won ?? 0 }
     };
+  }
+  function finance() {
+    try { return createFinancialLedger({ dir: path.join(stateDir, "ledger") }).summary(); }
+    catch (e) { return { error: String(e.message), revenue: { verifiedReceivedUsd: 0, unconfirmedPipelineUsd: 0, source: "LEDGER_UNREADABLE" }, costs: { totalUsd: 0, byProvider: {}, byJob: {}, byCategory: {}, tokensIn: 0, tokensOut: 0, records: 0 }, profit: { verifiedNetUsd: 0, byJob: {} }, chain: { ok: false } }; }
+  }
+  // Evidence/audit: integrity of every hash-chained log plus the evidence records on disk (if an evidence dir is configured).
+  function evidence() {
+    const logs = ["owner-auth-audit.jsonl", "safe-mode-audit.jsonl", "emergency-audit.jsonl", path.join("ledger", "ledger.jsonl"), path.join("vault", "vault-audit.jsonl")]
+      .map(rel => { const f = path.join(stateDir, rel); if (!fs.existsSync(f)) return { log: rel, present: false }; try { const e = readAuditFile(f), v = verifyChain(e); return { log: rel, present: true, ok: v.ok, entries: e.length, head: v.head ?? null, reason: v.reason ?? null }; } catch (err) { return { log: rel, present: true, ok: false, reason: String(err.message) }; } });
+    const records = [];
+    if (evidenceDir && fs.existsSync(evidenceDir)) for (const f of fs.readdirSync(evidenceDir).filter(x => x.endsWith(".json")).sort().slice(-20).reverse()) {
+      try { const r = JSON.parse(fs.readFileSync(path.join(evidenceDir, f), "utf8")); records.push({ file: f, timestamp: r.timestamp ?? null, environment: r.environment ?? null, result: r.result ?? null, commit: r.commit ?? r.version ?? null, component: r.component ?? null }); } catch { records.push({ file: f, unreadable: true }); }
+    }
+    return { logs, records, note: "SANDBOX evidence is never LIVE evidence." };
   }
   function opportunities() {
     const f = path.join(stateDir, "atlasz-state.json");
@@ -160,8 +192,9 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
     "queue-journal": "Do not delete. Restore from last known good.", "runtime-state": "Do not overwrite. Restore from last known good.", "disk-free": "Free disk space.", topology: "Fixed topology must be 5 SEARCH + 25 EXECUTION." }[c.id] ?? "See detail.");
 
   // ---- Update Center (same flow as the CLI/tests; no real detector adapters yet => honest BLOCKED) ----
-  const updates = () => ({ ...uc().viewModel(), adapters: { detector: Boolean(updateAdapters.detector), stager: Boolean(updateAdapters.stager), tester: Boolean(updateAdapters.tester), securityHealth: Boolean(updateAdapters.securityHealth) },
-    notice: updateAdapters.detector ? null : "BLOCKED: no update detector adapter is configured, so nothing can be detected or installed. Fails closed." });
+  const updates = () => ({ ...uc().viewModel(), adapters: { detector: Boolean(adapters.detector), stager: Boolean(adapters.stager), tester: Boolean(adapters.tester), securityHealth: Boolean(adapters.securityHealth), kind: localAdapters ? "LOCAL_OFFLINE_PACKAGES" : (updateAdapters ? "INJECTED" : "NONE") },
+    inbox: localAdapters ? localAdapters.lastScan() : null,
+    notice: adapters.detector ? null : "BLOCKED: no update detector adapter is configured, so nothing can be detected or installed. Fails closed." });
   const act = async (fn) => { try { return { ok: true, result: await fn() }; } catch (e) { return { ok: false, error: String(e.message) }; } };
   const updateActions = {
     check: () => act(() => uc().checkForUpdates()),
@@ -172,6 +205,6 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
     unfreeze: ({ passphrase }) => act(() => uc().unfreeze({ ownerApproval: sign(passphrase, "UPDATE_UNFREEZE", uc().freezeStatus().updateId) }))
   };
 
-  return { status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }

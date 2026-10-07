@@ -35,7 +35,27 @@ async function act(label, path, body, after) {
 }
 let toastEl; function toast(t, c) { toastEl?.remove(); toastEl = note(t, c); $("#main").prepend(toastEl); setTimeout(() => toastEl?.remove(), 9000); }
 
+const fmtUp = sec => { const d = Math.floor(sec / 86400), hh = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60); return (d ? d + "d " : "") + hh + "h " + m + "m"; };
+const usd = n => "$" + Number(n ?? 0).toFixed(2);
 const views = {
+  async finance() {
+    const f = await api("/api/finance");
+    const jobs = Object.entries(f.profit.byJob ?? {});
+    return [h("h2", {}, "Revenue / Costs / Profit"), note(f.note ?? "Only authoritative, evidenced figures are counted."),
+      f.error ? note("Ledger problem: " + f.error, "bad") : null,
+      h("div", { class: "grid" },
+        card("Verified revenue", usd(f.revenue.verifiedReceivedUsd), f.revenue.source), card("Unconfirmed pipeline (not revenue)", usd(f.revenue.unconfirmedPipelineUsd), "invoiced/agreed, not received"),
+        card("Documented costs", usd(f.costs.totalUsd), f.costs.records + " cost records"), card("Verified net profit", usd(f.profit.verifiedNetUsd), f.profit.basis ?? ""),
+        card("Tokens in / out", f.costs.tokensIn + " / " + f.costs.tokensOut, "API token ledger"), card("Ledger integrity", pill(f.chain?.ok ? "OK" : "FAIL"), (f.entries ?? 0) + " entries")),
+      h("h2", {}, "Costs by provider"), table(["Provider", "USD"], Object.entries(f.costs.byProvider).map(([k, v]) => [k, usd(v)])),
+      h("h2", {}, "Per job"), table(["Job", "Verified received", "Cost", "Net"], jobs.map(([k, v]) => [k, usd(v.verifiedReceivedUsd), usd(v.costUsd), usd(v.verifiedNetProfitUsd)]))];
+  },
+  async evidence() {
+    const e = await api("/api/evidence");
+    return [h("h2", {}, "Evidence / audit logs"), note(e.note), h("h2", {}, "Hash-chained logs"),
+      table(["Log", "Present", "Intact", "Entries", "Head"], e.logs.map(l => [l.log, l.present ? "yes" : "no", l.present ? pill(l.ok ? "OK" : "FAIL") : "—", String(l.entries ?? ""), (l.head ?? "").slice(0, 16)])),
+      h("h2", {}, "Evidence records"), e.records.length ? table(["File", "Environment", "Result", "When"], e.records.map(r => [r.file, r.environment ?? "?", r.result ?? "?", r.timestamp ?? ""])) : note("No evidence records found in the configured evidence directory.")];
+  },
   async overview() {
     const s = await api("/api/status"), rt = s.runtime;
     return [h("h2", {}, "System status"), h("p", { class: "sub" }, "Honest status: nothing is shown LIVE without evidence."),
@@ -45,6 +65,7 @@ const views = {
         card("Owner key", pill(s.ownerKey.provisioned ? s.ownerKey.ownerAuthState : "NOT_PROVISIONED"), s.ownerKey.provisioned ? "Joci-only approvals" : "Owner Controls → create key"),
         card("Emergency stop", pill(s.emergency.mode), s.emergency.banner ?? ""),
         card("Safe Mode", pill(s.safeMode.mode), s.safeMode.reason ?? ""),
+        card("Uptime", rt.reachable && s.uptime ? fmtUp(s.uptime.seconds) : "—", rt.reachable && s.uptime ? "since " + s.uptime.startedAt : "runtime not running"),
         card("Durable queue", s.queue ? s.queue.ready + " ready / " + s.queue.done + " done / " + s.queue.dead + " dead" : "—", s.queue ? "leased " + s.queue.leased : "runtime not reachable")),
       h("div", { class: "row" },
         h("button", { class: "btn primary big", disabled: rt.reachable && rt.managedByControlCenter, onclick: () => act("Start ATLASZ", "/api/runtime/start", {}) }, "Start ATLASZ"),
@@ -138,7 +159,7 @@ const views = {
   },
   async voice() { return [h("h2", {}, "Speak-to-Speak / Live Voice"), note("NOT BUILT (V7.3 §5). No STT/TTS provider is attached, so voice is never shown LIVE. Planned for a later development round.")]; }
 };
-const NAMES = { overview: "Overview", agents: "Agents (5+25)", jobs: "Jobs / Opportunities", money: "Money Engine", approvals: "Approvals", providers: "Model / Tool health", errors: "Errors & Blockers", owner: "Owner Controls", backup: "Backup / Restore / LKG", doctor: "System Doctor", updates: "Update Center", voice: "Voice (planned)" };
+const NAMES = { overview: "Overview", finance: "Revenue / Costs / Profit", evidence: "Evidence / Audit", agents: "Agents (5+25)", jobs: "Jobs / Opportunities", money: "Money Engine", approvals: "Approvals", providers: "Model / Tool health", errors: "Errors & Blockers", owner: "Owner Controls", backup: "Backup / Restore / LKG", doctor: "System Doctor", updates: "Update Center", voice: "Voice (planned)" };
 let current = "overview";
 async function render() {
   $("#nav").replaceChildren(h("h1", {}, "ATLASZ"), ...Object.entries(NAMES).map(([k, n]) => h("button", { "aria-current": k === current ? "page" : null, onclick: () => { current = k; render(); } }, n)));
@@ -148,4 +169,4 @@ async function render() {
     const s = await api("/api/status"); const b = $("#banner"); b.hidden = !s.emergency.banner; b.textContent = s.emergency.banner ? s.emergency.banner + " — " + s.emergency.mode : "";
   } catch (e) { main.replaceChildren(h("h2", {}, NAMES[current]), note(e.message === "TOKEN_REQUIRED" ? "Session token missing. Start the Control Center from the ATLASZ icon." : "Error: " + e.message, "bad")); }
 }
-render(); setInterval(() => { if (!$("#dlg").open && ["overview", "agents", "jobs", "money"].includes(current)) render(); }, 10000);
+render(); setInterval(() => { if (!$("#dlg").open && ["overview", "agents", "jobs", "money", "finance"].includes(current)) render(); }, 10000);

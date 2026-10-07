@@ -96,7 +96,7 @@ test("doctor reports honest findings and detects a tampered audit chain", async 
 });
 
 test("update center in the GUI core fails closed without adapters and says so", async () => {
-  const r = rig();
+  const r = rig({ localUpdates: false });
   try {
     const u = r.core.updates();
     assert.match(u.notice, /BLOCKED/); assert.equal(u.adapters.detector, false);
@@ -151,4 +151,21 @@ test("REAL PROCESS: Start ATLASZ from the Control Center boots start:canonical, 
     const stopped = await r.core.stopRuntime();
     assert.equal(stopped.stopped, true); assert.equal(stopped.code, 0);
   } finally { await r.core.stopRuntime(); r.done(); }
+});
+
+test("update center in the GUI core uses real local adapters: empty inbox finds nothing; a valid package is detected, a tampered one rejected", async () => {
+  const { buildPackage } = await import("../atlasz-addons/local-update-adapters.mjs");
+  const r = rig();
+  try {
+    assert.equal(r.core.updates().adapters.kind, "LOCAL_OFFLINE_PACKAGES"); assert.equal(r.core.updates().notice, null);
+    assert.ok(r.core.updates().components.some(c => c.id === "atlasz-extension-pack"));
+    assert.deepEqual((await r.core.updateActions.check()).result.found, []);
+    const inbox = path.join(r.stateDir, "updates", "inbox");
+    buildPackage(path.join(inbox, "p1"), { componentId: "atlasz-extension-pack", version: "1.0.1", files: { VERSION: "1.0.1\n" } });
+    buildPackage(path.join(inbox, "p2"), { componentId: "atlasz-extension-pack", version: "1.0.2", files: { VERSION: "1.0.2\n" } });
+    fs.writeFileSync(path.join(inbox, "p2", "payload", "VERSION"), "9.9.9\n");
+    const c = await r.core.updateActions.check();
+    assert.deepEqual(c.result.found, ["atlasz-extension-pack@1.0.1"]);
+    assert.equal(r.core.updates().inbox.rejected.length, 1);
+  } finally { r.done(); }
 });
