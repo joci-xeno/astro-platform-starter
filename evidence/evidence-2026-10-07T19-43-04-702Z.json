@@ -1,0 +1,21 @@
+{
+ "at": "2026-10-07T19:43:04.702Z",
+ "component": "atlasz-v73-integration (all tests)",
+ "version": null,
+ "commit": "d213f8c",
+ "build": null,
+ "environment": "sandbox (linux, node 22.22.0)",
+ "label": "SANDBOX",
+ "testType": "REGRESSION",
+ "result": "FAIL",
+ "traceId": "e622fe4e-d4b5-48a2-a94c-57d0f34695c6",
+ "error": "see details.tail",
+ "blocker": null,
+ "details": {
+  "tests": 285,
+  "pass": 284,
+  "fail": 1,
+  "skipped": 0,
+  "tail": " ...\n# Subtest: rollback that cannot be verified keeps the system FROZEN and BLOCKED; only a signed owner approval lifts it\nok 274 - rollback that cannot be verified keeps the system FROZEN and BLOCKED; only a signed owner approval lifts it\n  ---\n  duration_ms: 33.339081\n  type: 'test'\n  ...\n# Subtest: crash mid-install (hard process death after the swap) is rolled back on restart\nok 275 - crash mid-install (hard process death after the swap) is rolled back on restart\n  ---\n  duration_ms: 125.639252\n  type: 'test'\n  ...\n# Subtest: a hanging adapter times out and is treated as a failure, never as a pass\nok 276 - a hanging adapter times out and is treated as a failure, never as a pass\n  ---\n  duration_ms: 76.835686\n  type: 'test'\n  ...\n# Subtest: external API breaking change: ISOLATED, never auto-LIVE; LIVE only after passing probe AFTER install\nok 277 - external API breaking change: ISOLATED, never auto-LIVE; LIVE only after passing probe AFTER install\n  ---\n  duration_ms: 45.227268\n  type: 'test'\n  ...\n# Subtest: integration fix whose post-install probe fails stays ISOLATED (no false 'repaired')\nok 278 - integration fix whose post-install probe fails stays ISOLATED (no false 'repaired')\n  ---\n  duration_ms: 21.631711\n  type: 'test'\n  ...\n# Subtest: manual rollback needs a signed approval and restores the previous version\nok 279 - manual rollback needs a signed approval and restores the previous version\n  ---\n  duration_ms: 27.548876\n  type: 'test'\n  ...\n# Subtest: state, versions and audit survive a restart; Control Center view model exposes the required buttons/actions\nok 280 - state, versions and audit survive a restart; Control Center view model exposes the required buttons/actions\n  ---\n  duration_ms: 20.226936\n  type: 'test'\n  ...\n# Subtest: a tampered update audit log is refused at startup\nok 281 - a tampered update audit log is refused at startup\n  ---\n  duration_ms: 5.037935\n  type: 'test'\n  ...\n# Subtest: no provider chain => BLOCKED_NO_PROVIDER, cannot listen; an UNPROVEN provider is never used\nok 282 - no provider chain => BLOCKED_NO_PROVIDER, cannot listen; an UNPROVEN provider is never used\n  ---\n  duration_ms: 3.777042\n  type: 'test'\n  ...\n# Subtest: a turn: listen -> hear -> speak records transcript and latency; voice can never approve\nok 283 - a turn: listen -> hear -> speak records transcript and latency; voice can never approve\n  ---\n  duration_ms: 5.71344\n  type: 'test'\n  ...\n# Subtest: interrupt (barge-in) while speaking, intents, and mode validation\nok 284 - interrupt (barge-in) while speaking, intents, and mode validation\n  ---\n  duration_ms: 0.865008\n  type: 'test'\n  ...\n# Subtest: provider fallback: a failing STT is marked DOWN and the next proven provider takes over\nok 285 - provider fallback: a failing STT is marked DOWN and the next proven provider takes over\n  ---\n  duration_ms: 0.877038\n  type: 'test'\n  ...\n1..285\n# tests 285\n# suites 0\n# pass 284\n# fail 1\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 40866.166036\n"
+ }
+}
