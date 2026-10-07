@@ -22,6 +22,7 @@ import { createGovernedDispatch } from "./governed-dispatch.mjs";
 import { createMemoryFabric } from "./memory-fabric.mjs";
 import * as businessMemory from "../business-memory.mjs";
 import * as experienceLearning from "../experience-learning-engine.mjs";
+import { createBehaviorMonitor } from "./behavior-monitor.mjs";
 import { createEntityGraph } from "../business/entity-graph.mjs";
 
 export function createBrainSystem({ dir, ownerAuth, roster = [], gate = emergencyGate, safeMode = null, chain = null, lookups = {}, dispatchOptions = {}, executors = {}, commandHandlers = {}, drActions = {}, sources = {}, redact = s => s, now = () => new Date().toISOString() } = {}) {
@@ -33,6 +34,7 @@ export function createBrainSystem({ dir, ownerAuth, roster = [], gate = emergenc
   const verifier = createVerifier({ lookups });
   const security = createSecurityBrain({ ownerAuth, safeMode, blackBox, now });
   const knowledge = createKnowledgeBrain({ file: path.join(dir, "knowledge.json"), ownerAuth, now });
+  const behavior = createBehaviorMonitor({ blackBox, file: path.join(dir, "behavior-anomalies.json"), capabilities: () => Object.fromEntries(graph.list().filter(n => n.type === "AGENT").map(n => [n.id, n.capabilities ?? []])), now });
   const entityGraph = createEntityGraph({ file: path.join(dir, "entity-graph.json"), now, blackBox });
   const memory = createMemoryFabric({ knowledge, businessMemory, experience: experienceLearning, entityGraph, blackBox, now });
   const opportunity = createOpportunityIntelligence({ file: path.join(dir, "opportunities.json"), governance, now });
@@ -50,5 +52,5 @@ export function createBrainSystem({ dir, ownerAuth, roster = [], gate = emergenc
   const health = () => computeBrainHealth({ blackBox, verifier, planner, graph });
   const summary = () => ({ topology, orchestrator: orchestrator ? "READY" : "BLOCKED_TOPOLOGY_INVALID", capabilityGraph: graph.summary(), plans: planner.list().length, opportunities: opportunity.list().length, knowledge: knowledge.summary(), services: factory.list().length,
     security: security.status(), simulations: lab.runs().length, blackBox: { ...blackBox.stats(), chain: blackBox.verify().ok }, governanceAudit: governance.audit.verify().ok, models: models.health(), health: health().metrics, incidents: dr.incidents().length });
-  return { entityGraph, memory, dispatch, blackBox, governance, graph, planner, verifier, security, knowledge, opportunity, factory, models, lab, dr, commands, bus, orchestrator, central, health, summary, topology };
+  return { behavior, entityGraph, memory, dispatch, blackBox, governance, graph, planner, verifier, security, knowledge, opportunity, factory, models, lab, dr, commands, bus, orchestrator, central, health, summary, topology };
 }

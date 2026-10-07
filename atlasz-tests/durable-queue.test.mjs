@@ -70,3 +70,15 @@ test("ack/nack on an unleased item is rejected", () => {
     assert.throws(() => q.ack("u"), /REQUIRES_LEASED/); assert.throws(() => q.nack("u"), /REQUIRES_LEASED/);
   } finally { rm(d); }
 });
+
+test("backpressure: a full queue refuses new work with an explicit signal (nothing dropped or logged); finishing work frees capacity; duplicates still report duplicate; durable across restart", () => {
+  const d = tmp("qbp-"); try {
+    const q = createDurableQueue({ dir: d, maxPending: 2 });
+    assert.equal(q.enqueue({ id: "a" }).accepted, true); assert.equal(q.enqueue({ id: "b" }).accepted, true);
+    const full = q.enqueue({ id: "c" }); assert.equal(full.accepted, false); assert.equal(full.backpressure, true); assert.equal(full.reason, "QUEUE_FULL"); assert.equal(q.get("c"), null);
+    assert.equal(q.enqueue({ id: "a" }).duplicate, true); assert.equal(q.pressure().full, true); assert.equal(q.pressure().pending, 2);
+    const l = q.lease({ worker: "w" }); assert.equal(q.pressure().pending, 2, "a leased job is still pending work"); q.ack(l.id); assert.equal(q.pressure().full, false); assert.equal(q.enqueue({ id: "c" }).accepted, true);
+    assert.equal(createDurableQueue({ dir: d, maxPending: 2 }).pressure().pending, 2);                    // rebuilt from the journal
+    const dead = createDurableQueue({ dir: tmp("qbp2-"), maxPending: 1, maxAttempts: 1 }); dead.enqueue({ id: "x" }); const lx = dead.lease({}); dead.nack(lx.id, "boom"); assert.equal(dead.pressure().pending, 0, "dead-lettered work does not block the queue"); assert.equal(dead.enqueue({ id: "y" }).accepted, true);
+  } finally { rm(d); }
+});

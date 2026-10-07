@@ -80,7 +80,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
   let recoveredStalled = 0;
   for (const c of state.candidates) if (c.status === "PROCESSING") { c.status = "NEW"; recoveredStalled++; }
   // Durable queue/checkpoint: every unprocessed candidate has exactly one journaled job. Leases left by a dead process are requeued.
-  const queue = createDurableQueue({ dir: path.join(dataDir, "queue"), maxAttempts: 3, leaseMs: 120000 });
+  const queue = createDurableQueue({ dir: path.join(dataDir, "queue"), maxAttempts: 3, leaseMs: 120000, maxPending: Number(process.env.ATLASZ_QUEUE_MAX_PENDING) || 1000 });
   const recoveredQueue = queue.resume().length;
   for (const c of state.candidates) if (c.status === "NEW") queue.enqueue({ id: c.id, payload: { candidateId: c.id } });
   state.agents = Array.from({ length: 30 }, (_, i) => ({
@@ -145,6 +145,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
     if (!oc.allowed) { update(agent, "HALTED_BY_OWNER_STOP", "Owner control chain blocked this dispatch", oc.reason); event("dispatch_blocked", { agentId: agent.id, reason: "OWNER_CONTROL:" + oc.reason }); return; }
     const round = Math.floor(state.searchCycles / 5);
     const query = queryLanes[(index + round) % queryLanes.length] + (round % 2 ? " " + topics[(index + round) % topics.length] : "");
+    if (queue.pressure().full) { update(agent, "WAITING_BACKPRESSURE", "Work queue is full; search paused until the execution agents catch up"); event("backpressure", { agentId: agent.id, ...queue.pressure() }); return; }      // slow the producers instead of dropping or overfilling
     update(agent, "RUNNING", "Search recent public project requests: " + query);
     try {
       const url = "https://hn.algolia.com/api/v1/search_by_date?tags=comment&hitsPerPage=50&numericFilters=created_at_i%3E" + Math.floor((Date.now() - 30 * 86400000) / 1000) + "&query=" + encodeURIComponent(query);
@@ -322,7 +323,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
       agents: state.agents, blockers, sourceErrors: state.sourceErrors, emergency: emergencyStatus(), safeMode: safeMode.status(), pendingApprovals: approvalRequests.pending().length, queue: queue.stats(), watchdog: watchdog.status(),
       selfCheck: { level: selfCheck.level, problems: selfCheck.checks.filter(c => c.status !== "OK").map(c => ({ id: c.id, status: c.status, detail: c.detail })) },
       vault: vault.status(), internalAddons: addonSnapshot(),
-      brain: brainSafe(() => brain.summary()) ?? { state: "ERROR" }, moneyEngine: brainSafe(() => moneyEngine.panel()) ?? { state: "ERROR" }, inbox: brainSafe(() => ({ ...inbox.counts(), pipeline: inboxPipeline.summary() })) ?? { state: "ERROR" }, ownerControl: brainSafe(() => ownerControl.status()) ?? { state: "ERROR" }, ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
+      brain: brainSafe(() => brain.summary()) ?? { state: "ERROR" }, moneyEngine: brainSafe(() => moneyEngine.panel()) ?? { state: "ERROR" }, behavior: brainSafe(() => brain.behavior.summary()) ?? { state: "ERROR" }, inbox: brainSafe(() => ({ ...inbox.counts(), pipeline: inboxPipeline.summary() })) ?? { state: "ERROR" }, ownerControl: brainSafe(() => ownerControl.status()) ?? { state: "ERROR" }, ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
     };
   }
   const watchdog = createWatchdog({ onEscalate: e => safeMode.enter("WATCHDOG:" + e.id, { detail: e.detail }) });
@@ -347,6 +348,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
       schedule(() => search(i), 300000 + i * 10000);
     }
     for (let i = 5; i < 30; i++) schedule(() => execute(i), 1000 + (i - 5) * 50);
+    schedule(() => brainSafe(() => brain.behavior.scan()), 60000);          // behaviour anomaly scan over the tamper-evident Black Box (detect + recommend only)
   }
   function stop() { stopping = true; watchdog.stop(); for (const t of timers) clearTimeout(t); save(); }
   return { inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };

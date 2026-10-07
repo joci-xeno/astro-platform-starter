@@ -30,3 +30,14 @@ test("hosted engine: discovery works, outreach cannot be sent without adapter+ow
     assert.equal(rt.dashboard().inbox.pipeline.quarantined, 1);
   } finally { rm(dir); }
 });
+
+test("runtime backpressure: a full work queue pauses SEARCH (no source fetch, visible agent status + event) instead of piling up work", async () => {
+  process.env.ATLASZ_QUEUE_MAX_PENDING = "1";
+  const dir = tmp("bp-"); let fetches = 0;
+  try {
+    const rt = createRuntime({ dataDir: dir, retryBaseMs: 0, fetchImpl: async () => { fetches++; return { ok: true, status: 200, json: async () => ({ hits: [] }), text: async () => "" }; } });
+    rt.queue.enqueue({ id: "stuck", payload: {} }); assert.equal(rt.queue.pressure().full, true);
+    await rt.search(0); assert.equal(fetches, 0); assert.equal(rt.state.agents[0].status, "WAITING_BACKPRESSURE"); assert.ok(rt.state.events.some(e => e.type === "backpressure"));
+    const l = rt.queue.lease({ worker: "t" }); rt.queue.ack(l.id); await rt.search(0); assert.equal(fetches, 1);
+  } finally { delete process.env.ATLASZ_QUEUE_MAX_PENDING; rm(dir); }
+});

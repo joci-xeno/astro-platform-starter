@@ -1,6 +1,6 @@
 // Model Intelligence / Brain Router (V7.3 Brain §15): routes by measured task suitability. A model is usable only with a real passing probe.
 // Multi-model workflows require genuinely different model families (a model never judges its own output).
-export function createModelIntelligence({ graph, now = () => new Date().toISOString() } = {}) {
+export function createModelIntelligence({ graph, now = () => new Date().toISOString(), clockMs = () => Date.now() } = {}) {
   if (!graph) throw new Error("GRAPH_REQUIRED");
   const errors = new Map();
   /** m: {id, family, costClass, contextLimit, tools[], capabilities[], requiredCredentials[], provider} */
@@ -11,13 +11,13 @@ export function createModelIntelligence({ graph, now = () => new Date().toISOStr
   /** probeFn() must make a real, non-spending provider call and return {ok:true}. Latency is measured here, not claimed by the provider. */
   async function probe(id, probeFn, { timeoutMs = 15000 } = {}) {
     if (!graph.get(id)) throw new Error("UNKNOWN_MODEL");
-    const t0 = Date.now();
+    const t0 = clockMs();
     try {
       const r = await Promise.race([Promise.resolve().then(probeFn), new Promise((_, rej) => setTimeout(() => rej(new Error("PROBE_TIMEOUT")), timeoutMs))]);
-      const ms = Date.now() - t0;
+      const ms = clockMs() - t0;
       if (r?.ok !== true) throw new Error("PROBE_NOT_OK");
       graph.setEvidence(id, { probeId: id + "@" + now(), outcome: "PASS", at: now(), target: graph.get(id).provider ?? id, latencyMs: ms }); graph.recordOutcome(id, { ok: true, ms }); return { id, ok: true, ms };
-    } catch (e) { graph.setEvidence(id, null); graph.setHealth(id, "DOWN"); graph.recordOutcome(id, { ok: false, ms: Date.now() - t0 }); errors.set(id, (errors.get(id) ?? 0) + 1); return { id, ok: false, error: String(e.message).slice(0, 100) }; }
+    } catch (e) { graph.setEvidence(id, null); graph.setHealth(id, "DOWN"); graph.recordOutcome(id, { ok: false, ms: clockMs() - t0 }); errors.set(id, (errors.get(id) ?? 0) + 1); return { id, ok: false, error: String(e.message).slice(0, 100) }; }
   }
   const usableModels = ({ allowCost = false, sandbox = false, exclude = [], preferFamilyNot = null } = {}) => graph.list().filter(n => n.type === "MODEL" && n.usable !== false)
     .filter(n => sandbox || n.evidence).filter(n => allowCost || n.costClass === "FREE").filter(n => !exclude.includes(n.id)).filter(n => !preferFamilyNot || n.family !== preferFamilyNot);

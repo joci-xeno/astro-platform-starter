@@ -95,7 +95,7 @@
     52
    ]
   },
-  "item_verified_count": 905
+  "item_verified_count": 907
  },
  "requirements": [
   {
@@ -22709,6 +22709,60 @@
    "test_status": "TESTED_SANDBOX",
    "classification": "SANDBOX",
    "next_action": "One owner-approved manual workflow run; read failures from annotations"
+  },
+  {
+   "id": "ATLASZ-PKG84-016",
+   "title": "Behavior Anomaly Monitor over the tamper-evident Black Box: LOOP, COST_SPIKE (unapproved spend under no-spend), BYPASS_ATTEMPT, OBJECTIVE_DRIFT, QA_GAMING (self-judging, unchanged resubmission, trivial passes), MUTUAL_REINFORCEMENT; detect + recommend only; scheduled in the runtime; Control Center panel",
+   "level": "item",
+   "section": 77,
+   "description": "Behavior Anomaly Monitor over the tamper-evident Black Box: LOOP, COST_SPIKE (unapproved spend under no-spend), BYPASS_ATTEMPT, OBJECTIVE_DRIFT, QA_GAMING (self-judging, unchanged resubmission, trivial passes), MUTUAL_REINFORCEMENT; detect + recommend only; scheduled in the runtime; Control Center panel",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/behavior-monitor.mjs; atlasz-addons/brain/brain-system.mjs; atlasz-runtime/supervisor-safe.mjs; atlasz-control-center/brain-views.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/behavior-monitor.test.mjs",
+    "atlasz-tests/control-center-money-views.test.mjs"
+   ],
+   "evidence": [
+    "7 tests + 7 mutation checks (6 caught; the one-way-acceptance mutant exposed a weak test, which was strengthened and then caught)"
+   ],
+   "blocker": "Thresholds are untuned defaults with no production traffic; no automatic quarantine by design (needs Security Brain / owner routing)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Tune on real traffic; route HIGH findings to Judge/Security Brain"
+  },
+  {
+   "id": "ATLASZ-PKG84-017",
+   "title": "Backpressure: durable queue refuses new work when full (explicit QUEUE_FULL, nothing dropped or logged); runtime SEARCH pauses with a visible status and event; DEAD items do not block",
+   "level": "item",
+   "section": 77,
+   "description": "Backpressure: durable queue refuses new work when full (explicit QUEUE_FULL, nothing dropped or logged); runtime SEARCH pauses with a visible status and event; DEAD items do not block",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/durable-queue.mjs; atlasz-runtime/supervisor-safe.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/durable-queue.test.mjs",
+    "atlasz-tests/money-engine-hosted.test.mjs"
+   ],
+   "evidence": [
+    "2 tests + 2 mutation checks caught; limit configurable via ATLASZ_QUEUE_MAX_PENDING (default 1000)"
+   ],
+   "blocker": "None",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Tune limit with real throughput"
   }
  ]
 }

@@ -73,3 +73,25 @@ test("recurring view: contracted MRR is labelled a claim; verified receipts need
     assert.equal(createMoneyViews({ stateDir: tmp() }).recurring().state, "NOT_CONNECTED");
   } finally { rm(d); }
 });
+
+test("crm/inbox view: reads graph, follow-ups and pipeline files; counts dangling edges, overdue follow-ups, quarantined and needs-owner items; NOT_CONNECTED when absent", () => {
+  const d = tmp(); try {
+    assert.equal(createMoneyViews({ stateDir: d }).crmInbox().graph.state, "NOT_CONNECTED");
+    w(d, "brain/entity-graph.json", { entities: { "T|customer|c1": { tenantId: "T", type: "customer", id: "c1", stub: false }, "T|deal|d1": { tenantId: "T", type: "deal", id: "d1", stub: true } }, edges: { e1: { tenantId: "T", from: { type: "customer", id: "c1" }, to: { type: "deal", id: "d1" } }, e2: { tenantId: "T", from: { type: "customer", id: "c1" }, to: { type: "job", id: "gone" } } } });
+    w(d, "money/crm.json", { followups: { a: { status: "OPEN", dueAt: "2026-01-01" }, b: { status: "OPEN", dueAt: "2999-01-01" }, c: { status: "DONE", dueAt: "2026-01-01" } } });
+    w(d, "inbox/pipeline.json", { items: { x: { id: "x", kind: "QUARANTINED", quarantined: true, routeStatus: "HELD_FOR_OWNER", receivedAt: "2026-10-07", links: { deals: [] }, entity: { status: "SKIPPED_QUARANTINED" } }, y: { id: "y", kind: "CUSTOMER_REPLY", routeStatus: "APPLIED", receivedAt: "2026-10-06", links: { deals: ["d1"] }, entity: { status: "LINKED" } } } });
+    const r = createMoneyViews({ stateDir: d }).crmInbox("2026-10-07T00:00:00Z");
+    assert.equal(r.graph.stubs, 1); assert.equal(r.graph.danglingEdges, 1); assert.equal(r.followups.overdue, 1); assert.equal(r.followups.open, 2); assert.equal(r.inbox.quarantined, 1); assert.equal(r.inbox.needsOwner, 1); assert.equal(r.inbox.recent[0].id, "x");
+    assert.ok(!JSON.stringify(r).includes("body"));
+  } finally { rm(d); }
+});
+
+import { createControlCenterCore } from "../atlasz-control-center/core.mjs";
+test("brain view: behaviour anomalies are NOT_CONNECTED when none persisted, and listed (open/high counts) when the monitor persisted findings", async () => {
+  const base = tmp("ccbh-"), core = createControlCenterCore({ stateDir: path.join(base, "s"), configDir: path.join(base, "c") });
+  try {
+    assert.equal((await core.brain()).behavior.state, "NOT_CONNECTED");
+    w(path.join(base, "s"), "brain/behavior-anomalies.json", { anomalies: { a: { id: "a", kind: "BYPASS_ATTEMPT", severity: "HIGH", subject: "E4", detail: "3 refused", recommendation: "QUARANTINE_REVIEW", status: "OPEN", count: 2, lastSeenAt: "2026-10-07" }, b: { id: "b", kind: "LOOP", severity: "MEDIUM", status: "RESOLVED", lastSeenAt: "2026-10-06" } } });
+    const b = (await core.brain()).behavior; assert.equal(b.open, 1); assert.equal(b.high, 1); assert.equal(b.items[0].kind, "BYPASS_ATTEMPT"); assert.match(b.note, /Nothing is quarantined/);
+  } finally { rm(base); }
+});

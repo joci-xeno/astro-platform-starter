@@ -20,8 +20,9 @@ function owner() { const k = generateOwnerKeyPair(); return { auth: createOwnerA
 const ok = () => ({ ok: true });
 
 // ---------- model intelligence ----------
+let clockNow = 0;
 function models() {
-  const g = createCapabilityGraph(), mi = createModelIntelligence({ graph: g });
+  const g = createCapabilityGraph(), mi = createModelIntelligence({ graph: g, clockMs: () => clockNow });   // deterministic latency: probes advance this clock explicitly, never the wall clock
   mi.register({ id: "fast", family: "fA", costClass: "FREE", contextLimit: 8000, tools: [], capabilities: ["text"], requiredCredentials: ["K1"] });
   mi.register({ id: "strong", family: "fB", costClass: "FREE", contextLimit: 200000, tools: ["code"], capabilities: ["text", "reason"], requiredCredentials: ["K2"] });
   mi.register({ id: "other", family: "fC", costClass: "FREE", contextLimit: 32000, tools: ["code"], capabilities: ["text", "reason"], requiredCredentials: ["K3"] });
@@ -50,9 +51,9 @@ test("model intelligence: nothing is LIVE without a real passing probe; failed p
 test("model intelligence: multi-model workflows need distinct live families; a model never reviews itself", async () => {
   const { mi } = models();
   assert.equal(mi.workflow("GENERATE_CRITIQUE_VERIFY", { capabilities: ["text"] }).blocked, true);
-  await mi.probe("fast", async () => ({ ok: true })); await mi.probe("strong", async () => ({ ok: true }));
+  await mi.probe("fast", async () => { clockNow += 1; return { ok: true }; }); await mi.probe("strong", async () => { clockNow += 50; return { ok: true }; });
   const two = mi.workflow("GENERATE_CRITIQUE_VERIFY", { capabilities: ["text"] }); assert.equal(two.blocked, true); assert.match(two.reason, /DISTINCT_LIVE_MODEL_FAMILIES/);
-  await mi.probe("other", async () => ({ ok: true }));
+  await mi.probe("other", async () => { clockNow += 20; return { ok: true }; });
   const w = mi.workflow("GENERATE_CRITIQUE_VERIFY", { capabilities: ["text"] }); assert.equal(w.blocked, false); assert.equal(new Set(w.steps.map(s => s.family)).size, 3);
   const t = mi.workflow("FAST_TRIAGE_STRONG_QA", { capabilities: ["text"] }); assert.equal(t.steps[0].modelId, "fast"); assert.equal(new Set(t.steps.map(s => s.family)).size, 3);
   assert.throws(() => mi.workflow("NOPE"), /UNKNOWN_WORKFLOW/);

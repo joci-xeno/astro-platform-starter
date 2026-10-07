@@ -43,6 +43,20 @@ export function createMoneyViews({ stateDir }) {
     return { state: "CONNECTED", live: { subscriptions: count(live, "status"), contractedMrrUsd: sum(live.filter(s => s.status === "ACTIVE").map(s => s.interval === "WEEKLY" ? s.amount * 52 / 12 : s.amount / ({ MONTHLY: 1, QUARTERLY: 3, ANNUAL: 12 }[s.interval] ?? Infinity))), verifiedReceivedUsd: sum(per.filter(p => liveKeys.has(p.subscriptionId) && paid.has(p.invoiceId)).map(p => p.amount)), note: "Contracted MRR is a claim about the future, not revenue." },
       sandbox: { subscriptions: count(env("SANDBOX"), "status"), note: "SANDBOX: never revenue." } };
   }
+  /** CRM / entity graph / inbox pipeline: read-only views of what the runtime persisted. Quarantined inbox items carry no body (withheld at ingest). */
+  function crmInbox(asOf = new Date().toISOString()) {
+    const g = read(path.join(bdir, "entity-graph.json")), fu = load("crm.json"), ip = read(path.join(stateDir, "inbox", "pipeline.json"));
+    const graph = !g ? { state: "NOT_CONNECTED" } : g.__unreadable ? { state: "UNREADABLE" } : (() => {
+      const ents = vals(g.entities), edges = vals(g.edges);
+      return { state: "CONNECTED", entities: count(ents.filter(e => !e.retired), "type"), stubs: ents.filter(e => e.stub && !e.retired).length, retired: ents.filter(e => e.retired).length, edges: edges.length, tenants: [...new Set(ents.map(e => e.tenantId))].length,
+        danglingEdges: edges.filter(e => !g.entities[`${e.tenantId}|${e.from.type}|${e.from.id}`] || !g.entities[`${e.tenantId}|${e.to.type}|${e.to.id}`]).length };
+    })();
+    const followups = !fu ? { state: "NOT_CONNECTED" } : fu.__unreadable ? { state: "UNREADABLE" } : (() => { const f = vals(fu.followups); return { state: "CONNECTED", open: f.filter(x => x.status === "OPEN").length, overdue: f.filter(x => x.status === "OPEN" && Date.parse(x.dueAt) < Date.parse(asOf)).length, done: f.filter(x => x.status === "DONE").length }; })();
+    const inboxState = !ip ? { state: "NOT_CONNECTED" } : ip.__unreadable ? { state: "UNREADABLE" } : (() => { const it = vals(ip.items); return { state: "CONNECTED", total: it.length, byKind: count(it, "kind"), byRouteStatus: count(it, "routeStatus"), quarantined: it.filter(i => i.quarantined).length,
+      needsOwner: it.filter(i => ["HELD_FOR_OWNER", "QUEUED_FOR_OWNER", "NEEDS_PROVIDER_EVIDENCE", "FAILED"].includes(i.routeStatus)).length,
+      recent: it.sort((a, b) => String(b.receivedAt).localeCompare(String(a.receivedAt))).slice(0, 30).map(i => ({ id: i.id, kind: i.kind, priority: i.priority, route: i.route, routeStatus: i.routeStatus, sender: i.entity?.status, deals: i.links?.deals ?? [], quarantined: i.quarantined })) }; })();
+    return { graph, followups, inbox: inboxState, note: "Read-only. Replies count only with provider evidence; payment messages are claims; nothing here sends anything." };
+  }
   function jobs() {
     const f = load("jobs-universal.json"); if (!f) return { state: "NOT_CONNECTED", items: [] }; if (f.__unreadable) return { state: "UNREADABLE", items: [] };
     return { state: "CONNECTED", items: vals(f.jobs).map(j => ({ id: j.id, goal: j.goal, status: j.status, environment: j.environment ?? "LIVE", agents: j.assignedAgents ?? [], blocked: j.blocked ?? null, dealId: j.dealId ?? null, artifacts: (j.artifacts ?? []).length, updatedAt: j.updatedAt })) };
@@ -52,5 +66,5 @@ export function createMoneyViews({ stateDir }) {
     const list = Object.values(g).filter(n => n.type === "AGENT").map(n => ({ id: n.id, team: n.team ?? null, capabilities: n.capabilities ?? [], health: n.health ?? "UNKNOWN", available: n.available, runs: n.stats?.runs ?? 0, ok: n.stats?.ok ?? 0 }));
     return { state: "CONNECTED", expected: 30, count: list.length, topologyOk: list.length === 30, items: list };
   }
-  return { money, jobs, agents, recurring };
+  return { money, jobs, agents, recurring, crmInbox };
 }

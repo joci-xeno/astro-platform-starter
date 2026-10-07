@@ -10,7 +10,7 @@ import { createHash } from "node:crypto";
 
 const crc = body => createHash("sha256").update(body).digest("hex").slice(0, 16);
 
-export function createDurableQueue({ dir, maxAttempts = 3, leaseMs = 60000, now = () => Date.now() } = {}) {
+export function createDurableQueue({ dir, maxAttempts = 3, leaseMs = 60000, maxPending = 1000, now = () => Date.now() } = {}) {
   if (!dir) throw new Error("QUEUE_DIR_REQUIRED");
   fs.mkdirSync(dir, { recursive: true });
   const file = path.join(dir, "queue-journal.jsonl");
@@ -63,10 +63,14 @@ export function createDurableQueue({ dir, maxAttempts = 3, leaseMs = 60000, now 
     apply(body);
   }
 
+  /** Work that still has to be done (READY or LEASED). DONE and DEAD items do not count. */
+  const pending = () => { let n = 0; for (const i of items.values()) if (i.state === "READY" || i.state === "LEASED") n++; return n; };
+  const pressure = () => { const n = pending(); return { pending: n, max: maxPending, ratio: maxPending ? n / maxPending : 0, full: n >= maxPending }; };
   function enqueue({ id, payload = null, priority = 0, idempotencyKey = id } = {}) {
     if (!id) throw new Error("QUEUE_ITEM_ID_REQUIRED");
     if (!Number.isFinite(Number(priority))) throw new Error("QUEUE_PRIORITY_INVALID");
     if (idem.has(idempotencyKey) || items.has(id)) return { accepted: false, duplicate: true, id };
+    if (pending() >= maxPending) return { accepted: false, duplicate: false, backpressure: true, reason: "QUEUE_FULL", id };      // nothing is logged or dropped silently: the producer is told to slow down and retry later
     log({ op: "ENQ", id, payload, priority: Number(priority), idem: idempotencyKey });
     return { accepted: true, duplicate: false, id };
   }
@@ -110,6 +114,6 @@ export function createDurableQueue({ dir, maxAttempts = 3, leaseMs = 60000, now 
     for (const i of items.values()) c[{ READY: "ready", LEASED: "leased", DONE: "done", DEAD: "dead" }[i.state]]++;
     return { ...c, depth: c.ready + c.leased, total: items.size };
   };
-  return { enqueue, lease, ack, nack, requeueStalled, resume, stats, get: id => (items.has(id) ? structuredClone(items.get(id)) : null),
+  return { pressure, enqueue, lease, ack, nack, requeueStalled, resume, stats, get: id => (items.has(id) ? structuredClone(items.get(id)) : null),
     deadLetters: () => [...items.values()].filter(i => i.state === "DEAD").map(x => structuredClone(x)), journalPath: file };
 }
