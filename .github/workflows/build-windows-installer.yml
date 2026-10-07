@@ -1,11 +1,8 @@
 # Builds the ATLASZ Windows installer (NSIS .exe with desktop icon) on a Windows runner. No secrets, no deploy, no Railway.
-# Output is an Actions artifact only. Trigger manually (workflow_dispatch) or on pushes to the V7.3 integration branch.
+# Output is an Actions artifact only. MANUAL ONLY (workflow_dispatch): a push never starts a build; Joci approves each run.
 name: build-windows-installer
 on:
   workflow_dispatch:
-  push:
-    branches: [atlasz-v73-integration]
-    paths: ["atlasz-control-center/**", "atlasz-addons/**", "atlasz-runtime/**", ".github/workflows/build-windows-installer.yml"]
 permissions:
   contents: read
 jobs:
