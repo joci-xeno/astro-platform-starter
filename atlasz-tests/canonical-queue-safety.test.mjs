@@ -13,10 +13,10 @@ const fakeFetch = hits => async () => ({ ok: true, status: 200, json: async () =
 
 test("every discovered candidate is journaled; screening acks only AFTER the checkpoint save", async () => {
   const d = tmp(); try {
-    const rt = createRuntime({ dataDir: d, fetchImpl: fakeFetch([hit("1", good), hit("2", good)]) });
+    const rt = createRuntime({ dataDir: d, retryBaseMs: 0, fetchImpl: fakeFetch([hit("1", good), hit("2", good)]) });
     await rt.search(0);
     assert.equal(rt.queue.stats().ready, 2);
-    rt.execute(5);
+    await rt.execute(5);
     assert.equal(rt.queue.stats().done, 1); assert.equal(rt.queue.stats().ready, 1);
     const saved = JSON.parse(fs.readFileSync(path.join(d, "atlasz-state.json"), "utf8"));
     assert.equal(saved.candidates.filter(c => c.status !== "NEW").length, 1);
@@ -32,7 +32,7 @@ test("crash while a job is leased: after restart the lease is requeued, the cand
     assert.equal(leased.id, "hn-1");
     const rt2 = createRuntime({ dataDir: d, fetchImpl: fakeFetch([]) });  // restart
     assert.equal(rt2.recoveredQueue, 1);
-    rt2.execute(5); rt2.execute(6);
+    await rt2.execute(5); await rt2.execute(6);
     assert.equal(rt2.state.leads.length, 1);
     assert.equal(rt2.state.candidates.filter(c => c.status === "NEEDS_VERIFICATION").length, 1);
     assert.equal(rt2.queue.stats().done, 1); assert.equal(rt2.queue.stats().depth, 0);
@@ -46,7 +46,7 @@ test("crash between checkpoint save and ack: replay does not double-process", as
     rt.queue.lease({ worker: "w" });
     const c = rt.state.candidates[0]; c.status = "NEEDS_VERIFICATION"; rt.save();   // saved, ack never happened
     const rt2 = createRuntime({ dataDir: d, fetchImpl: fakeFetch([]) });
-    rt2.execute(5);
+    await rt2.execute(5);
     assert.equal(rt2.state.leads.length, 0);                                       // nothing re-screened
     assert.equal(rt2.queue.stats().done, 1);
   } finally { rm(d); }
@@ -54,10 +54,10 @@ test("crash between checkpoint save and ack: replay does not double-process", as
 
 test("a poisoned candidate retries then goes to the dead-letter state; it never blocks other work", async () => {
   const d = tmp(); try {
-    const rt = createRuntime({ dataDir: d, fetchImpl: fakeFetch([hit("1", good), hit("2", good)]) });
+    const rt = createRuntime({ dataDir: d, retryBaseMs: 0, fetchImpl: fakeFetch([hit("1", good), hit("2", good)]) });
     await rt.search(0);
     rt.state.candidates[0].description = { toString() { throw new Error("poison"); } };   // clean() will throw
-    for (let i = 0; i < 6; i++) rt.execute(5 + (i % 3));
+    for (let i = 0; i < 6; i++) await rt.execute(5 + (i % 3));
     const st = rt.queue.stats();
     assert.equal(st.dead, 1); assert.equal(rt.queue.deadLetters()[0].id, "hn-1");
     assert.equal(rt.state.candidates.find(c => c.id === "hn-1").status, "FAILED_DEAD_LETTER");
@@ -79,7 +79,7 @@ test("Safe Mode halts search dispatch AND screening, keeps queue intact, and sur
     await rt2.search(1); assert.equal(calls, 0);
     rt2.queue.enqueue({ id: "manual", payload: {} });
     rt2.state.candidates.push({ id: "manual", title: "t", description: good, published: new Date().toISOString(), status: "NEW" });
-    rt2.execute(5);
+    await rt2.execute(5);
     assert.equal(rt2.state.candidates.find(c => c.id === "manual").status, "NEW");
     assert.equal(rt2.queue.stats().ready, 1);
   } finally { rm(d); }

@@ -4,7 +4,8 @@ import fs from "node:fs";
 import crypto from "node:crypto";
 
 export const VERDICTS = Object.freeze(["ACCEPT", "REJECT", "RETRY", "ESCALATE"]);
-export const CLAIM_TYPES = Object.freeze(["ARTIFACT", "FILE_DELIVERY", "SEND_STATE", "INVOICE", "PAYMENT", "BACKUP_INTEGRITY", "RESTORE_INTEGRITY", "RUNTIME_HEALTH", "UPDATE_SUCCESS", "JOB_COMPLETION", "AGENT_CLAIM", "MODEL_CLAIM", "EXTERNAL_ACTION"]);
+export const EVIDENCE_STATUSES = Object.freeze(["VERIFIED", "NOT_VERIFIED", "FAILED_VERIFICATION", "EXTERNAL_VERIFICATION_REQUIRED", "UNKNOWN"]);
+export const CLAIM_TYPES = Object.freeze(["INTERNAL_RECORD", "ARTIFACT", "FILE_DELIVERY", "SEND_STATE", "INVOICE", "PAYMENT", "BACKUP_INTEGRITY", "RESTORE_INTEGRITY", "RUNTIME_HEALTH", "UPDATE_SUCCESS", "JOB_COMPLETION", "AGENT_CLAIM", "MODEL_CLAIM", "EXTERNAL_ACTION"]);
 
 export function createVerifier({ id = "VERIFIER", now = () => Date.now(), lookups = {}, healthMaxAgeMs = 120000 } = {}) {
   /** lookups (all optional, injected by the host): paymentConfirmed(ref)->{confirmed, amountUsd}, backupVerify(ref)->{ok}, restoreVerify(ref)->{ok}, updateVerify(ref)->{ok}, deliveryRecord(ref)->{delivered}
@@ -35,6 +36,14 @@ export function createVerifier({ id = "VERIFIER", now = () => Date.now(), lookup
       const crit = c.criteria ?? []; if (!crit.length) return ["REJECT", "NO_ACCEPTANCE_CRITERIA"];
       for (const k of crit) { const r = (checks[k.type] ?? (() => ["ESCALATE", "UNKNOWN_CRITERION"]))(k, ev(k.evidence)); if (r[0] !== "ACCEPT") return [r[0], "CRITERION_FAILED:" + k.type + ":" + r[1]]; }
       return ["ACCEPT", "ALL_CRITERIA_VERIFIED"];
+    },
+    // Internal evidence sources (job ledger, cost/profit ledgers, queue, artifacts, backup/restore/update state, health, black box, approvals) are injected by the host
+    // as lookups.internalRecord(claim) -> {status: VERIFIED|NOT_VERIFIED|FAILED_VERIFICATION|EXTERNAL_VERIFICATION_REQUIRED|UNKNOWN, reason?}. Missing source => ESCALATE, never ACCEPT.
+    INTERNAL_RECORD: (c) => {
+      if (!lookups.internalRecord) return ["ESCALATE", "NO_INTERNAL_EVIDENCE_SOURCE"];
+      let r; try { r = lookups.internalRecord(c); } catch (x) { return ["ESCALATE", "EVIDENCE_SOURCE_ERROR:" + String(x.message).slice(0, 60)]; }
+      const st = EVIDENCE_STATUSES.includes(r?.status) ? r.status : "UNKNOWN", why = r?.reason ?? st;
+      return st === "VERIFIED" ? ["ACCEPT", "INTERNAL_RECORD_VERIFIED:" + why] : st === "FAILED_VERIFICATION" ? ["REJECT", "INTERNAL_RECORD_FAILED:" + why] : st === "NOT_VERIFIED" ? ["RETRY", "INTERNAL_RECORD_NOT_VERIFIED:" + why] : ["ESCALATE", st + ":" + why];
     },
     EXTERNAL_ACTION: (c, e) => (e.providerRef && e.state === "ACCEPTED" ? ["ACCEPT", "PROVIDER_REF_PRESENT"] : ["REJECT", "NO_EXTERNAL_RECEIPT"]),
     AGENT_CLAIM: () => ["REJECT", "AGENT_CLAIM_NEEDS_TYPED_EVIDENCE"],

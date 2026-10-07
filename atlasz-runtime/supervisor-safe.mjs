@@ -13,6 +13,7 @@ import { createSecretVault } from "../atlasz-addons/secret-vault.mjs";
 import { createApprovalRequests } from "../atlasz-addons/approval-requests.mjs";
 import { getDefaultOwnerAuth } from "../atlasz-addons/owner-auth.mjs";
 import { createBrainSystem } from "../atlasz-addons/brain/brain-system.mjs";
+import { createSearchPipeline } from "../atlasz-addons/brain/search-pipeline.mjs";
 import { createOwnerControlSystem } from "../atlasz-addons/owner-control/owner-control-system.mjs";
 
 export const VERSION = "3.3.0";
@@ -49,7 +50,7 @@ export function qualify(candidate) {
     score: reject.length ? 0 : 20 + (remote ? 10 : 0) + (emails.length ? 10 : 0) + (budget ? 10 : 0) + (/urgent|asap|this week/i.test(text) ? 5 : 0)
   };
 }
-export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./data", persistent = Boolean(process.env.RAILWAY_VOLUME_MOUNT_PATH), fetchImpl = fetch, updateGate = () => ({ allowed: true, reason: null }) } = {}) {
+export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ_STATE_DIR || "./data", persistent = Boolean(process.env.RAILWAY_VOLUME_MOUNT_PATH), fetchImpl = fetch, updateGate = () => ({ allowed: true, reason: null }) } = {}) {
   const addons = createInternalAddonHub({ tenantId: "ATLASZ-MAIN", dailyBudgetUsd: 0 });
   const addonSnapshot = () => addons.snapshot();
   fs.mkdirSync(dataDir, { recursive: true });
@@ -87,12 +88,19 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
   // The Brain's governance consults the unified Owner Control chain; until that chain exists every Brain decision is BLOCKED (fail closed).
   const ocHolder = { sys: null };
   const chainProxy = { evaluate: (...a) => (ocHolder.sys ? ocHolder.sys.chain.evaluate(...a) : { verdict: "BLOCK", allowed: false, layer: "OWNER_CONTROL", reason: "CONTROL_CHAIN_NOT_READY", trace: [] }) };
-  const brain = createBrainSystem({ dir: path.join(dataDir, "brain"), ownerAuth, roster: state.agents.map(a => ({ id: a.id, team: a.role })), safeMode, chain: chainProxy, redact: t => vault.redact(t) });
+  // Execution pool: the 25 EXECUTION agents are the orchestrator's executors; the screening work itself is unchanged (screeningExecutor). Verification evidence comes from internalRecord (independent of the executor).
+  const execIds = state.agents.filter(a => a.role === "EXECUTION").map(a => a.id);
+  const brain = createBrainSystem({ dir: path.join(dataDir, "brain"), ownerAuth, roster: state.agents.map(a => ({ id: a.id, team: a.role })), safeMode, chain: chainProxy, redact: t => vault.redact(t),
+    executors: Object.fromEntries(execIds.map(id => [id, args => screeningExecutor(id, args)])), lookups: { internalRecord: claim => internalRecord(claim) },
+    dispatchOptions: { maxAttempts: 3, backoff: { baseMs: retryBaseMs, maxMs: Math.max(retryBaseMs, 60000) } } });
   // Multi-layer owner control (V7.3 Owner Control): every dispatch of the fixed 30 agents is routed through the chain (owner authority, kill switch, safe mode, security, firewall, black box).
   const ownerControl = createOwnerControlSystem({ dir: path.join(dataDir, "owner-control"), ownerAuth, gate: emergencyGate, emergencyStatus, safeMode, security: brain.security, blackBox: brain.blackBox, verifier: brain.verifier,
     roster: state.agents.map(a => ({ id: a.id, team: a.role })), tools: ["hn-search", "screening"] });
   ocHolder.sys = ownerControl;
+  const searchPipeline = createSearchPipeline({ security: brain.security, opportunity: brain.opportunity, graph: brain.graph, blackBox: brain.blackBox, isDuplicate: raw => seen.has(raw.id),
+    extract: raw => qualify({ title: raw.title, description: raw.text, published: raw.published }) });
   const brainSafe = fn => { try { return fn(); } catch (e) { try { console.log(JSON.stringify({ at: now(), type: "brain_error", error: String(e.message).slice(0, 120) })); } catch { /* ignore */ } return null; } };
+  brainSafe(() => brain.dispatch?.resumeAll());                           // restart: in-flight governed jobs go back to QUEUED (attempts, plans, checkpoints preserved)
   const seen = new Set(state.candidates.map(c => c.id));
   const timers = new Set();
   let stopping = false;
@@ -134,13 +142,17 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
         if (!hit.objectID) continue;
         const id = "hn-" + hit.objectID;
         if (seen.has(id)) continue;
+        // SEARCH pipeline: security screen > dedupe > source check > extract > score > qualify > feasibility > capability match > prioritize > opportunity record > hand-off.
+        // If the Brain pipeline itself fails the item is NOT queued (fail closed) and stays unseen so a later cycle retries it.
+        const raw = { id, title: clean(hit.story_title || hit.title), text: clean(hit.comment_text || hit.story_text), url: "https://news.ycombinator.com/item?id=" + encodeURIComponent(hit.objectID), published: hit.created_at, source: "hn" };
+        const out = brainSafe(() => searchPipeline.process(raw, { agentId: agent.id }));
+        if (!out) continue;
         seen.add(id);
-        const sec = brainSafe(() => brain.security.assess({ kind: "EXTERNAL_INSTRUCTION", agentId: null, source: "hn", text: clean(hit.comment_text || hit.story_text || "") }));
-        if (sec && !sec.allowed) { brainSafe(() => brain.blackBox.record({ kind: "EXTERNAL_TEXT_QUARANTINED", agentId: agent.id, decision: sec.decision, reason: sec.reasons.join(","), inputRef: id })); continue; }   // never queued, never shown to an agent
-        state.candidates.push({ id, title: clean(hit.story_title || hit.title), description: clean(hit.comment_text || hit.story_text).slice(0, 16000), published: hit.created_at, url: "https://news.ycombinator.com/item?id=" + encodeURIComponent(hit.objectID), source: "Hacker News public comments", status: "NEW", foundAt: now(), foundBy: agent.id });
-        queue.enqueue({ id, payload: { candidateId: id } });
+        if (!out.handoff) continue;                                                       // quarantined / duplicate / malformed: never queued, never shown to an execution agent
+        state.candidates.push({ id, title: raw.title, description: raw.text.slice(0, 16000), published: hit.created_at, url: raw.url, source: "Hacker News public comments", status: "NEW", foundAt: now(), foundBy: agent.id,
+          opportunityId: out.opportunityId, priority: out.priority, correlationId: out.correlationId });
+        queue.enqueue({ id, payload: { candidateId: id }, priority: out.priority === "HIGH" ? 2 : out.priority === "MEDIUM" ? 1 : 0 });
         added++;
-        brainSafe(() => brain.opportunity.discover({ title: clean(hit.story_title || hit.title) || id, source: "hn", url: "https://news.ycombinator.com/item?id=" + encodeURIComponent(hit.objectID) }));
       }
       agent.results += added;
       state.searchCycles++;
@@ -155,22 +167,14 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
     }
     save();
   }
-  function execute(index) {
-    const agent = state.agents[index];
-    watchdog.beat("scheduler");
-    const eg = emergencyGate({ external: false }), sg = safeMode.gate({ write: true });
-    const gate = !eg.allowed ? eg : sg;
-    if (!gate.allowed) { update(agent, "HALTED_BY_OWNER_STOP", eg.allowed ? "Safe Mode active" : "Owner emergency stop active", gate.reason); return; }
-    const oc = ownerControl.agents.act(agent.id, "INTERNAL_COMPUTE", { tool: "screening" });
-    if (!oc.allowed) { update(agent, "HALTED_BY_OWNER_STOP", "Owner control chain blocked this dispatch", oc.reason); return; }
-    const job = queue.lease({ worker: agent.id });
-    if (!job) {
-      update(agent, "WAITING_FOR_INPUT", "No unprocessed project request", "NO_QUALIFICATION_TASK_OR_CLIENT_JOB");
-      return;
-    }
-    const candidate = state.candidates.find(c => c.id === job.id);
-    if (!candidate || candidate.status !== "NEW") { queue.ack(job.id); return; }   // already handled before a crash between save and ack
-    let nacked = false;
+  // ---- 25-agent execution pool, routed through the governed Brain dispatch (Joci-approved SANDBOX change) ----
+  // queue job > durable dispatch job (idempotent) > plan > capability graph assignment > orchestrator (governance chain gate, execute, INDEPENDENT verification, black box)
+  const agentById = id => state.agents.find(a => a.id === id);
+  /** The screening work itself (unchanged logic). Runs only when the orchestrator has passed every control layer for the assigned agent. */
+  async function screeningExecutor(agentId, { task }) {
+    const agent = agentById(agentId), candidate = state.candidates.find(c => c.id === task.candidateId);
+    if (!agent || !candidate) throw new Error("EXECUTOR_CONTEXT_MISSING");
+    if (candidate.status === "NEEDS_VERIFICATION" || candidate.status === "REJECTED") return { claimType: "INTERNAL_RECORD", claim: { kind: "SCREENING", candidateId: candidate.id, executorId: candidate.processedBy }, summary: "already screened", evidenceRef: "candidate:" + candidate.id };   // idempotent replay
     candidate.status = "PROCESSING";
     update(agent, "RUNNING", "Evidence-based screening: " + candidate.id);
     try {
@@ -195,20 +199,78 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
       }
       agent.results++;
       addons.onAgentResult({ agentId: agent.id, success: true, qaPassed: !assessment.reject.length });
-      update(agent, "SCHEDULED", "Screening complete: " + candidate.status);
-      brainSafe(() => { brain.graph.recordOutcome(agent.id, { ok: true, ms: 0 }); brain.blackBox.record({ kind: "SCREENING_COMPLETED", agentId: agent.id, team: agent.role, jobId: candidate.id, result: candidate.status, decision: assessment.reject.length ? "REJECT:" + assessment.reject.join(",") : "NEEDS_VERIFICATION", verification: "NOT_INDEPENDENTLY_VERIFIED" }); });
       event("screening_completed", { agentId: agent.id, candidateId: candidate.id, result: candidate.status, reasons: assessment.reject });
+      return { claimType: "INTERNAL_RECORD", claim: { kind: "SCREENING", candidateId: candidate.id, executorId: agent.id }, summary: candidate.status, evidenceRef: "candidate:" + candidate.id, quality: 1 };
     } catch (e) {
       candidate.status = "NEW";
-      const r = queue.nack(job.id, { error: String(e.message) }); nacked = true;
-      if (r.state === "DEAD") candidate.status = "FAILED_DEAD_LETTER";
       addons.onAgentResult({ agentId: agent.id, success: false, qaPassed: false, error: true });
-      brainSafe(() => { brain.graph.recordOutcome(agent.id, { ok: false, ms: 0 }); brain.blackBox.record({ kind: "SCREENING_FAILED", agentId: agent.id, jobId: candidate.id, error: String(e.message).slice(0, 160), retry: 1 }); });
-      update(agent, "BLOCKED", "Screening failed; task returned to queue", String(e.message));
+      update(agent, "BLOCKED", "Screening failed; governed retry/replan applies", String(e.message));
+      throw e;
     }
+  }
+  /** Independent internal evidence for the verifier (job ledger = candidates/leads/artifacts). Does not trust the executor's own return value. */
+  function internalRecord(claim) {
+    if (claim?.kind !== "SCREENING") return { status: "UNKNOWN", reason: "UNSUPPORTED_RECORD_KIND" };
+    const c = state.candidates.find(x => x.id === claim.candidateId);
+    if (!c) return { status: "FAILED_VERIFICATION", reason: "CANDIDATE_MISSING" };
+    if (c.status === "PROCESSING" || c.status === "NEW") return { status: "NOT_VERIFIED", reason: "NOT_COMPLETED" };
+    if (!c.assessment || c.processedBy !== claim.executorId) return { status: "FAILED_VERIFICATION", reason: "ASSESSMENT_OR_EXECUTOR_MISMATCH" };
+    let re; try { re = qualify(c); } catch { return { status: "UNKNOWN", reason: "RECOMPUTE_FAILED" }; }
+    if (JSON.stringify(re.reject) !== JSON.stringify(c.assessment.reject)) return { status: "FAILED_VERIFICATION", reason: "ASSESSMENT_NOT_REPRODUCIBLE" };
+    const expected = c.assessment.reject.length ? "REJECTED" : "NEEDS_VERIFICATION";
+    if (c.status !== expected) return { status: "FAILED_VERIFICATION", reason: "STATUS_INCONSISTENT" };
+    if (expected === "NEEDS_VERIFICATION") {
+      const lead = state.leads.find(l => l.id === c.id), art = state.artifacts.find(a => a.leadId === c.id);
+      if (!lead || !art) return { status: "FAILED_VERIFICATION", reason: "LEAD_OR_ARTIFACT_MISSING" };
+      if (art.qa !== "PASSED_SOURCE_LINK_CHECK" || !art.content.includes(c.url) || !art.content.includes("No offer has been sent.")) return { status: "FAILED_VERIFICATION", reason: "ARTIFACT_QA_FAILED" };
+      if (lead.outreachStatus !== "NOT_SENT" || lead.paidValue !== null) return { status: "FAILED_VERIFICATION", reason: "UNAUTHORIZED_EXTERNAL_STATE" };
+    }
+    return { status: "VERIFIED", reason: "RECORD_REPRODUCED_INDEPENDENTLY" };
+  }
+  async function execute(index) {
+    const agent = state.agents[index];
+    watchdog.beat("scheduler");
+    const eg = emergencyGate({ external: false }), sg = safeMode.gate({ write: true });
+    const gate = !eg.allowed ? eg : sg;
+    if (!gate.allowed) { update(agent, "HALTED_BY_OWNER_STOP", eg.allowed ? "Safe Mode active" : "Owner emergency stop active", gate.reason); return; }
+    const oc = ownerControl.agents.act(agent.id, "INTERNAL_COMPUTE", { tool: "screening" });
+    if (!oc.allowed) { update(agent, "HALTED_BY_OWNER_STOP", "Owner control chain blocked this dispatch", oc.reason); return; }
+    const job = queue.lease({ worker: agent.id });
+    if (!job) {
+      // jobs the dispatch owns durably (halted by a stop, waiting for the stop to clear, retry due) are picked up before idling
+      const due = brainSafe(() => brain.dispatch?.nextDue());
+      if (due) { await runGoverned(agent, due, null); state.lastSystemRun = now(); save(); return; }
+      update(agent, "WAITING_FOR_INPUT", "No unprocessed project request", "NO_QUALIFICATION_TASK_OR_CLIENT_JOB");
+      return;
+    }
+    const candidate = state.candidates.find(c => c.id === job.id);
+    if (!candidate || !["NEW", "PROCESSING"].includes(candidate.status)) { queue.ack(job.id); return; }   // already handled before a crash between save and ack
+    if (!brain.dispatch) { queue.nack(job.id, { error: "DISPATCH_UNAVAILABLE_FAIL_CLOSED" }); update(agent, "BLOCKED", "Governed dispatch unavailable", "DISPATCH_UNAVAILABLE"); return; }
+    brain.dispatch.submit({ id: candidate.id, kind: "SCREENING", payload: { task: { candidateId: candidate.id } }, correlationId: candidate.correlationId });   // durable + idempotent
+    const res = await runGoverned(agent, candidate.id, job);
     state.lastSystemRun = now();
     save();
-    if (!nacked) queue.ack(job.id);                 // checkpoint first (save), acknowledge second: a crash in between is replayed idempotently
+    if (res.queueAction === "ACK") queue.ack(job.id);                 // checkpoint first (save), acknowledge second: a crash in between is replayed idempotently
+  }
+  /** One governed attempt. Returns {queueAction: ACK|NACK|NONE}. NACK = the queue (not a second scheduler) re-offers the job after the backoff; the queue's own attempt cap becomes the dead-letter. */
+  async function runGoverned(agent, jobId, qjob) {
+    let r;
+    try { r = await brain.dispatch.run(jobId, { preferredAgentId: agent.id }); } catch (e) { r = { status: "ERROR", reason: String(e.message) }; }
+    const cand = state.candidates.find(c => c.id === jobId), who = agentById(r.agentId) ?? agent;
+    const done = (st, detail) => update(who, st, detail);
+    if (r.status === "DONE" || r.status === "ALREADY_DONE") { if (cand) done("SCHEDULED", "Screening complete: " + cand.status); return { queueAction: "ACK" }; }
+    if (r.status === "RETRY_WAIT" || r.status === "BACKOFF") { update(agent, "BLOCKED", "Governed retry scheduled", r.action ?? "BACKOFF"); if (qjob) { const q = queue.nack(qjob.id, { error: r.action ?? "BACKOFF", retryDelayMs: Math.max(0, (r.retryAt ?? now()) - Date.now()) }); if (q.state === "DEAD" && cand) cand.status = "FAILED_DEAD_LETTER"; return { queueAction: "NONE" }; } return { queueAction: "NONE" }; }
+    if (r.status === "ESCALATED") {
+      const attempts = r.job?.attempts ?? 0;
+      if (cand) cand.status = "FAILED_ESCALATED";
+      update(agent, "BLOCKED", "Escalated to owner after bounded retries", r.failure?.reason ?? "ESCALATED");
+      if (qjob && attempts >= 3) { const q = queue.nack(qjob.id, { error: "ESCALATED" }); if (q.state === "DEAD" && cand) cand.status = "FAILED_DEAD_LETTER"; return { queueAction: "NONE" }; }
+      return { queueAction: qjob ? "ACK" : "NONE" };
+    }
+    if (r.status === "HALTED") { update(agent, "HALTED_BY_OWNER_STOP", "Owner control halted this job; it resumes when cleared", r.reason ?? "HALTED"); return { queueAction: qjob ? "ACK" : "NONE" }; }
+    if (r.status === "WAITING_APPROVAL") { update(agent, "WAITING_FOR_INPUT", "Waiting for Joci's approval", r.reason ?? "APPROVAL"); return { queueAction: qjob ? "ACK" : "NONE" }; }
+    update(agent, "BLOCKED", "Governed dispatch: " + r.status, r.reason ?? r.status);
+    return { queueAction: "NONE" };
   }
   function dashboard() {
     const blockers = [

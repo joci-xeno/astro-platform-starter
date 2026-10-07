@@ -31,12 +31,18 @@ test("runtime + Brain: prompt-injection text from the external source is quarant
     assert.equal(rt.dashboard().ownerControl.controlledPaths >= 27, true); assert.equal(rt.ownerControl.agents.report().agents, 30);
   } finally { rt.stop(); rm(d); }
 });
-test("runtime + Brain: screening is recorded in the black box and the graph, flagged NOT independently verified; Brain errors never stop the runtime", async () => {
+test("runtime + Brain: screening runs through the governed orchestrator: planned, graph-assigned, executed, INDEPENDENTLY verified, traced by one correlation id; Brain errors never stop the runtime", async () => {
   const d = tmp("brt-");
-  const rt = createRuntime({ dataDir: d, fetchImpl: fakeFetch([hit("9", "Looking for a developer to build a landing page, remote, budget 500 USD.")]) });
+  const rt = createRuntime({ dataDir: d, fetchImpl: fakeFetch([hit("9", "We are looking for a developer for a freelance project: need help with a website, remote, budget $2,000. Contact jobs@example.com")]) });
   try {
-    await rt.search(0); rt.execute(7);
-    const ev = rt.brain.blackBox.query({ kind: "SCREENING_COMPLETED" }); assert.equal(ev.length, 1); assert.equal(ev[0].agentId, "EXECUTION-3"); assert.equal(ev[0].verification, "NOT_INDEPENDENTLY_VERIFIED");
+    await rt.search(0); await rt.execute(7);
+    const c = rt.state.candidates[0], job = rt.brain.dispatch.get(c.id);
+    assert.equal(c.status, "NEEDS_VERIFICATION"); assert.equal(job.state, "DONE"); assert.equal(job.verification.verdict, "ACCEPT"); assert.equal(job.verification.independent, true);
+    assert.equal(job.assignments[0].agentId, "EXECUTION-3"); assert.equal(job.assignments[0].via, "GRAPH_CONFIRMED_PREFERRED"); assert.equal(c.processedBy, "EXECUTION-3");
+    const tl = rt.brain.blackBox.timeline(c.correlationId).map(e => e.kind);       // one trace from SEARCH to verified result
+    for (const k of ["SEARCH_PIPELINE", "JOB_PLANNED", "JOB_ASSIGNED", "PIPELINE_ANALYZE", "PIPELINE_PLAN", "PIPELINE_CAPABILITY_MATCH", "PIPELINE_ASSIGN", "PIPELINE_EXECUTE", "PIPELINE_VERIFY", "PIPELINE_COMPLETE", "PIPELINE_EVIDENCE", "JOB_DONE"]) assert.ok(tl.includes(k), k);
+    const opp = rt.brain.opportunity.get(c.opportunityId); assert.equal(opp.source, "hn"); assert.equal(opp.estimatedValue.amount, 2000); assert.equal(opp.estimatedCostUsd, null); assert.equal(opp.profitPotentialUsd, null);   // unknown cost stays unknown
+    assert.equal(opp.recurringPotential, "UNKNOWN"); assert.equal(opp.correlationId, c.correlationId); assert.ok(opp.evidence.length >= 3);
     assert.equal(rt.brain.graph.view("EXECUTION-3").reliability, 1);
     assert.equal(rt.brain.blackBox.verify().ok, true);
     rt.brain.blackBox.record = () => { throw new Error("disk full"); };                          // simulate a Brain failure

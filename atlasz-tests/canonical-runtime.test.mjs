@@ -36,7 +36,7 @@ test("search -> screening produces evidence-bearing leads, never a sent offer", 
     const rt = createRuntime({ dataDir: d, fetchImpl: fakeFetch([hit("1", goodText), hit("2", "I am available for hire, see my portfolio"), hit("3", goodText, 90)]) });
     await rt.search(0);
     assert.equal(rt.state.candidates.length, 3);
-    for (let i = 5; i < 8; i++) rt.execute(i);
+    for (let i = 5; i < 8; i++) await rt.execute(i);
     const by = Object.fromEntries(rt.state.candidates.map(c => [c.id, c]));
     assert.equal(by["hn-1"].status, "NEEDS_VERIFICATION"); assert.equal(by["hn-2"].status, "REJECTED"); assert.equal(by["hn-3"].status, "REJECTED");
     assert.ok(by["hn-2"].assessment.reject.includes("SELLER_NOT_BUYER")); assert.ok(by["hn-3"].assessment.reject.includes("STALE_OR_UNDATED"));
@@ -61,7 +61,7 @@ test("restart: state is restored, candidates stuck in PROCESSING (crash) are ret
     const rt2 = createRuntime({ dataDir: d, fetchImpl: fakeFetch([hit("11", goodText), hit("12", goodText)]) });
     assert.equal(rt2.recoveredStalled, 1); assert.equal(rt2.state.candidates.length, 2);
     await rt2.search(0); assert.equal(rt2.state.candidates.length, 2, "same ids are not re-added");
-    rt2.execute(5); rt2.execute(6); assert.equal(rt2.state.leads.length, 2);
+    await rt2.execute(5); await rt2.execute(6); assert.equal(rt2.state.leads.length, 2);
   } finally { rm(d); }
 });
 

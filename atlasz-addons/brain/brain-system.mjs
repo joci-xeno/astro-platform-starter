@@ -18,14 +18,15 @@ import { createModelIntelligence } from "./model-intelligence.mjs";
 import { createSimulationLab } from "./simulation-lab.mjs";
 import { createCentralBrain, createBrainBus } from "./central-brain.mjs";
 import { computeBrainHealth } from "./brain-health.mjs";
+import { createGovernedDispatch } from "./governed-dispatch.mjs";
 
-export function createBrainSystem({ dir, ownerAuth, roster = [], gate = emergencyGate, safeMode = null, chain = null, executors = {}, commandHandlers = {}, drActions = {}, sources = {}, redact = s => s, now = () => new Date().toISOString() } = {}) {
+export function createBrainSystem({ dir, ownerAuth, roster = [], gate = emergencyGate, safeMode = null, chain = null, lookups = {}, dispatchOptions = {}, executors = {}, commandHandlers = {}, drActions = {}, sources = {}, redact = s => s, now = () => new Date().toISOString() } = {}) {
   if (!dir || !ownerAuth) throw new Error("DIR_AND_OWNER_AUTH_REQUIRED");
   const blackBox = createBlackBox({ filePath: path.join(dir, "blackbox.jsonl"), redact, now });
   const governance = createGovernance({ gate, ownerAuth, chain, safeGate: safeMode ? o => safeMode.gate(o) : null, auditPath: path.join(dir, "governance-audit.jsonl"), now });
   const graph = createCapabilityGraph({ file: path.join(dir, "capability-graph.json"), now });
   const planner = createPlanningBrain({ file: path.join(dir, "plans.json"), now });
-  const verifier = createVerifier();
+  const verifier = createVerifier({ lookups });
   const security = createSecurityBrain({ ownerAuth, safeMode, blackBox, now });
   const knowledge = createKnowledgeBrain({ file: path.join(dir, "knowledge.json"), ownerAuth, now });
   const opportunity = createOpportunityIntelligence({ file: path.join(dir, "opportunities.json"), governance, now });
@@ -38,9 +39,10 @@ export function createBrainSystem({ dir, ownerAuth, roster = [], gate = emergenc
   const topology = validateRoster(roster);
   for (const a of roster) if (!graph.get(a.id)) graph.upsert({ id: a.id, type: "AGENT", capabilities: a.capabilities ?? (a.team === "SEARCH" ? ["research", "discover"] : ["screen", "qualify", "scope"]), supportedTasks: a.team === "SEARCH" ? ["DISCOVER_PROJECT_REQUESTS"] : ["QUALIFY_DISCOVERED_REQUEST"] });
   const orchestrator = topology.ok ? createOrchestrator({ roster, graph, planner, governance, verifier, blackBox, security, executors }) : null;
+  const dispatch = orchestrator ? createGovernedDispatch({ file: path.join(dir, "jobs.json"), planner, graph, orchestrator, blackBox, executionAgentIds: roster.filter(a => a.team === "EXECUTION").map(a => a.id), ...dispatchOptions }) : null;
   const central = createCentralBrain({ graph, planner, governance, sources, bus });
   const health = () => computeBrainHealth({ blackBox, verifier, planner, graph });
   const summary = () => ({ topology, orchestrator: orchestrator ? "READY" : "BLOCKED_TOPOLOGY_INVALID", capabilityGraph: graph.summary(), plans: planner.list().length, opportunities: opportunity.list().length, knowledge: knowledge.summary(), services: factory.list().length,
     security: security.status(), simulations: lab.runs().length, blackBox: { ...blackBox.stats(), chain: blackBox.verify().ok }, governanceAudit: governance.audit.verify().ok, models: models.health(), health: health().metrics, incidents: dr.incidents().length });
-  return { blackBox, governance, graph, planner, verifier, security, knowledge, opportunity, factory, models, lab, dr, commands, bus, orchestrator, central, health, summary, topology };
+  return { dispatch, blackBox, governance, graph, planner, verifier, security, knowledge, opportunity, factory, models, lab, dr, commands, bus, orchestrator, central, health, summary, topology };
 }
