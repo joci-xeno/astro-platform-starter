@@ -92,7 +92,7 @@ test("recovery source mapping: only real validated directories; unknown categori
   const row = m2.report.find(r => r.category === "CRITICAL_SYSTEM_STATE");
   assert.equal(row.status, "NOT_CONFIGURED"); assert.equal(row.reason, "PATH_DOES_NOT_EXIST");
   // symlink escape + secret store
-  const outside = tmp("out-"); fs.symlinkSync(outside, path.join(data, "ledger"));
+  const outside = tmp("out-"); fs.symlinkSync(outside, path.join(data, "ledger"), process.platform === "win32" ? "junction" : "dir");
   assert.equal(mapRecoverySources({ dataDir: data, appDir: app }).report.find(r => r.category === "CRITICAL_SYSTEM_STATE").reason, "OUTSIDE_ALLOWED_ROOTS");
   assert.equal(validateSource(path.join(data, "vault"), [data]).ok, false);
   assert.equal(validateSource(path.join(data, "brain"), [data]).ok, true);

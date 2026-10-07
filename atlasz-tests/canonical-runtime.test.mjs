@@ -113,7 +113,7 @@ test("REAL PROCESS: canonical server boots, serves read-only status, obeys an ex
 
     child.kill("SIGTERM");
     const ex = await Promise.race([exited, sleep(8000).then(() => "HUNG")]);
-    assert.notEqual(ex, "HUNG", "must exit on SIGTERM"); assert.equal(ex.code, 0);
+    assert.notEqual(ex, "HUNG", "must exit on SIGTERM"); if (process.platform === "win32") assert.ok(ex !== "HUNG"); else assert.equal(ex.code, 0);   // Windows has no POSIX SIGTERM: kill() terminates the process, so graceful-exit code 0 is only asserted on POSIX
     const saved = JSON.parse(fs.readFileSync(path.join(dir, "atlasz-state.json"), "utf8")); assert.equal(saved.agents.length, 30);
     const chain = fs.readFileSync(path.join(dir, "emergency-audit.jsonl"), "utf8").trim().split("\n").map(JSON.parse);
     assert.equal(chain.filter(e => e.event === "EMERGENCY_MODE_CHANGED").length, 2);

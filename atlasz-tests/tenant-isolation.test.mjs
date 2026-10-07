@@ -15,7 +15,7 @@ test("tenants get separate dirs, namespaces; paths cannot escape; customers cann
     fs.writeFileSync(r.pathFor("acme-corp", "data", "secret.txt"), "acme only");
     assert.throws(() => r.pathFor("beta-llc", "data", "../../acme-corp/data/secret.txt"), /PATH_ESCAPES_TENANT/);
     assert.throws(() => r.pathFor("beta-llc", "data", "/etc/passwd"), /PATH_ESCAPES_TENANT/);
-    fs.symlinkSync(path.join(d, "tenants", "acme-corp", "data"), path.join(d, "tenants", "beta-llc", "data", "link"));
+    fs.symlinkSync(path.join(d, "tenants", "acme-corp", "data"), path.join(d, "tenants", "beta-llc", "data", "link"), process.platform === "win32" ? "junction" : "dir");
     assert.throws(() => r.pathFor("beta-llc", "data", "link/secret.txt"), /PATH_ESCAPES_TENANT/);
     assert.throws(() => r.assertAccess("beta-llc", "acme-corp"), /CROSS_TENANT_ACCESS_DENIED/);
     assert.throws(() => r.assertAccess("acme-corp", OWNER_TENANT), /CROSS_TENANT_ACCESS_DENIED/);

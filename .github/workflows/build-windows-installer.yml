@@ -9,12 +9,18 @@ jobs:
   test-and-build:
     runs-on: windows-latest
     steps:
+      - name: Keep LF line endings (tests hash and split files)
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - name: Run the real test suite
-        run: npm test
+        run: npm test 2>&1 | Tee-Object -FilePath ../test-output.txt
         working-directory: atlasz-runtime
+        shell: pwsh
+      - name: Report failing tests as annotations (readable without log access)
+        if: failure()
+        run: node scripts/gh-annotate-test-failures.mjs test-output.txt
       - name: Stage app
         run: node atlasz-control-center/scripts/stage-win.mjs
       - name: Build installer
