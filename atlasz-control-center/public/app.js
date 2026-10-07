@@ -37,7 +37,22 @@ let toastEl; function toast(t, c) { toastEl?.remove(); toastEl = note(t, c); $("
 
 const fmtUp = sec => { const d = Math.floor(sec / 86400), hh = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60); return (d ? d + "d " : "") + hh + "h " + m + "m"; };
 const usd = n => "$" + Number(n ?? 0).toFixed(2);
+const THEME_OK = /^--[a-z][a-z0-9-]{0,40}$/;
+async function applyTheme() { try { const t = await api("/api/theme"); for (const [k, v] of Object.entries(t.variables ?? {})) if (THEME_OK.test(k)) document.documentElement.style.setProperty(k, String(v)); } catch { /* theme is cosmetic */ } }
 const views = {
+  async plugins() {
+    const p = await api("/api/plugins");
+    const PASS2 = { name: "passphrase", label: "Owner passphrase", type: "password" };
+    return [h("h2", {}, "Plugins / Extensions / Themes"), note(p.note),
+      table(["Name", "Kind", "Version", "Permissions", "Status", "Actions"], p.plugins.map(x => [x.name + " (" + x.id + ")", x.kind, x.version, x.permissions.join(", ") || "none", pill(x.status) , 
+        h("div", { class: "row", style: "margin:0" },
+          ["THEME", "SKIN"].includes(x.kind)
+            ? h("button", { class: "btn", onclick: async () => { await act(x.activeTheme ? "Clear theme" : "Apply theme", "/api/plugins/theme", { id: x.activeTheme ? null : x.id }); applyTheme(); } }, x.activeTheme ? "Clear theme" : "Apply theme")
+            : (x.status === "DISABLED" ? h("button", { class: "btn primary", onclick: async () => { const r = await ask({ title: "Enable " + x.name, text: "Declared permissions: " + (x.permissions.join(", ") || "none") + ". Runs in an isolated process with no secrets.", fields: [PASS2], ok: "Enable" }); if (r) act("Enable plugin", "/api/plugins/enable", { id: x.id, passphrase: r.passphrase }); } }, "Enable")
+              : x.status === "QUARANTINED" ? h("button", { class: "btn", onclick: async () => { const r = await ask({ title: "Reset quarantine " + x.name, fields: [PASS2], ok: "Reset" }); if (r) act("Reset quarantine", "/api/plugins/reset", { id: x.id, passphrase: r.passphrase }); } }, "Reset quarantine")
+              : h("button", { class: "btn", onclick: () => act("Disable plugin", "/api/plugins/disable", { id: x.id }) }, "Disable")))])),
+      p.rejected.length ? [h("h2", {}, "Rejected packages"), table(["Folder", "Problems"], p.rejected.map(x => [x.dir.split(/[\\/]/).slice(-1)[0], x.problems.join(", ")]))] : null];
+  },
   async finance() {
     const f = await api("/api/finance");
     const jobs = Object.entries(f.profit.byJob ?? {});
@@ -159,7 +174,7 @@ const views = {
   },
   async voice() { return [h("h2", {}, "Speak-to-Speak / Live Voice"), note("NOT BUILT (V7.3 §5). No STT/TTS provider is attached, so voice is never shown LIVE. Planned for a later development round.")]; }
 };
-const NAMES = { overview: "Overview", finance: "Revenue / Costs / Profit", evidence: "Evidence / Audit", agents: "Agents (5+25)", jobs: "Jobs / Opportunities", money: "Money Engine", approvals: "Approvals", providers: "Model / Tool health", errors: "Errors & Blockers", owner: "Owner Controls", backup: "Backup / Restore / LKG", doctor: "System Doctor", updates: "Update Center", voice: "Voice (planned)" };
+const NAMES = { overview: "Overview", plugins: "Plugins / Themes", finance: "Revenue / Costs / Profit", evidence: "Evidence / Audit", agents: "Agents (5+25)", jobs: "Jobs / Opportunities", money: "Money Engine", approvals: "Approvals", providers: "Model / Tool health", errors: "Errors & Blockers", owner: "Owner Controls", backup: "Backup / Restore / LKG", doctor: "System Doctor", updates: "Update Center", voice: "Voice (planned)" };
 let current = "overview";
 async function render() {
   $("#nav").replaceChildren(h("h1", {}, "ATLASZ"), ...Object.entries(NAMES).map(([k, n]) => h("button", { "aria-current": k === current ? "page" : null, onclick: () => { current = k; render(); } }, n)));
@@ -169,4 +184,4 @@ async function render() {
     const s = await api("/api/status"); const b = $("#banner"); b.hidden = !s.emergency.banner; b.textContent = s.emergency.banner ? s.emergency.banner + " — " + s.emergency.mode : "";
   } catch (e) { main.replaceChildren(h("h2", {}, NAMES[current]), note(e.message === "TOKEN_REQUIRED" ? "Session token missing. Start the Control Center from the ATLASZ icon." : "Error: " + e.message, "bad")); }
 }
-render(); setInterval(() => { if (!$("#dlg").open && ["overview", "agents", "jobs", "money", "finance"].includes(current)) render(); }, 10000);
+applyTheme(); render(); setInterval(() => { if (!$("#dlg").open && ["overview", "agents", "jobs", "money", "finance"].includes(current)) render(); }, 10000);

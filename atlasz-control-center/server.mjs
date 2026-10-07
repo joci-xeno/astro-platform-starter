@@ -17,13 +17,14 @@ export function createControlCenterServer(opts = {}) {
   const token = opts.token ?? randomBytes(24).toString("hex");
   let port = 0;
   const get = { "/api/status": () => core.status(), "/api/opportunities": () => core.opportunities(), "/api/approvals": () => core.approvals(), "/api/backups": () => core.backups(),
-    "/api/finance": () => core.finance(), "/api/evidence": () => core.evidence(), "/api/doctor": () => core.doctor(), "/api/updates": () => core.updates() };
+    "/api/finance": () => core.finance(), "/api/evidence": () => core.evidence(), "/api/plugins": () => core.plugins(), "/api/theme": () => core.theme(), "/api/doctor": () => core.doctor(), "/api/updates": () => core.updates() };
   const post = {
     "/api/owner-key": b => core.provisionOwnerKey(b), "/api/approvals/decide": b => core.decideApproval(b), "/api/emergency": b => core.setEmergency(b), "/api/safe-mode/exit": b => core.exitSafeMode(b),
     "/api/runtime/start": () => core.startRuntime(), "/api/runtime/stop": () => core.stopRuntime(),
     "/api/backup": b => core.backupNow(b), "/api/backup/drill": () => core.drill(), "/api/backup/mark-lkg": b => core.markLastKnownGood(b),
     "/api/restore/lkg": b => core.restoreLastKnownGood(b), "/api/restore/backup": b => core.restoreFromBackup(b),
     "/api/updates/check": () => core.updateActions.check(), "/api/updates/test": b => core.updateActions.test(b), "/api/updates/install": b => core.updateActions.install(b),
+    "/api/plugins/enable": b => core.pluginActions.enable(b), "/api/plugins/disable": b => core.pluginActions.disable(b), "/api/plugins/theme": b => core.pluginActions.setTheme(b), "/api/plugins/reset": b => core.pluginActions.resetQuarantine(b),
     "/api/updates/rollback": b => core.updateActions.rollback(b), "/api/updates/auto": b => core.updateActions.setAuto(b), "/api/updates/unfreeze": b => core.updateActions.unfreeze(b)
   };
   const send = (res, code, obj) => { res.writeHead(code, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" }); res.end(JSON.stringify(obj)); };

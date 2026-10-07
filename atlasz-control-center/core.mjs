@@ -14,6 +14,7 @@ import { createUpdateCenter } from "../atlasz-addons/update-center.mjs";
 import { readAuditFile, verifyChain } from "../atlasz-addons/audit-chain.mjs";
 import { createFinancialLedger } from "../atlasz-addons/financial-ledger.mjs";
 import { createLocalUpdateAdapters, SELFTEST } from "../atlasz-addons/local-update-adapters.mjs";
+import { createPluginManager } from "../atlasz-addons/plugin-manager.mjs";
 import { createApprovalRequests } from "../atlasz-addons/approval-requests.mjs";
 import { createOwnerKeystore, signWithKeystore, keystoreStatus } from "../atlasz-addons/owner-keystore.mjs";
 
@@ -192,6 +193,13 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
     "queue-journal": "Do not delete. Restore from last known good.", "runtime-state": "Do not overwrite. Restore from last known good.", "disk-free": "Free disk space.", topology: "Fixed topology must be 5 SEARCH + 25 EXECUTION." }[c.id] ?? "See detail.");
 
   // ---- Update Center (same flow as the CLI/tests; no real detector adapters yet => honest BLOCKED) ----
+  const plugins = () => createPluginManager({ roots: [path.join(configDir, "plugins"), path.join(packDir, "plugins")], stateDir: path.join(stateDir, "plugins"), ownerAuth: ownerAuth() });
+  const pluginActions = {
+    enable: ({ id, passphrase }) => act(() => plugins().enable(id, { ownerApproval: passphrase ? sign(passphrase, "PLUGIN_ENABLE", id) : null })),
+    disable: ({ id }) => act(() => plugins().disable(id)),
+    setTheme: ({ id = null }) => act(() => plugins().setTheme(id)),
+    resetQuarantine: ({ id, passphrase }) => act(() => plugins().resetQuarantine(id, { ownerApproval: sign(passphrase, "PLUGIN_RESET_QUARANTINE", id) }))
+  };
   const updates = () => ({ ...uc().viewModel(), adapters: { detector: Boolean(adapters.detector), stager: Boolean(adapters.stager), tester: Boolean(adapters.tester), securityHealth: Boolean(adapters.securityHealth), kind: localAdapters ? "LOCAL_OFFLINE_PACKAGES" : (updateAdapters ? "INJECTED" : "NONE") },
     inbox: localAdapters ? localAdapters.lastScan() : null,
     notice: adapters.detector ? null : "BLOCKED: no update detector adapter is configured, so nothing can be detected or installed. Fails closed." });
@@ -205,6 +213,6 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
     unfreeze: ({ passphrase }) => act(() => uc().unfreeze({ ownerApproval: sign(passphrase, "UPDATE_UNFREEZE", uc().freezeStatus().updateId) }))
   };
 
-  return { finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }
