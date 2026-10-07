@@ -95,7 +95,7 @@
     52
    ]
   },
-  "item_verified_count": 907
+  "item_verified_count": 909
  },
  "requirements": [
   {
@@ -22763,6 +22763,59 @@
    "test_status": "TESTED_SANDBOX",
    "classification": "SANDBOX",
    "next_action": "Tune limit with real throughput"
+  },
+  {
+   "id": "ATLASZ-PKG84-018",
+   "title": "Document extractors (DOCX, XLSX, PPTX, ODF, RTF, PDF text layer): never throw, zip-bomb/entry/size limits, scanned PDF = PDF_NO_TEXT_LAYER, encrypted PDF = PDF_ENCRYPTED; no OCR claimed",
+   "level": "item",
+   "section": 77,
+   "description": "Document extractors (DOCX, XLSX, PPTX, ODF, RTF, PDF text layer): never throw, zip-bomb/entry/size limits, scanned PDF = PDF_NO_TEXT_LAYER, encrypted PDF = PDF_ENCRYPTED; no OCR claimed",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/doc-extractors.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/doc-extractors.test.mjs"
+   ],
+   "evidence": [
+    "5 tests; OCR for scanned PDFs and legacy .doc/.xls not implemented"
+   ],
+   "blocker": "OCR provider not available",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "OCR adapter (needs provider) and legacy binary formats"
+  },
+  {
+   "id": "ATLASZ-PKG84-019",
+   "title": "Document Intelligence: ingested text screened by Security Brain before searchable/agent-readable (QUARANTINED if blocked), SECRET detected pre-screen and hidden, versioning with superseded chain, entity-graph linking, forAgent read path only on ALLOW, tenant/role gated, corrupt index never replaced",
+   "level": "item",
+   "section": 77,
+   "description": "Document Intelligence: ingested text screened by Security Brain before searchable/agent-readable (QUARANTINED if blocked), SECRET detected pre-screen and hidden, versioning with superseded chain, entity-graph linking, forAgent read path only on ALLOW, tenant/role gated, corrupt index never replaced",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/document-center.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/document-intelligence.test.mjs",
+    "atlasz-tests/document-center.test.mjs"
+   ],
+   "evidence": [
+    "6 tests + 4 mutation checks caught (secret ordering, forAgent, tenant, screen); fixture-based, no real customer documents; extracted amounts remain UNVERIFIED hints"
+   ],
+   "blocker": "No OCR; no real document corpus",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Wire document actions into Decision Engine / Control Center panel"
   }
  ]
 }

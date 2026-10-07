@@ -13,14 +13,15 @@ test("ingest + search + access boundaries: tenant isolation, role gate, duplicat
     const inv = await dc.ingest({ filePath: f(src, "inv.txt", "Invoice 17\nClient Alpha\nTotal: $1,250.50 due 2026-11-01"), type: "INVOICE", tenantId: "T1", jobId: "job-1" });
     assert.equal(inv.extraction.status, "EXTRACTED"); assert.equal(inv.hints.amounts[0].value, 1250.5); assert.equal(inv.hints.amounts[0].status, "UNVERIFIED_CANDIDATE");
     assert.equal((await dc.ingest({ filePath: f(src, "inv-copy.txt", "Invoice 17\nClient Alpha\nTotal: $1,250.50 due 2026-11-01"), tenantId: "T1" })).duplicate, true);
-    const pdf = await dc.ingest({ filePath: f(src, "x.pdf", "%PDF-1.4 fake"), tenantId: "T1" }); assert.equal(pdf.extraction.status, "UNSUPPORTED_FORMAT");
+    const pdf = await dc.ingest({ filePath: f(src, "x.pdf", "%PDF-1.4 fake"), tenantId: "T1" }); assert.equal(pdf.extraction.status, "NO_TEXT_LAYER"); /* built-in PDF extractor exists now: no text layer is reported as such, never faked */
+    const png = await dc.ingest({ filePath: f(src, "x.png", "\x89PNG fake"), tenantId: "T1" }); assert.equal(png.extraction.status, "UNSUPPORTED_FORMAT");
     assert.equal(dc.search({ query: "alpha invoice", tenantId: "T1" })[0].id, inv.id); assert.match(dc.search({ query: "alpha", tenantId: "T1" })[0].snippet, /Alpha/);
     assert.equal(dc.search({ query: "alpha", tenantId: "T2" }).length, 0);                                       // other tenant sees nothing
     assert.equal(dc.search({ query: "alpha", tenantId: "T1", role: "AGENT" }).length, 0);                       // default allowedRoles = OWNER only
     assert.equal(dc.get(inv.id, { tenantId: "T2" }), null); assert.equal(dc.get(inv.id, { tenantId: "T1", role: "AGENT" }), null);
     assert.equal(dc.list({ tenantId: "T1", jobId: "job-1" }).length, 1);
     dc.associate(inv.id, { tenantId: "T1", evidenceRef: "ledger#4" }); assert.deepEqual(dc.get(inv.id, { tenantId: "T1" }).evidenceRefs, ["ledger#4"]);
-    assert.equal(createDocumentCenter({ dir: d }).summary().total, 2);                                          // durable across restart
+    assert.equal(createDocumentCenter({ dir: d }).summary().total, 3);                                          // durable across restart
     assert.equal(dc.summary().unsupported, 1);
   } finally { rm(d); rm(src); }
 });
