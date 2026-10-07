@@ -18,7 +18,7 @@ for fn in sorted(f for f in os.listdir(os.path.join(root, "docs")) if f.startswi
         if x["id"] in byid: byid[x["id"]].update(x)
         else: d["requirements"].append(x); byid[x["id"]] = x
 # the earlier UC/CR records were created before the GUI existed: refresh the ones that changed
-upd = {"ATLASZ-UC-013": ("PARTIAL", "UPDATE CENTER view with all buttons exists in the Control Center UI", "No real detector/stager/tester adapters: every button fails closed (BLOCKED) until they exist"),
+upd = {"ATLASZ-UC-013": ("PARTIAL", "UPDATE CENTER view with all buttons exists in the Control Center UI", "Real local offline adapters exist (hash-verified packages); no remote update feed and no installed-app test"),
        "ATLASZ-CR-005": ("PARTIAL", "Owner Controls, backup/restore, doctor, update, approvals have GUI equivalents (atlasz-control-center)", "Electron shell/installer not built or run on Windows; keygen and sign available in GUI, CLI remains fallback")}
 for k, (st, ev, blk) in upd.items():
     if k in byid: byid[k].update(status=st, evidence=[ev], blocker=blk, tests=["atlasz-tests/control-center.test.mjs"])

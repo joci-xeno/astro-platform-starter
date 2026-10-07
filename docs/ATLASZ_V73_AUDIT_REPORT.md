@@ -69,3 +69,12 @@ A teljes, géppel követhető állapot: `atlasz_v73_requirement_registry.json/.c
 2. Patch alkalmazása (`git am atlasz-repair-agent-child.patch` a `money-pilot` csúcsán), majd egy valódi `node --test` smoke-készlet az addonokra (jelenleg 0 teszt).
 3. P0 sorrend: kill switch erős auth → owner auth verifier → durable queue/checkpoint → backup/restore.
 4. Desktop (S21) csak a P0 stabilizálása után.
+
+## 5. Round 5 (continuation authorization) — what changed
+Registry (853 records): EXISTS_AND_WORKING 167 → 185, PARTIAL 330 → 382, MISSING 264 → 195 (item-level, evidence in `docs/registry_item_audit_p5.py`). Nothing is LIVE against a real provider.
+
+New modules (all with meaningful positive and negative tests): financial ledger; local offline Update Center adapters; plugin/theme manager; Human Core and daily brief; Document Center; Universal Inbox; Voice session state machine; owner-authenticated mobile API (replay-safe); Digital Twin; tenant isolation + signed entitlements + sanitized distribution builder; provider resilience (circuit breakers, no-spend routing); connector catalog (12 connectors, vault credentials, read-only probes); Tech Watch.
+
+Control Center panels added: Home, Finance (revenue/costs/profit), Evidence, Plugins/Themes, Documents, Inbox, Voice (real status), Connectors, Tech Watch.
+
+Honest limits: no provider/connector credentials exist, so every connector is BLOCKED_NO_CREDENTIALS or NO_SAFE_PROBE; voice is BLOCKED_NO_PROVIDER; the mobile API is not exposed on any port; Electron/Windows installer is blocked (registry 403); GitHub push is blocked (repo not authorized for this session); Railway status UNKNOWN. New modules are not yet the dispatch path of the 30-agent runtime.

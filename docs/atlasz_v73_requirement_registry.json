@@ -745,13 +745,16 @@
    "dependencies": [
     "V73-S04"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (only a PLANNED label in completion-registry)"
+   "implementation_location": "atlasz-addons/human-core.mjs; atlasz-addons/master-brief.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/human-core.test.mjs",
+    "atlasz-tests/control-center-home.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Human Core module: character, tone, help planning, impact verdicts, precedence"
+   ],
+   "blocker": "Standalone module + Control Center view; not yet driving the 30-agent runtime; heuristics, not a verified emotional-intelligence model",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -767,13 +770,16 @@
    "dependencies": [
     "V73-S04"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (only a PLANNED label in completion-registry)"
+   "implementation_location": "atlasz-addons/human-core.mjs; atlasz-addons/master-brief.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/human-core.test.mjs",
+    "atlasz-tests/control-center-home.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "CHARACTER traits + assertNoFalseClaims tested"
+   ],
+   "blocker": "Standalone module + Control Center view; not yet driving the 30-agent runtime; heuristics, not a verified emotional-intelligence model",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -789,13 +795,16 @@
    "dependencies": [
     "V73-S04"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (only a PLANNED label in completion-registry)"
+   "implementation_location": "atlasz-addons/human-core.mjs; atlasz-addons/master-brief.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/human-core.test.mjs",
+    "atlasz-tests/control-center-home.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Context detection (EN/HU) tested; heuristic keyword model"
+   ],
+   "blocker": "Standalone module + Control Center view; not yet driving the 30-agent runtime; heuristics, not a verified emotional-intelligence model",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -811,13 +820,16 @@
    "dependencies": [
     "V73-S04"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (only a PLANNED label in completion-registry)"
+   "implementation_location": "atlasz-addons/human-core.mjs; atlasz-addons/master-brief.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/human-core.test.mjs",
+    "atlasz-tests/control-center-home.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "detectContext tested incl. accented Hungarian"
+   ],
+   "blocker": "Standalone module + Control Center view; not yet driving the 30-agent runtime; heuristics, not a verified emotional-intelligence model",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -833,13 +845,16 @@
    "dependencies": [
     "V73-S04"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (only a PLANNED label in completion-registry)"
+   "implementation_location": "atlasz-addons/human-core.mjs; atlasz-addons/master-brief.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/human-core.test.mjs",
+    "atlasz-tests/control-center-home.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "adaptTone distress/urgent handling tested"
+   ],
+   "blocker": "Standalone module + Control Center view; not yet driving the 30-agent runtime; heuristics, not a verified emotional-intelligence model",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -855,13 +870,16 @@
    "dependencies": [
     "V73-S04"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (only a PLANNED label in completion-registry)"
+   "implementation_location": "atlasz-addons/human-core.mjs; atlasz-addons/master-brief.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/human-core.test.mjs",
+    "atlasz-tests/control-center-home.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "planHelp tested"
+   ],
+   "blocker": "Standalone module + Control Center view; not yet driving the 30-agent runtime; heuristics, not a verified emotional-intelligence model",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -877,11 +895,13 @@
    "dependencies": [
     "V73-S04"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
+   "implementation_location": "atlasz-addons/human-core.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/human-core.test.mjs"
+   ],
    "evidence": [
-    "Repo keyword scan: no implementation exists (only a PLANNED label in completion-registry)"
+    "PRECEDENCE + decidePrecedence: later layers (compassion, profit) can never override JOCI/safety/financial; unevaluated layers fail closed"
    ],
    "blocker": null,
    "owner_decision": null,
@@ -899,13 +919,16 @@
    "dependencies": [
     "V73-S04"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists; Guardrails/owner approval gates exist but are not a Human Impact Judge"
+   "implementation_location": "atlasz-addons/human-core.mjs; atlasz-addons/master-brief.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/human-core.test.mjs",
+    "atlasz-tests/control-center-home.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "assessImpact wired into approval cards (humanImpact row)"
+   ],
+   "blocker": "Heuristic rule set; judge is not independent of the requester",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -921,13 +944,16 @@
    "dependencies": [
     "V73-S04"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (only a PLANNED label in completion-registry)"
+   "implementation_location": "atlasz-addons/human-core.mjs; atlasz-addons/master-brief.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/human-core.test.mjs",
+    "atlasz-tests/control-center-home.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "adaptTone EN/HU tested"
+   ],
+   "blocker": "Standalone module + Control Center view; not yet driving the 30-agent runtime; heuristics, not a verified emotional-intelligence model",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -965,13 +991,16 @@
    "dependencies": [
     "V73-S04"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (only a PLANNED label in completion-registry)"
+   "implementation_location": "atlasz-addons/human-core.mjs; atlasz-addons/master-brief.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/human-core.test.mjs",
+    "atlasz-tests/control-center-home.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Tone adapted to detected context"
+   ],
+   "blocker": "Standalone module + Control Center view; not yet driving the 30-agent runtime; heuristics, not a verified emotional-intelligence model",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -987,13 +1016,16 @@
    "dependencies": [
     "V73-S04"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (only a PLANNED label in completion-registry)"
+   "implementation_location": "atlasz-addons/human-core.mjs; atlasz-addons/master-brief.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/human-core.test.mjs",
+    "atlasz-tests/control-center-home.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "assessImpact verdicts tested and shown on approval cards"
+   ],
+   "blocker": "Standalone module + Control Center view; not yet driving the 30-agent runtime; heuristics, not a verified emotional-intelligence model",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -1009,13 +1041,16 @@
    "dependencies": [
     "V73-S04"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (only a PLANNED label in completion-registry)"
+   "implementation_location": "atlasz-addons/human-core.mjs; atlasz-addons/master-brief.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/human-core.test.mjs",
+    "atlasz-tests/control-center-home.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "assessImpact lists affected parties; unidentified parties => REVIEW"
+   ],
+   "blocker": "Standalone module + Control Center view; not yet driving the 30-agent runtime; heuristics, not a verified emotional-intelligence model",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -1031,13 +1066,16 @@
    "dependencies": [
     "V73-S04"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (only a PLANNED label in completion-registry)"
+   "implementation_location": "atlasz-addons/human-core.mjs; atlasz-addons/master-brief.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/human-core.test.mjs",
+    "atlasz-tests/control-center-home.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "couldCauseUnnecessaryHarm derived from party severity"
+   ],
+   "blocker": "Standalone module + Control Center view; not yet driving the 30-agent runtime; heuristics, not a verified emotional-intelligence model",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -1075,14 +1113,14 @@
    "dependencies": [
     "V73-S04"
    ],
-   "implementation_location": "atlasz-addons/approval-command-gateway.mjs; atlasz-addons/approval-requests.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/human-core.mjs; atlasz-control-center/core.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/approval-requests.test.mjs",
-    "atlasz-tests/owner-auth.test.mjs"
+    "atlasz-tests/human-core.test.mjs",
+    "atlasz-tests/control-center-home.test.mjs"
    ],
    "evidence": [
-    "Owner-approval requirement decision exists for consequential actions; not a human-consequence review"
+    "needsOwnerApproval derived from severity/external effect; irreversible external effect => NEEDS_JOCI (tested)"
    ],
    "blocker": null,
    "owner_decision": null,
@@ -1144,13 +1182,15 @@
    "dependencies": [
     "V73-S05"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "No session/continuous conversation logic"
+   "implementation_location": "atlasz-addons/voice-session.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/voice-session.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Session state machine IDLE/LISTENING/PROCESSING/SPEAKING"
+   ],
+   "blocker": "No tested STT/TTS provider; tests use clearly marked fakes. Not LIVE",
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -1166,13 +1206,15 @@
    "dependencies": [
     "V73-S05"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "No push-to-talk/hands-free"
+   "implementation_location": "atlasz-addons/voice-session.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/voice-session.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "PUSH_TO_TALK and HANDS_FREE modes"
+   ],
+   "blocker": "No tested STT/TTS provider; tests use clearly marked fakes. Not LIVE",
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -1236,13 +1278,15 @@
    "dependencies": [
     "V73-S05"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Single stt/tts only; no fallback chain"
+   "implementation_location": "atlasz-addons/voice-session.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/voice-session.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Fallback chain; provider usable only with probe evidence"
+   ],
+   "blocker": "No tested STT/TTS provider; tests use clearly marked fakes. Not LIVE",
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -1302,13 +1346,15 @@
    "dependencies": [
     "V73-S05"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "No interrupt handling"
+   "implementation_location": "atlasz-addons/voice-session.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/voice-session.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Barge-in interrupt tested"
+   ],
+   "blocker": "No tested STT/TTS provider; tests use clearly marked fakes. Not LIVE",
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -1368,15 +1414,15 @@
    "dependencies": [
     "V73-S05"
    ],
-   "implementation_location": "atlasz-addons/approval-command-gateway.mjs; atlasz-addons/owner-auth.mjs",
+   "implementation_location": "atlasz-addons/voice-session.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/owner-auth.test.mjs"
+    "atlasz-tests/voice-session.test.mjs"
    ],
    "evidence": [
-    "Approvals are Ed25519-signed; a bare boolean/voice assertion is rejected. No voice path exists"
+    "Voice approval attempts return NEEDS_STRONG_AUTH; nothing is approved by voice"
    ],
-   "blocker": "No voice, and strong voice auth is not designed",
+   "blocker": "No tested STT/TTS provider; tests use clearly marked fakes. Not LIVE",
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -1392,13 +1438,15 @@
    "dependencies": [
     "V73-S05"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "No transcript store"
+   "implementation_location": "atlasz-addons/voice-session.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/voice-session.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Transcript JSONL"
+   ],
+   "blocker": "No tested STT/TTS provider; tests use clearly marked fakes. Not LIVE",
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -1436,13 +1484,15 @@
    "dependencies": [
     "V73-S05"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "No latency metrics"
+   "implementation_location": "atlasz-addons/voice-session.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/voice-session.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Turn latency metrics (median/max)"
+   ],
+   "blocker": "No tested STT/TTS provider; tests use clearly marked fakes. Not LIVE",
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -1458,15 +1508,15 @@
    "dependencies": [
     "V73-S05"
    ],
-   "implementation_location": "atlasz-addons/voice-interface.mjs",
+   "implementation_location": "atlasz-addons/voice-session.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
+    "atlasz-tests/voice-session.test.mjs"
    ],
    "evidence": [
-    "status(): PLACEHOLDER_UNCONNECTED / CONNECTED_UNTESTED / LIVE only with probe evidence"
+    "Provider health via status()"
    ],
-   "blocker": null,
+   "blocker": "No tested STT/TTS provider; tests use clearly marked fakes. Not LIVE",
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -1482,13 +1532,15 @@
    "dependencies": [
     "V73-S05"
    ],
-   "implementation_location": "atlasz-control-center/public/app.js",
-   "status": "STRUCTURAL_ONLY",
-   "tests": [],
-   "evidence": [
-    "Voice panel states NOT BUILT; no controls"
+   "implementation_location": "atlasz-control-center/public/app.js (voice)",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/control-center-systems.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Voice panel shows real session status (BLOCKED_NO_PROVIDER)"
+   ],
+   "blocker": "No tested STT/TTS provider; tests use clearly marked fakes. Not LIVE",
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -1504,13 +1556,15 @@
    "dependencies": [
     "V73-S05"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "No on/off setting"
+   "implementation_location": "atlasz-addons/voice-session.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/voice-session.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "setEnabled on/off"
+   ],
+   "blocker": "No tested STT/TTS provider; tests use clearly marked fakes. Not LIVE",
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -5695,13 +5749,15 @@
    "dependencies": [
     "V73-S16"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (completion-registry only names it)"
+   "implementation_location": "atlasz-addons/digital-twin.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/digital-twin.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "simulate(): rule-based cost/revenue/risk model, always SIMULATED and isProof:false"
+   ],
+   "blocker": "Rule-based model of a proposed change, not a behavioural simulation of the live system; not wired into runtime decisions",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -5717,11 +5773,13 @@
    "dependencies": [
     "V73-S16"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
+   "implementation_location": "atlasz-addons/digital-twin.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/digital-twin.test.mjs"
+   ],
    "evidence": [
-    "Repo keyword scan: no implementation exists (completion-registry only names it)"
+    "riskScore from reversibility, unverified assumptions, spend, conflicts, low probability (tested)"
    ],
    "blocker": null,
    "owner_decision": null,
@@ -5739,11 +5797,13 @@
    "dependencies": [
     "V73-S16"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
+   "implementation_location": "atlasz-addons/digital-twin.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/digital-twin.test.mjs"
+   ],
    "evidence": [
-    "Repo keyword scan: no implementation exists (completion-registry only names it)"
+    "Assumptions marked SUPPORTED/UNVERIFIED; unverified ones raise risk and force REVISE"
    ],
    "blocker": null,
    "owner_decision": null,
@@ -5786,11 +5846,13 @@
    "dependencies": [
     "V73-S16"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
+   "implementation_location": "atlasz-addons/digital-twin.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/digital-twin.test.mjs"
+   ],
    "evidence": [
-    "Repo keyword scan: no implementation exists (completion-registry only names it)"
+    "Forbidden/locked resource conflicts => REJECT (tested)"
    ],
    "blocker": null,
    "owner_decision": null,
@@ -5808,11 +5870,13 @@
    "dependencies": [
     "V73-S16"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
+   "implementation_location": "atlasz-addons/digital-twin.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/digital-twin.test.mjs"
+   ],
    "evidence": [
-    "Repo keyword scan: no implementation exists (completion-registry only names it)"
+    "compare(): risk-adjusted ranking; rejected options never recommended; recommendation only"
    ],
    "blocker": null,
    "owner_decision": null,
@@ -6805,13 +6869,16 @@
    "dependencies": [
     "V73-S20"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "No real adapters"
+   "implementation_location": "atlasz-addons/connector-catalog.mjs; atlasz-addons/provider-resilience.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/connector-catalog.test.mjs",
+    "atlasz-tests/provider-resilience.test.mjs"
    ],
-   "blocker": "EXTERNAL: no credentials/provider connected; any paid API needs separate Joci approval",
+   "evidence": [
+    "Descriptors for GitHub, Railway, Gmail, Drive, Calendar, Airtable, AgentMail, Hunter, Clay, Firecrawl, Exa, Tavily + generic read-only REST connector"
+   ],
+   "blocker": "No credentials in the vault; real endpoints were never contacted (tests use a local fake HTTP server)",
    "owner_decision": null,
    "strategy": "REPAIR",
    "status_basis": "ITEM_VERIFIED"
@@ -6827,13 +6894,16 @@
    "dependencies": [
     "V73-S20"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "No connector auth flow"
+   "implementation_location": "atlasz-addons/connector-catalog.mjs; atlasz-addons/provider-resilience.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/connector-catalog.test.mjs",
+    "atlasz-tests/provider-resilience.test.mjs"
    ],
-   "blocker": "EXTERNAL: no credentials/provider connected; any paid API needs separate Joci approval",
+   "evidence": [
+    "Bearer / API-key auth from vault, token never logged and redacted from responses"
+   ],
+   "blocker": "No credentials in the vault; real endpoints were never contacted (tests use a local fake HTTP server)",
    "owner_decision": null,
    "strategy": "REPAIR",
    "status_basis": "ITEM_VERIFIED"
@@ -6873,13 +6943,15 @@
    "dependencies": [
     "V73-S20"
    ],
-   "implementation_location": "atlasz-addons/secret-vault.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/connector-catalog.mjs; atlasz-addons/secret-vault.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
+    "atlasz-tests/connector-catalog.test.mjs",
+    "atlasz-tests/provider-resilience.test.mjs",
     "atlasz-tests/safety-modules.test.mjs"
    ],
    "evidence": [
-    "Vault exists; no connector uses it"
+    "Credentials only from the encrypted vault; echoed secrets redacted (tested)"
    ],
    "blocker": null,
    "owner_decision": null,
@@ -6897,15 +6969,16 @@
    "dependencies": [
     "V73-S20"
    ],
-   "implementation_location": "atlasz-addons/universal-connector-layer.mjs",
+   "implementation_location": "atlasz-addons/connector-catalog.mjs; atlasz-addons/provider-resilience.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
+    "atlasz-tests/connector-catalog.test.mjs",
+    "atlasz-tests/provider-resilience.test.mjs"
    ],
    "evidence": [
-    "connectorHealth"
+    "Read-only probe per connector; LIVE only after a passing probe; failure removes evidence; connectors without a free probe stay NO_SAFE_PROBE"
    ],
-   "blocker": "EXTERNAL: no credentials/provider connected; any paid API needs separate Joci approval",
+   "blocker": "No credentials in the vault; real endpoints were never contacted (tests use a local fake HTTP server)",
    "owner_decision": null,
    "strategy": "REPAIR",
    "status_basis": "ITEM_VERIFIED"
@@ -6965,16 +7038,15 @@
    "dependencies": [
     "V73-S20"
    ],
-   "implementation_location": "atlasz-addons/self-healing-loop.mjs; update-center.mjs",
+   "implementation_location": "atlasz-addons/provider-resilience.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs",
-    "atlasz-tests/update-center.test.mjs"
+    "atlasz-tests/provider-resilience.test.mjs"
    ],
    "evidence": [
-    "Fail-closed/BLOCKED behaviour"
+    "Circuit breaker + fallback + no-spend routing tested"
    ],
-   "blocker": null,
+   "blocker": "Standalone; not yet the dispatch path of the 30 agents",
    "owner_decision": null,
    "strategy": "REPAIR",
    "status_basis": "ITEM_VERIFIED"
@@ -7273,13 +7345,15 @@
    "dependencies": [
     "V73-S21"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Home / MASTER chat: no panel in the Control Center"
+   "implementation_location": "atlasz-control-center/core.mjs; atlasz-control-center/public/app.js (home)",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/control-center-home.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Home with daily brief and state-only chat answers (status/approvals/money); owner controls refused"
+   ],
+   "blocker": "Not an LLM chat; rule-based answers only",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -7295,13 +7369,15 @@
    "dependencies": [
     "V73-S21"
    ],
-   "implementation_location": "atlasz-control-center/public/app.js",
+   "implementation_location": "atlasz-control-center/public/app.js (voice)",
    "status": "EXTERNAL_BLOCKER",
-   "tests": [],
-   "evidence": [
-    "Voice panel states NOT BUILT"
+   "tests": [
+    "atlasz-tests/control-center-systems.test.mjs"
    ],
-   "blocker": "EXTERNAL: STT/TTS provider; not built",
+   "evidence": [
+    "Voice panel shows real session status BLOCKED_NO_PROVIDER"
+   ],
+   "blocker": "EXTERNAL: STT/TTS provider",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -7531,13 +7607,16 @@
    "dependencies": [
     "V73-S21"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Costs panel: no panel in the Control Center"
+   "implementation_location": "atlasz-control-center/public/app.js (finance)",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/control-center-finance.test.mjs",
+    "atlasz-tests/financial-ledger.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Costs from the hash-chained ledger"
+   ],
+   "blocker": "No cost sources attached yet",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -7553,13 +7632,16 @@
    "dependencies": [
     "V73-S21"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Profit panel: no panel in the Control Center"
+   "implementation_location": "atlasz-control-center/public/app.js (finance)",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/control-center-finance.test.mjs",
+    "atlasz-tests/financial-ledger.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Profit = verified received revenue - recorded costs, per entity"
+   ],
+   "blocker": "No verified revenue exists yet",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -7716,13 +7798,15 @@
    "dependencies": [
     "V73-S21"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Documents panel: no panel in the Control Center"
+   "implementation_location": "atlasz-control-center/public/app.js (documents)",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/control-center-systems.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Documents panel over the Document Center"
+   ],
+   "blocker": "PDF/DOCX/XLSX are registered but marked UNSUPPORTED_FORMAT unless an extractor is injected",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -7901,11 +7985,13 @@
    "dependencies": [
     "V73-S21"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
+   "implementation_location": "atlasz-control-center/public/app.js (plugins)",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/control-center-plugins.test.mjs"
+   ],
    "evidence": [
-    "Plugins/Extensions panel: no panel in the Control Center"
+    "Plugins panel with enable/disable/quarantine-reset"
    ],
    "blocker": null,
    "owner_decision": null,
@@ -7923,11 +8009,13 @@
    "dependencies": [
     "V73-S21"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
+   "implementation_location": "atlasz-control-center/public/app.js (plugins)",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/control-center-plugins.test.mjs"
+   ],
    "evidence": [
-    "Themes/Skins panel: no panel in the Control Center"
+    "Theme apply/clear"
    ],
    "blocker": null,
    "owner_decision": null,
@@ -8137,13 +8225,15 @@
    "dependencies": [
     "V73-S21"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "No cost panel; only money counters"
+   "implementation_location": "atlasz-control-center/public/app.js (finance)",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/control-center-finance.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Cost figure from the ledger"
+   ],
+   "blocker": "No cost sources attached yet",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -8159,13 +8249,15 @@
    "dependencies": [
     "V73-S21"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "No profit panel; money tab shows confirmed paid only"
+   "implementation_location": "atlasz-control-center/public/app.js (finance)",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/control-center-finance.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Verified profit figure"
+   ],
+   "blocker": "No verified revenue exists yet",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -8181,11 +8273,13 @@
    "dependencies": [
     "V73-S21"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
+   "implementation_location": "atlasz-control-center/core.mjs; public/app.js (overview)",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/control-center-finance.test.mjs"
+   ],
    "evidence": [
-    "No uptime display"
+    "Uptime card from runtime bootedAt"
    ],
    "blocker": null,
    "owner_decision": null,
@@ -8272,11 +8366,14 @@
    "dependencies": [
     "V73-S22"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
+   "implementation_location": "atlasz-addons/plugin-manager.mjs; atlasz-control-center/core.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/plugin-manager.test.mjs",
+    "atlasz-tests/control-center-plugins.test.mjs"
+   ],
    "evidence": [
-    "Repo keyword scan: no implementation exists"
+    "Data-only themes with whitelisted CSS variables; apply/clear from the Control Center"
    ],
    "blocker": null,
    "owner_decision": null,
@@ -8294,11 +8391,14 @@
    "dependencies": [
     "V73-S22"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
+   "implementation_location": "atlasz-addons/plugin-manager.mjs; atlasz-control-center/core.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/plugin-manager.test.mjs",
+    "atlasz-tests/control-center-plugins.test.mjs"
+   ],
    "evidence": [
-    "Repo keyword scan: no implementation exists"
+    "Plugin registry with manifest validation, kinds PLUGIN/EXTENSION/MODULE/THEME/SKIN"
    ],
    "blocker": null,
    "owner_decision": null,
@@ -8316,15 +8416,16 @@
    "dependencies": [
     "V73-S22"
    ],
-   "implementation_location": "atlasz-addons/update-center.mjs",
+   "implementation_location": "atlasz-addons/plugin-manager.mjs; atlasz-control-center/core.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/update-center.test.mjs"
+    "atlasz-tests/plugin-manager.test.mjs",
+    "atlasz-tests/control-center-plugins.test.mjs"
    ],
    "evidence": [
-    "Component version/compatibility/rollback exists for update components"
+    "Enable (signed approval), disable, quarantine after failures, reset (signed)"
    ],
-   "blocker": "No plugin lifecycle",
+   "blocker": "No install/uninstall package flow",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -8428,15 +8529,16 @@
    "dependencies": [
     "V73-S22"
    ],
-   "implementation_location": "atlasz-addons/enterprise-control-plane.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/plugin-manager.mjs; atlasz-control-center/core.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/contract-memory-control.test.mjs"
+    "atlasz-tests/plugin-manager.test.mjs",
+    "atlasz-tests/control-center-plugins.test.mjs"
    ],
    "evidence": [
-    "Per-agent permissions/tools; no per-plugin permissions"
+    "Grantable vs forbidden permissions (SECRETS, SPEND, OWNER_AUTH, KILL_SWITCH, PAYMENTS, BANKING never grantable)"
    ],
-   "blocker": "In-memory module state: lost on restart",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -8476,11 +8578,14 @@
    "dependencies": [
     "V73-S22"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
+   "implementation_location": "atlasz-addons/plugin-manager.mjs; atlasz-control-center/core.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/plugin-manager.test.mjs",
+    "atlasz-tests/control-center-plugins.test.mjs"
+   ],
    "evidence": [
-    "Repo keyword scan: no implementation exists"
+    "enable/disable tested through the Control Center core; code plugins need a signed PLUGIN_ENABLE bound to the id"
    ],
    "blocker": null,
    "owner_decision": null,
@@ -8498,13 +8603,16 @@
    "dependencies": [
     "V73-S22"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists"
+   "implementation_location": "atlasz-addons/plugin-manager.mjs; atlasz-control-center/core.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/plugin-manager.test.mjs",
+    "atlasz-tests/control-center-plugins.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Failure counting and quarantine; hooks run in isolated child processes"
+   ],
+   "blocker": "No health dashboard beyond status",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -8673,13 +8781,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "No document center module; document-format tools exist only as catalogue entries"
+   "implementation_location": "atlasz-addons/document-center.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/document-center.test.mjs",
+    "atlasz-tests/control-center-systems.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "CSV ingested as plain text"
+   ],
+   "blocker": "PDF/DOCX/XLSX are registered but marked UNSUPPORTED_FORMAT unless an extractor is injected",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -8695,13 +8806,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "No document center module; document-format tools exist only as catalogue entries"
+   "implementation_location": "atlasz-addons/document-center.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/document-center.test.mjs",
+    "atlasz-tests/control-center-systems.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "TXT extraction tested"
+   ],
+   "blocker": "PDF/DOCX/XLSX are registered but marked UNSUPPORTED_FORMAT unless an extractor is injected",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -8739,13 +8853,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "No document center module; document-format tools exist only as catalogue entries"
+   "implementation_location": "atlasz-addons/document-center.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/document-center.test.mjs",
+    "atlasz-tests/control-center-systems.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Markdown ingested as plain text"
+   ],
+   "blocker": "PDF/DOCX/XLSX are registered but marked UNSUPPORTED_FORMAT unless an extractor is injected",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -8871,13 +8988,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "No document center module; document-format tools exist only as catalogue entries"
+   "implementation_location": "atlasz-addons/document-center.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/document-center.test.mjs",
+    "atlasz-tests/control-center-systems.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Plain-text/HTML extraction"
+   ],
+   "blocker": "PDF/DOCX/XLSX are registered but marked UNSUPPORTED_FORMAT unless an extractor is injected",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -9113,13 +9233,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "No document center module; document-format tools exist only as catalogue entries"
+   "implementation_location": "atlasz-addons/document-center.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/document-center.test.mjs",
+    "atlasz-tests/control-center-systems.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Documents associate to jobs and evidence refs"
+   ],
+   "blocker": "No folder tree UI",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -9179,11 +9302,14 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
+   "implementation_location": "atlasz-addons/document-center.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/document-center.test.mjs",
+    "atlasz-tests/control-center-systems.test.mjs"
+   ],
    "evidence": [
-    "Not built"
+    "sha256, size, type, classification, entity, tenant stored"
    ],
    "blocker": null,
    "owner_decision": null,
@@ -9201,11 +9327,14 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
+   "implementation_location": "atlasz-addons/document-center.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/document-center.test.mjs",
+    "atlasz-tests/control-center-systems.test.mjs"
+   ],
    "evidence": [
-    "Not built"
+    "Tenant and role boundaries enforced on list/search/get; SECRET is owner-only with hidden snippets (tested)"
    ],
    "blocker": null,
    "owner_decision": null,
@@ -9401,13 +9530,16 @@
    "dependencies": [
     "V73-S24"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Not built"
+   "implementation_location": "atlasz-addons/document-center.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/document-center.test.mjs",
+    "atlasz-tests/control-center-systems.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Classification PUBLIC/PERSONAL/CONFIDENTIAL/SECRET; secret detection forces SECRET"
+   ],
+   "blocker": "Pattern-based",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -9533,13 +9665,16 @@
    "dependencies": [
     "V73-S24"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Not built"
+   "implementation_location": "atlasz-addons/document-center.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/document-center.test.mjs",
+    "atlasz-tests/control-center-systems.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "candidateAmounts(): heuristic amount candidates (never auto-booked)"
+   ],
+   "blocker": "Heuristic; no OCR",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -9555,11 +9690,14 @@
    "dependencies": [
     "V73-S24"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
+   "implementation_location": "atlasz-addons/document-center.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/document-center.test.mjs",
+    "atlasz-tests/control-center-systems.test.mjs"
+   ],
    "evidence": [
-    "Not built"
+    "Job/evidence association"
    ],
    "blocker": null,
    "owner_decision": null,
@@ -9671,11 +9809,14 @@
    "dependencies": [
     "V73-S24"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
+   "implementation_location": "atlasz-addons/document-center.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/document-center.test.mjs",
+    "atlasz-tests/control-center-systems.test.mjs"
+   ],
    "evidence": [
-    "Not built"
+    "sha256 dedupe per tenant (tested)"
    ],
    "blocker": null,
    "owner_decision": null,
@@ -9711,13 +9852,16 @@
    "dependencies": [
     "V73-S25"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "No universal inbox module"
+   "implementation_location": "atlasz-addons/universal-inbox.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/universal-inbox.test.mjs",
+    "atlasz-tests/control-center-systems.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Hash-chained durable inbox with source types, dedupe and priority"
+   ],
+   "blocker": "No live email source (Gmail connector has no credentials)",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -9733,11 +9877,14 @@
    "dependencies": [
     "V73-S25"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
+   "implementation_location": "atlasz-addons/universal-inbox.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/universal-inbox.test.mjs",
+    "atlasz-tests/control-center-systems.test.mjs"
+   ],
    "evidence": [
-    "No universal inbox module"
+    "Drafts are stored as DRAFT_NOT_SENT and never sent implicitly"
    ],
    "blocker": null,
    "owner_decision": null,
@@ -9755,15 +9902,16 @@
    "dependencies": [
     "V73-S25"
    ],
-   "implementation_location": "atlasz-addons/delivery-engine.mjs; invoice-engine.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/universal-inbox.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/contract-money-tax.test.mjs"
+    "atlasz-tests/universal-inbox.test.mjs",
+    "atlasz-tests/control-center-systems.test.mjs"
    ],
    "evidence": [
-    "Delivery/invoice 'sent' needs external evidence (truthful send state for those objects only)"
+    "SENT only with provider acceptance evidence; QUEUED != SENT (tested)"
    ],
-   "blocker": "No inbox",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -9845,11 +9993,14 @@
    "dependencies": [
     "V73-S25"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
+   "implementation_location": "atlasz-addons/universal-inbox.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/universal-inbox.test.mjs",
+    "atlasz-tests/control-center-systems.test.mjs"
+   ],
    "evidence": [
-    "No universal inbox module"
+    "send() requires proven connector, open kill switch and signed INBOX_SEND approval bound to the item (each negative-tested)"
    ],
    "blocker": null,
    "owner_decision": null,
@@ -9867,15 +10018,16 @@
    "dependencies": [
     "V73-S25"
    ],
-   "implementation_location": "atlasz-addons/audit-chain.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/universal-inbox.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/safety-modules.test.mjs"
+    "atlasz-tests/universal-inbox.test.mjs",
+    "atlasz-tests/control-center-systems.test.mjs"
    ],
    "evidence": [
-    "Generic audit chain"
+    "Append-only hash chain with verify()"
    ],
-   "blocker": "No inbox",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -9913,13 +10065,16 @@
    "dependencies": [
     "V73-S25"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "No universal inbox module"
+   "implementation_location": "atlasz-addons/universal-inbox.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/universal-inbox.test.mjs",
+    "atlasz-tests/control-center-systems.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "syncSystem mirrors approvals, safe mode, dead letters and blockers with priority"
+   ],
+   "blocker": "No push/mobile delivery",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -14360,13 +14515,15 @@
    "dependencies": [
     "V73-S39"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (Control Center binds 127.0.0.1 only; no remote/mobile access)"
+   "implementation_location": "atlasz-addons/mobile-api.mjs; atlasz-control-center/core.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/mobile-api.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "STATUS: owner-authenticated (signed, endpoint-bound, replay-safe), rate-limited, audited"
+   ],
+   "blocker": "Transport-agnostic API only: not exposed on any port and there is no mobile app",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -14382,13 +14539,15 @@
    "dependencies": [
     "V73-S39"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (Control Center binds 127.0.0.1 only; no remote/mobile access)"
+   "implementation_location": "atlasz-addons/mobile-api.mjs; atlasz-control-center/core.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/mobile-api.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "REFRESH: owner-authenticated (signed, endpoint-bound, replay-safe), rate-limited, audited"
+   ],
+   "blocker": "Transport-agnostic API only: not exposed on any port and there is no mobile app",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -14404,13 +14563,15 @@
    "dependencies": [
     "V73-S39"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (Control Center binds 127.0.0.1 only; no remote/mobile access)"
+   "implementation_location": "atlasz-addons/mobile-api.mjs; atlasz-control-center/core.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/mobile-api.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "PAUSE: owner-authenticated (signed, endpoint-bound, replay-safe), rate-limited, audited"
+   ],
+   "blocker": "Transport-agnostic API only: not exposed on any port and there is no mobile app",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -14426,13 +14587,15 @@
    "dependencies": [
     "V73-S39"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (Control Center binds 127.0.0.1 only; no remote/mobile access)"
+   "implementation_location": "atlasz-addons/mobile-api.mjs; atlasz-control-center/core.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/mobile-api.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "RESUME: owner-authenticated (signed, endpoint-bound, replay-safe), rate-limited, audited"
+   ],
+   "blocker": "Transport-agnostic API only: not exposed on any port and there is no mobile app",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -14448,13 +14611,15 @@
    "dependencies": [
     "V73-S39"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (Control Center binds 127.0.0.1 only; no remote/mobile access)"
+   "implementation_location": "atlasz-addons/mobile-api.mjs; atlasz-control-center/core.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/mobile-api.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "APPROVALS: owner-authenticated (signed, endpoint-bound, replay-safe), rate-limited, audited"
+   ],
+   "blocker": "Transport-agnostic API only: not exposed on any port and there is no mobile app",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -14470,13 +14635,15 @@
    "dependencies": [
     "V73-S39"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (Control Center binds 127.0.0.1 only; no remote/mobile access)"
+   "implementation_location": "atlasz-addons/mobile-api.mjs; atlasz-control-center/core.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/mobile-api.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "ALERTS: owner-authenticated (signed, endpoint-bound, replay-safe), rate-limited, audited"
+   ],
+   "blocker": "Transport-agnostic API only: not exposed on any port and there is no mobile app",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -14492,13 +14659,15 @@
    "dependencies": [
     "V73-S39"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (Control Center binds 127.0.0.1 only; no remote/mobile access)"
+   "implementation_location": "atlasz-addons/mobile-api.mjs; atlasz-control-center/core.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/mobile-api.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "MONEY: owner-authenticated (signed, endpoint-bound, replay-safe), rate-limited, audited"
+   ],
+   "blocker": "Transport-agnostic API only: not exposed on any port and there is no mobile app",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -14514,13 +14683,15 @@
    "dependencies": [
     "V73-S39"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (Control Center binds 127.0.0.1 only; no remote/mobile access)"
+   "implementation_location": "atlasz-addons/mobile-api.mjs; atlasz-control-center/core.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/mobile-api.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "JOBS: owner-authenticated (signed, endpoint-bound, replay-safe), rate-limited, audited"
+   ],
+   "blocker": "Transport-agnostic API only: not exposed on any port and there is no mobile app",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -14536,13 +14707,15 @@
    "dependencies": [
     "V73-S39"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (Control Center binds 127.0.0.1 only; no remote/mobile access)"
+   "implementation_location": "atlasz-addons/mobile-api.mjs; atlasz-control-center/core.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/mobile-api.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "HEALTH: owner-authenticated (signed, endpoint-bound, replay-safe), rate-limited, audited"
+   ],
+   "blocker": "Transport-agnostic API only: not exposed on any port and there is no mobile app",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -14580,13 +14753,16 @@
    "dependencies": [
     "V73-S40"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists"
+   "implementation_location": "atlasz-addons/tech-watch.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/tech-watch.test.mjs",
+    "atlasz-tests/control-center-systems.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Offline feed-file monitor with compatibility check; NO_FEED when no feed exists (no invented news)"
+   ],
+   "blocker": "No external feed is fetched; JOCI/Update Center must supply feed files",
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -14626,15 +14802,16 @@
    "dependencies": [
     "V73-S40"
    ],
-   "implementation_location": "atlasz-addons/completion-registry.mjs; atlasz-addons/internal-integration-hub.mjs",
+   "implementation_location": "atlasz-addons/tech-watch.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/registry-integrity.test.mjs"
+    "atlasz-tests/tech-watch.test.mjs",
+    "atlasz-tests/control-center-systems.test.mjs"
    ],
    "evidence": [
-    "Self-inventory of modules"
+    "Self-inventory of installed components and Node version"
    ],
-   "blocker": "Static, not runtime-probed",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -14674,13 +14851,14 @@
    "dependencies": [
     "V73-S40"
    ],
-   "implementation_location": "atlasz-addons/general-intelligence-extensions.mjs",
+   "implementation_location": "atlasz-addons/tech-watch.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/contract-factories.test.mjs"
+    "atlasz-tests/tech-watch.test.mjs",
+    "atlasz-tests/control-center-systems.test.mjs"
    ],
    "evidence": [
-    "Placeholder count visible; no gap analysis"
+    "Capability gaps from the completion registry and empty capability slots"
    ],
    "blocker": null,
    "owner_decision": null,
@@ -16659,13 +16837,15 @@
    "dependencies": [
     "V73-S47"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (later plan by design)"
+   "implementation_location": "atlasz-addons/tenant-isolation.mjs; scripts/make-sanitized-dist.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/tenant-isolation.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Per-tenant data/config/vault/documents dirs, traversal and symlink-escape blocked, cross-tenant access denied"
+   ],
+   "blocker": "Directory/namespace isolation inside one process; no per-customer instance deployed",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -16681,13 +16861,15 @@
    "dependencies": [
     "V73-S47"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (later plan by design)"
+   "implementation_location": "atlasz-addons/tenant-isolation.mjs; scripts/make-sanitized-dist.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/tenant-isolation.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Separate dirs and vault namespace per tenant"
+   ],
+   "blocker": "Same vault key/process",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -16725,13 +16907,15 @@
    "dependencies": [
     "V73-S47"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (later plan by design)"
+   "implementation_location": "atlasz-addons/tenant-isolation.mjs; scripts/make-sanitized-dist.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/tenant-isolation.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Owner-signed Ed25519 entitlements verified (tamper/expiry tested)"
+   ],
+   "blocker": "No billing or subscription system",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -16747,11 +16931,13 @@
    "dependencies": [
     "V73-S47"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
+   "implementation_location": "scripts/make-sanitized-dist.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/tenant-isolation.test.mjs"
+   ],
    "evidence": [
-    "Repo keyword scan: no implementation exists (later plan by design)"
+    "Sanitized dist excludes git, state, evidence, keys, env files, legacy worker; drops files containing secrets (tested)"
    ],
    "blocker": null,
    "owner_decision": null,
@@ -19291,7 +19477,7 @@
    "evidence": [
     "UPDATE CENTER view with all buttons exists in the Control Center UI"
    ],
-   "blocker": "No real detector/stager/tester adapters: every button fails closed (BLOCKED) until they exist",
+   "blocker": "Real local offline adapters exist (hash-verified packages); no remote update feed and no installed-app test",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
