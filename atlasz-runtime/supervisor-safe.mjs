@@ -12,6 +12,7 @@ import { createFinancialLedger } from "../atlasz-addons/financial-ledger.mjs";
 import { createSecretVault } from "../atlasz-addons/secret-vault.mjs";
 import { createApprovalRequests } from "../atlasz-addons/approval-requests.mjs";
 import { getDefaultOwnerAuth } from "../atlasz-addons/owner-auth.mjs";
+import { createBrainSystem } from "../atlasz-addons/brain/brain-system.mjs";
 
 export const VERSION = "3.3.0";
 const now = () => new Date().toISOString();
@@ -81,6 +82,9 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
     results: 0, blocker: null, nextAction: null
   }));
   for (const agent of state.agents) addons.onAgentRegistered(agent);
+  // ---- Brain layer: observes and protects the existing 30 agents (it creates none). Brain failures must never stop the runtime. ----
+  const brain = createBrainSystem({ dir: path.join(dataDir, "brain"), ownerAuth, roster: state.agents.map(a => ({ id: a.id, team: a.role })), safeMode, redact: t => vault.redact(t) });
+  const brainSafe = fn => { try { return fn(); } catch (e) { try { console.log(JSON.stringify({ at: now(), type: "brain_error", error: String(e.message).slice(0, 120) })); } catch { /* ignore */ } return null; } };
   const seen = new Set(state.candidates.map(c => c.id));
   const timers = new Set();
   let stopping = false;
@@ -121,9 +125,12 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
         const id = "hn-" + hit.objectID;
         if (seen.has(id)) continue;
         seen.add(id);
+        const sec = brainSafe(() => brain.security.assess({ kind: "EXTERNAL_INSTRUCTION", agentId: null, source: "hn", text: clean(hit.comment_text || hit.story_text || "") }));
+        if (sec && !sec.allowed) { brainSafe(() => brain.blackBox.record({ kind: "EXTERNAL_TEXT_QUARANTINED", agentId: agent.id, decision: sec.decision, reason: sec.reasons.join(","), inputRef: id })); continue; }   // never queued, never shown to an agent
         state.candidates.push({ id, title: clean(hit.story_title || hit.title), description: clean(hit.comment_text || hit.story_text).slice(0, 16000), published: hit.created_at, url: "https://news.ycombinator.com/item?id=" + encodeURIComponent(hit.objectID), source: "Hacker News public comments", status: "NEW", foundAt: now(), foundBy: agent.id });
         queue.enqueue({ id, payload: { candidateId: id } });
         added++;
+        brainSafe(() => brain.opportunity.discover({ title: clean(hit.story_title || hit.title) || id, source: "hn", url: "https://news.ycombinator.com/item?id=" + encodeURIComponent(hit.objectID) }));
       }
       agent.results += added;
       state.searchCycles++;
@@ -177,12 +184,14 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
       agent.results++;
       addons.onAgentResult({ agentId: agent.id, success: true, qaPassed: !assessment.reject.length });
       update(agent, "SCHEDULED", "Screening complete: " + candidate.status);
+      brainSafe(() => { brain.graph.recordOutcome(agent.id, { ok: true, ms: 0 }); brain.blackBox.record({ kind: "SCREENING_COMPLETED", agentId: agent.id, team: agent.role, jobId: candidate.id, result: candidate.status, decision: assessment.reject.length ? "REJECT:" + assessment.reject.join(",") : "NEEDS_VERIFICATION", verification: "NOT_INDEPENDENTLY_VERIFIED" }); });
       event("screening_completed", { agentId: agent.id, candidateId: candidate.id, result: candidate.status, reasons: assessment.reject });
     } catch (e) {
       candidate.status = "NEW";
       const r = queue.nack(job.id, { error: String(e.message) }); nacked = true;
       if (r.state === "DEAD") candidate.status = "FAILED_DEAD_LETTER";
       addons.onAgentResult({ agentId: agent.id, success: false, qaPassed: false, error: true });
+      brainSafe(() => { brain.graph.recordOutcome(agent.id, { ok: false, ms: 0 }); brain.blackBox.record({ kind: "SCREENING_FAILED", agentId: agent.id, jobId: candidate.id, error: String(e.message).slice(0, 160), retry: 1 }); });
       update(agent, "BLOCKED", "Screening failed; task returned to queue", String(e.message));
     }
     state.lastSystemRun = now();
@@ -214,7 +223,7 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
       agents: state.agents, blockers, sourceErrors: state.sourceErrors, emergency: emergencyStatus(), safeMode: safeMode.status(), pendingApprovals: approvalRequests.pending().length, queue: queue.stats(), watchdog: watchdog.status(),
       selfCheck: { level: selfCheck.level, problems: selfCheck.checks.filter(c => c.status !== "OK").map(c => ({ id: c.id, status: c.status, detail: c.detail })) },
       vault: vault.status(), internalAddons: addonSnapshot(),
-      ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
+      brain: brainSafe(() => brain.summary()) ?? { state: "ERROR" }, ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
     };
   }
   const watchdog = createWatchdog({ onEscalate: e => safeMode.enter("WATCHDOG:" + e.id, { detail: e.detail }) });
@@ -241,7 +250,7 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
     for (let i = 5; i < 30; i++) schedule(() => execute(i), 1000 + (i - 5) * 50);
   }
   function stop() { stopping = true; watchdog.stop(); for (const t of timers) clearTimeout(t); save(); }
-  return { ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
+  return { brain, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
 }
 
 if (process.env.ATLASZ_TEST_MODE !== "1") {

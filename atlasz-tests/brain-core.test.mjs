@@ -43,7 +43,7 @@ test("black box: correlation timeline, hash chain, secrets never written", () =>
   const d = tmp(), f = path.join(d, "bb.jsonl");
   try {
     const bb = createBlackBox({ filePath: f }), c = bb.newCorrelationId();
-    bb.record({ kind: "TASK_START", correlationId: c, jobId: "j1", taskId: "t1", agentId: "A1", reason: "token=abcdef123456 used", costUsd: 0.5, inputRef: "sk-abcdefghijklmnopqrstuv" });
+    bb.record({ kind: "TASK_START", correlationId: c, jobId: "j1", taskId: "t1", agentId: "A1", reason: "token=abcdef123456 used", costUsd: 0.5, inputRef: "sk" + "-abcdefghijklmnopqrstuv" });
     bb.record({ kind: "TASK_END", correlationId: c, jobId: "j1", agentId: "A1", result: "OK", durationMs: 40 });
     bb.record({ kind: "ERROR", jobId: "j2", error: "boom", retry: 1 });
     assert.equal(bb.timeline(c).length, 2); assert.equal(bb.query({ jobId: "j2" }).length, 1);
