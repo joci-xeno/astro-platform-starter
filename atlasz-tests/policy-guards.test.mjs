@@ -43,3 +43,11 @@ test("no plaintext secrets in git-tracked files (common key formats)", { skip: !
   }
   assert.deepEqual(bad, []);
 });
+
+test("legacy competition worker is quarantined with a marker and is not imported by canonical code", () => {
+  const marker = fs.readFileSync(path.join(ROOT, "atlasz-runtime", "LEGACY_EXCLUDED.md"), "utf8");
+  assert.match(marker, /DO_NOT_MERGE/); assert.match(marker, /EXCLUDED/);
+  for (const f of ["atlasz-runtime/supervisor-safe.mjs", "atlasz-control-center/core.mjs", "atlasz-control-center/server.mjs"]) {
+    assert.ok(!/worker\.js|agent-child\.js|supervisor\.js/.test(fs.readFileSync(path.join(ROOT, f), "utf8").replace(/\/\/.*$/gm, "")), f + " must not reference legacy runtime files");
+  }
+});
