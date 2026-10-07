@@ -65,13 +65,14 @@ export function verifyBackup(dir) {
   return { ok: problems.length === 0, problems, manifest: m };
 }
 
-export function restoreBackup({ backupDir, targetDir, ownerApproval = null, now = () => Date.now() } = {}) {
+export function restoreBackup({ backupDir, targetDir, ownerApproval = null, ownerAuth = null, now = () => Date.now() } = {}) {
   const v = verifyBackup(backupDir);
   if (!v.ok) throw new Error("RESTORE_ABORTED_BACKUP_INVALID:" + v.problems.slice(0, 3).join(","));
   const targetExists = fs.existsSync(targetDir) && fs.readdirSync(targetDir).length > 0;
   let movedAside = null;
   if (targetExists) {
-    if (!ownerGranted(ownerApproval, "RESTORE_OVERWRITE", path.basename(path.resolve(targetDir)))) throw new Error("OWNER_APPROVAL_REQUIRED:RESTORE_OVERWRITE");
+    const subj = path.basename(path.resolve(targetDir));
+    if (!(ownerAuth ? ownerAuth.granted(ownerApproval, "RESTORE_OVERWRITE", subj) : ownerGranted(ownerApproval, "RESTORE_OVERWRITE", subj))) throw new Error("OWNER_APPROVAL_REQUIRED:RESTORE_OVERWRITE");
     movedAside = path.resolve(targetDir) + ".pre-restore-" + now();
     fs.renameSync(targetDir, movedAside);                   // old data is preserved, never deleted
   }
@@ -119,10 +120,10 @@ export function createLkgRegistry({ file }) {
   return { mark, latest: () => history().at(-1) ?? null, history, verify: () => chain.verify() };
 }
 
-export function rollbackToLastKnownGood({ registry, targetDir, ownerApproval = null }) {
+export function rollbackToLastKnownGood({ registry, targetDir, ownerApproval = null, ownerAuth = null }) {
   const lkg = registry.latest();
   if (!lkg) throw new Error("NO_LAST_KNOWN_GOOD");
-  const r = restoreBackup({ backupDir: lkg.backupDir, targetDir, ownerApproval });
+  const r = restoreBackup({ backupDir: lkg.backupDir, targetDir, ownerApproval, ownerAuth });
   return { ...r, lkgBackupId: lkg.backupId, build: lkg.build, evidence: lkg.evidence, jociDecisionNeeded: false };
 }
 

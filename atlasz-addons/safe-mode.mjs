@@ -18,23 +18,32 @@ export function createSafeMode({ statePath = null, auditPath = null, ownerAuth =
     const tmp = statePath + ".tmp", fd = fs.openSync(tmp, "w", 0o600);
     try { fs.writeSync(fd, JSON.stringify(st)); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
     fs.renameSync(tmp, statePath);
+    seenMtime = fs.statSync(statePath).mtimeMs;
   }
   function enter(reason, detail = {}) {
+    load();
     if (st.mode === "SAFE_MODE") return status();
     st = { ...st, mode: "SAFE_MODE", reason: String(reason), since: iso() };
     audit.append("SAFE_MODE_ENTERED", { reason: String(reason), ...detail });
     persist();
     return status();
   }
-  if (statePath && fs.existsSync(statePath)) {
+  let seenMtime = -1;
+  function load() {
+    if (!statePath || !fs.existsSync(statePath)) return;
+    const m = fs.statSync(statePath).mtimeMs;
+    if (m === seenMtime) return;
+    seenMtime = m;
     try {
       const f = JSON.parse(fs.readFileSync(statePath, "utf8"));
       if (!["NORMAL", "SAFE_MODE"].includes(f.mode) || !Array.isArray(f.boots)) throw new Error("bad");
       st = f;
     } catch { st = { mode: "NORMAL", reason: null, since: null, boots: [], healthyAt: null }; enter("STATE_FILE_UNREADABLE"); }
   }
+  load();
   // Call once per process start. N boots inside the window without markHealthy() in between => crash loop => Safe Mode.
   function recordBoot() {
+    load();
     const t = now();
     st.boots = [...st.boots.filter(b => t - b < crashLoop.windowMs), t];
     audit.append("BOOT_RECORDED", { bootsInWindow: st.boots.length });
@@ -45,6 +54,7 @@ export function createSafeMode({ statePath = null, auditPath = null, ownerAuth =
   // Call after the process has run healthily for a while: clears the crash counter.
   function markHealthy() { st.boots = []; st.healthyAt = iso(); persist(); }
   function exit({ ownerApproval = null, selfCheck = null } = {}) {
+    load();
     if (st.mode !== "SAFE_MODE") return status();
     const deny = why => { audit.append("SAFE_MODE_EXIT_DENIED", { why }); throw new Error("SAFE_MODE_EXIT_DENIED:" + why); };
     if (!selfCheck || selfCheck.level === "FAIL" || selfCheck.ok === false) deny("SELF_CHECK_NOT_PASSING");
@@ -56,9 +66,10 @@ export function createSafeMode({ statePath = null, auditPath = null, ownerAuth =
     return status();
   }
   function gate({ external = false, write = false } = {}) {
+    load();
     if (st.mode === "SAFE_MODE" && (external || write)) return { allowed: false, reason: "SAFE_MODE:" + st.reason };
     return { allowed: true, reason: null };
   }
-  function status() { return { mode: st.mode, reason: st.reason, since: st.since, recentBoots: st.boots.length, healthyAt: st.healthyAt, auditHead: audit.head() }; }
+  function status() { load(); return { mode: st.mode, reason: st.reason, since: st.since, recentBoots: st.boots.length, healthyAt: st.healthyAt, auditHead: audit.head() }; }
   return { enter, exit, gate, recordBoot, markHealthy, status, auditVerify: () => audit.verify(), auditEntries: () => audit.entries() };
 }
