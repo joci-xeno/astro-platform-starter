@@ -1,0 +1,31 @@
+# Builds the ATLASZ Windows installer (NSIS .exe with desktop icon) on a Windows runner. No secrets, no deploy, no Railway.
+# Output is an Actions artifact only. Trigger manually (workflow_dispatch) or on pushes to the V7.3 integration branch.
+name: build-windows-installer
+on:
+  workflow_dispatch:
+  push:
+    branches: [atlasz-v73-integration]
+    paths: ["atlasz-control-center/**", "atlasz-addons/**", "atlasz-runtime/**", ".github/workflows/build-windows-installer.yml"]
+permissions:
+  contents: read
+jobs:
+  test-and-build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Run the real test suite
+        run: npm test
+        working-directory: atlasz-runtime
+      - name: Stage app
+        run: node atlasz-control-center/scripts/stage-win.mjs
+      - name: Build installer
+        run: |
+          npm install --no-audit --no-fund
+          npx electron-builder --win nsis --x64 --publish never
+        working-directory: dist-stage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ATLASZ-Windows-Installer
+          path: dist-stage/release/*.exe

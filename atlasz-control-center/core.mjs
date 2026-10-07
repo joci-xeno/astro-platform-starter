@@ -93,6 +93,7 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
     const k = keystoreStatus(configDir);
     const env = { ...process.env, ATLASZ_STATE_DIR: stateDir, PORT: String(port), ...(k.publicKeyB64 ? { ATLASZ_OWNER_PUBLIC_KEY: k.publicKeyB64 } : {}) };
     delete env.ATLASZ_TEST_MODE;
+    if (process.versions.electron) env.ELECTRON_RUN_AS_NODE = "1";    // packaged app: the Electron binary doubles as Node for the runtime
     child = spawn(nodeBin, [runtimeEntry], { env, stdio: "ignore", windowsHide: true });
     childExit = null;
     child.on("exit", (code, sig) => { childExit = { code, signal: sig, at: new Date().toISOString() }; });

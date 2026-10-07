@@ -22,3 +22,5 @@ pnpm-debug.log*
 
 # Local Netlify folder
 .netlify
+dist-stage/
+node_modules/

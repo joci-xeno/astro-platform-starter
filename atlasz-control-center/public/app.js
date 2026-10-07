@@ -41,7 +41,7 @@ const views = {
     return [h("h2", {}, "System status"), h("p", { class: "sub" }, "Honest status: nothing is shown LIVE without evidence."),
       h("div", { class: "grid" },
         card("Runtime", pill(rt.reachable ? rt.status : "NOT_RUNNING"), rt.reachable ? "v" + rt.version : String(rt.reason ?? "")),
-        card("Topology", s.topology.actualSearch + " SEARCH + " + s.topology.actualExecution + " EXECUTION", "required 5 + 25 = 30"),
+        card("Topology", rt.reachable ? s.topology.actualSearch + " SEARCH + " + s.topology.actualExecution + " EXECUTION" : "Not running", "required 5 SEARCH + 25 EXECUTION = 30"),
         card("Owner key", pill(s.ownerKey.provisioned ? s.ownerKey.ownerAuthState : "NOT_PROVISIONED"), s.ownerKey.provisioned ? "Joci-only approvals" : "Owner Controls → create key"),
         card("Emergency stop", pill(s.emergency.mode), s.emergency.banner ?? ""),
         card("Safe Mode", pill(s.safeMode.mode), s.safeMode.reason ?? ""),

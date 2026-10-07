@@ -1,0 +1,15 @@
+{
+  "name": "atlasz-control-center",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "ATLASZ Windows Control Center (desktop app). Runs the local token-protected control server in an Electron window.",
+  "main": "electron/main.mjs",
+  "scripts": {
+    "dev": "node server.mjs",
+    "start": "electron .",
+    "stage:win": "node scripts/stage-win.mjs",
+    "dist:win": "node scripts/stage-win.mjs && cd ../dist-stage && npm install --no-audit --no-fund && npx electron-builder --win nsis --x64 --publish never"
+  },
+  "devDependencies": { "electron": "^33.2.0", "electron-builder": "^25.1.8" }
+}

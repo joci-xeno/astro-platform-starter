@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { spawn } from "node:child_process";
 import { createControlCenterCore } from "./core.mjs";
 
 const PUBLIC = path.join(path.dirname(fileURLToPath(import.meta.url)), "public");
@@ -69,6 +70,13 @@ export function createControlCenterServer(opts = {}) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const base = process.env.ATLASZ_HOME || path.join(process.env.APPDATA || path.join(process.env.HOME || ".", ".config"), "ATLASZ");
   const cc = createControlCenterServer({ stateDir: path.join(base, "state"), configDir: path.join(base, "config"), port: Number(process.env.ATLASZ_RUNTIME_PORT || 8080) });
-  cc.listen(Number(process.env.ATLASZ_CC_PORT || 0)).then(i => console.log("ATLASZ Control Center: " + i.url));
+  cc.listen(Number(process.env.ATLASZ_CC_PORT || 0)).then(i => {
+    console.log("ATLASZ Control Center: " + i.url);
+    // Interim launcher (no Electron): open the default browser on the token URL. Set ATLASZ_OPEN_BROWSER=0 to disable.
+    if (process.env.ATLASZ_OPEN_BROWSER !== "0") {
+      const [cmd, args] = process.platform === "win32" ? ["cmd", ["/c", "start", "", i.url]] : process.platform === "darwin" ? ["open", [i.url]] : ["xdg-open", [i.url]];
+      try { spawn(cmd, args, { stdio: "ignore", detached: true, windowsHide: true }).on("error", () => {}).unref(); } catch { /* user can open the URL manually */ }
+    }
+  });
   for (const s of ["SIGINT", "SIGTERM"]) process.on(s, () => cc.close().then(() => process.exit(0)));
 }
