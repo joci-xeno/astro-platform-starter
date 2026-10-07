@@ -167,7 +167,7 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
 
   // ---- runtime process control (start:canonical, local) ----
   function startRuntime() {
-    if (child && child.exitCode === null) return { started: false, reason: "ALREADY_RUNNING", pid: child.pid };
+    if (child && child.exitCode === null && child.signalCode === null) return { started: false, reason: "ALREADY_RUNNING", pid: child.pid };
     const k = keystoreStatus(configDir);
     const env = { ...process.env, ATLASZ_STATE_DIR: stateDir, PORT: String(port), ...(k.publicKeyB64 ? { ATLASZ_OWNER_PUBLIC_KEY: k.publicKeyB64 } : {}) };
     delete env.ATLASZ_TEST_MODE;
@@ -178,8 +178,10 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
     return { started: true, pid: child.pid, entry: "start:canonical (supervisor-safe.mjs)", topology: "5 SEARCH + 25 EXECUTION" };
   }
   function stopRuntime() {
-    if (!child || child.exitCode !== null) return Promise.resolve({ stopped: false, reason: "NOT_RUNNING_UNDER_CONTROL_CENTER" });
-    return new Promise(res => { child.once("exit", (code, sig) => res({ stopped: true, code, signal: sig })); child.kill("SIGTERM"); setTimeout(() => child.exitCode === null && child.kill("SIGKILL"), 8000).unref(); });
+    // "exited" means exitCode OR signalCode is set: a process ended by a signal (always the case for kill() on Windows) has exitCode === null, and waiting for a second 'exit' event would hang forever
+    const exited = () => child.exitCode !== null || child.signalCode !== null;
+    if (!child || exited()) return Promise.resolve({ stopped: false, reason: "NOT_RUNNING_UNDER_CONTROL_CENTER" });
+    return new Promise(res => { const kill = setTimeout(() => !exited() && child.kill("SIGKILL"), 8000); kill.unref(); child.once("exit", (code, sig) => { clearTimeout(kill); res({ stopped: true, code, signal: sig }); }); child.kill("SIGTERM"); });
   }
 
   // ---- backup / restore / LKG ----

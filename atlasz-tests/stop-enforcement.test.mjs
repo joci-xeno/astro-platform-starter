@@ -45,14 +45,14 @@ test("probe evidence validator is shared and strict", () => assert.equal(validPr
 
 import { execFileSync } from "node:child_process";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { tmp, rm } from "./helpers.mjs";
 test("model invocation is blocked by the default owner kill switch (real env-configured process)", () => {
   const d = tmp(), k = generateOwnerKeyPair(), here = path.dirname(fileURLToPath(import.meta.url));
   const script = `
-    import { setEmergencyMode } from "${path.join(here, "../atlasz-addons/emergency-stop.mjs")}";
-    import { issueOwnerApproval } from "${path.join(here, "../atlasz-addons/owner-auth.mjs")}";
-    import { registerModelProvider, invokeModel } from "${path.join(here, "../atlasz-addons/multi-model-brain.mjs")}";
+    import { setEmergencyMode } from ${JSON.stringify(pathToFileURL(path.join(here, "../atlasz-addons/emergency-stop.mjs")).href)};
+    import { issueOwnerApproval } from ${JSON.stringify(pathToFileURL(path.join(here, "../atlasz-addons/owner-auth.mjs")).href)};
+    import { registerModelProvider, invokeModel } from ${JSON.stringify(pathToFileURL(path.join(here, "../atlasz-addons/multi-model-brain.mjs")).href)};
     const ev = { probeId: "p", outcome: "PASS", at: new Date().toISOString(), target: "t" }; let calls = 0;
     registerModelProvider({ id: "m", label: "M", adapter: { invoke: async () => { calls++; return {}; } }, models: ["x"], tested: true, probeEvidence: ev });
     await invokeModel({ providerId: "m", request: {} });

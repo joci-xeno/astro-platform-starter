@@ -106,7 +106,7 @@ test("REAL PROCESS: canonical server boots, serves read-only status, obeys an ex
     execFileSync("node", [path.join(RUNTIME, "owner-cli.mjs"), "emergency", "--key", keyFile, "--state-dir", dir, "--mode", "PAUSE_ALL", "--reason", "staging drill"]);
     const halted = await waitFor(async () => { const s = (await get(port, "/status")).body; return s.emergency.mode === "PAUSE_ALL" && s.agents.slice(5).every(a => a.status === "HALTED_BY_OWNER_STOP") ? s : null; });
     assert.equal(halted.emergency.banner, "EMERGENCY STOP ACTIVE");
-    assert.ok(halted.agents.slice(0, 5).every(a => a.status === "HALTED_BY_OWNER_STOP" || a.status === "BLOCKED" || a.status === "RUNNING") );
+    assert.ok(halted.agents.slice(0, 5).every(a => ["HALTED_BY_OWNER_STOP", "BLOCKED", "RUNNING", "SCHEDULED", "WAITING_FOR_INPUT"].includes(a.status)), "search agents may be idle between cycles (SCHEDULED) when the source is reachable; every dispatch is gated: " + JSON.stringify(halted.agents.slice(0, 5).map(a => a.status)));
 
     execFileSync("node", [path.join(RUNTIME, "owner-cli.mjs"), "emergency", "--key", keyFile, "--state-dir", dir, "--mode", "RUNNING", "--confirm", "RESUME"]);
     await waitFor(async () => { const s = (await get(port, "/status")).body; return s.emergency.mode === "RUNNING" && s.agents.slice(5).some(a => a.status !== "HALTED_BY_OWNER_STOP") ? s : null; });

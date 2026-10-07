@@ -149,7 +149,8 @@ test("REAL PROCESS: Start ATLASZ from the Control Center boots start:canonical, 
     let halted = false; for (let i = 0; i < 40 && !halted; i++) { await new Promise(x => setTimeout(x, 250)); const d = await r.core.status(); halted = d.emergency.mode === "PAUSE_ALL" && d.agents.execution.every(a => a.status === "HALTED_BY_OWNER_STOP"); }
     assert.equal(halted, true);
     const stopped = await r.core.stopRuntime();
-    assert.equal(stopped.stopped, true); assert.equal(stopped.code, 0);
+    assert.equal(stopped.stopped, true); if (process.platform !== "win32") assert.equal(stopped.code, 0);   // Windows has no graceful SIGTERM: the process is terminated
+    assert.equal((await r.core.stopRuntime()).stopped, false, "a second Stop must return immediately (it used to hang forever when the child had been ended by a signal)");
   } finally { await r.core.stopRuntime(); r.done(); }
 });
 
@@ -168,4 +169,17 @@ test("update center in the GUI core uses real local adapters: empty inbox finds 
     assert.deepEqual(c.result.found, ["atlasz-extension-pack@1.0.1"]);
     assert.equal(r.core.updates().inbox.rejected.length, 1);
   } finally { r.done(); }
+});
+
+test("Stop is idempotent even when the runtime ends BY A SIGNAL (the Windows case): the second Stop returns immediately instead of hanging", async () => {
+  const d = tmp("sig-"), entry = path.join(d, "fake-runtime.mjs"); fs.writeFileSync(entry, "setInterval(() => {}, 1000);");       // no SIGTERM handler => killed by signal, exitCode stays null
+  const r = rig({ runtimeEntry: entry });
+  try {
+    assert.equal(r.core.startRuntime().started, true);
+    const first = await r.core.stopRuntime(); assert.equal(first.stopped, true); assert.ok(first.signal === "SIGTERM" || first.code !== 0);
+    const second = await Promise.race([r.core.stopRuntime(), new Promise(res => setTimeout(() => res("HUNG"), 3000))]);
+    assert.notEqual(second, "HUNG"); assert.equal(second.stopped, false);
+    assert.equal(r.core.startRuntime().started, true, "after a signal-ended child, Start must start a new one, not report ALREADY_RUNNING");
+    await r.core.stopRuntime();
+  } finally { await r.core.stopRuntime(); r.done(); rm(d); }
 });
