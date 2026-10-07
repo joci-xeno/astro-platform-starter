@@ -13,7 +13,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const RUNTIME = path.join(HERE, "..", "atlasz-runtime");
 const { createRuntime, qualify, VERSION } = await import("../atlasz-runtime/supervisor-safe.mjs");
 
-const hit = (id, text, daysAgo = 1) => ({ objectID: id, created_at: new Date(Date.now() - daysAgo * 86400000).toISOString(), comment_text: text, story_title: "Ask HN: Freelancer?" });
+const hit = (id, text, daysAgo = 1) => ({ objectID: id, created_at: new Date(Date.now() - daysAgo * 86400000).toISOString(), comment_text: text + " [ref " + id + "]", story_title: "Ask HN: Freelancer?" });
 const goodText = "We are looking for a developer for a freelance project: need help with a website, remote, budget $2,000. Contact jobs@example.com";
 const fakeFetch = hits => async () => ({ ok: true, status: 200, json: async () => ({ hits }) });
 
