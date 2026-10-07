@@ -111,5 +111,5 @@ export function createDurableQueue({ dir, maxAttempts = 3, leaseMs = 60000, now 
     return { ...c, depth: c.ready + c.leased, total: items.size };
   };
   return { enqueue, lease, ack, nack, requeueStalled, resume, stats, get: id => (items.has(id) ? structuredClone(items.get(id)) : null),
-    deadLetters: () => [...items.values()].filter(i => i.state === "DEAD").map(structuredClone), journalPath: file };
+    deadLetters: () => [...items.values()].filter(i => i.state === "DEAD").map(x => structuredClone(x)), journalPath: file };
 }

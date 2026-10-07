@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node supervisor.js",
     "start:canonical": "node supervisor-safe.mjs",
-    "test": "node --test ../atlasz-tests/"
+    "test": "node --test \"../atlasz-tests/*.test.mjs\""
   },
   "engines": {
     "node": ">=20"
