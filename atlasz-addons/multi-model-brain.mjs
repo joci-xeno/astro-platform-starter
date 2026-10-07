@@ -1,3 +1,4 @@
+import {emergencyGate} from "./emergency-stop.mjs";
 import {isTested} from "./probe-evidence.mjs";
 // ATLASZ Multi-Model Brain registry/router. Providers are never LIVE without a real adapter and successful probe.
 const providers=new Map();
@@ -13,5 +14,5 @@ export function selectModel({requiredCapabilities=[],maxCostClass=null,excludePr
  const eligible=[...providers.values()].filter(p=>p.tested&&!excludeProviders.includes(p.id)&&(rank[p.costClass]??9)<=max&&requiredCapabilities.every(c=>p.capabilities.includes(c)));
  return eligible.length?publicProvider(eligible.sort((a,b)=>(rank[a.costClass]??9)-(rank[b.costClass]??9))[0]):null;
 }
-export async function invokeModel({providerId,request}={}){const p=providers.get(providerId);if(!p)throw new Error("MODEL_PROVIDER_NOT_REGISTERED");if(!p.tested)throw new Error("MODEL_PROVIDER_UNTESTED");if(typeof p.adapter?.invoke!=="function")throw new Error("MODEL_INVOKE_ADAPTER_REQUIRED");return p.adapter.invoke(request);}
+export async function invokeModel({providerId,request}={}){const stop=emergencyGate({external:true});if(!stop.allowed)throw new Error("DISPATCH_BLOCKED_BY_OWNER_STOP:"+stop.reason);const p=providers.get(providerId);if(!p)throw new Error("MODEL_PROVIDER_NOT_REGISTERED");if(!p.tested)throw new Error("MODEL_PROVIDER_UNTESTED");if(typeof p.adapter?.invoke!=="function")throw new Error("MODEL_INVOKE_ADAPTER_REQUIRED");return p.adapter.invoke(request);}
 export function independentJudgePlan({workerProviderId}={}){const alt=[...providers.values()].find(p=>p.tested&&p.id!==workerProviderId);return alt?{ready:true,judgeProvider:alt.id}:{ready:false,reason:"INDEPENDENT_PROVIDER_UNAVAILABLE"};}

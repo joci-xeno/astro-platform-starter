@@ -1,3 +1,4 @@
+import {emergencyGate} from "./emergency-stop.mjs";
 import {isTested} from "./probe-evidence.mjs";
 import { ownerGranted } from "./owner-auth.mjs";
 // ATLASZ Computer Use Fabric v1.0
@@ -12,7 +13,7 @@ export function classifyComputerAction(action=""){
  if(ask.has(a))return COMPUTER_ACTION_LEVELS.ASK_OWNER;
  return COMPUTER_ACTION_LEVELS.AUTO;
 }
-export function createComputerUseFabric({provider=null}={}){
+export function createComputerUseFabric({provider=null,gate:extGate=null}={}){
  const provOk=isTested(provider?.tested,provider?.probeEvidence);
  const audit=[];
  const status=()=>({id:"computer-use-fabric",provider:provider?.name||null,state:provider?(provOk?"LIVE":"CONNECTED_UNTESTED"):"PLACEHOLDER_UNCONNECTED",tested:Boolean(provOk),live:Boolean(provOk),owner:OWNER_AUTHORITY.ownerId});
@@ -23,6 +24,8 @@ export function createComputerUseFabric({provider=null}={}){
    return {level,decision,ownerApprovalRequired:level==="ASK_JOCI"};
  }
  async function execute({agentId,action,input,ownerApproved=false}={}){
+   const stop=(extGate||emergencyGate)({external:true});           // owner kill switch (and Safe Mode when the runtime passes its gate)
+   if(!stop.allowed){audit.push({at:new Date().toISOString(),agentId:agentId||null,action,level:"BLOCKED_BY_STOP",decision:"DENY",reason:stop.reason});return {level:"BLOCKED_BY_STOP",decision:"DENY",reason:stop.reason,executed:false};}
    const gate=authorize({agentId,action,ownerApproved});
    if(gate.decision!=="ALLOW")return {...gate,executed:false};
    if(!provider?.execute)throw new Error("COMPUTER_USE_PROVIDER_UNAVAILABLE");
