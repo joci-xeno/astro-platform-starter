@@ -1,3 +1,4 @@
+import {isTested} from "./probe-evidence.mjs";
 // ATLASZ Tool Fabric v1.0
 // Central capability catalogue. Entries are catalogued, NOT live, until a real adapter is connected and tested.
 export const TOOL_FABRIC_CATALOG=Object.freeze([
@@ -28,7 +29,7 @@ export const TOOL_FABRIC_CATALOG=Object.freeze([
 {id:"accounting",category:"FINANCE",capabilities:["bookkeeping","tax-prep","gst","pst"]}
 ]);
 const registry=new Map(TOOL_FABRIC_CATALOG.map(x=>[x.id,{...x,state:"PLACEHOLDER_UNCONNECTED",tested:false,live:false,adapter:null,costClass:"UNKNOWN"}]));
-export function connectFabricTool({id,adapter=null,tested=false,costClass="UNKNOWN"}={}){
+export function connectFabricTool({id,adapter=null,tested=false,probeEvidence=null,costClass="UNKNOWN"}={}){tested=isTested(tested,probeEvidence);
  const t=registry.get(id); if(!t)throw new Error("UNKNOWN_TOOL");
  if(!adapter)throw new Error("REAL_ADAPTER_REQUIRED");
  Object.assign(t,{adapter,costClass,tested:Boolean(tested),live:Boolean(tested),state:tested?"LIVE":"CONNECTED_UNTESTED"});

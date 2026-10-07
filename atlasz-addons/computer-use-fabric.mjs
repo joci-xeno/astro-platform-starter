@@ -1,3 +1,4 @@
+import {isTested} from "./probe-evidence.mjs";
 import { ownerGranted } from "./owner-auth.mjs";
 // ATLASZ Computer Use Fabric v1.0
 // Owner-first desktop/browser execution policy. No provider is LIVE until attached and tested.
@@ -12,8 +13,9 @@ export function classifyComputerAction(action=""){
  return COMPUTER_ACTION_LEVELS.AUTO;
 }
 export function createComputerUseFabric({provider=null}={}){
+ const provOk=isTested(provider?.tested,provider?.probeEvidence);
  const audit=[];
- const status=()=>({id:"computer-use-fabric",provider:provider?.name||null,state:provider?(provider.tested?"LIVE":"CONNECTED_UNTESTED"):"PLACEHOLDER_UNCONNECTED",tested:Boolean(provider?.tested),live:Boolean(provider?.tested),owner:OWNER_AUTHORITY.ownerId});
+ const status=()=>({id:"computer-use-fabric",provider:provider?.name||null,state:provider?(provOk?"LIVE":"CONNECTED_UNTESTED"):"PLACEHOLDER_UNCONNECTED",tested:Boolean(provOk),live:Boolean(provOk),owner:OWNER_AUTHORITY.ownerId});
  function authorize({agentId,action,ownerApproved=false}={}){
    const level=classifyComputerAction(action);
    const decision=level==="FORBIDDEN"?"DENY":level==="ASK_JOCI"&&!ownerGranted(ownerApproved,"COMPUTER_"+String(action).trim().toUpperCase().replace(/-/g,"_"))?"WAIT_OWNER":"ALLOW";
@@ -24,7 +26,7 @@ export function createComputerUseFabric({provider=null}={}){
    const gate=authorize({agentId,action,ownerApproved});
    if(gate.decision!=="ALLOW")return {...gate,executed:false};
    if(!provider?.execute)throw new Error("COMPUTER_USE_PROVIDER_UNAVAILABLE");
-   if(!provider.tested)throw new Error("COMPUTER_USE_PROVIDER_UNTESTED");
+   if(!provOk)throw new Error("COMPUTER_USE_PROVIDER_UNTESTED");
    const result=await provider.execute({agentId,action,input});
    return {...gate,executed:true,result};
  }
