@@ -95,7 +95,7 @@
     52
    ]
   },
-  "item_verified_count": 862
+  "item_verified_count": 890
  },
  "requirements": [
   {
@@ -21594,6 +21594,721 @@
    "status_basis": "ITEM_VERIFIED",
    "integration_status": "Registry",
    "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-001",
+   "title": "Owner Authority subsystem: single catalogue of operations needing Joci (spending, commitments, subscriptions, purchases, contracts, banking/payment config, production deployment, security/credential/owner-permission changes, destructive ops, external publication, high-risk changes); unknown operation fails closed; owner identity fixed",
+   "level": "item",
+   "section": 53,
+   "description": "Owner Authority subsystem: single catalogue of operations needing Joci (spending, commitments, subscriptions, purchases, contracts, banking/payment config, production deployment, security/credential/owner-permission changes, destructive ops, external publication, high-risk changes); unknown operation fails closed; owner identity fixed",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/owner-control/owner-authority.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/owner-control-core.test.mjs"
+   ],
+   "evidence": [
+    "Every spec class requires owner; MAKE_COFFEE unknown => BLOCK; catalogue frozen; owner id JOCI immutable"
+   ],
+   "blocker": "Owner key not provisioned in this sandbox (real approvals need Joci's key)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Used by control chain, approval gateway, firewall, agent governor, recovery",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-002",
+   "title": "Approvals are authenticated (Ed25519), specific, auditable, bound to the exact action (operation+params fingerprint), time-aware, single-use and non-transferable: approval for A never authorizes B",
+   "level": "item",
+   "section": 53,
+   "description": "Approvals are authenticated (Ed25519), specific, auditable, bound to the exact action (operation+params fingerprint), time-aware, single-use and non-transferable: approval for A never authorizes B",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/owner-control/owner-authority.mjs; atlasz-addons/owner-auth.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/owner-control-core.test.mjs",
+    "atlasz-tests/owner-control-bypass.test.mjs"
+   ],
+   "evidence": [
+    "Other params/other operation/forged signature/expired/bare boolean/replay all BLOCKED; mutation 'approval not bound to exact action' fails 4 tests"
+   ],
+   "blocker": "Real approvals need Joci's key",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Chain, gateway, recovery, firewall policy",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-003",
+   "title": "Unified control chain OWNER AUTHORITY > KILL SWITCH > SAFE MODE > SECURITY BRAIN > FINANCIAL FIREWALL > OWNER APPROVAL > BLACK BOX, layers only tighten; layers work together",
+   "level": "item",
+   "section": 53,
+   "description": "Unified control chain OWNER AUTHORITY > KILL SWITCH > SAFE MODE > SECURITY BRAIN > FINANCIAL FIREWALL > OWNER APPROVAL > BLACK BOX, layers only tighten; layers work together",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/owner-control/control-chain.mjs; atlasz-addons/owner-control/owner-control-system.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/owner-control-core.test.mjs",
+    "atlasz-tests/owner-control-bypass.test.mjs"
+   ],
+   "evidence": [
+    "Per-layer trace; 13 bypass scenarios pass"
+   ],
+   "blocker": "Computer Use / connector / outbound call sites outside the 30-agent loop keep their own gates; they are registered paths but not yet physically routed (see OSC-006)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Runtime dispatch of the 30 agents + Brain governance route through it",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-004",
+   "title": "Kill Switch (Joci-only) covers the 30-agent runtime, Brain-triggered actions, model-triggered external actions, Computer Use, connectors, outbound comms, Money Engine, Business Factory, workflows, scheduled actions and external tool execution; path-coverage test; releasing is Joci-only; state/logs/evidence preserved",
+   "level": "item",
+   "section": 53,
+   "description": "Kill Switch (Joci-only) covers the 30-agent runtime, Brain-triggered actions, model-triggered external actions, Computer Use, connectors, outbound comms, Money Engine, Business Factory, workflows, scheduled actions and external tool execution; path-coverage test; releasing is Joci-only; state/logs/evidence preserved",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/owner-control/control-chain.mjs (CONTROLLED_PATHS); atlasz-addons/emergency-stop.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/owner-control-core.test.mjs",
+    "atlasz-tests/owner-control-bypass.test.mjs",
+    "atlasz-tests/brain-runtime-wiring.test.mjs"
+   ],
+   "evidence": [
+    "27 registered paths all BLOCKED at KILL_SWITCH under PAUSE_ALL with the action never executed; STOP_EXTERNAL blocks external paths only; mutation 'kill-switch layer removed' fails 2 tests"
+   ],
+   "blocker": "Real call sites for Computer Use / live connectors / outbound mail are not wired yet (those integrations are not LIVE); queue freeze relies on the existing durable-queue gate",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "30-agent loop + Brain governance + money guard physically routed; other paths are registered and tested through chain.run()",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-005",
+   "title": "New Brain components cannot bypass the Kill Switch or approvals: Brain governance consults the chain; spend is BLOCKED by the Financial Firewall even with a Brain-spend approval",
+   "level": "item",
+   "section": 53,
+   "description": "New Brain components cannot bypass the Kill Switch or approvals: Brain governance consults the chain; spend is BLOCKED by the Financial Firewall even with a Brain-spend approval",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/governance.mjs; atlasz-addons/brain/brain-system.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/owner-control-bypass.test.mjs",
+    "atlasz-tests/brain-runtime-wiring.test.mjs"
+   ],
+   "evidence": [
+    "Brain actions DENIED under PAUSE_ALL; CHAIN:FINANCIAL_FIREWALL on spend; runtime proxy BLOCKS until chain exists"
+   ],
+   "blocker": null,
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Runtime Brain uses chain proxy (fail closed before ready)",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-006",
+   "title": "Single common Owner Approval Gateway: request shows WHAT/WHY/WHO/TARGET/EXPECTED RESULT/COST/FINANCIAL+SECURITY+DATA RISK/REVERSIBILITY/ROLLBACK/REQUIRED CREDENTIAL; outcomes APPROVED/REJECTED/EXPIRED/CANCELLED/BLOCKED only",
+   "level": "item",
+   "section": 53,
+   "description": "Single common Owner Approval Gateway: request shows WHAT/WHY/WHO/TARGET/EXPECTED RESULT/COST/FINANCIAL+SECURITY+DATA RISK/REVERSIBILITY/ROLLBACK/REQUIRED CREDENTIAL; outcomes APPROVED/REJECTED/EXPIRED/CANCELLED/BLOCKED only",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/owner-control/approval-gateway.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/owner-control-core.test.mjs"
+   ],
+   "evidence": [
+    "Incomplete requests throw; APPROVED only with signature valid for this exact request; wrong approval => BLOCKED; TTL => EXPIRED; unknown/forbidden/owner-only requests BLOCKED up front"
+   ],
+   "blocker": "Existing legacy approval flows (money pipeline owner gates) still use their own approval store",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Control Center lists pending gateway requests; legacy approval-requests module kept",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-007",
+   "title": "Gateway approval is consumed exactly once by the executing chain and cannot be reused for another action",
+   "level": "item",
+   "section": 53,
+   "description": "Gateway approval is consumed exactly once by the executing chain and cannot be reused for another action",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/owner-control/approval-gateway.mjs; atlasz-addons/owner-control/control-chain.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/owner-control-core.test.mjs"
+   ],
+   "evidence": [
+    "Other params BLOCK; first use ALLOW; second use BLOCK (replay)"
+   ],
+   "blocker": "None",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Chain",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-008",
+   "title": "Security Brain deeply integrated: ALLOW/WARN/REQUIRE_APPROVAL/QUARANTINE/BLOCK/ENTER_SAFE_MODE decisions feed the chain; it can only tighten and cannot grant authority; quarantined agents blocked for external/risky actions",
+   "level": "item",
+   "section": 53,
+   "description": "Security Brain deeply integrated: ALLOW/WARN/REQUIRE_APPROVAL/QUARANTINE/BLOCK/ENTER_SAFE_MODE decisions feed the chain; it can only tighten and cannot grant authority; quarantined agents blocked for external/risky actions",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/owner-control/control-chain.mjs; atlasz-addons/brain/security-brain.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/owner-control-bypass.test.mjs",
+    "atlasz-tests/brain-runtime-wiring.test.mjs"
+   ],
+   "evidence": [
+    "Privilege escalation => BLOCK + quarantine; runtime dispatch of a quarantined agent halted; missing security layer on risky/external action => BLOCK"
+   ],
+   "blocker": "Security Brain sees only events the chain/runtime/Brain feed it; no OS-level or network-level sensor",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Chain + runtime",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-009",
+   "title": "Independent Verification strengthened: REQUESTED!=EXECUTED, DRAFT!=SENT, QUEUED!=SENT, CREATED!=DELIVERED, INVOICE!=PAID, CUSTOMER_SAYS_PAID!=VERIFIED_PAYMENT, SIMULATION!=LIVE, CONFIGURED!=TESTED, CONNECTED!=LIVE",
+   "level": "item",
+   "section": 53,
+   "description": "Independent Verification strengthened: REQUESTED!=EXECUTED, DRAFT!=SENT, QUEUED!=SENT, CREATED!=DELIVERED, INVOICE!=PAID, CUSTOMER_SAYS_PAID!=VERIFIED_PAYMENT, SIMULATION!=LIVE, CONFIGURED!=TESTED, CONNECTED!=LIVE",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/owner-control/claim-distinctions.mjs; atlasz-addons/brain/verifier.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/owner-control-bypass.test.mjs"
+   ],
+   "evidence": [
+    "Weak state advances only on independent ACCEPT; stale probe keeps CONNECTED; no verifier => NOT VERIFIED"
+   ],
+   "blocker": "Payment/delivery/backup/update evidence sources are not connected to the verifier in this sandbox (=> ESCALATE, never ACCEPT)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Chain.verifyOutcome + claim tracker",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-010",
+   "title": "Financial Firewall: NO-SPEND default; only Joci (action-bound approval) sets a spend policy; per-action/total/capital-reserve limits; budget governor hook; every spend still needs its own approval",
+   "level": "item",
+   "section": 53,
+   "description": "Financial Firewall: NO-SPEND default; only Joci (action-bound approval) sets a spend policy; per-action/total/capital-reserve limits; budget governor hook; every spend still needs its own approval",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/owner-control/financial-firewall.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/owner-control-core.test.mjs"
+   ],
+   "evidence": [
+    "Spend BLOCKED by default even with valid approval; policy with altered limits rejected; reserve enforced; invalid/negative/NaN BLOCKED; mutation 'no-spend default removed' fails 3 tests"
+   ],
+   "blocker": "Budget Consumption Governor is global-state module; used via adapter only when a scope is passed",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Chain layer 5; runtime status; Control Center",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-011",
+   "title": "Cost/profit tracking: estimated, actual, provider, job cost; claimed vs VERIFIED revenue; gross/net profit from verified revenue minus actual cost only; estimated never presented as verified",
+   "level": "item",
+   "section": 53,
+   "description": "Cost/profit tracking: estimated, actual, provider, job cost; claimed vs VERIFIED revenue; gross/net profit from verified revenue minus actual cost only; estimated never presented as verified",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/owner-control/financial-firewall.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/owner-control-core.test.mjs"
+   ],
+   "evidence": [
+    "VERIFIED revenue needs independent ACCEPT; actual cost needs evidence ref; profitBasis VERIFIED_REVENUE_MINUS_ACTUAL_COST_ONLY"
+   ],
+   "blocker": "Existing financial-ledger / profit-ledger remain separate stores; reconciliation not automated",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Money state guard records verified revenue",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-012",
+   "title": "Black Box: every control decision recorded (who/what/why/when/cost/decision/approval nonce) hash-chained and tamper-evident; no plaintext secrets or signatures",
+   "level": "item",
+   "section": 53,
+   "description": "Black Box: every control decision recorded (who/what/why/when/cost/decision/approval nonce) hash-chained and tamper-evident; no plaintext secrets or signatures",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/black-box.mjs; atlasz-addons/owner-control/control-chain.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/owner-control-bypass.test.mjs"
+   ],
+   "evidence": [
+    "Secret redacted, no signature material, edited line detected on disk (verifyFile) and doctor => FAILED; recording failure => decision BLOCK (fail closed)"
+   ],
+   "blocker": "Single local file; no off-box replication",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Chain, agent governor, money guard, doctor",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-013",
+   "title": "Safe Mode strengthened: external + write actions blocked, faulty modules/workflows isolated with preserved diagnostics, read-only/doctor/recovery/inspection stay available, never reported as normal",
+   "level": "item",
+   "section": 53,
+   "description": "Safe Mode strengthened: external + write actions blocked, faulty modules/workflows isolated with preserved diagnostics, read-only/doctor/recovery/inspection stay available, never reported as normal",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/owner-control/safe-mode-scope.mjs; atlasz-addons/safe-mode.mjs; atlasz-addons/owner-control/control-chain.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/owner-control-bypass.test.mjs"
+   ],
+   "evidence": [
+    "SAFE_MODE layer BLOCK; READ_STATUS/RUN_SYSTEM_DOCTOR/VERIFY_BACKUP/CREATE_RESTORE_POINT/VIEW_INCIDENTS allowed; module+workflow isolation; banner; exit needs owner approval + self-check"
+   ],
+   "blocker": "Auto-detection of which module is faulty depends on callers invoking isolation (watchdog hook not yet mapped to isolate())",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Chain + runtime",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-014",
+   "title": "Last Known Good = verified stable recovery point: build identifiable, config/dependencies/schema known, critical tests, health checks, backup available, rollback path, recovery evidence; never auto-newest",
+   "level": "item",
+   "section": 53,
+   "description": "Last Known Good = verified stable recovery point: build identifiable, config/dependencies/schema known, critical tests, health checks, backup available, rollback path, recovery evidence; never auto-newest",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/owner-control/recovery-points.mjs; atlasz-addons/backup-recovery.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/owner-control-bypass.test.mjs"
+   ],
+   "evidence": [
+    "Each of 9 requirements individually refused when false; build/evidence required; backup must be drill-verified; newest LKG with corrupt backup is skipped, older verified one used; mutation 'LKG criteria removed' fails"
+   ],
+   "blocker": "Runtime has no recovery sources configured yet (categories report NOT_CONFIGURED)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Recovery manager",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-015",
+   "title": "Backup/restore/rollback separately for application version, configuration, database/schema, agent workflows, model routing, connector configuration, critical system state",
+   "level": "item",
+   "section": 53,
+   "description": "Backup/restore/rollback separately for application version, configuration, database/schema, agent workflows, model routing, connector configuration, critical system state",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/owner-control/recovery-points.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/owner-control-bypass.test.mjs",
+    "atlasz-tests/owner-control-extra.test.mjs"
+   ],
+   "evidence": [
+    "Seven categories; per-category restore point, drill-verified backup, tamper => FAILED; unconfigured => NOT_CONFIGURED"
+   ],
+   "blocker": "Category source directories are not mapped to the real runtime layout yet (no DB/schema store exists to back up)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module + chain; Control Center uses whole-state backups",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-016",
+   "title": "Owner recovery actions CREATE SAFE RESTORE POINT / VERIFY BACKUP / RESTORE FROM BACKUP / ROLL BACK TO LKG / VERIFY RECOVERY; backup that cannot be restored is insufficient",
+   "level": "item",
+   "section": 53,
+   "description": "Owner recovery actions CREATE SAFE RESTORE POINT / VERIFY BACKUP / RESTORE FROM BACKUP / ROLL BACK TO LKG / VERIFY RECOVERY; backup that cannot be restored is insufficient",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/owner-control/recovery-points.mjs; atlasz-control-center/core.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/owner-control-extra.test.mjs",
+    "atlasz-tests/control-center-ownersafety.test.mjs"
+   ],
+   "evidence": [
+    "Restore/rollback need approval bound to category+backup+target; replay refused; old data moved aside not deleted; VERIFY BACKUP runs a real restore drill; corrupt backup => NOT_READY"
+   ],
+   "blocker": "Owner key must be provisioned for signed actions",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Control Center Owner Safety actions",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-017",
+   "title": "Disaster Recovery sequence DETECT>CONTAIN>FREEZE UNSAFE ACTIONS>PRESERVE LOGS/EVIDENCE>CHECKPOINT>DIAGNOSE>SAFE REPAIR>RETEST>ROLLBACK TO LKG IF REQUIRED>VERIFY HEALTH>RESUME>INCIDENT REPORT",
+   "level": "item",
+   "section": 53,
+   "description": "Disaster Recovery sequence DETECT>CONTAIN>FREEZE UNSAFE ACTIONS>PRESERVE LOGS/EVIDENCE>CHECKPOINT>DIAGNOSE>SAFE REPAIR>RETEST>ROLLBACK TO LKG IF REQUIRED>VERIFY HEALTH>RESUME>INCIDENT REPORT",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/disaster-recovery.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-systems.test.mjs",
+    "atlasz-tests/update-center.test.mjs"
+   ],
+   "evidence": [
+    "Existing runIncident sequence + update-center freeze/rollback; broken update => ROLLED_BACK byte-identical (re-verified in owner-control suite)"
+   ],
+   "blocker": "Not re-wired to the new recovery manager's categories; live actions injected by caller only",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Brain DR module",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-018",
+   "title": "Cross-layer protection of ALL Brain subsystems (Orchestrator, Planning, Capability/Skill Graph, Knowledge, Simulation, Verification, Security, Opportunity, Business Factory, Observability, Owner Command, Model Router, Brain Health): no route around owner control",
+   "level": "item",
+   "section": 53,
+   "description": "Cross-layer protection of ALL Brain subsystems (Orchestrator, Planning, Capability/Skill Graph, Knowledge, Simulation, Verification, Security, Opportunity, Business Factory, Observability, Owner Command, Model Router, Brain Health): no route around owner control",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/owner-control/control-chain.mjs; atlasz-addons/brain/governance.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/owner-control-core.test.mjs",
+    "atlasz-tests/owner-control-bypass.test.mjs"
+   ],
+   "evidence": [
+    "Every subsystem has a registered controlled path blocked under emergency stop; governance consults chain"
+   ],
+   "blocker": "Subsystems do not all call chain.run() internally; their external effects go through governance, which does consult the chain",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Governance + registered paths",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-019",
+   "title": "30-agent control: each agent subject to authority, kill switch, approvals, security, firewall, black box, safe mode, recovery; no silent/unrestricted agent or tool; creation refused even with approval (fixed topology)",
+   "level": "item",
+   "section": 53,
+   "description": "30-agent control: each agent subject to authority, kill switch, approvals, security, firewall, black box, safe mode, recovery; no silent/unrestricted agent or tool; creation refused even with approval (fixed topology)",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/owner-control/agent-governor.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/owner-control-bypass.test.mjs",
+    "atlasz-tests/brain-runtime-wiring.test.mjs"
+   ],
+   "evidence": [
+    "Unregistered agent/tool refused and recorded; CREATE_AGENT blocked for agents and still refused for Joci's signed approval; 29-agent roster => all actions BLOCKED + doctor BLOCKED; mutation 'roster enforcement removed' fails"
+   ],
+   "blocker": "atlasz-addons/agent-factory.mjs is a separate blueprint library and is not yet hard-wired to the governor",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Runtime search()/execute() dispatch of the 30 agents",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-020",
+   "title": "Money Engine safety: every transition needs typed evidence and independent verification; WON/SENT/DELIVERED/INVOICED/PAID never faked; customer-says-paid is never revenue; payment verification unavailable => NOT VERIFIED",
+   "level": "item",
+   "section": 53,
+   "description": "Money Engine safety: every transition needs typed evidence and independent verification; WON/SENT/DELIVERED/INVOICED/PAID never faked; customer-says-paid is never revenue; payment verification unavailable => NOT VERIFIED",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/owner-control/money-state-guard.mjs; atlasz-addons/money-pipeline-controller.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/owner-control-bypass.test.mjs"
+   ],
+   "evidence": [
+    "Full DISCOVERED..PAID_VERIFIED path with per-state evidence; QUEUED!=SENT; executor cannot QA itself; fake payment/amount mismatch/unsigned provider rejected; kill switch freezes external steps; mutation 'money evidence check removed' fails"
+   ],
+   "blocker": "No money pipeline is driven by the runtime yet and payment/delivery evidence sources are not connected; all REVENUE remains 0 (nothing verified)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Guard wraps existing pipeline controller; not yet the runtime's own pipeline entry point",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-021",
+   "title": "Simulation money states aligned with the real Money Engine pipeline; 'customer says paid' is not a state; Simulation can never execute LIVE",
+   "level": "item",
+   "section": 53,
+   "description": "Simulation money states aligned with the real Money Engine pipeline; 'customer says paid' is not a state; Simulation can never execute LIVE",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/simulation-lab.mjs; atlasz-addons/money-pipeline-controller.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/brain-systems.test.mjs",
+    "atlasz-tests/owner-control-bypass.test.mjs"
+   ],
+   "evidence": [
+    "Lab uses MONEY_PIPELINE_STATES/ALLOWED; PAID_CLAIMED => UNKNOWN_STATE; live traps throw and are recorded; SIMULATION actor + external => BLOCK"
+   ],
+   "blocker": null,
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Lab + chain",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-022",
+   "title": "System Doctor v2: HEALTHY/DEGRADED/BLOCKED/FAILED/NOT_CONFIGURED/UNKNOWN across runtime, 30-agent topology, queue, database, Brain, models, tools, connectors, vault, owner auth, kill switch, gateway, security, firewall, black box, backup, LKG, recovery readiness, update centre; UNKNOWN never promoted",
+   "level": "item",
+   "section": 53,
+   "description": "System Doctor v2: HEALTHY/DEGRADED/BLOCKED/FAILED/NOT_CONFIGURED/UNKNOWN across runtime, 30-agent topology, queue, database, Brain, models, tools, connectors, vault, owner auth, kill switch, gateway, security, firewall, black box, backup, LKG, recovery readiness, update centre; UNKNOWN never promoted",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/owner-control/system-doctor.mjs; atlasz-control-center/core.mjs (doctorV2)",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/owner-control-extra.test.mjs",
+    "atlasz-tests/owner-control-bypass.test.mjs",
+    "atlasz-tests/control-center-ownersafety.test.mjs"
+   ],
+   "evidence": [
+    "Missing probe=>NOT_CONFIGURED, throwing=>FAILED, unusable=>UNKNOWN; overall HEALTHY only if all HEALTHY; tampered black box=>FAILED; corrupt backup=>FAILED; mutation 'unknown promoted to healthy' fails"
+   ],
+   "blocker": "Tools/models components have no real health source (reported UNKNOWN / NOT_CONFIGURED honestly)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Runtime-side doctor + Control Center doctorV2",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-023",
+   "title": "Control Center Owner Safety/Control area with real status for OWNER AUTHORITY, KILL SWITCH, APPROVALS, SECURITY BRAIN, FINANCIAL FIREWALL, BLACK BOX, SAFE MODE, CURRENT VERSION, LKG, LATEST BACKUP, RESTORE READINESS, RECOVERY STATUS, SYSTEM HEALTH",
+   "level": "item",
+   "section": 53,
+   "description": "Control Center Owner Safety/Control area with real status for OWNER AUTHORITY, KILL SWITCH, APPROVALS, SECURITY BRAIN, FINANCIAL FIREWALL, BLACK BOX, SAFE MODE, CURRENT VERSION, LKG, LATEST BACKUP, RESTORE READINESS, RECOVERY STATUS, SYSTEM HEALTH",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-control-center/core.mjs (ownerSafety); atlasz-control-center/public/app.js (owner_safety); atlasz-control-center/server.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/control-center-ownersafety.test.mjs"
+   ],
+   "evidence": [
+    "Every field present; unobservable values shown UNKNOWN/NOT_CONFIGURED; HTTP route token-protected and cross-origin refused"
+   ],
+   "blocker": "The UI itself has not been exercised in a real browser/Electron window in this sandbox (Electron/installer blocked)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Control Center GUI served; page logic syntax-checked",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-024",
+   "title": "Owner controls EMERGENCY STOP, PAUSE EXTERNAL ACTIONS, RESUME, RUN SYSTEM DOCTOR, CREATE SAFE RESTORE POINT, VERIFY BACKUP, ROLL BACK TO LKG, RESTORE, VIEW INCIDENTS/SECURITY EVENTS/APPROVALS; kill switch highly visible and always reachable",
+   "level": "item",
+   "section": 53,
+   "description": "Owner controls EMERGENCY STOP, PAUSE EXTERNAL ACTIONS, RESUME, RUN SYSTEM DOCTOR, CREATE SAFE RESTORE POINT, VERIFY BACKUP, ROLL BACK TO LKG, RESTORE, VIEW INCIDENTS/SECURITY EVENTS/APPROVALS; kill switch highly visible and always reachable",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-control-center/core.mjs (ownerSafetyAction); atlasz-control-center/public/app.js",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/control-center-ownersafety.test.mjs"
+   ],
+   "evidence": [
+    "Stop/pause/resume need Joci's key (wrong passphrase and no key refused); resume needs explicit RESUME; corrupt backup => NOT_READY; unknown action refused; EMERGENCY STOP button pinned atop the navigation on every page"
+   ],
+   "blocker": "Signed actions require Joci to create the owner key; not visually verified",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Control Center core + server + GUI",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-025",
+   "title": "FAIL CLOSED: unknown authorization => BLOCK; payment verification unavailable => NOT VERIFIED; security status unknown => not assumed safe; recovery state unknown => UNKNOWN; provider status unknown => NOT LIVE",
+   "level": "item",
+   "section": 53,
+   "description": "FAIL CLOSED: unknown authorization => BLOCK; payment verification unavailable => NOT VERIFIED; security status unknown => not assumed safe; recovery state unknown => UNKNOWN; provider status unknown => NOT LIVE",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/owner-control/control-chain.mjs; atlasz-addons/owner-control/recovery-points.mjs; atlasz-addons/owner-control/claim-distinctions.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/owner-control-bypass.test.mjs",
+    "atlasz-tests/owner-control-extra.test.mjs"
+   ],
+   "evidence": [
+    "Unknown gate/safe-mode/security/black-box/actor/operation/path => BLOCK; throwing layer => BLOCK; no verifier => ESCALATE; recovery readiness UNKNOWN until verified"
+   ],
+   "blocker": "None",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "All layers",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-026",
+   "title": "Control-bypass test suite with negative and mutation tests (Brain during kill switch, agent spend, planning spend execution, Business Factory publication, Computer Use, Simulation LIVE, privilege escalation, invalid signature, expired approval, wrong-action approval, false PAID claim, broken update, broken recovery)",
+   "level": "item",
+   "section": 53,
+   "description": "Control-bypass test suite with negative and mutation tests (Brain during kill switch, agent spend, planning spend execution, Business Factory publication, Computer Use, Simulation LIVE, privilege escalation, invalid signature, expired approval, wrong-action approval, false PAID claim, broken update, broken recovery)",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-tests/owner-control-core.test.mjs; atlasz-tests/owner-control-bypass.test.mjs; atlasz-tests/owner-control-extra.test.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/owner-control-core.test.mjs",
+    "atlasz-tests/owner-control-bypass.test.mjs",
+    "atlasz-tests/owner-control-extra.test.mjs"
+   ],
+   "evidence": [
+    "27 tests; 8 mutations (kill-switch layer, exact-action binding, no-spend default, money evidence, roster, unknown-security-safe, LKG criteria, unknown=>healthy) each made the suite fail; full suite 312/312"
+   ],
+   "blocker": null,
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-027",
+   "title": "Owner approval for unknown/new components: Update Center protected components and high-risk tags continue to need Joci; control modules cannot be auto-updated",
+   "level": "item",
+   "section": 53,
+   "description": "Owner approval for unknown/new components: Update Center protected components and high-risk tags continue to need Joci; control modules cannot be auto-updated",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/update-center.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/update-center.test.mjs"
+   ],
+   "evidence": [
+    "Existing PROTECTED_COMPONENTS list; owner-control modules not yet added to it"
+   ],
+   "blocker": "Add owner-control module ids to PROTECTED_COMPONENTS when the components are registered with the Update Center",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Update Center",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-OSC-028",
+   "title": "Live/staging proof of the control system: owner key provisioned, signed approvals exercised through the real Control Center GUI, verified recovery in staging",
+   "level": "item",
+   "section": 53,
+   "description": "Live/staging proof of the control system: owner key provisioned, signed approvals exercised through the real Control Center GUI, verified recovery in staging",
+   "source": "Joci Owner Control & Safety package",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "-",
+   "status": "MISSING",
+   "tests": [],
+   "evidence": [
+    "Not performed: no owner key, no GUI session, no staging environment in this sandbox"
+   ],
+   "blocker": "Needs Joci's owner key and a Windows/staging session (external dependency)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "None",
+   "test_status": "NOT_TESTED",
    "classification": "SANDBOX"
   }
  ]
