@@ -79,10 +79,12 @@ export function createPlanningBrain({ file = null, now = () => new Date().toISOS
     else if (["DEPENDENCY_FAILED", "PLAN_INVALID", "REQUIREMENTS_CHANGED"].includes(k)) { action = "REPLAN"; reason = k; }
     else { action = "ESCALATE"; reason = "unclassified failure"; }
     if (action === "ESCALATE" && n > maxRetries + 1) { action = "ASK_JOCI"; reason += "; escalation exhausted"; }
-    t.status = action === "RETRY" || action === "CHANGE_AGENT" || action === "CHANGE_MODEL" || action === "CHANGE_TOOL" || action === "USE_FALLBACK" ? "PENDING" : action === "STOP_SAFELY" ? "BLOCKED" : "FAILED";
+    t.status = action === "RETRY" || action === "CHANGE_AGENT" || action === "CHANGE_MODEL" || action === "CHANGE_TOOL" || action === "USE_FALLBACK" ? "PENDING" : action === "STOP_SAFELY" || action === "ASK_JOCI" ? "BLOCKED" : "FAILED";
     p.history.push({ at: now(), taskId, failure: k, action, reason }); save();
     return { action, reason, taskStatus: t.status };
   }
+  /** Owner/operator unblocks a task that was waiting for approval or stopped safely. Does not grant any approval itself. */
+  function resume(planId, taskId) { const p = P(planId), t = T(p, taskId); if (t.status !== "BLOCKED") throw new Error("TASK_NOT_BLOCKED"); t.status = "PENDING"; p.history.push({ at: now(), taskId, resumed: true }); save(); return structuredClone(t); }
   /** Replan keeps DONE work, cancels removed tasks, adds new ones; dependencies and cycles are revalidated. Never auto-approves anything. */
   function replan(planId, { cancel = [], add = [] } = {}) {
     const p = P(planId), draft = structuredClone(p);
@@ -97,5 +99,5 @@ export function createPlanningBrain({ file = null, now = () => new Date().toISOS
     const p = P(planId), l = Object.values(p.tasks), c = s => l.filter(t => t.status === s).length;
     return { planId, status: p.status, total: l.length, done: c("DONE"), failed: c("FAILED"), blocked: c("BLOCKED"), pending: c("PENDING"), running: c("RUNNING"), percent: l.length ? Math.round((100 * c("DONE")) / l.filter(t => t.status !== "CANCELLED").length || 0) : 0 };
   }
-  return { createPlan, nextTasks, markTask, decideOnFailure, replan, progress, get: id => structuredClone(P(id)), list: () => Object.values(plans).map(p => ({ id: p.id, goal: p.goal, status: p.status })) };
+  return { createPlan, nextTasks, markTask, resume, decideOnFailure, replan, progress, get: id => structuredClone(P(id)), list: () => Object.values(plans).map(p => ({ id: p.id, goal: p.goal, status: p.status })) };
 }
