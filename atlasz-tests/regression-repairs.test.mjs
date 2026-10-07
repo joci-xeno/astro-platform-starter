@@ -20,3 +20,16 @@ test("hub snapshot exposes control-plane status after agents register (was silen
   assert.ok(s.control && Array.isArray(s.control.agents), "control must not be null");
   assert.equal(s.externalSideEffects, false);
 });
+
+test("REPAIR: an unknown runtime event must not cause an unhandled rejection (would crash Node >=15)", async () => {
+  const seen = []; const h = e => seen.push(String(e?.message || e)); process.on("unhandledRejection", h);
+  try {
+    const hub = createInternalAddonHub({ tenantId: "TU", dailyBudgetUsd: 0 });
+    hub.onRuntimeEvent("never_heard_of_this_event", { a: 1 });
+    hub.onRuntimeEvent("dispatch_blocked", { agentId: "SEARCH-1", reason: "PAUSE_ALL" });
+    await new Promise(r => setTimeout(r, 50));
+    assert.deepEqual(seen, [], "unhandled rejections: " + seen.join(","));
+    const errs = hub.snapshot().errors; assert.ok(errs.some(e => e.event === "NEVER_HEARD_OF_THIS_EVENT"), "unknown event is recorded as an error, not swallowed");
+    assert.ok(!errs.some(e => e.event === "DISPATCH_BLOCKED"), "dispatch_blocked is a registered event");
+  } finally { process.off("unhandledRejection", h); }
+});

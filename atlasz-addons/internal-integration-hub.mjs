@@ -79,7 +79,7 @@ export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}
   function onRuntimeEvent(type,details={}){
     const gate=acquire("internal-events",1); if(!gate.allowed)return {accepted:false,reason:"RATE_LIMIT"};
     local.events++;
-    const eventType=String(type||"").toUpperCase();const published=safe(publish,eventType,{...details,source:"supervisor-safe"});if(!published.ok)local.errors.push({at:new Date().toISOString(),module:"event-bus",error:published.error,eventType});
+    const eventType=String(type||"").toUpperCase();const published=safe(publish,eventType,{...details,source:"supervisor-safe"});if(published.ok&&published.value&&typeof published.value.catch==="function")published.value.catch(e=>local.errors.push({at:new Date().toISOString(),module:"event-bus",error:String(e?.message||e),event:eventType}));if(!published.ok)local.errors.push({at:new Date().toISOString(),module:"event-bus",error:published.error,eventType});
     const traced=safe(trace,{agentId:details.agentId||null,workflowId:"ATLASZ_SAFE_RUNTIME",event:type,status:details.error?"ERROR":"OK",input:details});if(!traced.ok)local.errors.push({at:new Date().toISOString(),module:"black-box",error:traced.error,eventType});
     if(details.agentId) safe(upsertEntity,{tenantId,type:"AGENT",id:details.agentId,attributes:{lastEvent:type,lastEventAt:new Date().toISOString()},source:"runtime-event"});
     return {accepted:true};
