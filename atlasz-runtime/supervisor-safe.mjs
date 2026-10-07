@@ -39,7 +39,7 @@ export function qualify(candidate) {
     score: reject.length ? 0 : 20 + (remote ? 10 : 0) + (emails.length ? 10 : 0) + (budget ? 10 : 0) + (/urgent|asap|this week/i.test(text) ? 5 : 0)
   };
 }
-export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./data", persistent = Boolean(process.env.RAILWAY_VOLUME_MOUNT_PATH), fetchImpl = fetch } = {}) {
+export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./data", persistent = Boolean(process.env.RAILWAY_VOLUME_MOUNT_PATH), fetchImpl = fetch, updateGate = () => ({ allowed: true, reason: null }) } = {}) {
   const addons = createInternalAddonHub({ tenantId: "ATLASZ-MAIN", dailyBudgetUsd: 0 });
   const addonSnapshot = () => addons.snapshot();
   fs.mkdirSync(dataDir, { recursive: true });
@@ -81,7 +81,7 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
   }
   async function search(index) {
     const agent = state.agents[index];
-    const gate = emergencyGate({ external: true });
+    const gate = !emergencyGate({ external: true }).allowed ? emergencyGate({ external: true }) : updateGate({ external: true });
     if (!gate.allowed) { update(agent, "HALTED_BY_OWNER_STOP", "Owner emergency stop active", gate.reason); event("dispatch_blocked", { agentId: agent.id, reason: gate.reason }); return; }
     const round = Math.floor(state.searchCycles / 5);
     const query = queryLanes[(index + round) % queryLanes.length] + (round % 2 ? " " + topics[(index + round) % topics.length] : "");

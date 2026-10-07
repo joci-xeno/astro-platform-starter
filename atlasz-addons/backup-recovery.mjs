@@ -125,3 +125,27 @@ export function rollbackToLastKnownGood({ registry, targetDir, ownerApproval = n
   const r = restoreBackup({ backupDir: lkg.backupDir, targetDir, ownerApproval });
   return { ...r, lkgBackupId: lkg.backupId, build: lkg.build, evidence: lkg.evidence, jociDecisionNeeded: false };
 }
+
+// Automatic rollback of a failed UPDATE (V7.3 update addendum). Unlike restoreBackup it needs no owner approval,
+// because it only restores the exact pre-update snapshot the update itself took (hash-verified manifest), into an
+// install directory that holds code, not live data. The failed build is moved aside as evidence, never deleted.
+export function rollbackInstall({ backupDir, targetDir, now = () => Date.now() } = {}) {
+  const v = verifyBackup(backupDir);
+  if (!v.ok) throw new Error("ROLLBACK_ABORTED_BACKUP_INVALID:" + v.problems.slice(0, 3).join(","));
+  let failedAside = null;
+  if (fs.existsSync(targetDir)) { failedAside = path.resolve(targetDir) + ".failed-" + now(); fs.renameSync(targetDir, failedAside); }
+  try {
+    fs.mkdirSync(targetDir, { recursive: true });
+    for (const f of v.manifest.files) {
+      const dest = path.join(targetDir, f.path);
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.copyFileSync(path.join(backupDir, "data", f.path), dest);
+    }
+    for (const f of v.manifest.files) if (sha(fs.readFileSync(path.join(targetDir, f.path))) !== f.sha256) throw new Error("POST_ROLLBACK_HASH_MISMATCH:" + f.path);
+  } catch (e) {
+    fs.rmSync(targetDir, { recursive: true, force: true });  // only the partial restore we just wrote
+    if (failedAside) fs.renameSync(failedAside, targetDir);
+    throw new Error("ROLLBACK_FAILED:" + e.message);
+  }
+  return { restored: v.manifest.files.length, backupId: v.manifest.id, failedBuildPreservedAt: failedAside, hashVerified: true };
+}

@@ -28,7 +28,8 @@ try {
     console.log(JSON.stringify(issueOwnerApproval({ privateKeyPem: pem, action: arg("action"), subject: arg("subject") ?? null, ttlMs: Number(arg("ttl-seconds") || 60) * 1000 })));
   } else if (cmd === "emergency") {
     const pem = fs.readFileSync(arg("key"), "utf8"), dir = arg("state-dir"), mode = arg("mode");
-    const auth = createOwnerAuth({ publicKeyB64: pubFromPem(pem), stateDir: dir });
+    // No stateDir here on purpose: the running server owns owner-auth-audit.jsonl; two processes must not append to one hash chain.
+    const auth = createOwnerAuth({ publicKeyB64: pubFromPem(pem) });
     const es = createEmergencyStop({ statePath: path.join(dir, "emergency-stop.json"), auditPath: path.join(dir, "emergency-audit.jsonl"), ownerAuth: auth });
     const action = mode === "RUNNING" ? "EMERGENCY_RESUME" : "EMERGENCY_STOP";
     const approval = issueOwnerApproval({ privateKeyPem: pem, action, subject: mode, ttlMs: 60000 });
