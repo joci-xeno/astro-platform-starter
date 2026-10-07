@@ -26,6 +26,7 @@ import { createConnectorCatalog } from "../atlasz-addons/connector-catalog.mjs";
 import { createSecretVault } from "../atlasz-addons/secret-vault.mjs";
 import { createTechWatch } from "../atlasz-addons/tech-watch.mjs";
 import { createBrainViews } from "./brain-views.mjs";
+import { createMoneyViews } from "./money-views.mjs";
 import { createOwnerCommandLayer, COMMANDS } from "../atlasz-addons/brain/owner-command.mjs";
 import { createSystemDoctor } from "../atlasz-addons/owner-control/system-doctor.mjs";
 import { createApprovalGateway } from "../atlasz-addons/owner-control/approval-gateway.mjs";
@@ -349,6 +350,7 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
     unfreeze: ({ passphrase }) => act(() => uc().unfreeze({ ownerApproval: sign(passphrase, "UPDATE_UNFREEZE", uc().freezeStatus().updateId) }))
   };
 
-  return { ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  const moneyViews = createMoneyViews({ stateDir });
+  return { moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }

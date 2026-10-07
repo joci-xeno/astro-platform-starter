@@ -95,7 +95,7 @@
     52
    ]
   },
-  "item_verified_count": 890
+  "item_verified_count": 900
  },
  "requirements": [
   {
@@ -22310,6 +22310,269 @@
    "integration_status": "None",
    "test_status": "NOT_TESTED",
    "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-PKG84-001",
+   "title": "Agent Factory activation goes through the Agent Governor: unauthorized 31st agent / non-roster identity / unknown capability refused; configure() owner-gated",
+   "level": "item",
+   "section": 77,
+   "description": "Agent Factory activation goes through the Agent Governor: unauthorized 31st agent / non-roster identity / unknown capability refused; configure() owner-gated",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/agent-factory.mjs; atlasz-addons/owner-control/agent-governor.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/agent-factory-governor.test.mjs"
+   ],
+   "evidence": [
+    "7 tests incl. 31st-agent refusal and no-governor BLOCKED"
+   ],
+   "blocker": "SANDBOX only; no live agent creation exists or is allowed",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Runtime wiring only; fixed 30-agent topology preserved"
+  },
+  {
+   "id": "ATLASZ-PKG84-002",
+   "title": "Update Center protected-component list covers Owner Control and Brain modules",
+   "level": "item",
+   "section": 77,
+   "description": "Update Center protected-component list covers Owner Control and Brain modules",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/update-center.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/update-center.test.mjs",
+    "atlasz-tests/agent-factory-governor.test.mjs"
+   ],
+   "evidence": [
+    "protected list extended with 15 owner-control + 11 brain modules"
+   ],
+   "blocker": "None",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "None"
+  },
+  {
+   "id": "ATLASZ-PKG84-003",
+   "title": "Recovery source mapping: categories mapped to real local sources, vault/secret dirs and symlink escapes refused",
+   "level": "item",
+   "section": 77,
+   "description": "Recovery source mapping: categories mapped to real local sources, vault/secret dirs and symlink escapes refused",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/owner-control/recovery-source-map.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/agent-factory-governor.test.mjs"
+   ],
+   "evidence": [
+    "3 of 7 categories mapped (APPLICATION_VERSION, AGENT_WORKFLOWS, CRITICAL_SYSTEM_STATE); CONFIGURATION, DATABASE_SCHEMA, MODEL_ROUTING, CONNECTOR_CONFIGURATION stay NOT_CONFIGURED"
+   ],
+   "blocker": "No local source exists for 4 categories",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Map them when config/schema/model-routing/connector stores exist"
+  },
+  {
+   "id": "ATLASZ-PKG84-004",
+   "title": "Internal evidence sources for Independent Verification (job, ledgers, queue, artifact, backup, restore, update, health, black box, approval); external claims stay EXTERNAL_VERIFICATION_REQUIRED",
+   "level": "item",
+   "section": 77,
+   "description": "Internal evidence sources for Independent Verification (job, ledgers, queue, artifact, backup, restore, update, health, black box, approval); external claims stay EXTERNAL_VERIFICATION_REQUIRED",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/evidence-sources.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/evidence-sources.test.mjs"
+   ],
+   "evidence": [
+    "9 tests; unconnected=UNKNOWN; tamper=FAILED_VERIFICATION; UPDATE not connected in runtime"
+   ],
+   "blocker": "No external authority adapters (payment, delivery, message)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Connect real adapters when credentials exist"
+  },
+  {
+   "id": "ATLASZ-PKG84-005",
+   "title": "Simulation Lab persistence (config/input/plan/tests/failures/risk/evidence, compare); corrupt store never replaced",
+   "level": "item",
+   "section": 77,
+   "description": "Simulation Lab persistence (config/input/plan/tests/failures/risk/evidence, compare); corrupt store never replaced",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/simulation-lab.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/brain-systems.test.mjs"
+   ],
+   "evidence": [
+    "SIM_RECORD_VERSION 2; SIMULATION_STORE_UNREADABLE on corruption"
+   ],
+   "blocker": "None",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Simulation success is never proof of LIVE success"
+  },
+  {
+   "id": "ATLASZ-PKG84-006",
+   "title": "Memory Fabric over Knowledge Brain, Business Memory, Experience Learning and Entity Graph; tenant isolation; HISTORICAL_RESULT only from independent ACCEPT",
+   "level": "item",
+   "section": 77,
+   "description": "Memory Fabric over Knowledge Brain, Business Memory, Experience Learning and Entity Graph; tenant isolation; HISTORICAL_RESULT only from independent ACCEPT",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/memory-fabric.mjs; atlasz-addons/brain/knowledge-brain.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/memory-fabric.test.mjs"
+   ],
+   "evidence": [
+    "8 tests"
+   ],
+   "blocker": "None",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "None"
+  },
+  {
+   "id": "ATLASZ-PKG84-007",
+   "title": "Business engines: universal Job, Artifact Registry, QA Factory, Judge panel, Communication Center, Deal state machine, Delivery, Invoice, Payment Verification, Finance Intelligence with evidence-gated transitions",
+   "level": "item",
+   "section": 77,
+   "description": "Business engines: universal Job, Artifact Registry, QA Factory, Judge panel, Communication Center, Deal state machine, Delivery, Invoice, Payment Verification, Finance Intelligence with evidence-gated transitions",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/business/",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/business-engines.test.mjs"
+   ],
+   "evidence": [
+    "10 tests + mutation checks; SENT/WON/DELIVERED/PAID need evidence; CLAIMED never VERIFIED"
+   ],
+   "blocker": "No live providers or authoritative external adapters; tax rules UNVERIFIED",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Provide real adapters and credentials (Joci)"
+  },
+  {
+   "id": "ATLASZ-PKG84-008",
+   "title": "SANDBOX Money Engine end-to-end with failure tests at search, outreach, execution, QA, delivery, payment, control, duplicate execution",
+   "level": "item",
+   "section": 77,
+   "description": "SANDBOX Money Engine end-to-end with failure tests at search, outreach, execution, QA, delivery, payment, control, duplicate execution",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/business/money-engine.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/money-engine-sandbox.test.mjs"
+   ],
+   "evidence": [
+    "9 tests; sandbox payment never revenue; LIVE books stay at zero"
+   ],
+   "blocker": "SANDBOX only: no real SENT/WON/PAID evidence exists; not hosted by the runtime yet",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Host in runtime; real provider adapters"
+  },
+  {
+   "id": "ATLASZ-PKG84-009",
+   "title": "SEARCH pipeline: NORMALIZE/SALES_ACTION stages, source adapters, content-fingerprint dedupe, durable rejection log with reasons, history",
+   "level": "item",
+   "section": 77,
+   "description": "SEARCH pipeline: NORMALIZE/SALES_ACTION stages, source adapters, content-fingerprint dedupe, durable rejection log with reasons, history",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/search-pipeline.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/governed-dispatch.test.mjs",
+    "atlasz-tests/canonical-runtime.test.mjs"
+   ],
+   "evidence": [
+    "14 stages; DUPLICATE_CONTENT_OF; SEARCH_STORE_UNREADABLE; sales action is a recommendation only"
+   ],
+   "blocker": "None",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Runtime builds pipeline without a file (in-memory) by design"
+  },
+  {
+   "id": "ATLASZ-PKG84-010",
+   "title": "Control Center Money Engine / Jobs / Agents panels read persisted engine state (LIVE vs SANDBOX separate, unlabelled never LIVE, corrupt reported)",
+   "level": "item",
+   "section": 77,
+   "description": "Control Center Money Engine / Jobs / Agents panels read persisted engine state (LIVE vs SANDBOX separate, unlabelled never LIVE, corrupt reported)",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-control-center/money-views.mjs; atlasz-control-center/public/app.js",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/control-center-money-views.test.mjs",
+    "atlasz-tests/money-engine-sandbox.test.mjs"
+   ],
+   "evidence": [
+    "5 tests incl. HTTP token protection, sandbox-vs-live separation, mutation check; real sandbox run read back through the view"
+   ],
+   "blocker": "Runtime does not yet host the Money Engine, so panels show NOT_CONNECTED in a real install; Electron app not run",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Host engine in supervisor; Windows run evidence"
   }
  ]
 }

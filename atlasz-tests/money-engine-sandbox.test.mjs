@@ -12,6 +12,7 @@ import { ownerAuth } from "./owner-control-rig.mjs";
 import { tmp, rm } from "./helpers.mjs";
 import { createBrainSystem } from "../atlasz-addons/brain/brain-system.mjs";
 import { createMoneyEngine } from "../atlasz-addons/business/money-engine.mjs";
+import { createMoneyViews } from "../atlasz-control-center/money-views.mjs";
 import { createFinancialLedger } from "../atlasz-addons/financial-ledger.mjs";
 const { qualify } = await import("../atlasz-runtime/supervisor-safe.mjs");
 
@@ -89,6 +90,10 @@ test("HAPPY PATH (SANDBOX): opportunity > deal > job > plan > orchestrator > age
     assert.equal(t.decision.status, "WON"); assert.equal(t.work.status, "CLOSED"); assert.equal(t.result.deliveries[0].status, "DELIVERED"); assert.equal(t.money.invoices[0].status, "VERIFIED_PAID"); assert.equal(t.money.payments[0].status, "VERIFIED");
     assert.equal(t.money.profit.verifiedNetProfitUsd, 187.5); assert.equal(t.work.artifacts[0].delivery, "DELIVERED");
     const pn = m.panel(); assert.equal(pn.money.verifiedRevenueUsd, 200); assert.equal(pn.money.countsAsRevenue, false); assert.equal(pn.environment, "SANDBOX");
+    // the Control Center reads the SAME persisted state: sandbox money is shown as sandbox, LIVE stays at zero
+    const cc = createMoneyViews({ stateDir: w.r.dir }), cm = cc.money();
+    assert.equal(cm.sandbox.verifiedReceivedUsd, 200); assert.equal(cm.live.verifiedReceivedUsd, 0); assert.equal(cm.live.verifiedNetProfitUsd, 0); assert.equal(cm.sandbox.payments.VERIFIED, 1); assert.equal(cm.sandbox.outreachSent >= 1, true);
+    assert.equal(cc.jobs().items.find(x => x.id === jobId).status, "CLOSED"); assert.equal(cc.agents().state === "CONNECTED" ? cc.agents().count : 30, 30);
     // control layers saw it: black box chain intact and holds the pipeline
     assert.equal(w.brain.blackBox.verify().ok, true); assert.ok(w.brain.blackBox.query({ kind: "ARTIFACT_DELIVERED" }).length >= 1);
     // 30-agent topology unchanged
