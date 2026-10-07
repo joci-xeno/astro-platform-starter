@@ -19,7 +19,7 @@ export function createControlCenterServer(opts = {}) {
   const get = { "/api/status": () => core.status(), "/api/opportunities": () => core.opportunities(), "/api/approvals": () => core.approvals(), "/api/backups": () => core.backups(),
     "/api/doctor": () => core.doctor(), "/api/updates": () => core.updates() };
   const post = {
-    "/api/owner-key": b => core.provisionOwnerKey(b), "/api/emergency": b => core.setEmergency(b), "/api/safe-mode/exit": b => core.exitSafeMode(b),
+    "/api/owner-key": b => core.provisionOwnerKey(b), "/api/approvals/decide": b => core.decideApproval(b), "/api/emergency": b => core.setEmergency(b), "/api/safe-mode/exit": b => core.exitSafeMode(b),
     "/api/runtime/start": () => core.startRuntime(), "/api/runtime/stop": () => core.stopRuntime(),
     "/api/backup": b => core.backupNow(b), "/api/backup/drill": () => core.drill(), "/api/backup/mark-lkg": b => core.markLastKnownGood(b),
     "/api/restore/lkg": b => core.restoreLastKnownGood(b), "/api/restore/backup": b => core.restoreFromBackup(b),

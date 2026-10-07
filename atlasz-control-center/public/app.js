@@ -69,7 +69,17 @@ const views = {
   },
   async approvals() {
     const a = await api("/api/approvals");
-    return [h("h2", {}, "Approvals"), note(a.note), table(["When", "Event", "Detail"], a.history.map(e => [e.at ?? e.time ?? "", e.event, JSON.stringify(e.data ?? {})]))];
+    const field = (k, v) => h("tr", {}, h("th", {}, k), h("td", { class: "wrap" }, v));
+    const cardFor = r => h("div", { class: "card", style: "margin-bottom:12px" },
+      h("div", { class: "k" }, r.action + " · " + r.subject + " · from " + r.requestedBy), h("div", { class: "v" }, r.what),
+      h("table", {}, h("tbody", {}, field("Why", r.why), field("Cost", r.costUsd === 0 ? "$0 (no spend)" : "$" + r.costUsd), field("Risk", r.risk.level + " — " + r.risk.description), field("External effect", r.externalEffect),
+        field("Reversible", r.reversible ? "Yes" : "NO — " + (r.irreversibleNote ?? "")), field("If you say no", r.ifOwnerSaysNo), field("No-spend alternative", r.noSpendAlternative))),
+      h("div", { class: "row" },
+        h("button", { class: "btn primary", onclick: async () => { const p = await ask({ title: "Approve: " + r.what, text: "Signs a 60-second approval with your key.", fields: [PASS], ok: "Approve" }); if (p) act("Approve", "/api/approvals/decide", { id: r.id, decision: "APPROVED", passphrase: p.passphrase }); } }, "Approve"),
+        h("button", { class: "btn danger", onclick: () => act("Reject", "/api/approvals/decide", { id: r.id, decision: "REJECTED", reason: "Rejected in Control Center" }) }, "Reject")));
+    return [h("h2", {}, "Approvals"), note(a.note), h("h2", {}, "Waiting for you (" + a.pending.length + ")"), a.pending.length ? a.pending.map(cardFor) : note("Nothing is waiting for approval.", "ok"),
+      h("h2", {}, "Decided"), table(["Status", "Action", "What", "Reason"], a.decided.map(r => [pill(r.status), r.action, r.what, r.reason ?? ""])),
+      h("h2", {}, "Signed approval history"), table(["Event", "Detail"], a.history.map(e => [e.event, JSON.stringify(e.data ?? {})]))];
   },
   async providers() {
     const s = await api("/api/status"), p = s.providers ?? {};

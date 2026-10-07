@@ -9,6 +9,7 @@ import { createSafeMode } from "../atlasz-addons/safe-mode.mjs";
 import { createWatchdog } from "../atlasz-addons/watchdog.mjs";
 import { runStartupSelfCheck } from "../atlasz-addons/startup-self-check.mjs";
 import { createSecretVault } from "../atlasz-addons/secret-vault.mjs";
+import { createApprovalRequests } from "../atlasz-addons/approval-requests.mjs";
 import { getDefaultOwnerAuth } from "../atlasz-addons/owner-auth.mjs";
 
 export const VERSION = "3.3.0";
@@ -53,6 +54,7 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
   const ownerAuth = getDefaultOwnerAuth();
   const vault = createSecretVault({ dir: path.join(dataDir, "vault"), ownerAuth });
   const safeMode = createSafeMode({ statePath: path.join(dataDir, "safe-mode.json"), auditPath: path.join(dataDir, "safe-mode-audit.jsonl"), ownerAuth });
+  const approvalRequests = createApprovalRequests({ dir: path.join(dataDir, "approvals") });
   const selfCheck = runStartupSelfCheck({ stateDir: dataDir, ownerAuth, vault, expectedAgents: { search: 5, execution: 25 } });
   if (selfCheck.level === "FAIL") safeMode.enter("SELF_CHECK_FAILED", { failed: selfCheck.checks.filter(c => c.status === "FAIL").map(c => c.id) });
   const file = path.join(dataDir, "atlasz-state.json");
@@ -206,7 +208,7 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
       metrics: { candidatesFound: state.candidates.length, activeLeads: state.leads.length, qualifiedOpportunities: 0, scopeReviews: state.artifacts.length, outreachSent: 0, replies: 0, won: 0, inProgress: 0, delivered: 0, awaitingPayment: 0, confirmedPaid: 0, costs: null, verifiedNetProfit: null, monthlyRecurringRevenue: 0 },
       lastSystemRun: state.lastSystemRun, searchCycles: state.searchCycles,
       persistence: { savedLocally: true, durableVolume: persistent },
-      agents: state.agents, blockers, sourceErrors: state.sourceErrors, emergency: emergencyStatus(), safeMode: safeMode.status(), queue: queue.stats(), watchdog: watchdog.status(),
+      agents: state.agents, blockers, sourceErrors: state.sourceErrors, emergency: emergencyStatus(), safeMode: safeMode.status(), pendingApprovals: approvalRequests.pending().length, queue: queue.stats(), watchdog: watchdog.status(),
       selfCheck: { level: selfCheck.level, problems: selfCheck.checks.filter(c => c.status !== "OK").map(c => ({ id: c.id, status: c.status, detail: c.detail })) },
       vault: vault.status(), internalAddons: addonSnapshot()
     };
@@ -235,7 +237,7 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
     for (let i = 5; i < 30; i++) schedule(() => execute(i), 1000 + (i - 5) * 50);
   }
   function stop() { stopping = true; watchdog.stop(); for (const t of timers) clearTimeout(t); save(); }
-  return { state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, safeMode, watchdog, selfCheck, vault };
+  return { state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
 }
 
 if (process.env.ATLASZ_TEST_MODE !== "1") {

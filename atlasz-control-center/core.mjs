@@ -12,6 +12,7 @@ import { runStartupSelfCheck } from "../atlasz-addons/startup-self-check.mjs";
 import { createBackup, verifyBackup, recoveryDrill, createLkgRegistry, rollbackToLastKnownGood, restoreBackup, LKG_CRITERIA } from "../atlasz-addons/backup-recovery.mjs";
 import { createUpdateCenter } from "../atlasz-addons/update-center.mjs";
 import { readAuditFile, verifyChain } from "../atlasz-addons/audit-chain.mjs";
+import { createApprovalRequests } from "../atlasz-addons/approval-requests.mjs";
 import { createOwnerKeystore, signWithKeystore, keystoreStatus } from "../atlasz-addons/owner-keystore.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -67,12 +68,22 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
     const s = JSON.parse(fs.readFileSync(f, "utf8"));
     return { count: s.leads.length, items: s.leads.slice(-100).map(({ description, assessment, ...l }) => ({ ...l, score: assessment?.score ?? null })) };
   }
+  const approvalStore = () => createApprovalRequests({ dir: path.join(stateDir, "approvals") });
   function approvals() {
     const f = path.join(stateDir, "owner-auth-audit.jsonl");
-    const entries = fs.existsSync(f) ? readAuditFile(f).filter(e => /APPROVAL|OWNER_/.test(e.event)).slice(-50).reverse() : [];
-    return { pendingApprovalApi: "NOT_EXPOSED_BY_RUNTIME", note: "Runtime keeps no pending-approval queue yet; this shows the signed approval history only.", history: entries };
+    const history = fs.existsSync(f) ? readAuditFile(f).filter(e => /APPROVAL|OWNER_/.test(e.event)).slice(-50).reverse() : [];
+    const all = approvalStore().list().reverse();
+    return { pending: all.filter(x => x.status === "PENDING"), decided: all.filter(x => x.status !== "PENDING").slice(0, 50), history,
+      note: "A request must answer what/why/cost/risk/external effect/reversible/if-no/no-spend alternative; incomplete requests are refused." };
   }
-
+  function decideApproval({ id, decision, passphrase = null, reason = "" }) {
+    const store = approvalStore();
+    if (decision === "REJECTED") return store.decide({ id, decision, reason });               // rejecting is always safe: no signature needed
+    const req = store.list().find(x => x.id === id);
+    if (!req) throw new Error("APPROVAL_REQUEST_NOT_FOUND");
+    if (req.status !== "PENDING") throw new Error("APPROVAL_NOT_PENDING:" + req.status);
+    return store.decide({ id, decision: "APPROVED", approval: sign(passphrase, req.action, req.subject), reason });
+  }
   // ---- owner key ----
   function provisionOwnerKey({ passphrase }) { const r = createOwnerKeystore(configDir, passphrase); return { publicKeyB64: r.publicKeyB64, next: "The Control Center passes this public key to the runtime it starts. Back up the key file offline." }; }
 
@@ -161,6 +172,6 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
     unfreeze: ({ passphrase }) => act(() => uc().unfreeze({ ownerApproval: sign(passphrase, "UPDATE_UNFREEZE", uc().freezeStatus().updateId) }))
   };
 
-  return { status, opportunities, approvals, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }

@@ -95,3 +95,39 @@ test("planner: QA-gated advance (a step cannot complete without QA PASS) and rep
   assert.equal(good.steps.find(s => s.id === "a").status, "DONE");
   assert.equal(mp.replanMasterPlan(good, { reason: "r", newSteps: [{ id: "b", title: "B", dependsOn: [] }] }).steps.length, 2);
 });
+
+import * as mmb from "../atlasz-addons/multi-model-brain.mjs";
+import * as crt from "../atlasz-addons/cost-model-router.mjs";
+import * as etr from "../atlasz-addons/executor-toolbox-registry.mjs";
+
+const probe = { probeId: "p", outcome: "PASS", at: new Date().toISOString(), target: "t" };
+test("planner routing: needs a ready agent AND tools; missing capability is reported as a gap", () => {
+  const step = { id: "s", role: "EXECUTION", requires: ["code"] };
+  const planner = req => ({ required: req, selected: [], missing: req, ready: req.length === 0 });
+  const r = mp.routePlanStep(step, { capabilityPlanner: planner, agents: [{ id: "E1", role: "EXECUTION", status: "READY" }] });
+  assert.equal(r.ready, false); assert.deepEqual(r.blockers, ["code"]);
+  assert.equal(mp.routePlanStep({ id: "t", role: "EXECUTION", requires: [] }, { agents: [] }).blockers.includes("NO_AGENT"), true);
+  assert.equal(mp.routePlanStep({ id: "t", role: "EXECUTION", requires: [] }, { agents: [{ id: "E1", role: "EXECUTION", status: "READY" }] }).ready, true);
+});
+test("capability-gap detection: executionPlan lists missing capabilities; untested tools never count", () => {
+  assert.equal(etr.executionPlan(["zzz-cap"]).ready, false); assert.deepEqual(etr.executionPlan(["zzz-cap"]).missing, ["zzz-cap"]);
+  etr.registerTool({ id: "gap-t", category: "CODE", capabilities: ["zzz-cap"], available: true, adapter: {}, probeEvidence: probe });
+  assert.equal(etr.executionPlan(["zzz-cap"]).ready, true);
+});
+test("model selection: only probe-evidenced providers; cost class cap; independent judge needs a DIFFERENT live provider", () => {
+  mmb.registerModelProvider({ id: "w", label: "W", adapter: { invoke: async () => ({}) }, models: ["m"], tested: true, probeEvidence: probe, costClass: "LOW", capabilities: ["chat"] });
+  mmb.registerModelProvider({ id: "u", label: "U", adapter: { invoke: async () => ({}) }, models: ["m"], tested: true, costClass: "LOW", capabilities: ["chat"] });   // no evidence => untested
+  assert.equal(mmb.selectModel({ requiredCapabilities: ["chat"] }).id, "w");
+  assert.equal(mmb.independentJudgePlan({ workerProviderId: "w" }).ready, false);
+  mmb.registerModelProvider({ id: "j", label: "J", adapter: { invoke: async () => ({}) }, models: ["m"], tested: true, probeEvidence: probe, costClass: "HIGH", capabilities: ["chat"] });
+  assert.equal(mmb.independentJudgePlan({ workerProviderId: "w" }).judgeProvider, "j");
+  assert.equal(mmb.selectModel({ requiredCapabilities: ["chat"], maxCostClass: "LOW" }).id, "w");
+  assert.equal(mmb.selectModel({ requiredCapabilities: ["chat"], excludeProviders: ["w"] }).id, "j");
+  assert.equal(mmb.selectModel({ requiredCapabilities: ["chat"], excludeProviders: ["w", "j"] }), null);       // untested provider "u" is never selected
+});
+test("cost router: no route within budget => owner approval required (no silent spend)", () => {
+  const routes = [{ id: "a", estimatedCostUsd: 5, qualityScore: 0.9 }, { id: "b", estimatedCostUsd: 0, qualityScore: 0.5 }];
+  assert.equal(crt.chooseRoute({ task: "t", routes, maxCostUsd: 0 }).route.id, "b");
+  const none = crt.chooseRoute({ task: "t", routes: [routes[0]], maxCostUsd: 0 }); assert.equal(none.route, null); assert.equal(none.requiresOwnerApproval, true);
+  assert.throws(() => crt.chooseRoute({ task: "t", routes, maxCostUsd: -1 }), /INVALID_ROUTER_LIMITS/);
+});
