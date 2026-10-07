@@ -25,6 +25,8 @@ import { createVoiceSession } from "../atlasz-addons/voice-session.mjs";
 import { createConnectorCatalog } from "../atlasz-addons/connector-catalog.mjs";
 import { createSecretVault } from "../atlasz-addons/secret-vault.mjs";
 import { createTechWatch } from "../atlasz-addons/tech-watch.mjs";
+import { createBrainViews } from "./brain-views.mjs";
+import { createOwnerCommandLayer, COMMANDS } from "../atlasz-addons/brain/owner-command.mjs";
 import { createOwnerKeystore, signWithKeystore, keystoreStatus } from "../atlasz-addons/owner-keystore.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -186,7 +188,9 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
     return { items, lkg: lkg().latest() };
   }
   const backupNow = ({ label = "manual" } = {}) => { const b = createBackup({ srcDir: stateDir, backupRoot, label }); return { id: b.id, files: b.manifest.files.length, manifestHash: b.manifest.manifestHash }; };
-  function drill() { return recoveryDrill({ srcDir: stateDir, backupRoot, scratchDir: path.join(configDir, "drill-scratch") }); }
+  const drillLog = path.join(configDir, "drills.jsonl");
+  const drills = () => { try { return fs.existsSync(drillLog) ? fs.readFileSync(drillLog, "utf8").split("\n").filter(Boolean).map(l => JSON.parse(l)) : []; } catch { return []; } };
+  function drill() { const r = recoveryDrill({ srcDir: stateDir, backupRoot, scratchDir: path.join(configDir, "drill-scratch") }); fs.appendFileSync(drillLog, JSON.stringify({ at: new Date().toISOString(), ok: r.passed === true, files: r.files }) + "\n"); return r; }
   function markLastKnownGood({ smokeEvidence }) {
     if (!smokeEvidence) throw new Error("LKG_EVIDENCE_REQUIRED: supply the test-run evidence (e.g. npm test output reference)");
     const b = createBackup({ srcDir: stateDir, backupRoot, label: "lkg" });
@@ -221,6 +225,28 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   const remedy = c => ({ "owner-auth": "Provision the owner key in Owner Controls.", "secret-vault": "Set ATLASZ_VAULT_KEY on the host (needed before any credential is stored).", "emergency-stop": "Resume via Owner Controls when it is safe.",
     "queue-journal": "Do not delete. Restore from last known good.", "runtime-state": "Do not overwrite. Restore from last known good.", "disk-free": "Free disk space.", topology: "Fixed topology must be 5 SEARCH + 25 EXECUTION." }[c.id] ?? "See detail.");
 
+  // ---- Brain panels + Owner Command (V7.3 Brain §13, §18). Panels are read-only views of persisted Brain state; the command box needs a signed approval for anything consequential. ----
+  const ccBrainDir = path.join(stateDir, "brain-cc");
+  const brainViews = createBrainViews({ stateDir, backups: () => backups(), drills, auditFile: path.join(ccBrainDir, "owner-command-audit.jsonl"), liveSummary: async () => (await runtimeDashboard()).dashboard?.brain ?? null });
+  let cmdAuth = null;
+  const commandAuth = () => (cmdAuth ??= createOwnerAuth({ publicKeyB64: keystoreStatus(configDir).publicKeyB64, stateDir: path.join(ccBrainDir, "auth") }));   // persistent nonces: a captured approval cannot be replayed
+  async function brainCommand({ text, passphrase = null, confirm = null } = {}) {
+    const handlers = {
+      SHOW_AGENTS: async () => { const s = await status(); return { topology: s.topology, search: s.agents.search.map(a => ({ id: a.id, status: a.status })), execution: s.agents.execution.map(a => ({ id: a.id, status: a.status })) }; },
+      FIND_OPPORTUNITIES: async () => opportunities().items.slice(-10).map(l => ({ id: l.id, title: l.title })),
+      SHOW_JOBS: async () => opportunities().items.slice(-10).map(l => ({ id: l.id, title: l.title, outreach: l.outreachStatus, project: l.projectStatus })),
+      SHOW_REVENUE: async () => finance().revenue, SHOW_COSTS_PROFIT: async () => ({ costs: finance().costs, profit: finance().profit }),
+      SHOW_BROKEN: async () => (await doctor()).findings, RUN_DOCTOR: async () => { const d = await doctor(); return { level: d.level, findings: d.findings.length }; },
+      CREATE_RESTORE_POINT: async () => backupNow({ label: "owner-command" }), TEST_NEXT_UPDATE: async () => uc().checkForUpdates(),
+      PAUSE_EXTERNAL: async () => setEmergency({ mode: "STOP_EXTERNAL_ACTIONS", passphrase, reason: "Owner command" }),
+      RESUME_SYSTEM: async () => setEmergency({ mode: "RUNNING", passphrase, reason: "Owner command", confirm }),
+      ROLLBACK_LAST_STABLE: async () => restoreLastKnownGood({ passphrase }) };
+    const layer = createOwnerCommandLayer({ ownerAuth: commandAuth(), auditPath: path.join(ccBrainDir, "owner-command-audit.jsonl"), handlers });
+    const intent = layer.parse(text);
+    let approval = null;
+    if (intent && COMMANDS[intent].consequential && passphrase) { try { approval = sign(passphrase, "OWNER_COMMAND_" + intent, intent); } catch { return { status: "NEEDS_APPROVAL", intent, reason: "PASSPHRASE_INVALID" }; } }
+    return layer.handle(text, { ownerApproval: approval });
+  }
   // ---- Documents / Inbox / Voice / Connectors / Tech Watch (read-mostly views over the durable modules) ----
   const docCenter = () => createDocumentCenter({ dir: path.join(stateDir, "documents") });
   const documents = () => { const d = docCenter(); return { summary: d.summary(), items: d.list({ tenantId: "JOCI", role: "OWNER" }).slice(0, 100) }; };
@@ -250,6 +276,6 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
     unfreeze: ({ passphrase }) => act(() => uc().unfreeze({ ownerApproval: sign(passphrase, "UPDATE_UNFREEZE", uc().freezeStatus().updateId) }))
   };
 
-  return { documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }
