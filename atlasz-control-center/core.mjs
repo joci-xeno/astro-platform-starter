@@ -15,6 +15,8 @@ import { readAuditFile, verifyChain } from "../atlasz-addons/audit-chain.mjs";
 import { createFinancialLedger } from "../atlasz-addons/financial-ledger.mjs";
 import { createLocalUpdateAdapters, SELFTEST } from "../atlasz-addons/local-update-adapters.mjs";
 import { createPluginManager } from "../atlasz-addons/plugin-manager.mjs";
+import { buildDailyBrief, answerQuery, DEFAULT_PREFS } from "../atlasz-addons/master-brief.mjs";
+import { assessImpact } from "../atlasz-addons/human-core.mjs";
 import { createApprovalRequests } from "../atlasz-addons/approval-requests.mjs";
 import { createOwnerKeystore, signWithKeystore, keystoreStatus } from "../atlasz-addons/owner-keystore.mjs";
 
@@ -95,6 +97,18 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
     }
     return { logs, records, note: "SANDBOX evidence is never LIVE evidence." };
   }
+  // owner preferences (language, greeting, signature phrase) - cosmetic, so no approval needed
+  const prefsFile = path.join(configDir, "preferences.json");
+  const prefs = () => { try { return { ...DEFAULT_PREFS, ...JSON.parse(fs.readFileSync(prefsFile, "utf8")) }; } catch { return { ...DEFAULT_PREFS }; } };
+  function setPrefs(p = {}) {
+    const cur = prefs(), next = { ...cur };
+    if (["hu", "en"].includes(p.language)) next.language = p.language;
+    for (const k of ["greetingName", "signaturePhrase"]) if (typeof p[k] === "string" && p[k].length > 0 && p[k].length <= 60 && !/[<>]/.test(p[k])) next[k] = p[k];
+    if (typeof p.enabled === "boolean") next.enabled = p.enabled;
+    fs.writeFileSync(prefsFile, JSON.stringify(next, null, 1)); return next;
+  }
+  async function brief() { return { prefs: prefs(), ...buildDailyBrief({ status: await status(), finance: finance(), approvals: approvals(), prefs: prefs() }) }; }
+  async function chat({ q = "" } = {}) { return answerQuery(String(q).slice(0, 500), { status: await status(), finance: finance(), approvals: approvals() }); }
   function opportunities() {
     const f = path.join(stateDir, "atlasz-state.json");
     if (!fs.existsSync(f)) return { count: 0, items: [] };
@@ -106,7 +120,8 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
     const f = path.join(stateDir, "owner-auth-audit.jsonl");
     const history = fs.existsSync(f) ? readAuditFile(f).filter(e => /APPROVAL|OWNER_/.test(e.event)).slice(-50).reverse() : [];
     const all = approvalStore().list().reverse();
-    return { pending: all.filter(x => x.status === "PENDING"), decided: all.filter(x => x.status !== "PENDING").slice(0, 50), history,
+    const impact = r => assessImpact({ summary: r.what, reversible: r.reversible, externalEffect: r.externalEffect && !/^none/i.test(String(r.externalEffect)), affectedParties: r.affectedParties ?? [], alignedWithOwnerGoals: true });
+    return { pending: all.filter(x => x.status === "PENDING").map(r => ({ ...r, humanImpact: impact(r) })), decided: all.filter(x => x.status !== "PENDING").slice(0, 50), history,
       note: "A request must answer what/why/cost/risk/external effect/reversible/if-no/no-spend alternative; incomplete requests are refused." };
   }
   function decideApproval({ id, decision, passphrase = null, reason = "" }) {
@@ -213,6 +228,6 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
     unfreeze: ({ passphrase }) => act(() => uc().unfreeze({ ownerApproval: sign(passphrase, "UPDATE_UNFREEZE", uc().freezeStatus().updateId) }))
   };
 
-  return { plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }

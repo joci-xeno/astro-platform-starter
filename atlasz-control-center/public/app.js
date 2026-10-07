@@ -40,9 +40,21 @@ const usd = n => "$" + Number(n ?? 0).toFixed(2);
 const THEME_OK = /^--[a-z][a-z0-9-]{0,40}$/;
 async function applyTheme() { try { const t = await api("/api/theme"); for (const [k, v] of Object.entries(t.variables ?? {})) if (THEME_OK.test(k)) document.documentElement.style.setProperty(k, String(v)); } catch { /* theme is cosmetic */ } }
 const views = {
+  async home() {
+    const b = await api("/api/brief");
+    const out = h("div", { class: "card mono", id: "chatout", style: "white-space:pre-wrap;margin-top:12px" }, "Ask: status, approvals, money.");
+    const inp = h("input", { id: "chatin", placeholder: "status / approvals / money", style: "width:60%;padding:8px" });
+    const send = async () => { const r = await api("/api/chat", { q: inp.value }); out.textContent = r.text; inp.value = ""; };
+    inp.addEventListener("keydown", e => { if (e.key === "Enter") send(); });
+    return [h("h2", {}, "Home"), h("div", { class: "card", style: "white-space:pre-wrap" }, b.text), note("Brief built only from current state. No language model is connected, so chat answers are limited and never guessed."),
+      h("div", { class: "row" }, inp, h("button", { class: "btn primary", onclick: send }, "Ask")), out,
+      h("h2", {}, "Greeting settings"), h("div", { class: "row" },
+        h("button", { class: "btn", onclick: () => act("Language", "/api/prefs", { language: b.prefs.language === "hu" ? "en" : "hu" }) }, "Language: " + b.prefs.language.toUpperCase() + " (switch)"),
+        h("button", { class: "btn", onclick: async () => { const r = await ask({ title: "Signature phrase", fields: [{ name: "signaturePhrase", label: "Phrase", value: b.prefs.signaturePhrase }], ok: "Save" }); if (r) act("Save phrase", "/api/prefs", { signaturePhrase: r.signaturePhrase }); } }, "Change phrase")), note("The phrase is only a friendly signature - never a credential.")];
+  },
   async plugins() {
     const p = await api("/api/plugins");
-    const PASS2 = { name: "passphrase", label: "Owner passphrase", type: "password" };
+    const PASS2 = PASS;
     return [h("h2", {}, "Plugins / Extensions / Themes"), note(p.note),
       table(["Name", "Kind", "Version", "Permissions", "Status", "Actions"], p.plugins.map(x => [x.name + " (" + x.id + ")", x.kind, x.version, x.permissions.join(", ") || "none", pill(x.status) , 
         h("div", { class: "row", style: "margin:0" },
@@ -109,7 +121,7 @@ const views = {
     const cardFor = r => h("div", { class: "card", style: "margin-bottom:12px" },
       h("div", { class: "k" }, r.action + " · " + r.subject + " · from " + r.requestedBy), h("div", { class: "v" }, r.what),
       h("table", {}, h("tbody", {}, field("Why", r.why), field("Cost", r.costUsd === 0 ? "$0 (no spend)" : "$" + r.costUsd), field("Risk", r.risk.level + " — " + r.risk.description), field("External effect", r.externalEffect),
-        field("Reversible", r.reversible ? "Yes" : "NO — " + (r.irreversibleNote ?? "")), field("If you say no", r.ifOwnerSaysNo), field("No-spend alternative", r.noSpendAlternative))),
+        field("Reversible", r.reversible ? "Yes" : "NO — " + (r.irreversibleNote ?? "")), field("If you say no", r.ifOwnerSaysNo), field("No-spend alternative", r.noSpendAlternative), r.humanImpact ? field("Human impact", r.humanImpact.verdict + (r.humanImpact.reasons.length ? " — " + r.humanImpact.reasons.join(", ") : "")) : null)),
       h("div", { class: "row" },
         h("button", { class: "btn primary", onclick: async () => { const p = await ask({ title: "Approve: " + r.what, text: "Signs a 60-second approval with your key.", fields: [PASS], ok: "Approve" }); if (p) act("Approve", "/api/approvals/decide", { id: r.id, decision: "APPROVED", passphrase: p.passphrase }); } }, "Approve"),
         h("button", { class: "btn danger", onclick: () => act("Reject", "/api/approvals/decide", { id: r.id, decision: "REJECTED", reason: "Rejected in Control Center" }) }, "Reject")));
@@ -174,8 +186,8 @@ const views = {
   },
   async voice() { return [h("h2", {}, "Speak-to-Speak / Live Voice"), note("NOT BUILT (V7.3 §5). No STT/TTS provider is attached, so voice is never shown LIVE. Planned for a later development round.")]; }
 };
-const NAMES = { overview: "Overview", plugins: "Plugins / Themes", finance: "Revenue / Costs / Profit", evidence: "Evidence / Audit", agents: "Agents (5+25)", jobs: "Jobs / Opportunities", money: "Money Engine", approvals: "Approvals", providers: "Model / Tool health", errors: "Errors & Blockers", owner: "Owner Controls", backup: "Backup / Restore / LKG", doctor: "System Doctor", updates: "Update Center", voice: "Voice (planned)" };
-let current = "overview";
+const NAMES = { home: "Home", overview: "Overview", plugins: "Plugins / Themes", finance: "Revenue / Costs / Profit", evidence: "Evidence / Audit", agents: "Agents (5+25)", jobs: "Jobs / Opportunities", money: "Money Engine", approvals: "Approvals", providers: "Model / Tool health", errors: "Errors & Blockers", owner: "Owner Controls", backup: "Backup / Restore / LKG", doctor: "System Doctor", updates: "Update Center", voice: "Voice (planned)" };
+let current = "home";
 async function render() {
   $("#nav").replaceChildren(h("h1", {}, "ATLASZ"), ...Object.entries(NAMES).map(([k, n]) => h("button", { "aria-current": k === current ? "page" : null, onclick: () => { current = k; render(); } }, n)));
   const main = $("#main");
