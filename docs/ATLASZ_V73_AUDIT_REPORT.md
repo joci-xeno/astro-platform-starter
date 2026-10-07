@@ -78,3 +78,12 @@ New modules (all with meaningful positive and negative tests): financial ledger;
 Control Center panels added: Home, Finance (revenue/costs/profit), Evidence, Plugins/Themes, Documents, Inbox, Voice (real status), Connectors, Tech Watch.
 
 Honest limits: no provider/connector credentials exist, so every connector is BLOCKED_NO_CREDENTIALS or NO_SAFE_PROBE; voice is BLOCKED_NO_PROVIDER; the mobile API is not exposed on any port; Electron/Windows installer is blocked (registry 403); GitHub push is blocked (repo not authorized for this session); Railway status UNKNOWN. New modules are not yet the dispatch path of the 30-agent runtime.
+
+## 6. Brain & Intelligence expansion (Joci addendum)
+62 requirements registered as `ATLASZ-BR-001..062` (60 PARTIAL, 2 MISSING, none EXISTS_AND_WORKING, none LIVE). Each record carries implementation location, tests, evidence, blocker, `integration_status`, `test_status` and `classification` (all SANDBOX). Registry total: 915 records.
+
+Built (atlasz-addons/brain/, durable, instance-based, all subordinate to one governance chokepoint): governance, black box, capability graph, planning brain, orchestrator, independent verifier, security brain, knowledge brain, opportunity intelligence, business factory, disaster recovery command, owner command layer, brain health, model intelligence, simulation lab, central brain + brain bus, and a Brain System assembly. 14 Control Center Brain panels plus an approval-gated Owner Command box.
+
+Wired into the real runtime: the 30 agents are mirrored in the capability graph; external text from the search source is screened by the Security Brain (injection and secret-bearing text never reaches the queue or an agent); screening outcomes go to the black box and the graph and are labelled NOT_INDEPENDENTLY_VERIFIED; discovered requests become tracked opportunities.
+
+Honest limits: the Brain observes and protects the existing screening loop but is not yet its dispatch path; there are no real execution executors, no live model or connector (no credentials), no staging environment, no independent live model judge; payment, backup, restore, update and delivery evidence sources are not connected to the verifier; mutation checks were run manually, not as an automated suite.

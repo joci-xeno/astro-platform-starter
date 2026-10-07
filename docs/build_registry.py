@@ -35,7 +35,7 @@ d["meta"]["item_verified_count"] = sum(1 for x in d["requirements"] if x.get("st
 d["meta"]["note"] = ("Every record carries status_basis. ITEM_VERIFIED = checked individually against code/tests. SECTION_INHERITED_NOT_ITEM_VERIFIED = status copied from its section; "
                      "NOT verified for that item. New requirement IDs (ATLASZ-*) are item-verified.")
 json.dump(d, open(reg_path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
-cols = ["id", "level", "section", "title", "priority_proposed", "status", "status_basis", "strategy", "implementation_location", "tests", "evidence", "blocker", "source"]
+cols = ["id", "level", "section", "title", "priority_proposed", "status", "status_basis", "strategy", "implementation_location", "tests", "evidence", "blocker", "source", "integration_status", "test_status", "classification"]
 with open(os.path.join(root, "docs", "atlasz_v73_requirement_registry.csv"), "w", newline="", encoding="utf-8-sig") as f:
     w = csv.writer(f); w.writerow(cols)
     for x in d["requirements"]:

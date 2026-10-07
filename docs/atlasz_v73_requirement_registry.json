@@ -95,7 +95,7 @@
     52
    ]
   },
-  "item_verified_count": 800
+  "item_verified_count": 862
  },
  "requirements": [
   {
@@ -20025,6 +20025,1576 @@
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
+  },
+  {
+   "id": "ATLASZ-BR-001",
+   "title": "Central Brain: reads authorized state (agents, jobs, opportunities, plans, tools, models, connectors, memory, knowledge, costs, risks, approvals, health, evidence, recovery) and reports NOT_CONNECTED instead of inventing",
+   "level": "item",
+   "section": 53,
+   "description": "Central Brain: reads authorized state (agents, jobs, opportunities, plans, tools, models, connectors, memory, knowledge, costs, risks, approvals, health, evidence, recovery) and reports NOT_CONNECTED instead of inventing",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/central-brain.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-systems.test.mjs"
+   ],
+   "evidence": [
+    "snapshot() tested: OK/ERROR/NOT_CONNECTED per source"
+   ],
+   "blocker": "Most sources are not wired into the snapshot yet",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Standalone; Control Center shows persisted state",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-002",
+   "title": "Central Brain decision brief: WHAT/WHY/WHICH agent+model+tools/dependencies/cost/risk/approval need/verification/failure plan",
+   "level": "item",
+   "section": 53,
+   "description": "Central Brain decision brief: WHAT/WHY/WHICH agent+model+tools/dependencies/cost/risk/approval need/verification/failure plan",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/central-brain.mjs; atlasz-addons/brain/capability-graph.mjs; atlasz-addons/brain/governance.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-systems.test.mjs"
+   ],
+   "evidence": [
+    "decide() tested incl. spend approval, capability gap and forbidden action flags"
+   ],
+   "blocker": "Module + tests only (not the dispatch path of the 30 agents)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Advice only; runtime does not call it",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-003",
+   "title": "Brains never bypass Owner Approval Gateway, Financial Firewall, Kill Switch, Secret Vault, safety policy, audit: single governance chokepoint",
+   "level": "item",
+   "section": 53,
+   "description": "Brains never bypass Owner Approval Gateway, Financial Firewall, Kill Switch, Secret Vault, safety policy, audit: single governance chokepoint",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/governance.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-core.test.mjs",
+    "atlasz-tests/brain-systems.test.mjs"
+   ],
+   "evidence": [
+    "Forbidden actions denied even with valid approval; approval cannot beat kill switch; replay refused; mutation check (kill-switch line removed) fails a test; real emergency-stop e2e test"
+   ],
+   "blocker": "Screening loop in supervisor-safe.mjs still uses its own gate calls, not governance.authorize",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Used by orchestrator, opportunity, business factory, recovery; the legacy screening loop predates it and uses its own gates",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-004",
+   "title": "Brain Orchestrator pipeline ANALYZE>PLAN>CAPABILITY MATCH>ASSIGN>EXECUTE>OBSERVE>VERIFY>COMPLETE>EVIDENCE>LEARN over the existing 5+25 roster",
+   "level": "item",
+   "section": 53,
+   "description": "Brain Orchestrator pipeline ANALYZE>PLAN>CAPABILITY MATCH>ASSIGN>EXECUTE>OBSERVE>VERIFY>COMPLETE>EVIDENCE>LEARN over the existing 5+25 roster",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/orchestrator.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-orchestration.test.mjs",
+    "atlasz-tests/brain-systems.test.mjs"
+   ],
+   "evidence": [
+    "Full pipeline events in black box; topology must be exactly 5 SEARCH + 25 EXECUTION; executors injected"
+   ],
+   "blocker": "The 30 agents' screening loop does not run through the orchestrator yet; no real execution executors exist (no paid AI, no client jobs)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Runtime assembles it (READY) but the screening loop is not executed through it",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-005",
+   "title": "Orchestrator avoids duplicate and conflicting work (dedupe key, critical-resource locks)",
+   "level": "item",
+   "section": 53,
+   "description": "Orchestrator avoids duplicate and conflicting work (dedupe key, critical-resource locks)",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/orchestrator.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-orchestration.test.mjs"
+   ],
+   "evidence": [
+    "Concurrent duplicate and resource-conflict tasks deferred, executor called once"
+   ],
+   "blocker": "Module + tests only (not the dispatch path of the 30 agents)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module only",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-006",
+   "title": "No agent silently overrides another critical action: failures are recorded and routed by the planner policy; failing agent excluded on re-match",
+   "level": "item",
+   "section": 53,
+   "description": "No agent silently overrides another critical action: failures are recorded and routed by the planner policy; failing agent excluded on re-match",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/orchestrator.mjs; atlasz-addons/brain/planning-brain.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-orchestration.test.mjs"
+   ],
+   "evidence": [
+    "CHANGE_AGENT test; unknown agents refused; quarantined agents blocked"
+   ],
+   "blocker": "Module + tests only (not the dispatch path of the 30 agents)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module only",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-007",
+   "title": "Planning Brain hierarchy GOAL>PROJECT>MILESTONES>TASKS>SUBTASKS with validation (duplicate ids, unknown deps, cycles)",
+   "level": "item",
+   "section": 53,
+   "description": "Planning Brain hierarchy GOAL>PROJECT>MILESTONES>TASKS>SUBTASKS with validation (duplicate ids, unknown deps, cycles)",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/planning-brain.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-core.test.mjs"
+   ],
+   "evidence": [
+    "Tested incl. cycle/unknown/duplicate rejection"
+   ],
+   "blocker": "No live job has been planned through it",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module + Control Center panel; not used for live jobs yet",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-008",
+   "title": "Dependency graph, priority ordering, ready-task selection",
+   "level": "item",
+   "section": 53,
+   "description": "Dependency graph, priority ordering, ready-task selection",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/planning-brain.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-core.test.mjs"
+   ],
+   "evidence": [
+    "Topological order with priority; nextTasks respects DONE dependencies"
+   ],
+   "blocker": "Module + tests only (not the dispatch path of the 30 agents)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module only",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-009",
+   "title": "Approval-point identification and cost estimate that never authorizes spend",
+   "level": "item",
+   "section": 53,
+   "description": "Approval-point identification and cost estimate that never authorizes spend",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/planning-brain.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-core.test.mjs",
+    "atlasz-tests/brain-orchestration.test.mjs"
+   ],
+   "evidence": [
+    "estCost.authorized is always false; spend task waits for bound owner approval in the orchestrator"
+   ],
+   "blocker": "Module + tests only (not the dispatch path of the 30 agents)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module only",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-010",
+   "title": "Failure policy: RETRY / REPLAN / CHANGE AGENT / CHANGE MODEL / CHANGE TOOL / USE FALLBACK / ESCALATE / ASK JOCI / STOP SAFELY",
+   "level": "item",
+   "section": 53,
+   "description": "Failure policy: RETRY / REPLAN / CHANGE AGENT / CHANGE MODEL / CHANGE TOOL / USE FALLBACK / ESCALATE / ASK JOCI / STOP SAFELY",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/planning-brain.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-core.test.mjs"
+   ],
+   "evidence": [
+    "All nine outcomes tested; owner stop never retried"
+   ],
+   "blocker": "Module + tests only (not the dispatch path of the 30 agents)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module only",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-011",
+   "title": "Plans are durable and resumable after restart; BLOCKED tasks resume only explicitly",
+   "level": "item",
+   "section": 53,
+   "description": "Plans are durable and resumable after restart; BLOCKED tasks resume only explicitly",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/planning-brain.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-core.test.mjs"
+   ],
+   "evidence": [
+    "Atomic JSON store reload tested"
+   ],
+   "blocker": "Module + tests only (not the dispatch path of the 30 agents)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module + runtime brain dir",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-012",
+   "title": "Replanning keeps DONE work, cancels/adds tasks, revalidates graph",
+   "level": "item",
+   "section": 53,
+   "description": "Replanning keeps DONE work, cancels/adds tasks, revalidates graph",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/planning-brain.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-core.test.mjs"
+   ],
+   "evidence": [
+    "Tested incl. refuse to cancel DONE or orphan dependants"
+   ],
+   "blocker": "Module + tests only (not the dispatch path of the 30 agents)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module only",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-013",
+   "title": "Resource planning and agent/model/tool assignment recommendations",
+   "level": "item",
+   "section": 53,
+   "description": "Resource planning and agent/model/tool assignment recommendations",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P2",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/capability-graph.mjs; atlasz-addons/brain/central-brain.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-core.test.mjs",
+    "atlasz-tests/brain-systems.test.mjs"
+   ],
+   "evidence": [
+    "match() recommends agent+model+tool+connector+workflow"
+   ],
+   "blocker": "No resource/capacity scheduling",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "No capacity/resource scheduler",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-014",
+   "title": "Capability/Skill Graph nodes for agents, teams, models, tools, connectors, skills, workflows with limits, permissions, credentials, cost/speed class",
+   "level": "item",
+   "section": 53,
+   "description": "Capability/Skill Graph nodes for agents, teams, models, tools, connectors, skills, workflows with limits, permissions, credentials, cost/speed class",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/capability-graph.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-core.test.mjs"
+   ],
+   "evidence": [
+    "Durable graph; node types validated"
+   ],
+   "blocker": "Connector catalog, tools and workflows are not auto-registered as graph nodes",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Runtime populates the 30 agents; models via router; connectors/tools not auto-imported",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-015",
+   "title": "Measured quality/reliability/latency history, health, availability and probe evidence per node",
+   "level": "item",
+   "section": 53,
+   "description": "Measured quality/reliability/latency history, health, availability and probe evidence per node",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/capability-graph.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-core.test.mjs",
+    "atlasz-tests/brain-runtime-wiring.test.mjs"
+   ],
+   "evidence": [
+    "recordOutcome feeds reliability; models/tools/connectors unusable without real probe evidence"
+   ],
+   "blocker": null,
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Runtime records screening outcomes",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-016",
+   "title": "Automatic best AGENT+MODEL+TOOL+CONNECTOR+WORKFLOW matching with exclusion reasons; no-spend default",
+   "level": "item",
+   "section": 53,
+   "description": "Automatic best AGENT+MODEL+TOOL+CONNECTOR+WORKFLOW matching with exclusion reasons; no-spend default",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/capability-graph.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-core.test.mjs"
+   ],
+   "evidence": [
+    "Tested: credentials, probe, spend, family, health exclusions"
+   ],
+   "blocker": "Runtime agent assignment is not graph-driven yet",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Runtime dispatch of the 30 agents is still hard-coded",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-017",
+   "title": "Knowledge Intelligence kinds FACT/INFERENCE/ASSUMPTION/UNVERIFIED/OWNER DECISION/APPROVED POLICY/HISTORICAL RESULT with provenance; model guesses never stored as facts",
+   "level": "item",
+   "section": 53,
+   "description": "Knowledge Intelligence kinds FACT/INFERENCE/ASSUMPTION/UNVERIFIED/OWNER DECISION/APPROVED POLICY/HISTORICAL RESULT with provenance; model guesses never stored as facts",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/knowledge-brain.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-intelligence.test.mjs"
+   ],
+   "evidence": [
+    "Downgrade rules tested; owner kinds need bound signed approval; mutation check fails a test"
+   ],
+   "blocker": "Not yet fed by runtime",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module + Control Center summary",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-018",
+   "title": "Tenant/data isolation and project scoping; cross-project only for shareable items on request",
+   "level": "item",
+   "section": 53,
+   "description": "Tenant/data isolation and project scoping; cross-project only for shareable items on request",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/knowledge-brain.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-intelligence.test.mjs"
+   ],
+   "evidence": [
+    "Tested"
+   ],
+   "blocker": "Module + tests only (not the dispatch path of the 30 agents)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module only",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-019",
+   "title": "Stale-information and conflict detection",
+   "level": "item",
+   "section": 53,
+   "description": "Stale-information and conflict detection",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/knowledge-brain.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-intelligence.test.mjs"
+   ],
+   "evidence": [
+    "TTL staleness, conflicts, owner-decision authoritative marker"
+   ],
+   "blocker": "Module + tests only (not the dispatch path of the 30 agents)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module only",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-020",
+   "title": "Approved-lesson reuse (proposed lessons unusable until owner approval)",
+   "level": "item",
+   "section": 53,
+   "description": "Approved-lesson reuse (proposed lessons unusable until owner approval)",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/knowledge-brain.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-intelligence.test.mjs"
+   ],
+   "evidence": [
+    "Tested"
+   ],
+   "blocker": "Module + tests only (not the dispatch path of the 30 agents)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module only",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-021",
+   "title": "Integration with Business Memory, Experience Learning, Document Intelligence, Entity Graph",
+   "level": "item",
+   "section": 53,
+   "description": "Integration with Business Memory, Experience Learning, Document Intelligence, Entity Graph",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
+   "evidence": [
+    "Not integrated: the new knowledge store is standalone"
+   ],
+   "blocker": "Existing small in-memory modules not connected to the new store",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "None",
+   "test_status": "NOT_TESTED",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-022",
+   "title": "Environments SIMULATION / STAGING / LIVE kept distinct; lab refuses LIVE; results flagged isProof:false",
+   "level": "item",
+   "section": 53,
+   "description": "Environments SIMULATION / STAGING / LIVE kept distinct; lab refuses LIVE; results flagged isProof:false",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/simulation-lab.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-systems.test.mjs"
+   ],
+   "evidence": [
+    "Tested"
+   ],
+   "blocker": null,
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module + Control Center SANDBOX panel",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-023",
+   "title": "Scenario coverage: provider outage, queue crash recovery, rollback, routing/config/update/automation change (generic), money state transitions",
+   "level": "item",
+   "section": 53,
+   "description": "Scenario coverage: provider outage, queue crash recovery, rollback, routing/config/update/automation change (generic), money state transitions",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/simulation-lab.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-systems.test.mjs"
+   ],
+   "evidence": [
+    "Tested incl. paid-without-ledger evidence and incomplete rollback"
+   ],
+   "blocker": "Update/high-risk automation use the generic change scenario only",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module only",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-024",
+   "title": "Simulation isolation: state cloned, every LIVE adapter is a trap and recorded",
+   "level": "item",
+   "section": 53,
+   "description": "Simulation isolation: state cloned, every LIVE adapter is a trap and recorded",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/simulation-lab.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-systems.test.mjs"
+   ],
+   "evidence": [
+    "Mutation check (trap removed) fails a test"
+   ],
+   "blocker": "Module + tests only (not the dispatch path of the 30 agents)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module only",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-025",
+   "title": "A real STAGING environment",
+   "level": "item",
+   "section": 53,
+   "description": "A real STAGING environment",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P2",
+   "dependencies": [],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
+   "evidence": [
+    "No staging environment exists"
+   ],
+   "blocker": "No staging environment is available",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "None",
+   "test_status": "NOT_TESTED",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-026",
+   "title": "Independent Verification Layer: executor claim + evidence checked by a separate verifier; self-verification refused",
+   "level": "item",
+   "section": 53,
+   "description": "Independent Verification Layer: executor claim + evidence checked by a separate verifier; self-verification refused",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/verifier.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-orchestration.test.mjs"
+   ],
+   "evidence": [
+    "Tested; orchestrator marks DONE only on independent ACCEPT; planner refuses DONE otherwise"
+   ],
+   "blocker": "Screening loop results are not independently verified",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Orchestrator + planner; runtime screening is labelled NOT_INDEPENDENTLY_VERIFIED",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-027",
+   "title": "Claim coverage: artifact, file delivery, send state, invoice, payment, backup, restore, update, health, job completion, agent/model claims",
+   "level": "item",
+   "section": 53,
+   "description": "Claim coverage: artifact, file delivery, send state, invoice, payment, backup, restore, update, health, job completion, agent/model claims",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/verifier.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-orchestration.test.mjs"
+   ],
+   "evidence": [
+    "Artifact/send/health/job criteria verified here; payment/backup/restore/update/delivery need injected evidence sources and otherwise ESCALATE"
+   ],
+   "blocker": "Payment, backup, restore, update and delivery evidence sources are not connected",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module only",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-028",
+   "title": "False-success rejection: 'I did it' without evidence is REJECT and counted",
+   "level": "item",
+   "section": 53,
+   "description": "False-success rejection: 'I did it' without evidence is REJECT and counted",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/verifier.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-orchestration.test.mjs",
+    "atlasz-tests/brain-intelligence.test.mjs"
+   ],
+   "evidence": [
+    "Mutation check fails a test; counted in Brain Health"
+   ],
+   "blocker": "Module + tests only (not the dispatch path of the 30 agents)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module only",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-029",
+   "title": "High-value outputs need a judge from a different model family",
+   "level": "item",
+   "section": 53,
+   "description": "High-value outputs need a judge from a different model family",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/verifier.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-orchestration.test.mjs"
+   ],
+   "evidence": [
+    "Tested: no judge / same family => ESCALATE"
+   ],
+   "blocker": "No live independent model judge exists (no provider LIVE)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module only",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-030",
+   "title": "Security Brain detection: prompt injection, secret exposure, privilege escalation, credential/connector abuse, unusual financial actions, cost growth, audit tampering, kill-switch/approval bypass, unexpected config change",
+   "level": "item",
+   "section": 53,
+   "description": "Security Brain detection: prompt injection, secret exposure, privilege escalation, credential/connector abuse, unusual financial actions, cost growth, audit tampering, kill-switch/approval bypass, unexpected config change",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/security-brain.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-orchestration.test.mjs"
+   ],
+   "evidence": [
+    "Rule-based; each category tested"
+   ],
+   "blocker": "Rule-based heuristics; abnormal-behaviour learning not implemented",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "External text from the search source is screened in the runtime",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-031",
+   "title": "Security decisions ALLOW / WARN / REQUIRE_APPROVAL / QUARANTINE / BLOCK / ENTER_SAFE_MODE (safe mode actually entered via injected safe-mode)",
+   "level": "item",
+   "section": 53,
+   "description": "Security decisions ALLOW / WARN / REQUIRE_APPROVAL / QUARANTINE / BLOCK / ENTER_SAFE_MODE (safe mode actually entered via injected safe-mode)",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/security-brain.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-orchestration.test.mjs"
+   ],
+   "evidence": [
+    "Tested"
+   ],
+   "blocker": null,
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module; safe mode injected in runtime",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-032",
+   "title": "Security Brain cannot grant permissions or release its own quarantine (owner-signed release only)",
+   "level": "item",
+   "section": 53,
+   "description": "Security Brain cannot grant permissions or release its own quarantine (owner-signed release only)",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/security-brain.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-orchestration.test.mjs",
+    "atlasz-tests/control-center-brain.test.mjs"
+   ],
+   "evidence": [
+    "No grant API; privilege requests never ALLOW; release needs bound approval"
+   ],
+   "blocker": null,
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-033",
+   "title": "Security screening wired into the canonical runtime for external text",
+   "level": "item",
+   "section": 53,
+   "description": "Security screening wired into the canonical runtime for external text",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-runtime/supervisor-safe.mjs; atlasz-addons/brain/security-brain.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-runtime-wiring.test.mjs"
+   ],
+   "evidence": [
+    "Injection and secret-bearing text never enters queue/agents; mutation check fails a test"
+   ],
+   "blocker": "Only the search source is screened",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Runtime (SANDBOX)",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-034",
+   "title": "Explainable Opportunity Score from legitimacy, fit, feasibility, profit, payment likelihood, time, risk, competition, recurring, scalability, complexity, human involvement; unknown stays unknown",
+   "level": "item",
+   "section": 53,
+   "description": "Explainable Opportunity Score from legitimacy, fit, feasibility, profit, payment likelihood, time, risk, competition, recurring, scalability, complexity, human involvement; unknown stays unknown",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/opportunity-intelligence.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-intelligence.test.mjs"
+   ],
+   "evidence": [
+    "Tested; profit never invented; no profit guarantee"
+   ],
+   "blocker": null,
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module + runtime discovery",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-035",
+   "title": "Opportunity pipeline DISCOVER>VERIFY>SCORE>QUALIFY>FEASIBILITY>PRIORITIZE>OUTREACH>NEGOTIATE>WON/LOST>HANDOFF with guards",
+   "level": "item",
+   "section": 53,
+   "description": "Opportunity pipeline DISCOVER>VERIFY>SCORE>QUALIFY>FEASIBILITY>PRIORITIZE>OUTREACH>NEGOTIATE>WON/LOST>HANDOFF with guards",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/opportunity-intelligence.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-intelligence.test.mjs"
+   ],
+   "evidence": [
+    "Illegal jumps refused; verification evidence required; outreach needs owner approval and open kill switch; WON needs customer evidence"
+   ],
+   "blocker": "Module + tests only (not the dispatch path of the 30 agents)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module only",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-036",
+   "title": "Search agents record discovered requests as tracked opportunities",
+   "level": "item",
+   "section": 53,
+   "description": "Search agents record discovered requests as tracked opportunities",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-runtime/supervisor-safe.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-runtime-wiring.test.mjs"
+   ],
+   "evidence": [
+    "New candidates become DISCOVER-stage opportunities (deduped by URL)"
+   ],
+   "blocker": "Agents do not gather factor evidence, so nothing is scored",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Runtime (SANDBOX)",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-037",
+   "title": "Business Factory drafts service definition, workflow, QA, cost model inputs, onboarding, checklist, support, metrics",
+   "level": "item",
+   "section": 53,
+   "description": "Business Factory drafts service definition, workflow, QA, cost model inputs, onboarding, checklist, support, metrics",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/business-factory.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-intelligence.test.mjs"
+   ],
+   "evidence": [
+    "Template-based drafts; price stays null; unknown costs stay unknown"
+   ],
+   "blocker": "Generic templates; not tailored per opportunity",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module only",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-038",
+   "title": "No launch/publish/sell/contract/spend without owner approval; kill switch blocks",
+   "level": "item",
+   "section": 53,
+   "description": "No launch/publish/sell/contract/spend without owner approval; kill switch blocks",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/business-factory.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-intelligence.test.mjs"
+   ],
+   "evidence": [
+    "Mutation check fails a test; no publisher exists unless injected"
+   ],
+   "blocker": "Module + tests only (not the dispatch path of the 30 agents)",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module only",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-039",
+   "title": "Customer-facing documents never expose internal architecture",
+   "level": "item",
+   "section": 53,
+   "description": "Customer-facing documents never expose internal architecture",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/business-factory.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-intelligence.test.mjs"
+   ],
+   "evidence": [
+    "Pattern-based sanitizer tested"
+   ],
+   "blocker": "Pattern-based; not a guarantee",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module only",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-040",
+   "title": "Black Box: hash-chained records with correlation IDs for the required fields; tamper detection",
+   "level": "item",
+   "section": 53,
+   "description": "Black Box: hash-chained records with correlation IDs for the required fields; tamper detection",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/black-box.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-core.test.mjs"
+   ],
+   "evidence": [
+    "Tested incl. file tamper on load"
+   ],
+   "blocker": null,
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Runtime writes brain/blackbox.jsonl",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-041",
+   "title": "Black Box never stores secrets (pattern + vault redaction)",
+   "level": "item",
+   "section": 53,
+   "description": "Black Box never stores secrets (pattern + vault redaction)",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/black-box.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-core.test.mjs",
+    "atlasz-tests/brain-runtime-wiring.test.mjs"
+   ],
+   "evidence": [
+    "Tested in unit and runtime"
+   ],
+   "blocker": null,
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Runtime",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-042",
+   "title": "Runtime coverage of operations recorded in the black box",
+   "level": "item",
+   "section": 53,
+   "description": "Runtime coverage of operations recorded in the black box",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-runtime/supervisor-safe.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-runtime-wiring.test.mjs"
+   ],
+   "evidence": [
+    "Screening completed/failed and quarantined text are recorded"
+   ],
+   "blocker": "Model/tool/cost activity not recorded: none exist yet",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Runtime (SANDBOX)",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-043",
+   "title": "Control Center timelines: system, job, agent, model, tool, cost, errors, retries, approvals, recovery, security",
+   "level": "item",
+   "section": 53,
+   "description": "Control Center timelines: system, job, agent, model, tool, cost, errors, retries, approvals, recovery, security",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-control-center/brain-views.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/control-center-brain.test.mjs"
+   ],
+   "evidence": [
+    "Combined timeline + counts + security events"
+   ],
+   "blocker": "No separate per-dimension views",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Control Center",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-044",
+   "title": "Disaster Recovery incident flow DETECT>CONTAIN>FREEZE>PRESERVE>CHECKPOINT>DIAGNOSE>REPAIR>RETEST>ROLLBACK>VERIFY>RESUME>REPORT",
+   "level": "item",
+   "section": 53,
+   "description": "Disaster Recovery incident flow DETECT>CONTAIN>FREEZE>PRESERVE>CHECKPOINT>DIAGNOSE>REPAIR>RETEST>ROLLBACK>VERIFY>RESUME>REPORT",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/disaster-recovery.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-intelligence.test.mjs"
+   ],
+   "evidence": [
+    "Order enforced; failed freeze stops; rollback needs owner approval; unverified recovery never resumes"
+   ],
+   "blocker": "No automatic incident detector or real repair actions connected",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module; actions injected",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-045",
+   "title": "Recovery readiness: never PROVEN without verified backup and recent passing restore drill",
+   "level": "item",
+   "section": 53,
+   "description": "Recovery readiness: never PROVEN without verified backup and recent passing restore drill",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/disaster-recovery.mjs; atlasz-control-center/brain-views.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-intelligence.test.mjs",
+    "atlasz-tests/control-center-brain.test.mjs"
+   ],
+   "evidence": [
+    "Tested; drills logged by Control Center"
+   ],
+   "blocker": null,
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Control Center",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-046",
+   "title": "Periodic backup/restore drills",
+   "level": "item",
+   "section": 53,
+   "description": "Periodic backup/restore drills",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-control-center/core.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/control-center-brain.test.mjs"
+   ],
+   "evidence": [
+    "Manual drill is logged and feeds readiness"
+   ],
+   "blocker": "No scheduler for periodic drills",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Manual only",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-047",
+   "title": "Owner Command Layer: EN/HU natural language -> fixed whitelist of operations; unknown text does nothing",
+   "level": "item",
+   "section": 53,
+   "description": "Owner Command Layer: EN/HU natural language -> fixed whitelist of operations; unknown text does nothing",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/owner-command.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-intelligence.test.mjs",
+    "atlasz-tests/control-center-brain.test.mjs"
+   ],
+   "evidence": [
+    "All 12 example commands tested"
+   ],
+   "blocker": null,
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Control Center core + UI + HTTP",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-048",
+   "title": "Consequential commands need owner-signed approval bound to the operation; wrong/missing/other-operation approval refused; resume needs typed RESUME",
+   "level": "item",
+   "section": 53,
+   "description": "Consequential commands need owner-signed approval bound to the operation; wrong/missing/other-operation approval refused; resume needs typed RESUME",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/owner-command.mjs; atlasz-control-center/core.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-intelligence.test.mjs",
+    "atlasz-tests/control-center-brain.test.mjs"
+   ],
+   "evidence": [
+    "Mutation check fails a test; real emergency mode changes verified"
+   ],
+   "blocker": null,
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Control Center",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-049",
+   "title": "Owner commands audited in a hash chain",
+   "level": "item",
+   "section": 53,
+   "description": "Owner commands audited in a hash chain",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/owner-command.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-intelligence.test.mjs",
+    "atlasz-tests/control-center-brain.test.mjs"
+   ],
+   "evidence": [
+    "Chain verified in panel"
+   ],
+   "blocker": null,
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Control Center",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-050",
+   "title": "Brain Bus: per-brain topic ACLs, authority-granting topics forbidden, loop prevention, hop cap",
+   "level": "item",
+   "section": 53,
+   "description": "Brain Bus: per-brain topic ACLs, authority-granting topics forbidden, loop prevention, hop cap",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/central-brain.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-systems.test.mjs"
+   ],
+   "evidence": [
+    "Tested for all 11 brains; mutation check fails a test"
+   ],
+   "blocker": "Modules call each other directly through brain-system; the bus is not yet the transport",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module only",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-051",
+   "title": "Model Intelligence: LIVE only after a real probe; routing by capability, context, tools, cost, latency; no spend by default",
+   "level": "item",
+   "section": 53,
+   "description": "Model Intelligence: LIVE only after a real probe; routing by capability, context, tools, cost, latency; no spend by default",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/model-intelligence.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-systems.test.mjs"
+   ],
+   "evidence": [
+    "Mutation check (probe-ok check removed) fails a test"
+   ],
+   "blocker": "No model provider has credentials, so no model is LIVE",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module only",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-052",
+   "title": "Multi-model workflows (generate/critique/verify, triage/reason/QA) require distinct live model families",
+   "level": "item",
+   "section": 53,
+   "description": "Multi-model workflows (generate/critique/verify, triage/reason/QA) require distinct live model families",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/model-intelligence.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-systems.test.mjs"
+   ],
+   "evidence": [
+    "Blocked until three distinct families are live"
+   ],
+   "blocker": "No live models",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module only",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-053",
+   "title": "Per-model error rate, latency, quality, suitability history",
+   "level": "item",
+   "section": 53,
+   "description": "Per-model error rate, latency, quality, suitability history",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/model-intelligence.mjs; atlasz-addons/brain/capability-graph.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-systems.test.mjs",
+    "atlasz-tests/brain-core.test.mjs"
+   ],
+   "evidence": [
+    "Latency/reliability/quality tracked from real outcomes"
+   ],
+   "blocker": "No real invocations yet",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module only",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-054",
+   "title": "Brain Health metrics: execution success, plan completion, replans, verification failures, false-success detections, recoveries, cost per completion, governance blocks",
+   "level": "item",
+   "section": 53,
+   "description": "Brain Health metrics: execution success, plan completion, replans, verification failures, false-success detections, recoveries, cost per completion, governance blocks",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/brain-health.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-intelligence.test.mjs"
+   ],
+   "evidence": [
+    "Derived from black box/verifier/planner; no data reported as no data"
+   ],
+   "blocker": "Agent/model/tool failure breakdown and queue failures not separately measured",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Runtime dashboard + Control Center",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-055",
+   "title": "Brain Health recommends only; cannot change authority or controls",
+   "level": "item",
+   "section": 53,
+   "description": "Brain Health recommends only; cannot change authority or controls",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/brain-health.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-intelligence.test.mjs"
+   ],
+   "evidence": [
+    "authorityChange always false"
+   ],
+   "blocker": null,
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-056",
+   "title": "Brains cannot grant permissions, remove approvals, hide actions, disable audit/kill switch, spend, change owner authority or change production",
+   "level": "item",
+   "section": 53,
+   "description": "Brains cannot grant permissions, remove approvals, hide actions, disable audit/kill switch, spend, change owner authority or change production",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/governance.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-core.test.mjs"
+   ],
+   "evidence": [
+    "All forbidden actions tested; spend needs approval; no production change path exists"
+   ],
+   "blocker": null,
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-057",
+   "title": "Planning/Business/Opportunity never spend: no-spend default, spend requires bound owner approval",
+   "level": "item",
+   "section": 53,
+   "description": "Planning/Business/Opportunity never spend: no-spend default, spend requires bound owner approval",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/brain/governance.mjs; atlasz-addons/brain/planning-brain.mjs; atlasz-addons/brain/capability-graph.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-core.test.mjs",
+    "atlasz-tests/brain-orchestration.test.mjs",
+    "atlasz-tests/brain-intelligence.test.mjs"
+   ],
+   "evidence": [
+    "Tested across modules"
+   ],
+   "blocker": null,
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Module",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-058",
+   "title": "Control Center Brain panels: status, orchestrator, planning, capability graph, knowledge, simulation, verification, security, opportunities, business factory, black box, recovery, owner command, health",
+   "level": "item",
+   "section": 53,
+   "description": "Control Center Brain panels: status, orchestrator, planning, capability graph, knowledge, simulation, verification, security, opportunities, business factory, black box, recovery, owner command, health",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-control-center/brain-views.mjs; atlasz-control-center/public/app.js",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/control-center-brain.test.mjs"
+   ],
+   "evidence": [
+    "14 views + command box; HTTP token protected"
+   ],
+   "blocker": "UI rendered by code review and API tests only; Electron blocked",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Control Center (not run in a real browser/Electron here)",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-059",
+   "title": "Panels never show fake operational data: NOT_CONNECTED / SANDBOX / NO_DATA when empty",
+   "level": "item",
+   "section": 53,
+   "description": "Panels never show fake operational data: NOT_CONNECTED / SANDBOX / NO_DATA when empty",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-control-center/brain-views.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/control-center-brain.test.mjs"
+   ],
+   "evidence": [
+    "Empty-state test asserts NOT_CONNECTED everywhere; tamper shown as chain BROKEN"
+   ],
+   "blocker": null,
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Control Center",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-060",
+   "title": "Required cross-module wiring tests: kill switch stops Brain external actions; security cannot bypass approval; planning cannot authorize spend; simulation cannot run LIVE; verifier rejects false success; factory cannot publish/sell; owner command cannot bypass approval",
+   "level": "item",
+   "section": 53,
+   "description": "Required cross-module wiring tests: kill switch stops Brain external actions; security cannot bypass approval; planning cannot authorize spend; simulation cannot run LIVE; verifier rejects false success; factory cannot publish/sell; owner command cannot bypass approval",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-tests/brain-*.test.mjs; atlasz-tests/control-center-brain.test.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-core.test.mjs",
+    "atlasz-tests/brain-orchestration.test.mjs",
+    "atlasz-tests/brain-intelligence.test.mjs",
+    "atlasz-tests/brain-systems.test.mjs",
+    "atlasz-tests/control-center-brain.test.mjs"
+   ],
+   "evidence": [
+    "All seven examples have explicit tests (real emergency stop used end to end)"
+   ],
+   "blocker": null,
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Tests",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-061",
+   "title": "Test categories: unit, contract, integration, negative, security, permission, recovery, routing, planning, verification, simulation isolation, mutation",
+   "level": "item",
+   "section": 53,
+   "description": "Test categories: unit, contract, integration, negative, security, permission, recovery, routing, planning, verification, simulation isolation, mutation",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-tests/",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/brain-core.test.mjs",
+    "atlasz-tests/brain-orchestration.test.mjs",
+    "atlasz-tests/brain-intelligence.test.mjs",
+    "atlasz-tests/brain-systems.test.mjs",
+    "atlasz-tests/brain-runtime-wiring.test.mjs",
+    "atlasz-tests/control-center-brain.test.mjs"
+   ],
+   "evidence": [
+    "All categories present; mutation checks were run manually (guard removed -> test fails) and are not an automated suite"
+   ],
+   "blocker": "No automated mutation-testing tool in the repo",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Tests",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
+  },
+  {
+   "id": "ATLASZ-BR-062",
+   "title": "Requirements registered with implementation, integration, test status, evidence, blocker and SANDBOX/STAGING/LIVE classification",
+   "level": "item",
+   "section": 53,
+   "description": "Requirements registered with implementation, integration, test status, evidence, blocker and SANDBOX/STAGING/LIVE classification",
+   "source": "Joci Brain & Intelligence expansion",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "docs/registry_new_brain.py",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/registry-integrity.test.mjs"
+   ],
+   "evidence": [
+    "This record set"
+   ],
+   "blocker": "Classification is SANDBOX for every item; nothing is STAGING or LIVE",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "Registry",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX"
   }
  ]
 }
