@@ -95,7 +95,7 @@
     52
    ]
   },
-  "item_verified_count": 450
+  "item_verified_count": 529
  },
  "requirements": [
   {
@@ -4098,19 +4098,19 @@
    "dependencies": [
     "V73-S11"
    ],
-   "implementation_location": "atlasz-addons/money-pipeline-controller.mjs; payment-confirmation-adapter.mjs; profit-ledger.mjs; invoice-engine.mjs",
+   "implementation_location": "atlasz-addons/money-pipeline-controller.mjs; profit-ledger.mjs",
    "status": "PARTIAL",
    "tests": [
     "atlasz-tests/contract-existing-modules.test.mjs",
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/contract-money-tax.test.mjs"
    ],
    "evidence": [
-    "PAID needs provider+signature+evidence; ledger counts only confirmed"
+    "State machine and ledger honesty rules tested"
    ],
-   "blocker": "EXTERNAL: no payment evidence source; e2e revenue BLOCKED",
+   "blocker": "EXTERNAL: no payment/bank evidence source; nothing counts as revenue",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S11-002",
@@ -4123,19 +4123,19 @@
    "dependencies": [
     "V73-S11"
    ],
-   "implementation_location": "atlasz-addons/money-pipeline-controller.mjs; payment-confirmation-adapter.mjs; profit-ledger.mjs; invoice-engine.mjs",
+   "implementation_location": "atlasz-runtime/supervisor-safe.mjs; atlasz-addons/opportunity-qualification-engine.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs",
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/canonical-runtime.test.mjs",
+    "atlasz-tests/contract-money-tax.test.mjs"
    ],
    "evidence": [
-    "PAID needs provider+signature+evidence; ledger counts only confirmed"
+    "HN discovery with injected fetch; qualification tested"
    ],
-   "blocker": "EXTERNAL: no payment evidence source; e2e revenue BLOCKED",
+   "blocker": "One public source; real network unverified here",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S11-003",
@@ -4148,19 +4148,19 @@
    "dependencies": [
     "V73-S11"
    ],
-   "implementation_location": "atlasz-addons/money-pipeline-controller.mjs; payment-confirmation-adapter.mjs; profit-ledger.mjs; invoice-engine.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/opportunity-qualification-engine.mjs; atlasz-runtime/supervisor-safe.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs",
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/contract-money-tax.test.mjs",
+    "atlasz-tests/canonical-runtime.test.mjs"
    ],
    "evidence": [
-    "PAID needs provider+signature+evidence; ledger counts only confirmed"
+    "Blockers: upfront spend, illegal/deceptive, non-remote, license, missing evidence"
    ],
-   "blocker": "EXTERNAL: no payment evidence source; e2e revenue BLOCKED",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S11-004",
@@ -4173,19 +4173,18 @@
    "dependencies": [
     "V73-S11"
    ],
-   "implementation_location": "atlasz-addons/money-pipeline-controller.mjs; payment-confirmation-adapter.mjs; profit-ledger.mjs; invoice-engine.mjs",
+   "implementation_location": "atlasz-addons/buyer-decision-maker-finder.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs",
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/contract-money-tax.test.mjs"
    ],
    "evidence": [
-    "PAID needs provider+signature+evidence; ledger counts only confirmed"
+    "Query/normalise/rank/ready rules tested"
    ],
-   "blocker": "EXTERNAL: no payment evidence source; e2e revenue BLOCKED",
+   "blocker": "EXTERNAL: no contact data source (Clay/Hunter not connected)",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S11-005",
@@ -4198,19 +4197,18 @@
    "dependencies": [
     "V73-S11"
    ],
-   "implementation_location": "atlasz-addons/money-pipeline-controller.mjs; payment-confirmation-adapter.mjs; profit-ledger.mjs; invoice-engine.mjs",
+   "implementation_location": "atlasz-addons/buyer-decision-maker-finder.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs",
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/contract-money-tax.test.mjs"
    ],
    "evidence": [
-    "PAID needs provider+signature+evidence; ledger counts only confirmed"
+    "Same module"
    ],
-   "blocker": "EXTERNAL: no payment evidence source; e2e revenue BLOCKED",
+   "blocker": "EXTERNAL: no contact data source",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S11-006",
@@ -4223,19 +4221,18 @@
    "dependencies": [
     "V73-S11"
    ],
-   "implementation_location": "atlasz-addons/money-pipeline-controller.mjs; payment-confirmation-adapter.mjs; profit-ledger.mjs; invoice-engine.mjs",
+   "implementation_location": "atlasz-addons/client-dna-engine.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs",
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/contract-money-tax.test.mjs"
    ],
    "evidence": [
-    "PAID needs provider+signature+evidence; ledger counts only confirmed"
+    "Tenant-scoped profile"
    ],
-   "blocker": "EXTERNAL: no payment evidence source; e2e revenue BLOCKED",
+   "blocker": "In-memory module state: lost on restart",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S11-007",
@@ -4248,19 +4245,19 @@
    "dependencies": [
     "V73-S11"
    ],
-   "implementation_location": "atlasz-addons/money-pipeline-controller.mjs; payment-confirmation-adapter.mjs; profit-ledger.mjs; invoice-engine.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/deal-state.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs",
+    "atlasz-tests/contract-money-tax.test.mjs",
     "atlasz-tests/gated-modules.test.mjs"
    ],
    "evidence": [
-    "PAID needs provider+signature+evidence; ledger counts only confirmed"
+    "Forward-only states; approvals/evidence gates"
    ],
-   "blocker": "EXTERNAL: no payment evidence source; e2e revenue BLOCKED",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S11-008",
@@ -4273,19 +4270,18 @@
    "dependencies": [
     "V73-S11"
    ],
-   "implementation_location": "atlasz-addons/money-pipeline-controller.mjs; payment-confirmation-adapter.mjs; profit-ledger.mjs; invoice-engine.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/proposal-quote-engine.mjs",
+   "status": "EXISTS_NEEDS_TEST",
    "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs",
     "atlasz-tests/gated-modules.test.mjs"
    ],
    "evidence": [
-    "PAID needs provider+signature+evidence; ledger counts only confirmed"
+    "Owner gate tested; build/validate not"
    ],
-   "blocker": "EXTERNAL: no payment evidence source; e2e revenue BLOCKED",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S11-009",
@@ -4298,19 +4294,18 @@
    "dependencies": [
     "V73-S11"
    ],
-   "implementation_location": "atlasz-addons/money-pipeline-controller.mjs; payment-confirmation-adapter.mjs; profit-ledger.mjs; invoice-engine.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/negotiation-engine.mjs",
+   "status": "EXISTS_NEEDS_TEST",
    "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs",
     "atlasz-tests/gated-modules.test.mjs"
    ],
    "evidence": [
-    "PAID needs provider+signature+evidence; ledger counts only confirmed"
+    "Owner gate tested; assessment not"
    ],
-   "blocker": "EXTERNAL: no payment evidence source; e2e revenue BLOCKED",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S11-010",
@@ -4323,19 +4318,18 @@
    "dependencies": [
     "V73-S11"
    ],
-   "implementation_location": "atlasz-addons/money-pipeline-controller.mjs; payment-confirmation-adapter.mjs; profit-ledger.mjs; invoice-engine.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/follow-up-engine.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs",
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/contract-money-tax.test.mjs"
    ],
    "evidence": [
-    "PAID needs provider+signature+evidence; ledger counts only confirmed"
+    "2/5/10-day schedule; stops on reply"
    ],
-   "blocker": "EXTERNAL: no payment evidence source; e2e revenue BLOCKED",
+   "blocker": "Nothing sends follow-ups (no delivery adapter)",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S11-011",
@@ -4348,19 +4342,19 @@
    "dependencies": [
     "V73-S11"
    ],
-   "implementation_location": "atlasz-addons/money-pipeline-controller.mjs; payment-confirmation-adapter.mjs; profit-ledger.mjs; invoice-engine.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/delivery-engine.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs",
+    "atlasz-tests/contract-money-tax.test.mjs",
     "atlasz-tests/gated-modules.test.mjs"
    ],
    "evidence": [
-    "PAID needs provider+signature+evidence; ledger counts only confirmed"
+    "QA -> owner approval -> external evidence"
    ],
-   "blocker": "EXTERNAL: no payment evidence source; e2e revenue BLOCKED",
+   "blocker": "Nothing is actually delivered",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S11-012",
@@ -4373,19 +4367,19 @@
    "dependencies": [
     "V73-S11"
    ],
-   "implementation_location": "atlasz-addons/money-pipeline-controller.mjs; payment-confirmation-adapter.mjs; profit-ledger.mjs; invoice-engine.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/invoice-engine.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs",
+    "atlasz-tests/contract-money-tax.test.mjs",
     "atlasz-tests/gated-modules.test.mjs"
    ],
    "evidence": [
-    "PAID needs provider+signature+evidence; ledger counts only confirmed"
+    "Amount, owner approval, external reference rules"
    ],
-   "blocker": "EXTERNAL: no payment evidence source; e2e revenue BLOCKED",
+   "blocker": "Nothing is actually sent",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S11-013",
@@ -4398,19 +4392,18 @@
    "dependencies": [
     "V73-S11"
    ],
-   "implementation_location": "atlasz-addons/money-pipeline-controller.mjs; payment-confirmation-adapter.mjs; profit-ledger.mjs; invoice-engine.mjs",
+   "implementation_location": "atlasz-addons/payment-confirmation-adapter.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs",
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/contract-existing-modules.test.mjs"
    ],
    "evidence": [
-    "PAID needs provider+signature+evidence; ledger counts only confirmed"
+    "Refuses unsigned/unconfirmed/non-final/no-evidence"
    ],
-   "blocker": "EXTERNAL: no payment evidence source; e2e revenue BLOCKED",
+   "blocker": "providerConfirmed/signatureVerified are caller-asserted; real provider verification adapter missing (EXTERNAL)",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S11-014",
@@ -4423,19 +4416,19 @@
    "dependencies": [
     "V73-S11"
    ],
-   "implementation_location": "atlasz-addons/money-pipeline-controller.mjs; payment-confirmation-adapter.mjs; profit-ledger.mjs; invoice-engine.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/profit-ledger.mjs; profit-accounting-engine.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/contract-existing-modules.test.mjs",
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/contract-money-tax.test.mjs"
    ],
    "evidence": [
-    "PAID needs provider+signature+evidence; ledger counts only confirmed"
+    "Only confirmed, evidenced receipts are profit"
    ],
-   "blocker": "EXTERNAL: no payment evidence source; e2e revenue BLOCKED",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S11-015",
@@ -4448,19 +4441,19 @@
    "dependencies": [
     "V73-S11"
    ],
-   "implementation_location": "atlasz-addons/money-pipeline-controller.mjs; payment-confirmation-adapter.mjs; profit-ledger.mjs; invoice-engine.mjs",
+   "implementation_location": "atlasz-addons/profit-accounting-engine.mjs; budget-consumption-governor.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs",
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/contract-money-tax.test.mjs",
+    "atlasz-tests/contract-existing-modules.test.mjs"
    ],
    "evidence": [
-    "PAID needs provider+signature+evidence; ledger counts only confirmed"
+    "Costs recorded"
    ],
-   "blocker": "EXTERNAL: no payment evidence source; e2e revenue BLOCKED",
+   "blocker": "In-memory module state: lost on restart",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S11-016",
@@ -4473,19 +4466,18 @@
    "dependencies": [
     "V73-S11"
    ],
-   "implementation_location": "atlasz-addons/money-pipeline-controller.mjs; payment-confirmation-adapter.mjs; profit-ledger.mjs; invoice-engine.mjs",
+   "implementation_location": "atlasz-addons/agent-portfolio-manager.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs",
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "PAID needs provider+signature+evidence; ledger counts only confirmed"
+    "Ranking by net value"
    ],
-   "blocker": "EXTERNAL: no payment evidence source; e2e revenue BLOCKED",
+   "blocker": "In-memory module state: lost on restart",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S11-017",
@@ -4498,19 +4490,16 @@
    "dependencies": [
     "V73-S11"
    ],
-   "implementation_location": "atlasz-addons/money-pipeline-controller.mjs; payment-confirmation-adapter.mjs; profit-ledger.mjs; invoice-engine.mjs",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs",
-    "atlasz-tests/gated-modules.test.mjs"
-   ],
+   "implementation_location": "atlasz-addons/market-intelligence-engine.mjs",
+   "status": "STRUCTURAL_ONLY",
+   "tests": [],
    "evidence": [
-    "PAID needs provider+signature+evidence; ledger counts only confirmed"
+    "Strategy proposal logic; untested"
    ],
-   "blocker": "EXTERNAL: no payment evidence source; e2e revenue BLOCKED",
+   "blocker": "EXTERNAL: data sources",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S11-018",
@@ -4523,19 +4512,16 @@
    "dependencies": [
     "V73-S11"
    ],
-   "implementation_location": "atlasz-addons/money-pipeline-controller.mjs; payment-confirmation-adapter.mjs; profit-ledger.mjs; invoice-engine.mjs",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs",
-    "atlasz-tests/gated-modules.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "PAID needs provider+signature+evidence; ledger counts only confirmed"
+    "No business proof package module"
    ],
-   "blocker": "EXTERNAL: no payment evidence source; e2e revenue BLOCKED",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S12",
@@ -9765,11 +9751,13 @@
    "implementation_location": null,
    "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "No universal inbox module"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S25-002",
@@ -9785,11 +9773,13 @@
    "implementation_location": null,
    "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "No universal inbox module"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S25-003",
@@ -9802,14 +9792,18 @@
    "dependencies": [
     "V73-S25"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [],
-   "blocker": null,
+   "implementation_location": "atlasz-addons/delivery-engine.mjs; invoice-engine.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/contract-money-tax.test.mjs"
+   ],
+   "evidence": [
+    "Delivery/invoice 'sent' needs external evidence (truthful send state for those objects only)"
+   ],
+   "blocker": "No inbox",
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S25-004",
@@ -9825,11 +9819,13 @@
    "implementation_location": null,
    "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "No universal inbox module"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S25-005",
@@ -9845,11 +9841,13 @@
    "implementation_location": null,
    "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "No universal inbox module"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S25-006",
@@ -9865,11 +9863,13 @@
    "implementation_location": null,
    "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "No universal inbox module"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S25-007",
@@ -9885,11 +9885,13 @@
    "implementation_location": null,
    "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "No universal inbox module"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S25-008",
@@ -9902,14 +9904,18 @@
    "dependencies": [
     "V73-S25"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [],
-   "blocker": null,
+   "implementation_location": "atlasz-addons/audit-chain.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/safety-modules.test.mjs"
+   ],
+   "evidence": [
+    "Generic audit chain"
+   ],
+   "blocker": "No inbox",
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S25-009",
@@ -9925,11 +9931,13 @@
    "implementation_location": null,
    "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "No universal inbox module"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S25-010",
@@ -9945,11 +9953,13 @@
    "implementation_location": null,
    "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "No universal inbox module"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S26",
@@ -9980,14 +9990,16 @@
    "dependencies": [
     "V73-S26"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "No email module"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S26-002",
@@ -10000,14 +10012,16 @@
    "dependencies": [
     "V73-S26"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "No calendar"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S26-003",
@@ -10020,14 +10034,16 @@
    "dependencies": [
     "V73-S26"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "No user task creation"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S26-004",
@@ -10040,14 +10056,16 @@
    "dependencies": [
     "V73-S26"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "No file organisation"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S26-005",
@@ -10060,14 +10078,16 @@
    "dependencies": [
     "V73-S26"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "No document generation"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S26-006",
@@ -10080,14 +10100,16 @@
    "dependencies": [
     "V73-S26"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "No report generation (backup/doctor reports only)"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S26-007",
@@ -10100,14 +10122,19 @@
    "dependencies": [
     "V73-S26"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
-   "tests": [],
-   "evidence": [],
-   "blocker": null,
+   "implementation_location": "atlasz-addons/deal-state.mjs; atlasz-runtime/supervisor-safe.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/contract-money-tax.test.mjs",
+    "atlasz-tests/canonical-runtime.test.mjs"
+   ],
+   "evidence": [
+    "Deal states and leads list"
+   ],
+   "blocker": "In-memory module state: lost on restart",
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S26-008",
@@ -10120,14 +10147,18 @@
    "dependencies": [
     "V73-S26"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
-   "tests": [],
-   "evidence": [],
-   "blocker": null,
+   "implementation_location": "atlasz-runtime/supervisor-safe.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/canonical-queue-safety.test.mjs"
+   ],
+   "evidence": [
+    "Timer-based recurring screening/search"
+   ],
+   "blocker": "No user-defined workflows",
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S26-009",
@@ -10140,14 +10171,16 @@
    "dependencies": [
     "V73-S26"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "No reminders/alerts"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S26-010",
@@ -10160,14 +10193,16 @@
    "dependencies": [
     "V73-S26"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "No import/export"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S26-011",
@@ -10180,14 +10215,16 @@
    "dependencies": [
     "V73-S26"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "No templating"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S26-012",
@@ -10200,14 +10237,19 @@
    "dependencies": [
     "V73-S26"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
-   "tests": [],
-   "evidence": [],
-   "blocker": null,
+   "implementation_location": "atlasz-addons/approval-requests.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/approval-requests.test.mjs",
+    "atlasz-tests/control-center.test.mjs"
+   ],
+   "evidence": [
+    "Approval cards with signed decisions"
+   ],
+   "blocker": "No runtime flow files requests yet",
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S27",
@@ -10241,15 +10283,17 @@
     "V73-S27"
    ],
    "implementation_location": "atlasz-addons/tax-accounting-engine.mjs",
-   "status": "EXISTS_NEEDS_TEST",
-   "tests": [],
-   "evidence": [
-    "code reviewed: blocks when rules unverified; no test yet"
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/contract-money-tax.test.mjs"
    ],
-   "blocker": "EXTERNAL: tax authority rules must be verified",
+   "evidence": [
+    "Plan/prepare gating tested; calculator injected"
+   ],
+   "blocker": "EXTERNAL: verified CRA/BC rule sources and a deterministic calculator are not provided",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S27-002",
@@ -10263,15 +10307,17 @@
     "V73-S27"
    ],
    "implementation_location": "atlasz-addons/tax-accounting-engine.mjs",
-   "status": "EXISTS_NEEDS_TEST",
-   "tests": [],
-   "evidence": [
-    "code reviewed: blocks when rules unverified; no test yet"
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/contract-money-tax.test.mjs"
    ],
-   "blocker": "EXTERNAL: tax authority rules must be verified",
+   "evidence": [
+    "GST_HST workflow defined; BLOCKED until rules verified"
+   ],
+   "blocker": "EXTERNAL: verified rules",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S27-003",
@@ -10285,15 +10331,17 @@
     "V73-S27"
    ],
    "implementation_location": "atlasz-addons/tax-accounting-engine.mjs",
-   "status": "EXISTS_NEEDS_TEST",
-   "tests": [],
-   "evidence": [
-    "code reviewed: blocks when rules unverified; no test yet"
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/contract-money-tax.test.mjs"
    ],
-   "blocker": "EXTERNAL: tax authority rules must be verified",
+   "evidence": [
+    "BC_PST workflow defined; BLOCKED until rules verified"
+   ],
+   "blocker": "EXTERNAL: verified rules",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S27-004",
@@ -10307,15 +10355,15 @@
     "V73-S27"
    ],
    "implementation_location": "atlasz-addons/tax-accounting-engine.mjs",
-   "status": "EXISTS_NEEDS_TEST",
+   "status": "STRUCTURAL_ONLY",
    "tests": [],
    "evidence": [
-    "code reviewed: blocks when rules unverified; no test yet"
+    "Workflow step names only"
    ],
-   "blocker": "EXTERNAL: tax authority rules must be verified",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S27-005",
@@ -10328,16 +10376,16 @@
    "dependencies": [
     "V73-S27"
    ],
-   "implementation_location": "atlasz-addons/tax-accounting-engine.mjs",
-   "status": "EXISTS_NEEDS_TEST",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
    "evidence": [
-    "code reviewed: blocks when rules unverified; no test yet"
+    "No receipt capture"
    ],
-   "blocker": "EXTERNAL: tax authority rules must be verified",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S27-006",
@@ -10350,16 +10398,16 @@
    "dependencies": [
     "V73-S27"
    ],
-   "implementation_location": "atlasz-addons/tax-accounting-engine.mjs",
-   "status": "EXISTS_NEEDS_TEST",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
    "evidence": [
-    "code reviewed: blocks when rules unverified; no test yet"
+    "No categorisation"
    ],
-   "blocker": "EXTERNAL: tax authority rules must be verified",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S27-007",
@@ -10372,16 +10420,18 @@
    "dependencies": [
     "V73-S27"
    ],
-   "implementation_location": "atlasz-addons/tax-accounting-engine.mjs",
-   "status": "EXISTS_NEEDS_TEST",
-   "tests": [],
-   "evidence": [
-    "code reviewed: blocks when rules unverified; no test yet"
+   "implementation_location": "atlasz-addons/invoice-engine.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/contract-money-tax.test.mjs"
    ],
-   "blocker": "EXTERNAL: tax authority rules must be verified",
+   "evidence": [
+    "Invoice objects"
+   ],
+   "blocker": "In-memory module state: lost on restart",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S27-008",
@@ -10394,16 +10444,18 @@
    "dependencies": [
     "V73-S27"
    ],
-   "implementation_location": "atlasz-addons/tax-accounting-engine.mjs",
-   "status": "EXISTS_NEEDS_TEST",
-   "tests": [],
-   "evidence": [
-    "code reviewed: blocks when rules unverified; no test yet"
+   "implementation_location": "atlasz-addons/payment-confirmation-adapter.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/contract-existing-modules.test.mjs"
    ],
-   "blocker": "EXTERNAL: tax authority rules must be verified",
+   "evidence": [
+    "Payment events normalised"
+   ],
+   "blocker": "In-memory module state: lost on restart",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S27-009",
@@ -10416,16 +10468,18 @@
    "dependencies": [
     "V73-S27"
    ],
-   "implementation_location": "atlasz-addons/tax-accounting-engine.mjs",
-   "status": "EXISTS_NEEDS_TEST",
-   "tests": [],
-   "evidence": [
-    "code reviewed: blocks when rules unverified; no test yet"
+   "implementation_location": "atlasz-addons/profit-accounting-engine.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/contract-money-tax.test.mjs"
    ],
-   "blocker": "EXTERNAL: tax authority rules must be verified",
+   "evidence": [
+    "Verified profit only"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S27-010",
@@ -10438,16 +10492,16 @@
    "dependencies": [
     "V73-S27"
    ],
-   "implementation_location": "atlasz-addons/tax-accounting-engine.mjs",
-   "status": "EXISTS_NEEDS_TEST",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
    "evidence": [
-    "code reviewed: blocks when rules unverified; no test yet"
+    "No accountant export package"
    ],
-   "blocker": "EXTERNAL: tax authority rules must be verified",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S27-011",
@@ -10460,16 +10514,18 @@
    "dependencies": [
     "V73-S27"
    ],
-   "implementation_location": "atlasz-addons/tax-accounting-engine.mjs",
-   "status": "EXISTS_NEEDS_TEST",
-   "tests": [],
-   "evidence": [
-    "code reviewed: blocks when rules unverified; no test yet"
+   "implementation_location": "atlasz-addons/audit-chain.mjs; tax-accounting-engine.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/safety-modules.test.mjs"
    ],
-   "blocker": "EXTERNAL: tax authority rules must be verified",
+   "evidence": [
+    "Audit sink injected; chain exists"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S27-012",
@@ -10482,16 +10538,16 @@
    "dependencies": [
     "V73-S27"
    ],
-   "implementation_location": "atlasz-addons/tax-accounting-engine.mjs",
-   "status": "EXISTS_NEEDS_TEST",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
    "evidence": [
-    "code reviewed: blocks when rules unverified; no test yet"
+    "Only a PLANNED label in completion-registry; no code"
    ],
-   "blocker": "EXTERNAL: tax authority rules must be verified",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S28",
@@ -12644,18 +12700,18 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-tests/",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/*.test.mjs"
+    "atlasz-tests/registry-integrity.test.mjs"
    ],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "Unit tests (150+) run with npm test"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-002",
@@ -12668,18 +12724,18 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
+   "implementation_location": "atlasz-tests/",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/*.test.mjs"
+    "atlasz-tests/canonical-queue-safety.test.mjs"
    ],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "In-process integration (queue+safety+runtime)"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": "Not all modules",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-003",
@@ -12692,18 +12748,19 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
+   "implementation_location": "atlasz-tests/",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/*.test.mjs"
+    "atlasz-tests/control-center.test.mjs",
+    "atlasz-tests/canonical-runtime.test.mjs"
    ],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "Real-process E2E for runtime and Control Center"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": "No external-provider E2E",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-004",
@@ -12716,18 +12773,16 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/*.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "EXTERNAL_BLOCKER",
+   "tests": [],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "None"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": "EXTERNAL: providers/credentials; Joci approval for spend",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-005",
@@ -12740,18 +12795,16 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/*.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "EXTERNAL_BLOCKER",
+   "tests": [],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "None"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": "EXTERNAL: not built/run on Windows",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-006",
@@ -12764,18 +12817,16 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/*.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "No file handling feature"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-007",
@@ -12788,18 +12839,16 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/*.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "No DB exists"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-008",
@@ -12812,18 +12861,19 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-tests/durable-queue.test.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/*.test.mjs"
+    "atlasz-tests/durable-queue.test.mjs",
+    "atlasz-tests/canonical-queue-safety.test.mjs"
    ],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "Queue crash/idempotency/DLQ"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-009",
@@ -12836,18 +12886,19 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
+   "implementation_location": "atlasz-tests/",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/*.test.mjs"
+    "atlasz-tests/canonical-runtime.test.mjs",
+    "atlasz-tests/canonical-queue-safety.test.mjs"
    ],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "Screening execution only"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-010",
@@ -12860,18 +12911,16 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/*.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "No MASTER runtime"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-011",
@@ -12884,18 +12933,16 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/*.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "EXTERNAL_BLOCKER",
+   "tests": [],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "None"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": "EXTERNAL: STT/TTS",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-012",
@@ -12908,18 +12955,16 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/*.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "EXTERNAL_BLOCKER",
+   "tests": [],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "Gate tested only"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": "EXTERNAL: provider",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-013",
@@ -12932,18 +12977,16 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/*.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "EXTERNAL_BLOCKER",
+   "tests": [],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "None"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": "EXTERNAL",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-014",
@@ -12956,18 +12999,19 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
+   "implementation_location": "atlasz-tests/",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/*.test.mjs"
+    "atlasz-tests/contract-money-tax.test.mjs",
+    "atlasz-tests/gated-modules.test.mjs"
    ],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "State-machine tests"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": "No real delivery",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-015",
@@ -12980,18 +13024,18 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
+   "implementation_location": "atlasz-tests/",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/*.test.mjs"
+    "atlasz-tests/contract-money-tax.test.mjs"
    ],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "Invoice rules tested"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": "No real invoice sent",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-016",
@@ -13004,18 +13048,18 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
+   "implementation_location": "atlasz-tests/",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/*.test.mjs"
+    "atlasz-tests/contract-existing-modules.test.mjs"
    ],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "Refusal paths tested"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": "No provider verification",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-017",
@@ -13028,18 +13072,19 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-tests/",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/*.test.mjs"
+    "atlasz-tests/backup-recovery.test.mjs",
+    "atlasz-tests/control-center.test.mjs"
    ],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "Backup/restore/drill tests"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-018",
@@ -13052,18 +13097,20 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-tests/",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/*.test.mjs"
+    "atlasz-tests/control-center.test.mjs",
+    "atlasz-tests/stop-enforcement.test.mjs",
+    "atlasz-tests/emergency-stop.test.mjs"
    ],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "Real-process kill switch E2E"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-019",
@@ -13076,18 +13123,18 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/evidence-record.mjs; scripts/make-evidence.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/*.test.mjs"
+    "atlasz-tests/evidence-record.test.mjs"
    ],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "Structured evidence record with timestamp, component, version/commit/build, environment, test type, result, trace id, error/blocker and MOCK/SANDBOX/STAGING/PRODUCTION label"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": "Records produced locally only; no production evidence exists",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-020",
@@ -13100,18 +13147,18 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/evidence-record.mjs; scripts/make-evidence.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/*.test.mjs"
+    "atlasz-tests/evidence-record.test.mjs"
    ],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "Structured evidence record with timestamp, component, version/commit/build, environment, test type, result, trace id, error/blocker and MOCK/SANDBOX/STAGING/PRODUCTION label"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": "Records produced locally only; no production evidence exists",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-021",
@@ -13124,18 +13171,18 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/evidence-record.mjs; scripts/make-evidence.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/*.test.mjs"
+    "atlasz-tests/evidence-record.test.mjs"
    ],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "Structured evidence record with timestamp, component, version/commit/build, environment, test type, result, trace id, error/blocker and MOCK/SANDBOX/STAGING/PRODUCTION label"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": "Records produced locally only; no production evidence exists",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-022",
@@ -13148,18 +13195,18 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/evidence-record.mjs; scripts/make-evidence.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/*.test.mjs"
+    "atlasz-tests/evidence-record.test.mjs"
    ],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "Structured evidence record with timestamp, component, version/commit/build, environment, test type, result, trace id, error/blocker and MOCK/SANDBOX/STAGING/PRODUCTION label"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": "Records produced locally only; no production evidence exists",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-023",
@@ -13172,18 +13219,18 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/evidence-record.mjs; scripts/make-evidence.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/*.test.mjs"
+    "atlasz-tests/evidence-record.test.mjs"
    ],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "Structured evidence record with timestamp, component, version/commit/build, environment, test type, result, trace id, error/blocker and MOCK/SANDBOX/STAGING/PRODUCTION label"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": "Records produced locally only; no production evidence exists",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-024",
@@ -13196,18 +13243,18 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/evidence-record.mjs; scripts/make-evidence.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/*.test.mjs"
+    "atlasz-tests/evidence-record.test.mjs"
    ],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "Structured evidence record with timestamp, component, version/commit/build, environment, test type, result, trace id, error/blocker and MOCK/SANDBOX/STAGING/PRODUCTION label"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": "Records produced locally only; no production evidence exists",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-025",
@@ -13220,18 +13267,18 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/evidence-record.mjs; scripts/make-evidence.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/*.test.mjs"
+    "atlasz-tests/evidence-record.test.mjs"
    ],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "Structured evidence record with timestamp, component, version/commit/build, environment, test type, result, trace id, error/blocker and MOCK/SANDBOX/STAGING/PRODUCTION label"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": "Records produced locally only; no production evidence exists",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-026",
@@ -13244,18 +13291,18 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/evidence-record.mjs; scripts/make-evidence.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/*.test.mjs"
+    "atlasz-tests/evidence-record.test.mjs"
    ],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "Structured evidence record with timestamp, component, version/commit/build, environment, test type, result, trace id, error/blocker and MOCK/SANDBOX/STAGING/PRODUCTION label"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": "Records produced locally only; no production evidence exists",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S35-027",
@@ -13268,18 +13315,18 @@
    "dependencies": [
     "V73-S35"
    ],
-   "implementation_location": "atlasz-tests/ + evidence/test-run-*.txt",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/evidence-record.mjs; scripts/make-evidence.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/*.test.mjs"
+    "atlasz-tests/evidence-record.test.mjs"
    ],
    "evidence": [
-    "87 node --test tests pass; mutation-checked"
+    "Structured evidence record with timestamp, component, version/commit/build, environment, test type, result, trace id, error/blocker and MOCK/SANDBOX/STAGING/PRODUCTION label"
    ],
-   "blocker": "No live runtime evidence (Railway UNKNOWN, no network, no providers)",
+   "blocker": "Records produced locally only; no production evidence exists",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S36",
