@@ -138,6 +138,39 @@ const views = {
     const [s, d] = await Promise.all([api("/api/status"), api("/api/doctor")]);
     return [h("h2", {}, "Errors & blockers"), table(["Source", "Error"], Object.entries(s.sourceErrors).map(([k, v]) => [k, v])), h("h2", {}, "Doctor findings"), table(["Severity", "Check", "Detail", "Remedy"], d.findings.map(f => [pill(f.severity), f.id, f.detail ?? "", f.remedy ?? ""]))];
   },
+  async owner_safety() {
+    const o = await api("/api/owner-safety"), out = [h("h2", {}, "Owner Safety / Control"), h("p", { class: "sub" }, "Joci is the final authority. Layers: owner authority → kill switch → security brain → financial firewall → independent verification → black box → safe mode → last known good → backup/restore → disaster recovery. Unknown stays UNKNOWN — never shown as healthy.")];
+    const stop = async (label, mode, body) => { const r = await ask({ title: label, text: body, fields: [PASS], danger: true, ok: label }); if (r) act(label, "/api/owner-safety/action", { action: mode, passphrase: r.passphrase }); };
+    out.push(o.killSwitch.banner ? note(o.killSwitch.banner + " — " + o.killSwitch.mode + ". Only Joci can release it.", "bad") : note("Kill switch armed — system RUNNING.", "ok"),
+      h("div", { class: "row" },
+        h("button", { class: "btn danger big", onclick: () => stop("EMERGENCY STOP", "EMERGENCY_STOP", "Stops all new dispatch and every external action. State, logs and evidence are preserved. Nothing is deleted.") }, "EMERGENCY STOP"),
+        h("button", { class: "btn danger", onclick: () => stop("PAUSE EXTERNAL ACTIONS", "PAUSE_EXTERNAL_ACTIONS", "Blocks outbound/external actions only.") }, "PAUSE EXTERNAL ACTIONS"),
+        h("button", { class: "btn", disabled: o.killSwitch.mode === "RUNNING", onclick: async () => { const r = await ask({ title: "RESUME", text: "Only Joci can release the stop.", fields: [PASS], confirmWord: "RESUME", ok: "Resume" }); if (r) act("Resume", "/api/owner-safety/action", { action: "RESUME", passphrase: r.passphrase, confirm: "RESUME" }); } }, "RESUME")));
+    out.push(h("div", { class: "grid" },
+      card("OWNER AUTHORITY", pill(o.ownerAuthority.state), "Owner: " + o.ownerAuthority.ownerId + (o.ownerAuthority.provisioned ? "" : " · key not created")),
+      card("KILL SWITCH", pill(o.killSwitch.mode), o.killSwitch.banner ?? "armed"),
+      card("APPROVALS", String(o.approvals.pending), "pending decisions"),
+      card("SECURITY BRAIN", typeof o.securityBrain === "string" ? pill("UNKNOWN") : pill("ACTIVE"), typeof o.securityBrain === "string" ? o.securityBrain : "quarantined: " + (o.securityBrain.quarantined ?? 0)),
+      card("FINANCIAL FIREWALL", pill(typeof o.financialFirewall === "string" ? "NO_SPEND" : o.financialFirewall.mode), typeof o.financialFirewall === "string" ? o.financialFirewall : "blocked spend attempts: " + (o.financialFirewall.blockedSpendAttempts ?? 0)),
+      card("BLACK BOX", pill(o.blackBox.chainIntact === true || o.blackBox.chain === "OK" ? "OK" : o.blackBox.chain ?? "UNKNOWN"), o.blackBox.events !== undefined ? o.blackBox.events + " events" : ""),
+      card("SAFE MODE", pill(o.safeMode.mode), o.safeMode.reason ?? ""),
+      card("CURRENT VERSION", String(o.currentVersion)),
+      card("LAST KNOWN GOOD", o.lastKnownGood ? pill("SET") : pill("NOT_CONFIGURED"), o.lastKnownGood?.backupId ?? "none verified yet"),
+      card("LATEST BACKUP", o.latestBackup ? pill(o.latestBackup.ok ? "OK" : "BROKEN") : pill("NOT_CONFIGURED"), o.latestBackup ? o.latestBackup.id : "no backup"),
+      card("RESTORE READINESS", pill(o.restoreReadiness)), card("RECOVERY STATUS", typeof o.recoveryStatus === "string" ? pill("UNKNOWN") : pill(o.recoveryStatus.passed ? "OK" : "FAILED"), typeof o.recoveryStatus === "string" ? o.recoveryStatus : "last drill " + o.recoveryStatus.lastDrill),
+      card("SYSTEM HEALTH", pill(o.systemHealth.overall), JSON.stringify(o.systemHealth.counts))));
+    const result = h("div", { class: "note" }, "Results appear here."), show = async (a, extra = {}) => { try { const r = await api("/api/owner-safety/action", { action: a, ...extra }); result.textContent = JSON.stringify(r.result ?? r, null, 1).slice(0, 6000); } catch (e) { result.textContent = "Failed: " + e.message; } };
+    const signed = (label, action, text, extra = {}) => h("button", { class: "btn", onclick: async () => { const r = await ask({ title: label, text, fields: [PASS, ...(extra.fields ?? [])], danger: true, ok: label }); if (r) act(label, "/api/owner-safety/action", { action, ...r }); } }, label);
+    out.push(h("h2", {}, "Recovery controls"), h("div", { class: "row" },
+      h("button", { class: "btn", onclick: () => show("RUN_SYSTEM_DOCTOR") }, "RUN SYSTEM DOCTOR"),
+      h("button", { class: "btn primary", onclick: () => act("Create safe restore point", "/api/owner-safety/action", { action: "CREATE_SAFE_RESTORE_POINT" }) }, "CREATE SAFE RESTORE POINT"),
+      h("button", { class: "btn", onclick: () => show("VERIFY_BACKUP") }, "VERIFY BACKUP"),
+      signed("ROLL BACK TO LKG", "ROLL_BACK_TO_LKG", "Restores the last known good state. Needs Joci's signature. The current state is moved aside, never deleted."),
+      signed("RESTORE", "RESTORE", "Restore from a chosen backup (id below). Needs Joci's signature.", { fields: [{ name: "id", label: "Backup id" }] })),
+      h("div", { class: "row" }, h("button", { class: "btn", onclick: () => show("VIEW_INCIDENTS") }, "VIEW INCIDENTS"), h("button", { class: "btn", onclick: () => show("VIEW_SECURITY_EVENTS") }, "VIEW SECURITY EVENTS"), h("button", { class: "btn", onclick: () => show("VIEW_APPROVALS") }, "VIEW APPROVALS")), result);
+    if (o.approvals.gatewayPending.length) out.push(h("h2", {}, "Pending approval requests"), table(["Operation", "What", "Requested by", "Cost", "Financial / Security / Data risk", "Reversibility"], o.approvals.gatewayPending.map(x => [x.operation, x.what, x.requestedBy?.type + ":" + x.requestedBy?.id, usd(x.costUsd), `${x.financialRisk} / ${x.securityRisk} / ${x.dataRisk}`, x.reversibility])));
+    return out;
+  },
   async owner() {
     const s = await api("/api/status"), out = [h("h2", {}, "Owner controls"), h("p", { class: "sub" }, "Only Joci's passphrase-protected key can approve. No terminal needed.")];
     if (!s.ownerKey.provisioned) {
@@ -229,10 +262,10 @@ views.brain_command = async () => {
   return [h("h2", {}, "Owner Command"), note("Natural language only selects an operation. Consequential operations always ask for your key; unknown requests do nothing."), h("div", { class: "row" }, inp, h("button", { class: "btn primary", onclick: send }, "Run")), out,
     table(["Operation", "Needs your approval"], b.ownerCommand.commands.map(c => [c.intent, c.consequential ? "yes" : "no"])), note("Command audit chain " + (b.ownerCommand.audit.ok ? "OK" : "BROKEN") + " · entries " + b.ownerCommand.audit.entries)];
 };
-const NAMES = { home: "Home", overview: "Overview", plugins: "Plugins / Themes", finance: "Revenue / Costs / Profit", evidence: "Evidence / Audit", agents: "Agents (5+25)", jobs: "Jobs / Opportunities", money: "Money Engine", approvals: "Approvals", providers: "Model / Tool health", errors: "Errors & Blockers", owner: "Owner Controls", backup: "Backup / Restore / LKG", doctor: "System Doctor", updates: "Update Center", voice: "Voice", documents: "Documents", inbox: "Inbox", connectors: "Connectors", techwatch: "Tech Watch", brain_status: "Brain · Status", brain_orchestrator: "Brain · Orchestrator", brain_planning: "Brain · Planning", brain_capabilities: "Brain · Capability Graph", brain_knowledge: "Brain · Knowledge", brain_simulation: "Brain · Simulation", brain_verification: "Brain · Verification", brain_security: "Brain · Security", brain_opportunities: "Brain · Opportunities", brain_factory: "Brain · Business Factory", brain_blackbox: "Brain · Black Box", brain_recovery: "Brain · Recovery", brain_health: "Brain · Health", brain_command: "Owner Command" };
+const NAMES = { home: "Home", owner_safety: "OWNER SAFETY / CONTROL", overview: "Overview", plugins: "Plugins / Themes", finance: "Revenue / Costs / Profit", evidence: "Evidence / Audit", agents: "Agents (5+25)", jobs: "Jobs / Opportunities", money: "Money Engine", approvals: "Approvals", providers: "Model / Tool health", errors: "Errors & Blockers", owner: "Owner Controls", backup: "Backup / Restore / LKG", doctor: "System Doctor", updates: "Update Center", voice: "Voice", documents: "Documents", inbox: "Inbox", connectors: "Connectors", techwatch: "Tech Watch", brain_status: "Brain · Status", brain_orchestrator: "Brain · Orchestrator", brain_planning: "Brain · Planning", brain_capabilities: "Brain · Capability Graph", brain_knowledge: "Brain · Knowledge", brain_simulation: "Brain · Simulation", brain_verification: "Brain · Verification", brain_security: "Brain · Security", brain_opportunities: "Brain · Opportunities", brain_factory: "Brain · Business Factory", brain_blackbox: "Brain · Black Box", brain_recovery: "Brain · Recovery", brain_health: "Brain · Health", brain_command: "Owner Command" };
 let current = "home";
 async function render() {
-  $("#nav").replaceChildren(h("h1", {}, "ATLASZ"), ...Object.entries(NAMES).map(([k, n]) => h("button", { "aria-current": k === current ? "page" : null, onclick: () => { current = k; render(); } }, n)));
+  $("#nav").replaceChildren(h("h1", {}, "ATLASZ"), h("button", { class: "btn danger big", style: "margin:6px 10px;width:calc(100% - 20px)", onclick: async () => { const r = await ask({ title: "EMERGENCY STOP", text: "Stops all new dispatch and external actions at once. Nothing is deleted.", fields: [PASS], danger: true, ok: "EMERGENCY STOP" }); if (r) act("Emergency stop", "/api/owner-safety/action", { action: "EMERGENCY_STOP", passphrase: r.passphrase }); } }, "EMERGENCY STOP"), ...Object.entries(NAMES).map(([k, n]) => h("button", { "aria-current": k === current ? "page" : null, onclick: () => { current = k; render(); } }, n)));
   const main = $("#main");
   try {
     const nodes = await views[current](); main.replaceChildren(...nodes.flat().filter(Boolean));

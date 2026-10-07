@@ -74,3 +74,4 @@ export function moneyPipelineSummary(pipeline){
 }
 
 export const MONEY_PIPELINE_STATES=STATES;
+export const MONEY_PIPELINE_ALLOWED=ALLOWED;

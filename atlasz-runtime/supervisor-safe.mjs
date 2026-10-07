@@ -13,6 +13,7 @@ import { createSecretVault } from "../atlasz-addons/secret-vault.mjs";
 import { createApprovalRequests } from "../atlasz-addons/approval-requests.mjs";
 import { getDefaultOwnerAuth } from "../atlasz-addons/owner-auth.mjs";
 import { createBrainSystem } from "../atlasz-addons/brain/brain-system.mjs";
+import { createOwnerControlSystem } from "../atlasz-addons/owner-control/owner-control-system.mjs";
 
 export const VERSION = "3.3.0";
 const now = () => new Date().toISOString();
@@ -83,7 +84,14 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
   }));
   for (const agent of state.agents) addons.onAgentRegistered(agent);
   // ---- Brain layer: observes and protects the existing 30 agents (it creates none). Brain failures must never stop the runtime. ----
-  const brain = createBrainSystem({ dir: path.join(dataDir, "brain"), ownerAuth, roster: state.agents.map(a => ({ id: a.id, team: a.role })), safeMode, redact: t => vault.redact(t) });
+  // The Brain's governance consults the unified Owner Control chain; until that chain exists every Brain decision is BLOCKED (fail closed).
+  const ocHolder = { sys: null };
+  const chainProxy = { evaluate: (...a) => (ocHolder.sys ? ocHolder.sys.chain.evaluate(...a) : { verdict: "BLOCK", allowed: false, layer: "OWNER_CONTROL", reason: "CONTROL_CHAIN_NOT_READY", trace: [] }) };
+  const brain = createBrainSystem({ dir: path.join(dataDir, "brain"), ownerAuth, roster: state.agents.map(a => ({ id: a.id, team: a.role })), safeMode, chain: chainProxy, redact: t => vault.redact(t) });
+  // Multi-layer owner control (V7.3 Owner Control): every dispatch of the fixed 30 agents is routed through the chain (owner authority, kill switch, safe mode, security, firewall, black box).
+  const ownerControl = createOwnerControlSystem({ dir: path.join(dataDir, "owner-control"), ownerAuth, gate: emergencyGate, emergencyStatus, safeMode, security: brain.security, blackBox: brain.blackBox, verifier: brain.verifier,
+    roster: state.agents.map(a => ({ id: a.id, team: a.role })), tools: ["hn-search", "screening"] });
+  ocHolder.sys = ownerControl;
   const brainSafe = fn => { try { return fn(); } catch (e) { try { console.log(JSON.stringify({ at: now(), type: "brain_error", error: String(e.message).slice(0, 120) })); } catch { /* ignore */ } return null; } };
   const seen = new Set(state.candidates.map(c => c.id));
   const timers = new Set();
@@ -110,6 +118,8 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
     const eg = emergencyGate({ external: true }), sg = safeMode.gate({ external: true });
     const gate = !eg.allowed ? eg : !sg.allowed ? sg : updateGate({ external: true });
     if (!gate.allowed) { update(agent, "HALTED_BY_OWNER_STOP", "Owner emergency stop active", gate.reason); event("dispatch_blocked", { agentId: agent.id, reason: gate.reason }); return; }
+    const oc = ownerControl.agents.act(agent.id, "EXTERNAL_READ", { external: true, tool: "hn-search" });
+    if (!oc.allowed) { update(agent, "HALTED_BY_OWNER_STOP", "Owner control chain blocked this dispatch", oc.reason); event("dispatch_blocked", { agentId: agent.id, reason: "OWNER_CONTROL:" + oc.reason }); return; }
     const round = Math.floor(state.searchCycles / 5);
     const query = queryLanes[(index + round) % queryLanes.length] + (round % 2 ? " " + topics[(index + round) % topics.length] : "");
     update(agent, "RUNNING", "Search recent public project requests: " + query);
@@ -151,6 +161,8 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
     const eg = emergencyGate({ external: false }), sg = safeMode.gate({ write: true });
     const gate = !eg.allowed ? eg : sg;
     if (!gate.allowed) { update(agent, "HALTED_BY_OWNER_STOP", eg.allowed ? "Safe Mode active" : "Owner emergency stop active", gate.reason); return; }
+    const oc = ownerControl.agents.act(agent.id, "INTERNAL_COMPUTE", { tool: "screening" });
+    if (!oc.allowed) { update(agent, "HALTED_BY_OWNER_STOP", "Owner control chain blocked this dispatch", oc.reason); return; }
     const job = queue.lease({ worker: agent.id });
     if (!job) {
       update(agent, "WAITING_FOR_INPUT", "No unprocessed project request", "NO_QUALIFICATION_TASK_OR_CLIENT_JOB");
@@ -223,7 +235,7 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
       agents: state.agents, blockers, sourceErrors: state.sourceErrors, emergency: emergencyStatus(), safeMode: safeMode.status(), pendingApprovals: approvalRequests.pending().length, queue: queue.stats(), watchdog: watchdog.status(),
       selfCheck: { level: selfCheck.level, problems: selfCheck.checks.filter(c => c.status !== "OK").map(c => ({ id: c.id, status: c.status, detail: c.detail })) },
       vault: vault.status(), internalAddons: addonSnapshot(),
-      brain: brainSafe(() => brain.summary()) ?? { state: "ERROR" }, ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
+      brain: brainSafe(() => brain.summary()) ?? { state: "ERROR" }, ownerControl: brainSafe(() => ownerControl.status()) ?? { state: "ERROR" }, ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
     };
   }
   const watchdog = createWatchdog({ onEscalate: e => safeMode.enter("WATCHDOG:" + e.id, { detail: e.detail }) });
@@ -250,7 +262,7 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
     for (let i = 5; i < 30; i++) schedule(() => execute(i), 1000 + (i - 5) * 50);
   }
   function stop() { stopping = true; watchdog.stop(); for (const t of timers) clearTimeout(t); save(); }
-  return { brain, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
+  return { brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
 }
 
 if (process.env.ATLASZ_TEST_MODE !== "1") {

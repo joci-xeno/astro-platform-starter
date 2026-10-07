@@ -77,11 +77,12 @@ test("simulation: provider outage, queue crash recovery, rollback, routing/confi
   assert.equal(lab.rollback({ before: { v: 1, cfg: { a: 1 } }, change: s => { s.v = 2; s.cfg.a = 9; }, rollbackFn: s => { s.v = 1; s.cfg.a = 1; } }).verdict, "PASS_IN_SIMULATION");
   assert.equal(lab.rollback({ before: { v: 1 }, change: s => { s.v = 2; }, rollbackFn: s => { s.v = 3; } }).verdict, "FAIL");   // incomplete rollback detected
   assert.equal(lab.change({ kind: "AGENT_ROUTING_CHANGE", name: "route all to one agent", state: { routes: { a: "E1", b: "E2" } }, mutate: s => { s.routes.b = "E1"; }, invariants: [{ name: "no agent overloaded", check: s => Object.values(s.routes).filter(x => x === "E1").length < 2 }] }).verdict, "FAIL");
-  const good = ["DISCOVERED", "QUALIFIED", "OFFERED", "WON", "DELIVERED", "INVOICED", "PAID_CLAIMED", "PAID_VERIFIED"];
+  const good = ["DISCOVERED", "QUALIFIED", "PROPOSAL_DRAFT", "APPROVED_TO_SEND", "SENT", "WON", "ASSIGNED", "EXECUTING", "QA_PASSED", "DELIVERY_APPROVED", "DELIVERED", "INVOICE_APPROVED", "INVOICED", "PAID_VERIFIED"];
   assert.equal(lab.moneyTransitions({ path: good, evidence: { paymentConfirmedByLedger: true, customerAcceptance: true } }).verdict, "PASS_IN_SIMULATION");
   assert.match(lab.moneyTransitions({ path: good, evidence: { customerAcceptance: true } }).violations.join(), /PAID_VERIFIED_WITHOUT_LEDGER_EVIDENCE/);
+  assert.match(lab.moneyTransitions({ path: ["INVOICED", "PAID_CLAIMED", "PAID_VERIFIED"], evidence: { paymentConfirmedByLedger: true } }).violations.join(), /UNKNOWN_STATE:PAID_CLAIMED/);   // customer says paid is not a pipeline state
   assert.match(lab.moneyTransitions({ path: ["DISCOVERED", "PAID_VERIFIED"], evidence: { paymentConfirmedByLedger: true } }).violations.join(), /ILLEGAL:DISCOVERED->PAID_VERIFIED/);
-  assert.match(lab.moneyTransitions({ path: ["OFFERED", "WON"], evidence: {} }).violations.join(), /WON_WITHOUT_CUSTOMER_ACCEPTANCE/);
+  assert.match(lab.moneyTransitions({ path: ["SENT", "WON"], evidence: {} }).violations.join(), /WON_WITHOUT_CUSTOMER_ACCEPTANCE/);
   assert.ok(lab.runs().every(r => r.isProof === false && r.environment === "SIMULATION"));
 });
 

@@ -27,6 +27,8 @@ import { createSecretVault } from "../atlasz-addons/secret-vault.mjs";
 import { createTechWatch } from "../atlasz-addons/tech-watch.mjs";
 import { createBrainViews } from "./brain-views.mjs";
 import { createOwnerCommandLayer, COMMANDS } from "../atlasz-addons/brain/owner-command.mjs";
+import { createSystemDoctor } from "../atlasz-addons/owner-control/system-doctor.mjs";
+import { createApprovalGateway } from "../atlasz-addons/owner-control/approval-gateway.mjs";
 import { createOwnerKeystore, signWithKeystore, keystoreStatus } from "../atlasz-addons/owner-keystore.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -266,6 +268,77 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   const updates = () => ({ ...uc().viewModel(), adapters: { detector: Boolean(adapters.detector), stager: Boolean(adapters.stager), tester: Boolean(adapters.tester), securityHealth: Boolean(adapters.securityHealth), kind: localAdapters ? "LOCAL_OFFLINE_PACKAGES" : (updateAdapters ? "INJECTED" : "NONE") },
     inbox: localAdapters ? localAdapters.lastScan() : null,
     notice: adapters.detector ? null : "BLOCKED: no update detector adapter is configured, so nothing can be detected or installed. Fails closed." });
+
+  // ---- Owner Safety / Control (V7.3 Owner Control §15, §16). Real status only: anything not observable is UNKNOWN / NOT_CONFIGURED, never HEALTHY. ----
+  const readJson = f => { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return null; } };
+  const chainState = f => { const p = path.join(stateDir, f); if (!fs.existsSync(p)) return "NOT_CONFIGURED"; try { return verifyChain(readAuditFile(p)).ok !== false ? "OK" : "BROKEN"; } catch { return "BROKEN"; } };
+  async function doctorV2() {
+    const sc = runStartupSelfCheck({ stateDir, ownerAuth: ownerAuth(), expectedAgents: { search: 5, execution: 25 } });
+    const rt = await runtimeDashboard(), d = rt.dashboard, oc = d?.ownerControl ?? null, bk = backups();
+    const chk = id => sc.checks.find(c => c.id === id);
+    const fromCheck = id => { const c = chk(id); if (!c) return { state: "UNKNOWN", detail: "NO_CHECK" }; return c.status === "OK" ? { state: "HEALTHY", detail: c.detail } : c.status === "FAIL" ? { state: "FAILED", detail: c.detail } : { state: "DEGRADED", detail: c.detail }; };
+    const live = (fn, why = "runtime not reachable") => (d ? fn(d) : { state: "UNKNOWN", detail: why });
+    const upd = (() => { try { return uc().viewModel(); } catch { return null; } })();
+    const probes = {
+      runtime: () => (rt.reachable ? { state: "HEALTHY", detail: "status endpoint answered" } : { state: "UNKNOWN", detail: rt.reason }),
+      agent_topology_30: () => live(x => { const s = x.agents.filter(a => a.role === "SEARCH").length, e = x.agents.filter(a => a.role === "EXECUTION").length; return s === 5 && e === 25 ? { state: "HEALTHY", detail: "5+25" } : { state: "BLOCKED", detail: `${s}+${e}` }; }),
+      queue: () => (chk("queue-journal") ? fromCheck("queue-journal") : { state: "NOT_CONFIGURED" }),
+      database: () => fromCheck("runtime-state"),
+      brain_components: () => live(x => (x.brain && x.brain.state !== "ERROR" ? { state: x.brain.topology?.ok ? "HEALTHY" : "DEGRADED", detail: x.brain.orchestrator } : { state: "FAILED", detail: "brain summary error" })),
+      models: () => live(x => { const m = x.brain?.models; return Array.isArray(m) && m.length ? (m.some(z => z.state === "LIVE") ? { state: "DEGRADED", detail: "some models LIVE, others not probed" } : { state: "NOT_CONFIGURED", detail: "no model has a passing probe" }) : { state: "NOT_CONFIGURED", detail: "no models registered" }; }),
+      tools: () => ({ state: "UNKNOWN", detail: "no tool health source connected" }),
+      connectors: () => { try { const c = connectors(); const l = c.connectors ?? c; return Array.isArray(l) && l.some(x => x.status === "LIVE") ? { state: "DEGRADED", detail: "some connectors LIVE" } : { state: "NOT_CONFIGURED", detail: "no connector is LIVE" }; } catch { return { state: "UNKNOWN" }; } },
+      secret_vault: () => fromCheck("secret-vault"),
+      owner_authentication: () => { const k = keystoreStatus(configDir); const a = ownerAuth().status().state; return !k.provisioned ? { state: "NOT_CONFIGURED", detail: "no owner key" } : a === "LIVE" ? { state: "HEALTHY" } : { state: "DEGRADED", detail: a }; },
+      kill_switch: () => { const e = emergency().status(); return e.mode === "RUNNING" ? { state: "HEALTHY", detail: "armed, RUNNING" } : { state: "BLOCKED", detail: "EMERGENCY STOP ACTIVE " + e.mode }; },
+      approval_gateway: () => ({ state: "HEALTHY", detail: createApprovalGateway({ dir: path.join(stateDir, "owner-control", "approvals"), ownerAuth: ownerAuth() }).pending().length + " pending" }),
+      security_brain: () => (oc?.securityBrain && oc.securityBrain !== "NOT_CONFIGURED" ? { state: "HEALTHY", detail: JSON.stringify(oc.securityBrain).slice(0, 120) } : { state: "UNKNOWN", detail: "runtime not reachable" }),
+      financial_firewall: () => { const f = oc?.financialFirewall ?? readJson(path.join(stateDir, "owner-control", "financial-firewall.json")); return f ? { state: "HEALTHY", detail: f.mode ?? "NO_SPEND" } : { state: "UNKNOWN", detail: "no firewall state observed" }; },
+      black_box: () => { const c = chainState("brain/blackbox.jsonl"); return c === "OK" ? { state: "HEALTHY", detail: "hash chain intact" } : c === "BROKEN" ? { state: "FAILED", detail: "hash chain broken" } : { state: "NOT_CONFIGURED", detail: "no black box yet" }; },
+      backup: () => (!bk.items.length ? { state: "NOT_CONFIGURED", detail: "no backup exists" } : bk.items.some(b => !b.ok) ? { state: "FAILED", detail: "a backup is corrupt" } : drills().at(-1)?.ok ? { state: "HEALTHY", detail: "latest backup verified, drill passed" } : { state: "UNKNOWN", detail: "backup exists, restore drill not yet passed" }),
+      last_known_good: () => (bk.lkg ? { state: "HEALTHY", detail: bk.lkg.backupId } : { state: "NOT_CONFIGURED", detail: "no LKG" }),
+      recovery_readiness: () => (!bk.items.length ? { state: "NOT_CONFIGURED" } : bk.items.some(b => !b.ok) ? { state: "FAILED", detail: "corrupt backup" } : bk.lkg && drills().at(-1)?.ok ? { state: "HEALTHY", detail: "LKG + passing drill" } : { state: "UNKNOWN", detail: "need LKG and a passing drill" }),
+      update_center: () => (upd ? { state: upd.freeze?.active ? "BLOCKED" : "HEALTHY", detail: upd.freeze?.active ? "unsafe actions frozen by update" : "idle" } : { state: "UNKNOWN" }),
+    };
+    return createSystemDoctor({ probes }).run();
+  }
+  async function ownerSafety() {
+    const st = await status(), rt = await runtimeDashboard(), oc = rt.dashboard?.ownerControl ?? null, bk = backups(), dr = drills().at(-1) ?? null;
+    const gw = createApprovalGateway({ dir: path.join(stateDir, "owner-control", "approvals"), ownerAuth: ownerAuth() });
+    const fwFile = readJson(path.join(stateDir, "owner-control", "financial-firewall.json"));
+    const doc = await doctorV2();
+    const latest = bk.items[0] ?? null;
+    return {
+      at: new Date().toISOString(),
+      ownerAuthority: { ownerId: "JOCI", state: st.ownerKey.ownerAuthState, provisioned: st.ownerKey.provisioned },
+      killSwitch: { mode: st.emergency.mode, banner: st.emergency.banner ?? null },
+      approvals: { pending: approvalStore().pending().length + gw.pending().length, gatewayPending: gw.pending().slice(0, 20).map(x => ({ id: x.id, operation: x.operation, what: x.what, requestedBy: x.requestedBy, costUsd: x.costUsd, financialRisk: x.financialRisk, securityRisk: x.securityRisk, dataRisk: x.dataRisk, reversibility: x.reversibility })) },
+      securityBrain: oc?.securityBrain ?? "UNKNOWN — runtime not reachable", financialFirewall: oc?.financialFirewall ?? (fwFile ? { mode: fwFile.mode, policy: fwFile.policy } : "NOT_OBSERVED — no firewall state yet (default NO_SPEND)"),
+      blackBox: oc?.blackBox ?? { chain: chainState("brain/blackbox.jsonl") }, safeMode: st.safeMode,
+      currentVersion: rt.dashboard?.version ?? "UNKNOWN — runtime not reachable", lastKnownGood: bk.lkg ?? null,
+      latestBackup: latest ? { id: latest.id, ok: latest.ok, createdAt: latest.createdAt, files: latest.files } : null,
+      restoreReadiness: !bk.items.length ? "NOT_CONFIGURED" : bk.items.some(b => !b.ok) ? "NOT_READY" : bk.lkg && dr?.ok ? "READY" : "UNKNOWN",
+      recoveryStatus: dr ? { lastDrill: dr.at, passed: dr.ok } : "NO_DRILL_YET", systemHealth: { overall: doc.overall, counts: doc.counts, normalOperation: doc.normalOperation },
+      controls: ["EMERGENCY_STOP", "PAUSE_EXTERNAL_ACTIONS", "RESUME", "RUN_SYSTEM_DOCTOR", "CREATE_SAFE_RESTORE_POINT", "VERIFY_BACKUP", "ROLL_BACK_TO_LKG", "RESTORE", "VIEW_INCIDENTS", "VIEW_SECURITY_EVENTS", "VIEW_APPROVALS"],
+      runtimeReachable: rt.reachable
+    };
+  }
+  async function ownerSafetyAction({ action, passphrase = null, confirm = null, id = null } = {}) {
+    switch (action) {
+      case "EMERGENCY_STOP": return setEmergency({ mode: "PAUSE_ALL", passphrase, reason: "Owner Safety panel" });
+      case "PAUSE_EXTERNAL_ACTIONS": return setEmergency({ mode: "STOP_EXTERNAL_ACTIONS", passphrase, reason: "Owner Safety panel" });
+      case "RESUME": return setEmergency({ mode: "RUNNING", passphrase, reason: "Owner Safety panel", confirm });
+      case "RUN_SYSTEM_DOCTOR": return doctorV2();
+      case "CREATE_SAFE_RESTORE_POINT": return backupNow({ label: "restore-point" });
+      case "VERIFY_BACKUP": { const r = drill(); return { drill: { passed: r.passed, files: r.files, mismatches: r.mismatches }, backups: backups().items.map(b => ({ id: b.id, ok: b.ok })) }; }
+      case "ROLL_BACK_TO_LKG": return restoreLastKnownGood({ passphrase });
+      case "RESTORE": return restoreFromBackup({ id, passphrase });
+      case "VIEW_INCIDENTS": return { incidents: brainViews.all().disasterRecovery ?? [], drills: drills().slice(-20) };
+      case "VIEW_SECURITY_EVENTS": return { security: brainViews.all().security ?? null };
+      case "VIEW_APPROVALS": return { legacy: approvalStore().list().slice(-50), gateway: createApprovalGateway({ dir: path.join(stateDir, "owner-control", "approvals"), ownerAuth: ownerAuth() }).list().slice(-50) };
+      default: throw new Error("UNKNOWN_OWNER_SAFETY_ACTION");
+    }
+  }
   const act = async (fn) => { try { return { ok: true, result: await fn() }; } catch (e) { return { ok: false, error: String(e.message) }; } };
   const updateActions = {
     check: () => act(() => uc().checkForUpdates()),
@@ -276,6 +349,6 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
     unfreeze: ({ passphrase }) => act(() => uc().unfreeze({ ownerApproval: sign(passphrase, "UPDATE_UNFREEZE", uc().freezeStatus().updateId) }))
   };
 
-  return { brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }

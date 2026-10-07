@@ -1,9 +1,11 @@
 // Simulation Lab (V7.3 Brain §6): scenario testing on an isolated CLONE of state. Environments SIMULATION / STAGING / LIVE are distinct and never merged.
 // Anything that would touch the outside world is a trap that throws and is recorded. A passing simulation is never proof of LIVE success.
 export const ENVIRONMENTS = Object.freeze(["SIMULATION", "STAGING", "LIVE"]);
-export const MONEY_STATES = Object.freeze(["DISCOVERED", "QUALIFIED", "OFFERED", "NEGOTIATING", "WON", "DELIVERED", "INVOICED", "PAID_CLAIMED", "PAID_VERIFIED", "LOST"]);
-const MONEY_NEXT = { DISCOVERED: ["QUALIFIED", "LOST"], QUALIFIED: ["OFFERED", "LOST"], OFFERED: ["NEGOTIATING", "WON", "LOST"], NEGOTIATING: ["WON", "LOST"], WON: ["DELIVERED", "LOST"], DELIVERED: ["INVOICED"], INVOICED: ["PAID_CLAIMED"], PAID_CLAIMED: ["PAID_VERIFIED", "INVOICED"], PAID_VERIFIED: [], LOST: [] };
+// Simulation uses the REAL Money Engine states/transitions (money-pipeline-controller) so a simulated path is a valid real path. A customer's "I paid" is not a state: it can never reach PAID_VERIFIED.
+export const MONEY_STATES = MONEY_PIPELINE_STATES;
+const MONEY_NEXT = MONEY_PIPELINE_ALLOWED;
 
+import { MONEY_PIPELINE_STATES, MONEY_PIPELINE_ALLOWED } from "../money-pipeline-controller.mjs";
 export class SimulationLiveActionBlocked extends Error { constructor(what) { super("SIMULATION_LIVE_ACTION_BLOCKED:" + what); this.name = "SimulationLiveActionBlocked"; } }
 
 export function createSimulationLab({ now = () => new Date().toISOString() } = {}) {

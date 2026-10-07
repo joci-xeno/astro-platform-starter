@@ -19,10 +19,10 @@ import { createSimulationLab } from "./simulation-lab.mjs";
 import { createCentralBrain, createBrainBus } from "./central-brain.mjs";
 import { computeBrainHealth } from "./brain-health.mjs";
 
-export function createBrainSystem({ dir, ownerAuth, roster = [], gate = emergencyGate, safeMode = null, executors = {}, commandHandlers = {}, drActions = {}, sources = {}, redact = s => s, now = () => new Date().toISOString() } = {}) {
+export function createBrainSystem({ dir, ownerAuth, roster = [], gate = emergencyGate, safeMode = null, chain = null, executors = {}, commandHandlers = {}, drActions = {}, sources = {}, redact = s => s, now = () => new Date().toISOString() } = {}) {
   if (!dir || !ownerAuth) throw new Error("DIR_AND_OWNER_AUTH_REQUIRED");
   const blackBox = createBlackBox({ filePath: path.join(dir, "blackbox.jsonl"), redact, now });
-  const governance = createGovernance({ gate, ownerAuth, safeGate: safeMode ? o => safeMode.gate(o) : null, auditPath: path.join(dir, "governance-audit.jsonl"), now });
+  const governance = createGovernance({ gate, ownerAuth, chain, safeGate: safeMode ? o => safeMode.gate(o) : null, auditPath: path.join(dir, "governance-audit.jsonl"), now });
   const graph = createCapabilityGraph({ file: path.join(dir, "capability-graph.json"), now });
   const planner = createPlanningBrain({ file: path.join(dir, "plans.json"), now });
   const verifier = createVerifier();

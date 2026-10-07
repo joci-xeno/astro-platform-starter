@@ -27,7 +27,8 @@ test("runtime + Brain: prompt-injection text from the external source is quarant
     const q = rt.brain.blackBox.query({ kind: "EXTERNAL_TEXT_QUARANTINED" }); assert.equal(q.length, 2); assert.ok(q.every(e => e.agentId === "SEARCH-1"));
     assert.equal(JSON.stringify(rt.brain.blackBox.all()).includes("sk-abcdefghijkl"), false);  // secret never written to the black box
     assert.equal(rt.brain.opportunity.list().length, 1); assert.equal(rt.brain.opportunity.list()[0].stage, "DISCOVER");
-    assert.equal(rt.dashboard().brain.security.events, 3);   // 3 assessed (2 blocked, 1 allowed)
+    assert.equal(rt.dashboard().brain.security.events, 4);   // 3 texts assessed (2 blocked, 1 allowed) + 1 control-chain check of the dispatch itself
+    assert.equal(rt.dashboard().ownerControl.controlledPaths >= 27, true); assert.equal(rt.ownerControl.agents.report().agents, 30);
   } finally { rt.stop(); rm(d); }
 });
 test("runtime + Brain: screening is recorded in the black box and the graph, flagged NOT independently verified; Brain errors never stop the runtime", async () => {
@@ -41,5 +42,20 @@ test("runtime + Brain: screening is recorded in the black box and the graph, fla
     rt.brain.blackBox.record = () => { throw new Error("disk full"); };                          // simulate a Brain failure
     await rt.search(1);                                                                          // must not throw
     assert.equal(typeof rt.dashboard().system, "string");
+  } finally { rt.stop(); rm(d); }
+});
+
+test("runtime + Owner Control: every dispatch goes through the chain; a quarantined agent is halted; the Brain cannot spend; unregistered agents are refused", async () => {
+  const d = tmp("brt-"); const rt = createRuntime({ dataDir: d, fetchImpl: fakeFetch([hit("5", "I need a freelancer to build a website, budget $500, remote, apply by email.")]) });
+  try {
+    await rt.search(2);
+    assert.ok(rt.brain.blackBox.all().some(e => e.kind === "CONTROL_DECISION" && e.agentId === "SEARCH-3"));       // dispatch was decided by the chain and recorded
+    rt.brain.security.assess({ kind: "PRIVILEGE_REQUEST", agentId: "SEARCH-1", permission: "SPEND" });             // never-grantable request => quarantined
+    const before = rt.state.candidates.length; await rt.search(0);
+    assert.equal(rt.state.agents[0].status, "HALTED_BY_OWNER_STOP"); assert.equal(rt.state.candidates.length, before);
+    const g = rt.brain.governance.authorize({ brain: "ORCHESTRATOR", action: "EXECUTE_TASK", spendUsd: 5, subject: "t" });
+    assert.equal(g.decision === "ALLOW", false);
+    assert.equal(rt.ownerControl.agents.act("SHADOW-1", "INTERNAL_COMPUTE").allowed, false);
+    assert.equal(rt.dashboard().ownerControl.financialFirewall.mode, "NO_SPEND");
   } finally { rt.stop(); rm(d); }
 });

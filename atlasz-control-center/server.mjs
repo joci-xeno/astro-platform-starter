@@ -17,10 +17,10 @@ export function createControlCenterServer(opts = {}) {
   const token = opts.token ?? randomBytes(24).toString("hex");
   let port = 0;
   const get = { "/api/status": () => core.status(), "/api/opportunities": () => core.opportunities(), "/api/approvals": () => core.approvals(), "/api/backups": () => core.backups(),
-    "/api/finance": () => core.finance(), "/api/documents": () => core.documents(), "/api/brain": () => core.brain(), "/api/inbox": () => core.inbox(), "/api/voice": () => core.voice(), "/api/connectors": () => core.connectors(), "/api/techwatch": () => core.techWatch(), "/api/evidence": () => core.evidence(), "/api/brief": () => core.brief(), "/api/prefs": () => core.prefs(), "/api/plugins": () => core.plugins(), "/api/theme": () => core.theme(), "/api/doctor": () => core.doctor(), "/api/updates": () => core.updates() };
+    "/api/finance": () => core.finance(), "/api/documents": () => core.documents(), "/api/brain": () => core.brain(), "/api/owner-safety": () => core.ownerSafety(), "/api/inbox": () => core.inbox(), "/api/voice": () => core.voice(), "/api/connectors": () => core.connectors(), "/api/techwatch": () => core.techWatch(), "/api/evidence": () => core.evidence(), "/api/brief": () => core.brief(), "/api/prefs": () => core.prefs(), "/api/plugins": () => core.plugins(), "/api/theme": () => core.theme(), "/api/doctor": () => core.doctor(), "/api/updates": () => core.updates() };
   const post = {
     "/api/owner-key": b => core.provisionOwnerKey(b), "/api/approvals/decide": b => core.decideApproval(b), "/api/emergency": b => core.setEmergency(b), "/api/safe-mode/exit": b => core.exitSafeMode(b),
-    "/api/brain/command": b => core.brainCommand(b), "/api/runtime/start": () => core.startRuntime(), "/api/runtime/stop": () => core.stopRuntime(),
+    "/api/brain/command": b => core.brainCommand(b), "/api/owner-safety/action": b => core.ownerSafetyAction(b), "/api/runtime/start": () => core.startRuntime(), "/api/runtime/stop": () => core.stopRuntime(),
     "/api/backup": b => core.backupNow(b), "/api/backup/drill": () => core.drill(), "/api/backup/mark-lkg": b => core.markLastKnownGood(b),
     "/api/restore/lkg": b => core.restoreLastKnownGood(b), "/api/restore/backup": b => core.restoreFromBackup(b),
     "/api/updates/check": () => core.updateActions.check(), "/api/updates/test": b => core.updateActions.test(b), "/api/updates/install": b => core.updateActions.install(b),

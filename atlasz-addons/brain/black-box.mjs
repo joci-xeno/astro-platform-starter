@@ -32,5 +32,5 @@ export function createBlackBox({ filePath = null, now = () => new Date().toISOSt
     const a = all(), by = k => a.reduce((m, e) => (e[k] ? (m[e[k]] = (m[e[k]] || 0) + 1, m) : m), {});
     return { events: a.length, errors: a.filter(e => e.error).length, retries: a.filter(e => e.retry).length, costUsd: a.reduce((s, e) => s + (Number(e.costUsd) || 0), 0), byKind: by("kind"), byAgent: by("agentId"), byModel: by("model"), byTool: by("tool") };
   }
-  return { record, query, timeline, stats, all, newCorrelationId, verify: () => chain.verify(), head: () => chain.head() };
+  return { record, query, timeline, stats, all, newCorrelationId, verify: () => chain.verify(), verifyFile: () => chain.verifyFile(), head: () => chain.head() };
 }

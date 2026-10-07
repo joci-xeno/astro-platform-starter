@@ -7,7 +7,7 @@ export const BRAIN_FORBIDDEN = Object.freeze(["GRANT_PERMISSION", "REMOVE_APPROV
 export const EXTERNAL_ACTIONS = Object.freeze(["PUBLISH", "SELL", "SEND_EXTERNAL", "SIGN_CONTRACT", "DEPLOY", "LAUNCH_BUSINESS", "SPEND"]);
 export const APPROVAL_ACTIONS = Object.freeze([...EXTERNAL_ACTIONS, "ADOPT_LESSON", "EXECUTE_RESTORE", "ROLLBACK"]);
 
-export function createGovernance({ gate = emergencyGate, ownerAuth, safeGate = null, auditPath = null, now = () => new Date().toISOString() } = {}) {
+export function createGovernance({ gate = emergencyGate, ownerAuth, safeGate = null, chain = null, auditPath = null, now = () => new Date().toISOString() } = {}) {
   if (!ownerAuth || typeof ownerAuth.verifyApproval !== "function") throw new Error("OWNER_AUTH_REQUIRED");
   const audit = createAuditChain({ filePath: auditPath, now });
   const log = (decision, p, reason) => audit.append("GOV_" + decision, { brain: p.brain ?? null, action: p.action, external: Boolean(p.external), spendUsd: p.spendUsd ?? 0, subject: p.subject ?? null, reason });
@@ -18,6 +18,13 @@ export function createGovernance({ gate = emergencyGate, ownerAuth, safeGate = n
     if (BRAIN_FORBIDDEN.includes(p.action)) return out("DENY", "FORBIDDEN_FOR_BRAINS");
     const external = Boolean(p.external) || EXTERNAL_ACTIONS.includes(p.action);
     const g = gate({ external }); if (g && g.allowed === false) return out("DENY", "OWNER_STOP");
+    // Unified control chain (owner authority, kill switch, safe mode, security, financial firewall). Approvals stay verified below (single consumption).
+    if (chain) {
+      const op = { EXECUTE_RESTORE: "RESTORE" }[p.action] ?? (["PUBLISH", "SELL", "SEND_EXTERNAL", "SIGN_CONTRACT", "DEPLOY", "LAUNCH_BUSINESS", "SPEND", "ADOPT_LESSON", "ROLLBACK"].includes(p.action) ? p.action : external ? "SEND_EXTERNAL" : "INTERNAL_BRAIN_ACTION");
+      const actorType = /^SIMULATION/i.test(p.brain ?? "") ? "SIMULATION" : p.brain === "BUSINESS_FACTORY" ? "BUSINESS_FACTORY" : "BRAIN";
+      const c = chain.evaluate({ actor: { type: actorType, id: p.brain ?? "BRAIN" }, operation: op, external, spendUsd: p.spendUsd, params: { subject: p.subject ?? null, action: p.action }, pathId: "brain." + String(p.brain ?? "unknown").toLowerCase() }, { verifyApproval: false });
+      if (c.verdict === "BLOCK") return out("DENY", "CHAIN:" + c.layer + ":" + c.reason);
+    }
     if (safeGate) { const s = safeGate({ external, write: true }); if (s && s.allowed === false) return out("DENY", "SAFE_MODE"); }
     const spend = Number(p.spendUsd ?? 0);
     if (!Number.isFinite(spend) || spend < 0) return out("DENY", "INVALID_SPEND");
