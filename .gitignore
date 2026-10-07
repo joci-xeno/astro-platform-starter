@@ -24,3 +24,7 @@ pnpm-debug.log*
 .netlify
 dist-stage/
 node_modules/
+
+# python caches
+__pycache__/
+*.pyc
