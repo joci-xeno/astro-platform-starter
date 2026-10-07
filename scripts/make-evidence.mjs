@@ -12,7 +12,7 @@ const commit = (() => { try { return execFileSync("git", ["rev-parse", "--short"
 const pass = run.status === 0 && num("fail") === 0;
 const rec = buildEvidenceRecord({ component: "atlasz-v73-integration (all tests)", commit, environment: "sandbox (" + process.platform + ", node " + process.versions.node + ")",
   label: process.env.ATLASZ_EVIDENCE_LABEL || "SANDBOX", testType: "REGRESSION", result: pass ? "PASS" : "FAIL", error: pass ? null : "see details.tail",
-  details: { tests: num("tests"), pass: num("pass"), fail: num("fail"), skipped: num("skipped"), tail: pass ? undefined : out.slice(-3000) } });
+  details: { tests: num("tests"), pass: num("pass"), fail: num("fail"), skipped: num("skipped"), failedTests: [...out.matchAll(/^not ok \d+ - (.*)$/gm)].map(m => m[1]), tail: pass ? undefined : out.slice(-3000) } });
 fs.mkdirSync(path.join(root, "evidence"), { recursive: true });
 const file = path.join(root, "evidence", "evidence-" + rec.at.replace(/[:.]/g, "-") + ".json");
 fs.writeFileSync(file, JSON.stringify(rec, null, 1));
