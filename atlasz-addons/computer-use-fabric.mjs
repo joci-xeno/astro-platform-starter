@@ -6,12 +6,14 @@ import { ownerGranted } from "./owner-auth.mjs";
 export const OWNER_AUTHORITY=Object.freeze({ownerId:"JOCI",rank:1,masterRank:2,agentRank:3,immutable:true});
 export const COMPUTER_ACTION_LEVELS=Object.freeze({AUTO:"AUTO",ASK_OWNER:"ASK_JOCI",FORBIDDEN:"FORBIDDEN"});
 const ask=new Set(["spend-money","purchase","subscribe","accept-contract","sign-contract","send-payment","bank-change","credential-change","account-security-change","publish-external","delete-cloud-data"]);
-const forbidden=new Set(["disable-owner-control","change-owner-authority","bypass-approval","exfiltrate-secret","disable-audit-log"]);
+const forbidden=new Set(["disable-owner-control","change-owner-authority","bypass-approval","exfiltrate-secret","disable-audit-log","disable-kill-switch","self-approve","change-owner-key","wipe-audit-log","unauthorized-financial-action","read-secret-store","disable-safe-mode"]);
+// AUTO is an explicit allowlist of clearly safe, read-mostly/UI actions. Anything not listed fails closed to ASK_JOCI (never silently AUTO).
+const auto=new Set(["navigate","click","type","scroll","read-ui","read-page","screenshot","copy-text","select","hover","wait","open-tab","close-tab","focus-window","fill-form-draft","download-to-sandbox","upload-from-sandbox"]);
 export function classifyComputerAction(action=""){
  const a=String(action).trim().toLowerCase();
  if(forbidden.has(a))return COMPUTER_ACTION_LEVELS.FORBIDDEN;
  if(ask.has(a))return COMPUTER_ACTION_LEVELS.ASK_OWNER;
- return COMPUTER_ACTION_LEVELS.AUTO;
+ return auto.has(a)?COMPUTER_ACTION_LEVELS.AUTO:COMPUTER_ACTION_LEVELS.ASK_OWNER;
 }
 export function createComputerUseFabric({provider=null,gate:extGate=null}={}){
  const provOk=isTested(provider?.tested,provider?.probeEvidence);

@@ -65,3 +65,14 @@ test("model invocation is blocked by the default owner kill switch (real env-con
     assert.equal(r.calls, 1); assert.match(r.blocked, /DISPATCH_BLOCKED_BY_OWNER_STOP:PAUSE_ALL/);
   } finally { rm(d); }
 });
+
+test("computer-use policy: AUTO is an allowlist, unknown actions fail closed to ASK_JOCI, forbidden never executes even with approval", async () => {
+  const { classifyComputerAction, createComputerUseFabric } = await import("../atlasz-addons/computer-use-fabric.mjs");
+  for (const a of ["navigate", "click", "read-ui", "screenshot"]) assert.equal(classifyComputerAction(a), "AUTO");
+  for (const a of ["spend-money", "send-payment", "totally-new-action", "", "submit-form"]) assert.equal(classifyComputerAction(a), "ASK_JOCI", a);
+  for (const a of ["bypass-approval", "disable-kill-switch", "self-approve", "exfiltrate-secret", "wipe-audit-log"]) assert.equal(classifyComputerAction(a), "FORBIDDEN", a);
+  let calls = 0; const f = createComputerUseFabric({ provider: { name: "p", tested: true, probeEvidence: evidence, execute: async () => { calls++; return 1; } }, gate: () => ({ allowed: true }) });
+  assert.equal((await f.execute({ agentId: "a", action: "totally-new-action", ownerApproved: true })).executed, false);   // bare boolean never approves
+  assert.equal((await f.execute({ agentId: "a", action: "bypass-approval", ownerApproved: true })).executed, false);
+  assert.equal(calls, 0);
+});
