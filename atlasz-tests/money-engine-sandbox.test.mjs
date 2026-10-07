@@ -90,6 +90,10 @@ test("HAPPY PATH (SANDBOX): opportunity > deal > job > plan > orchestrator > age
     assert.equal(t.decision.status, "WON"); assert.equal(t.work.status, "CLOSED"); assert.equal(t.result.deliveries[0].status, "DELIVERED"); assert.equal(t.money.invoices[0].status, "VERIFIED_PAID"); assert.equal(t.money.payments[0].status, "VERIFIED");
     assert.equal(t.money.profit.verifiedNetProfitUsd, 187.5); assert.equal(t.work.artifacts[0].delivery, "DELIVERED");
     const pn = m.panel(); assert.equal(pn.money.verifiedRevenueUsd, 200); assert.equal(pn.money.countsAsRevenue, false); assert.equal(pn.environment, "SANDBOX");
+    // the entity graph recorded the real chain by itself (no manual linking): opportunity > deal > job > agent/artifact/invoice > payment
+    const nb = w.brain.entityGraph.neighbors({ tenantId: "ATLASZ", type: "opportunity", id: d.opportunityId, depth: 6 });
+    assert.deepEqual(new Set(nb.map(n => n.type)), new Set(["deal", "job", "agent", "artifact", "invoice", "payment", "customer"])); assert.equal(w.brain.entityGraph.integrity().ok, true);
+    assert.equal(m.engines.crm.customer360("cust-1").money.invoicesVerifiedPaid, 1); assert.equal(m.engines.crm.pipeline().counts.WON, 1);
     // the Control Center reads the SAME persisted state: sandbox money is shown as sandbox, LIVE stays at zero
     const cc = createMoneyViews({ stateDir: w.r.dir }), cm = cc.money();
     assert.equal(cm.sandbox.verifiedReceivedUsd, 200); assert.equal(cm.live.verifiedReceivedUsd, 0); assert.equal(cm.live.verifiedNetProfitUsd, 0); assert.equal(cm.sandbox.payments.VERIFIED, 1); assert.equal(cm.sandbox.outreachSent >= 1, true);

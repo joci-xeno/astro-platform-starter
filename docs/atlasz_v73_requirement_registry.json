@@ -95,7 +95,7 @@
     52
    ]
   },
-  "item_verified_count": 900
+  "item_verified_count": 905
  },
  "requirements": [
   {
@@ -22573,6 +22573,142 @@
    "test_status": "TESTED_SANDBOX",
    "classification": "SANDBOX",
    "next_action": "Windows run evidence; provider adapters"
+  },
+  {
+   "id": "ATLASZ-PKG84-011",
+   "title": "Recurring / subscription engine: contract != revenue; activation needs customer-acceptance evidence + owner approval bound to terms; idempotent period invoice DRAFTS; catch-up limit; pause/cancel/price change owner-gated; contracted vs verified recurring revenue kept apart; dunning is recommendation only",
+   "level": "item",
+   "section": 77,
+   "description": "Recurring / subscription engine: contract != revenue; activation needs customer-acceptance evidence + owner approval bound to terms; idempotent period invoice DRAFTS; catch-up limit; pause/cancel/price change owner-gated; contracted vs verified recurring revenue kept apart; dunning is recommendation only",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/business/recurring-billing.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/recurring-billing.test.mjs",
+    "atlasz-tests/control-center-money-views.test.mjs"
+   ],
+   "evidence": [
+    "10 tests + 5 mutation checks (all caught); wired into Money Engine panel and Control Center"
+   ],
+   "blocker": "No external subscription/payment provider; SANDBOX-verified only; tax rules UNVERIFIED",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Provider adapters; LIVE evidence"
+  },
+  {
+   "id": "ATLASZ-PKG84-012",
+   "title": "Durable tenant-isolated Entity Graph (customers, companies, contacts, opportunities, deals, jobs, documents, communications, invoices, payments, artifacts, agents, subscriptions, follow-ups): typed relations, merge/retire trail, duplicate suggestions, integrity check; Money Engine writes links as the flow happens",
+   "level": "item",
+   "section": 77,
+   "description": "Durable tenant-isolated Entity Graph (customers, companies, contacts, opportunities, deals, jobs, documents, communications, invoices, payments, artifacts, agents, subscriptions, follow-ups): typed relations, merge/retire trail, duplicate suggestions, integrity check; Money Engine writes links as the flow happens",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/business/entity-graph.mjs; atlasz-addons/brain/brain-system.mjs; atlasz-addons/business/money-engine.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/entity-graph.test.mjs",
+    "atlasz-tests/money-engine-sandbox.test.mjs",
+    "atlasz-tests/memory-fabric.test.mjs"
+   ],
+   "evidence": [
+    "7 tests + 3 of 4 mutation checks caught (4th equivalent: defence in depth); found and fixed a traversal bug (type filter stopped traversal); replaced the process-global legacy graph in the Brain"
+   ],
+   "blocker": "Control Center graph panel not built",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Graph panel"
+  },
+  {
+   "id": "ATLASZ-PKG84-013",
+   "title": "CRM core as a view over the Entity Graph and engines: customer 360, pipeline board, history, follow-ups (reminders only), data-quality; stores no customer/deal/money data",
+   "level": "item",
+   "section": 77,
+   "description": "CRM core as a view over the Entity Graph and engines: customer 360, pipeline board, history, follow-ups (reminders only), data-quality; stores no customer/deal/money data",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/business/crm.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/crm.test.mjs",
+    "atlasz-tests/money-engine-sandbox.test.mjs"
+   ],
+   "evidence": [
+    "5 tests; customer 360 follows engine state with nothing cached; verified against a full sandbox flow"
+   ],
+   "blocker": "No Control Center CRM panel; no external CRM adapter",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "CRM panel"
+  },
+  {
+   "id": "ATLASZ-PKG84-014",
+   "title": "Universal Inbox pipeline RECEIVE>SECURITY SCREEN>CLASSIFY>ENTITY LINK>JOB/DEAL LINK>PRIORITIZE>ROUTE>RECORD: quarantine before reading, verified-id linking, ambiguity reported, reply recorded only with provider evidence, payment messages are claims; hosted in the runtime",
+   "level": "item",
+   "section": 77,
+   "description": "Universal Inbox pipeline RECEIVE>SECURITY SCREEN>CLASSIFY>ENTITY LINK>JOB/DEAL LINK>PRIORITIZE>ROUTE>RECORD: quarantine before reading, verified-id linking, ambiguity reported, reply recorded only with provider evidence, payment messages are claims; hosted in the runtime",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/business/inbox-pipeline.mjs; atlasz-addons/universal-inbox.mjs; atlasz-runtime/supervisor-safe.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/inbox-pipeline.test.mjs",
+    "atlasz-tests/money-engine-hosted.test.mjs"
+   ],
+   "evidence": [
+    "6 tests + 5 mutation checks (all caught); sources CUSTOMER_REPLY and JOB_INVITATION added"
+   ],
+   "blocker": "No real inbound connector (email etc.); Control Center inbox pipeline view not built; runtime and Control Center both open the inbox chain",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Authorized inbound connectors; single-writer inbox"
+  },
+  {
+   "id": "ATLASZ-PKG84-015",
+   "title": "Windows test hardening: LF endings, junction symlinks, rm retries, POSIX-signal semantics; CI annotates failing tests",
+   "level": "item",
+   "section": 77,
+   "description": "Windows test hardening: LF endings, junction symlinks, rm retries, POSIX-signal semantics; CI annotates failing tests",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-tests/helpers.mjs; .gitattributes; .github/workflows/build-windows-installer.yml",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/canonical-runtime.test.mjs",
+    "atlasz-tests/tenant-isolation.test.mjs"
+   ],
+   "evidence": [
+    "static fixes for likely causes; first CI run failed at the test step and logs are not downloadable from this workspace"
+   ],
+   "blocker": "No Windows run since the fixes; actual failing tests unknown",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "One owner-approved manual workflow run; read failures from annotations"
   }
  ]
 }

@@ -6,7 +6,7 @@ import { createAuditChain } from "./audit-chain.mjs";
 import { isTested } from "./probe-evidence.mjs";
 import { emergencyGate } from "./emergency-stop.mjs";
 
-export const SOURCES = Object.freeze(["EMAIL", "AGENT_MESSAGE", "SYSTEM_ALERT", "APPROVAL_REQUEST", "JOB_EVENT", "PAYMENT_EVENT", "CONNECTOR_EVENT"]);
+export const SOURCES = Object.freeze(["EMAIL", "AGENT_MESSAGE", "SYSTEM_ALERT", "APPROVAL_REQUEST", "JOB_EVENT", "PAYMENT_EVENT", "CONNECTOR_EVENT", "CUSTOMER_REPLY", "JOB_INVITATION"]);
 export const STATUSES = Object.freeze(["NEW", "READ", "ACTIONED", "ARCHIVED"]);
 const PRIORITY_RULES = [[/(emergency|safe mode|tamper|corrupt|crash|failed)/i, "CRITICAL"], [/(approval|urgent|deadline|payment|invoice|asap|sürgős)/i, "HIGH"], [/(reply|question|quote|job)/i, "NORMAL"]];
 const classify = (source, text) => (source === "APPROVAL_REQUEST" || source === "SYSTEM_ALERT" && /safe mode|tamper|emergency/i.test(text)) ? "CRITICAL" : (PRIORITY_RULES.find(([r]) => r.test(text))?.[1] ?? "LOW");

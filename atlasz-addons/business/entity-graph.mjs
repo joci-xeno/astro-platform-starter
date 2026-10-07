@@ -59,7 +59,8 @@ export function createEntityGraph({ file = null, now = () => new Date().toISOStr
       for (const n of frontier) for (const e of edgesOf(tenantId, n.type, n.id)) {
         if (relations && !relations.includes(e.relation)) continue;
         const o = e.from.type === n.type && e.from.id === n.id ? e.to : e.from, k = key(tenantId, o.type, o.id); if (seen.has(k)) continue; seen.add(k);
-        const ent = S.data.entities[k]; if (!ent || ent.retired || (types && !types.includes(ent.type))) continue; out.push({ depth: d, via: e.relation, type: ent.type, id: ent.id, stub: ent.stub, attributes: clone(ent.attributes) }); next.push(ent);
+        const ent = S.data.entities[k]; if (!ent || ent.retired) continue; next.push(ent);                       // a type filter limits what is REPORTED, never what is traversed
+        if (!types || types.includes(ent.type)) out.push({ depth: d, via: e.relation, type: ent.type, id: ent.id, stub: ent.stub, attributes: clone(ent.attributes) });
       }
       frontier = next;
     }

@@ -19,6 +19,8 @@ import { createInvoiceService } from "./invoice-service.mjs";
 import { createPaymentVerifier } from "./payment-verification.mjs";
 import { createFinanceIntelligence } from "./finance-intelligence.mjs";
 import { createRecurringBilling } from "./recurring-billing.mjs";
+import { createCrm } from "./crm.mjs";
+import { createInboxPipeline } from "./inbox-pipeline.mjs";
 
 export function createMoneyEngine({ dir, ownerAuth, brain, environment = "SANDBOX", adapters = {}, extract, qaRunners = {}, now = () => new Date().toISOString(), tenantId = "ATLASZ", requiredCapabilities = ["screen"] } = {}) {
   if (!dir || !ownerAuth || !brain || typeof extract !== "function") throw new Error("DIR_OWNERAUTH_BRAIN_EXTRACT_REQUIRED");
@@ -35,6 +37,11 @@ export function createMoneyEngine({ dir, ownerAuth, brain, environment = "SANDBO
   const qa = createQaFactory({ security: brain.security, runners: qaRunners, blackBox: bb, now });
   const judges = createJudgePanel({ blackBox: bb, now });
   const finance = createFinanceIntelligence({ file: p("finance.json"), ledger, jobs, payments, environment, now });
+  // Entity graph = the single source of relationships (customer/opportunity/deal/job/invoice/payment/agent). Links are written as the real flow happens; a graph failure never blocks business logic.
+  const graph = brain.entityGraph ?? null;
+  const gl = (a, ai, b, bi, rel, evidence = "money-engine") => { try { graph?.linkEntities({ tenantId, fromType: a, fromId: ai, toType: b, toId: bi, relation: rel, evidence }); } catch (e) { try { bb.record({ kind: "ENTITY_LINK_FAILED", resource: `${a}:${ai}->${b}:${bi}`, reason: String(e.message).slice(0, 80) }); } catch { /* ignore */ } } };
+  const crm = graph ? createCrm({ graph, tenantId, file: p("crm.json"), now, blackBox: bb, lookups: { deal: id => deals.get(id), job: id => jobs.get(id), invoice: id => invoices.get(id), payment: id => payments.get(id), communication: id => comms.get(id), deals: () => deals.list(),
+    history: (t, id) => (t === "deal" ? deals.get(id)?.history : t === "job" ? jobs.get(id)?.history : t === "invoice" ? invoices.get(id)?.history : null) ?? [] } }) : null;
   const seen = new Set();
   const search = createSearchPipeline({ security: brain.security, opportunity: brain.opportunity, graph: brain.graph, blackBox: bb, isDuplicate: raw => seen.has(raw.id), extract, requiredCapabilities, now });
   // internal evidence readers for the independent verifier
@@ -50,6 +57,7 @@ export function createMoneyEngine({ dir, ownerAuth, brain, environment = "SANDBO
     if (!r.handoff) return stop(r.stage, (r.reasons ?? []).join(","), { quarantined: r.quarantined === true, correlationId: r.correlationId });
     const o = brain.opportunity.get(r.opportunityId), dealId = "deal-" + r.opportunityId;
     deals.create({ id: dealId, tenantId, opportunityId: r.opportunityId, source: raw.source, agentId });
+    gl("opportunity", r.opportunityId, "deal", dealId, "BECAME");
     deals.transition(dealId, "SCREENED", { screen: { decision: "ALLOW" } });
     const reasons = o.confidence?.note ? [o.confidence.note] : ["PRELIMINARY_PASS"];
     if (!r.preQualified) return ok("SCREENED", { dealId, opportunityId: r.opportunityId, preQualified: false, salesAction: r.salesAction, correlationId: r.correlationId });
@@ -78,7 +86,7 @@ export function createMoneyEngine({ dir, ownerAuth, brain, environment = "SANDBO
   function win(dealId, { acceptance, ownerApproval, scope, deliverables, goal }) {
     deals.transition(dealId, "WON", { acceptance, ownerApproval });
     const d = deals.get(dealId), j = jobs.create({ id: "job-" + dealId, tenantId, entityId: d.entityId, source: "DEAL:" + dealId, opportunityId: d.opportunityId, dealId, contractRef: acceptance.reference, goal, scope, deliverables, correlationId: null });
-    deals.attachJob(dealId, j.id); jobs.transition(j.id, "SCOPED"); return ok("WON", { jobId: j.id });
+    deals.attachJob(dealId, j.id); gl("deal", dealId, "job", j.id, "HAS_JOB"); jobs.transition(j.id, "SCOPED"); return ok("WON", { jobId: j.id });
   }
 
   // ---- 3. EXECUTION through the governed dispatch (30-agent runtime), recorded on the universal job ------------------------------------------------------
@@ -89,7 +97,7 @@ export function createMoneyEngine({ dir, ownerAuth, brain, environment = "SANDBO
     const dj = brain.dispatch.get(jobId);
     if (dj?.planId && jobs.get(jobId).status === "SCOPED") jobs.transition(jobId, "PLANNED", { planId: dj.planId });
     if (r.status !== "DONE") return stop("EXECUTION", r.status + (r.reason ? ":" + r.reason : ""), { dispatch: r.status });   // IN_PROGRESS / ALREADY_DONE are not re-executed
-    const agent = dj.assignments.at(-1)?.agentId; jobs.attach(jobId, "agents", agent);
+    const agent = dj.assignments.at(-1)?.agentId; jobs.attach(jobId, "agents", agent); if (agent) gl("job", jobId, "agent", agent, "EXECUTED_BY");
     if (jobs.get(jobId).status === "PLANNED") jobs.transition(jobId, "ASSIGNED"); if (jobs.get(jobId).status === "ASSIGNED") jobs.transition(jobId, "IN_PROGRESS");
     return ok("EXECUTED", { agentId: agent, dispatchStatus: r.status });
   }
@@ -97,7 +105,7 @@ export function createMoneyEngine({ dir, ownerAuth, brain, environment = "SANDBO
   // ---- 4. QA -> independent judge -> artifact verification -> job VERIFIED -----------------------------------------------------------------------------
   function checkWork(jobId, artifactId, { type = "DOCUMENT", spec = {}, skip = [], required = [], highValue = false, generatorModelId = null, generatorFamily = null, attempt = 1 } = {}) {
     const a = artifacts.get(artifactId), content = artifacts.read(artifactId)?.toString("utf8");
-    if (!jobs.get(jobId).artifacts.includes(artifactId)) jobs.attach(jobId, "artifacts", artifactId);
+    if (!jobs.get(jobId).artifacts.includes(artifactId)) { jobs.attach(jobId, "artifacts", artifactId); gl("job", jobId, "artifact", artifactId, "PRODUCED"); }
     if (jobs.get(jobId).status === "IN_PROGRESS") jobs.transition(jobId, "IN_QA");
     const q = qa.run({ type, artifact: { id: artifactId, content, hash: a.hash }, spec, skip, required });
     artifacts.recordQa(artifactId, { status: q.status, checks: q.checks, artifactHash: a.hash });
@@ -123,12 +131,12 @@ export function createMoneyEngine({ dir, ownerAuth, brain, environment = "SANDBO
   }
 
   // ---- 6. INVOICE -> PAYMENT CLAIM -> AUTHORITATIVE VERIFICATION -------------------------------------------------------------------------------------------
-  function draftInvoice(jobId, { customerId, items, taxes = [], dueDate }) { const v = invoices.create({ jobId, customerId, items, taxes, dueDate }); invoices.ready(v.id); return ok("INVOICE_READY", { invoiceId: v.id, total: v.total, approvalSubject: v.id + ":" + v.total + ":" + v.currency, action: "ISSUE_INVOICE" }); }
+  function draftInvoice(jobId, { customerId, items, taxes = [], dueDate }) { const v = invoices.create({ jobId, customerId, items, taxes, dueDate }); invoices.ready(v.id); gl("job", jobId, "invoice", v.id, "BILLED_BY"); { const dl = jobs.get(jobId)?.dealId; if (dl) gl("customer", customerId, "deal", dl, "OWNS_DEAL"); } return ok("INVOICE_READY", { invoiceId: v.id, total: v.total, approvalSubject: v.id + ":" + v.total + ":" + v.currency, action: "ISSUE_INVOICE" }); }
   function issueInvoice(jobId, invoiceId, ownerApproval) { invoices.issue(invoiceId, ownerApproval); jobs.transition(jobId, "INVOICED", { invoiceId }); return ok("INVOICE_ISSUED"); }
   const sendInvoice = (invoiceId, communicationId) => (invoices.markSent(invoiceId, communicationId), ok("INVOICE_SENT"));
   function claimPayment(jobId, invoiceId, { claimant, amount, via = "MESSAGE" }) {
     const v = invoices.get(invoiceId); invoices.claimPaid(invoiceId, { claimant, via, amount });
-    const c = payments.claim({ invoiceId, jobId, amount: amount ?? v.total, currency: v.currency, claimant, via }); if (jobs.get(jobId).status === "INVOICED") jobs.transition(jobId, "PAYMENT_PENDING");
+    const c = payments.claim({ invoiceId, jobId, amount: amount ?? v.total, currency: v.currency, claimant, via }); gl("payment", c.id, "invoice", invoiceId, "SETTLES", "CLAIM_NOT_VERIFIED"); if (jobs.get(jobId).status === "INVOICED") jobs.transition(jobId, "PAYMENT_PENDING");
     return ok("PAYMENT_CLAIMED", { paymentId: c.id, verified: false });
   }
   async function verifyPayment(jobId, paymentId, authorityId) {
@@ -171,5 +179,5 @@ export function createMoneyEngine({ dir, ownerAuth, brain, environment = "SANDBO
       money: { forecastUsd: fr.FORECAST.totalUsd, estimateCostUsd: fr.ESTIMATE.costUsd, claimedNotVerifiedUsd: fr.CLAIM.amountUsd, actualUnverifiedCostUsd: fr.ACTUAL.costUsd, verifiedRevenueUsd: fr.VERIFIED_ACTUAL.revenueUsd, verifiedCostUsd: fr.VERIFIED_ACTUAL.costUsd, grossProfitUsd: fr.VERIFIED_ACTUAL.grossProfitUsd, verifiedNetProfitUsd: fr.VERIFIED_ACTUAL.netProfitUsd, countsAsRevenue: fr.VERIFIED_ACTUAL.countsAsRevenue }, judges: judges.list().map(x => x.id) };
   }
   return { discover, prepareOutreach, sendOutreach, recordReply, win, execute, checkWork, prepareDelivery, deliver, draftInvoice, issueInvoice, sendInvoice, claimPayment, verifyPayment, recordCost, close, trace, panel,
-    engines: { recurring, jobs, artifacts, qa, judges, comms, deals, delivery, invoices, payments, finance, ledger, search, evidence }, environment };
+    engines: { crm, graph, recurring, jobs, artifacts, qa, judges, comms, deals, delivery, invoices, payments, finance, ledger, search, evidence }, environment };
 }

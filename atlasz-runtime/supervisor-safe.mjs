@@ -18,6 +18,8 @@ import { getDefaultOwnerAuth } from "../atlasz-addons/owner-auth.mjs";
 import { createBrainSystem } from "../atlasz-addons/brain/brain-system.mjs";
 import { createSearchPipeline } from "../atlasz-addons/brain/search-pipeline.mjs";
 import { createMoneyEngine } from "../atlasz-addons/business/money-engine.mjs";
+import { createUniversalInbox } from "../atlasz-addons/universal-inbox.mjs";
+import { createInboxPipeline } from "../atlasz-addons/business/inbox-pipeline.mjs";
 import { createOwnerControlSystem } from "../atlasz-addons/owner-control/owner-control-system.mjs";
 
 export const VERSION = "3.3.0";
@@ -108,6 +110,10 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
   // Money Engine hosted in the runtime (durable under <data>/money). LIVE environment with NO provider adapters: every external stage reports NOT_CONNECTED /
   // EXTERNAL_VERIFICATION_REQUIRED, so nothing can be SENT / WON / DELIVERED / PAID here until Joci connects real adapters and signs approvals.
   const moneyEngine = createMoneyEngine({ dir: path.join(dataDir, "money"), ownerAuth, brain, environment: "LIVE", adapters: {}, extract: raw => qualify({ title: raw.title, description: raw.text, published: raw.published }), now });
+  // Universal Inbox + pipeline (RECEIVE > SECURITY SCREEN > CLASSIFY > ENTITY LINK > DEAL LINK > PRIORITIZE > ROUTE > RECORD). No inbound endpoint is exposed: sources must be authorized connectors calling receive().
+  const inbox = createUniversalInbox({ dir: path.join(dataDir, "inbox"), ownerAuth, now });
+  const inboxPipeline = createInboxPipeline({ inbox, security: brain.security, graph: brain.entityGraph, tenantId: "ATLASZ", file: path.join(dataDir, "inbox", "pipeline.json"), blackBox: brain.blackBox, now,
+    lookups: { deal: id => moneyEngine.engines.deals.get(id), job: id => moneyEngine.engines.jobs.get(id) }, handlers: { recordReply: (dealId, inbound) => moneyEngine.recordReply(dealId, inbound) } });
   const brainSafe = fn => { try { return fn(); } catch (e) { try { console.log(JSON.stringify({ at: now(), type: "brain_error", error: String(e.message).slice(0, 120) })); } catch { /* ignore */ } return null; } };
   brainSafe(() => brain.dispatch?.resumeAll());                           // restart: in-flight governed jobs go back to QUEUED (attempts, plans, checkpoints preserved)
   const seen = new Set(state.candidates.map(c => c.id));
@@ -316,7 +322,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
       agents: state.agents, blockers, sourceErrors: state.sourceErrors, emergency: emergencyStatus(), safeMode: safeMode.status(), pendingApprovals: approvalRequests.pending().length, queue: queue.stats(), watchdog: watchdog.status(),
       selfCheck: { level: selfCheck.level, problems: selfCheck.checks.filter(c => c.status !== "OK").map(c => ({ id: c.id, status: c.status, detail: c.detail })) },
       vault: vault.status(), internalAddons: addonSnapshot(),
-      brain: brainSafe(() => brain.summary()) ?? { state: "ERROR" }, moneyEngine: brainSafe(() => moneyEngine.panel()) ?? { state: "ERROR" }, ownerControl: brainSafe(() => ownerControl.status()) ?? { state: "ERROR" }, ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
+      brain: brainSafe(() => brain.summary()) ?? { state: "ERROR" }, moneyEngine: brainSafe(() => moneyEngine.panel()) ?? { state: "ERROR" }, inbox: brainSafe(() => ({ ...inbox.counts(), pipeline: inboxPipeline.summary() })) ?? { state: "ERROR" }, ownerControl: brainSafe(() => ownerControl.status()) ?? { state: "ERROR" }, ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
     };
   }
   const watchdog = createWatchdog({ onEscalate: e => safeMode.enter("WATCHDOG:" + e.id, { detail: e.detail }) });
@@ -343,7 +349,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
     for (let i = 5; i < 30; i++) schedule(() => execute(i), 1000 + (i - 5) * 50);
   }
   function stop() { stopping = true; watchdog.stop(); for (const t of timers) clearTimeout(t); save(); }
-  return { moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
+  return { inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
 }
 
 if (process.env.ATLASZ_TEST_MODE !== "1") {

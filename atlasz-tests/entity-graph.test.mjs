@@ -37,6 +37,7 @@ test("full chain customer > opportunity > deal > job > artifact/agent, invoice >
   assert.equal(g.neighbors({ tenantId: T, type: "customer", id: "c1", depth: 1 }).length, 1);
   assert.deepEqual(g.neighbors({ tenantId: T, type: "job", id: "j1", relations: ["EXECUTED_BY"] }).map(n => n.id), ["E3"]);
   assert.equal(g.neighbors({ tenantId: T, type: "invoice", id: "i1", depth: 1, types: ["payment"] })[0].id, "p1");
+  assert.deepEqual(g.neighbors({ tenantId: T, type: "customer", id: "c1", depth: 4, types: ["agent"] }).map(n => n.id), ["E3"]);   // filtered by type but traversed through opportunity > deal > job
 });
 
 test("identical links merge evidence instead of duplicating; stubs are visible and fill in on upsert", () => {
