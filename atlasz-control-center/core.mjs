@@ -17,6 +17,7 @@ import { createLocalUpdateAdapters, SELFTEST } from "../atlasz-addons/local-upda
 import { createPluginManager } from "../atlasz-addons/plugin-manager.mjs";
 import { buildDailyBrief, answerQuery, DEFAULT_PREFS } from "../atlasz-addons/master-brief.mjs";
 import { assessImpact } from "../atlasz-addons/human-core.mjs";
+import { createMobileApi } from "../atlasz-addons/mobile-api.mjs";
 import { createApprovalRequests } from "../atlasz-addons/approval-requests.mjs";
 import { createOwnerKeystore, signWithKeystore, keystoreStatus } from "../atlasz-addons/owner-keystore.mjs";
 
@@ -107,6 +108,13 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
     if (typeof p.enabled === "boolean") next.enabled = p.enabled;
     fs.writeFileSync(prefsFile, JSON.stringify(next, null, 1)); return next;
   }
+  // Mobile control backend (transport-agnostic; the local server does NOT expose it). Reads are real core views.
+  let mobileApi = null;                                                         // one instance: nonce + rate-limit state must persist across requests
+  const mobile = () => (mobileApi ??= createMobileApi({ ownerAuth: createOwnerAuth({ publicKeyB64: keystoreStatus(configDir).publicKeyB64, stateDir: path.join(stateDir, "mobile", "auth") }), emergency: emergency(), approvalStore: approvalStore(), auditDir: path.join(stateDir, "mobile"),
+    reads: { STATUS: async () => { const s = await status(); return { runtime: s.runtime.status, topology: s.topology, emergency: s.emergency.mode, safeMode: s.safeMode.mode, queue: s.queue }; },
+      REFRESH: async () => { const s = await status(); return { at: s.at, runtime: s.runtime.status }; }, APPROVALS: async () => approvals().pending.map(r => ({ id: r.id, what: r.what, risk: r.risk, cost: r.costUsd })),
+      ALERTS: async () => { const s = await status(); return { blockers: s.blockers, safeMode: s.safeMode.mode === "SAFE_MODE" ? s.safeMode.reason : null, dead: s.queue?.dead ?? 0 }; }, MONEY: async () => { const f = finance(); return { verifiedRevenueUsd: f.revenue.verifiedReceivedUsd, costsUsd: f.costs.totalUsd, verifiedNetProfitUsd: f.profit.verifiedNetUsd, unconfirmedPipelineUsd: f.revenue.unconfirmedPipelineUsd }; },
+      JOBS: async () => opportunities().items.slice(-20).map(l => ({ id: l.id, title: l.title, outreach: l.outreachStatus, project: l.projectStatus })), HEALTH: async () => { const d = await doctor(); return { level: d.level, findings: d.findings.length }; } } }));
   async function brief() { return { prefs: prefs(), ...buildDailyBrief({ status: await status(), finance: finance(), approvals: approvals(), prefs: prefs() }) }; }
   async function chat({ q = "" } = {}) { return answerQuery(String(q).slice(0, 500), { status: await status(), finance: finance(), approvals: approvals() }); }
   function opportunities() {
@@ -228,6 +236,6 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
     unfreeze: ({ passphrase }) => act(() => uc().unfreeze({ ownerApproval: sign(passphrase, "UPDATE_UNFREEZE", uc().freezeStatus().updateId) }))
   };
 
-  return { brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }
