@@ -2,6 +2,9 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
+import { fileURLToPath } from "node:url";
+import { createEvidenceSources } from "../atlasz-addons/brain/evidence-sources.mjs";
+import { mapRecoverySources } from "../atlasz-addons/owner-control/recovery-source-map.mjs";
 import { createInternalAddonHub } from "../atlasz-addons/internal-integration-hub.mjs";
 import { emergencyGate, emergencyStatus } from "../atlasz-addons/emergency-stop.mjs";
 import { createDurableQueue } from "../atlasz-addons/durable-queue.mjs";
@@ -94,8 +97,10 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
     executors: Object.fromEntries(execIds.map(id => [id, args => screeningExecutor(id, args)])), lookups: { internalRecord: claim => internalRecord(claim) },
     dispatchOptions: { maxAttempts: 3, backoff: { baseMs: retryBaseMs, maxMs: Math.max(retryBaseMs, 60000) } } });
   // Multi-layer owner control (V7.3 Owner Control): every dispatch of the fixed 30 agents is routed through the chain (owner authority, kill switch, safe mode, security, firewall, black box).
-  const ownerControl = createOwnerControlSystem({ dir: path.join(dataDir, "owner-control"), ownerAuth, gate: emergencyGate, emergencyStatus, safeMode, security: brain.security, blackBox: brain.blackBox, verifier: brain.verifier,
-    roster: state.agents.map(a => ({ id: a.id, team: a.role })), tools: ["hn-search", "screening"] });
+  fs.mkdirSync(path.join(dataDir, "brain"), { recursive: true }); fs.mkdirSync(path.join(dataDir, "ledger"), { recursive: true });
+  const recoveryMap = mapRecoverySources({ dataDir, appDir: path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..") });
+  const ownerControl = createOwnerControlSystem({ sources: recoveryMap.sources, dir: path.join(dataDir, "owner-control"), ownerAuth, gate: emergencyGate, emergencyStatus, safeMode, security: brain.security, blackBox: brain.blackBox, verifier: brain.verifier,
+    roster: state.agents.map(a => ({ id: a.id, team: a.role })), tools: ["hn-search", "screening"], capabilityKnown: c => brain.graph.list().some(n => n.capabilities.includes(c)) });
   ocHolder.sys = ownerControl;
   const searchPipeline = createSearchPipeline({ security: brain.security, opportunity: brain.opportunity, graph: brain.graph, blackBox: brain.blackBox, isDuplicate: raw => seen.has(raw.id),
     extract: raw => qualify({ title: raw.title, description: raw.text, published: raw.published }) });
@@ -209,7 +214,17 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
     }
   }
   /** Independent internal evidence for the verifier (job ledger = candidates/leads/artifacts). Does not trust the executor's own return value. */
+  // Internal evidence sources (read-only views onto durable internal stores). Unconnected sources report UNKNOWN; external claims need an authoritative adapter.
+  const evidenceSources = createEvidenceSources({ readers: {
+    JOB: { get: id => brain.dispatch?.get(id) ?? null },
+    COST_LEDGER: ledger, REVENUE_LEDGER: ledger, PROFIT_LEDGER: ledger,
+    QUEUE: { get: id => queue.get(id) },
+    ARTIFACT: { get: id => state.artifacts.find(a => a.id === id) ?? null },
+    BACKUP: { readiness: () => ownerControl.recovery.readiness() }, RESTORE: { readiness: () => ownerControl.recovery.readiness() },
+    HEALTH: { probe: n => ownerControl.probe(n) },
+    BLACK_BOX: brain.blackBox, APPROVAL: ownerControl.gateway } });
   function internalRecord(claim) {
+    if (claim?.source) return evidenceSources.verify(claim);
     if (claim?.kind !== "SCREENING") return { status: "UNKNOWN", reason: "UNSUPPORTED_RECORD_KIND" };
     const c = state.candidates.find(x => x.id === claim.candidateId);
     if (!c) return { status: "FAILED_VERIFICATION", reason: "CANDIDATE_MISSING" };
@@ -324,7 +339,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
     for (let i = 5; i < 30; i++) schedule(() => execute(i), 1000 + (i - 5) * 50);
   }
   function stop() { stopping = true; watchdog.stop(); for (const t of timers) clearTimeout(t); save(); }
-  return { brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
+  return { evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
 }
 
 if (process.env.ATLASZ_TEST_MODE !== "1") {

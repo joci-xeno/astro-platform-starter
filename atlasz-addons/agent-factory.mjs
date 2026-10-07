@@ -25,3 +25,14 @@ export function cloneBlueprint(template,{name,goal,metadata={}}={}){
  return {...template,agentId:uid(),name:name||template.name,goal:goal||template.goal,metadata:{...template.metadata,...metadata},status:"BLUEPRINT",createdAt:new Date().toISOString()};
 }
 // Additive factory only. It creates validated definitions; Astra decides how/when to register them with the live supervisor.
+
+/** Governed activation: the ONLY path by which a factory blueprint may become ACTIVE. Without a governor nothing is activated.
+ *  The governor checks identity / role / topology / capabilities / permissions and the full control chain (Kill Switch, Safe Mode,
+ *  Security Brain, Black Box). An unknown identity is a would-be 31st agent and is refused. */
+export function activateAgentGoverned(blueprint, { governor, availableCapabilities = [], availableTools = [], ownerApproved = false } = {}) {
+  if (!governor || typeof governor.admit !== "function") return { ...blueprint, status: "BLOCKED", blocker: { reason: "AGENT_GOVERNOR_REQUIRED" } };
+  const inst = instantiateAgent(blueprint, { availableCapabilities, availableTools, ownerApproved });
+  if (inst.status !== "READY_FOR_RUNTIME") return inst;
+  const a = governor.admit(blueprint);
+  return a.admitted ? { ...inst, status: "ACTIVE", admission: { checks: a.checks } } : { ...blueprint, status: "REFUSED_BY_GOVERNOR", blocker: { reason: a.reason, checks: a.checks } };
+}

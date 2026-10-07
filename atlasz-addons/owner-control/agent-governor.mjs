@@ -4,7 +4,7 @@
 // a signed approval cannot exceed the fixed topology (changing the topology is a separate governed change, not a runtime action).
 import { validateRoster } from "../brain/orchestrator.mjs";
 
-export function createAgentGovernor({ roster = [], chain, security = null, blackBox = null, tools = [] } = {}) {
+export function createAgentGovernor({ roster = [], chain, security = null, blackBox = null, tools = [], capabilityKnown = null } = {}) {
   if (!chain) throw new Error("CHAIN_REQUIRED");
   const topology = validateRoster(roster);
   const ids = new Set(roster.map(a => a.id));
@@ -35,5 +35,37 @@ export function createAgentGovernor({ roster = [], chain, security = null, black
     if (!d.allowed) return { registered: false, reason: d.reason };
     toolReg.add(tool); return { registered: true };
   }
-  return { act, createAgent, registerTool, report, isRegistered: id => ids.has(id) };
+  const byId = new Map(roster.map(a => [a.id, a]));
+  /** Activation admission: an agent becomes ACTIVE only if every check passes. A blueprint that is not an existing roster identity is a
+   *  would-be 31st agent and is always refused. Checks are evaluated in order and ALL are reported (inspectable explanation). */
+  function admit(blueprint = {}, { requestedBy = { type: "SYSTEM", id: "AGENT_FACTORY" } } = {}) {
+    const checks = [], add = (name, ok, detail = null) => checks.push({ name, ok: !!ok, detail });
+    const known = byId.get(blueprint.agentId);
+    add("IDENTITY_KNOWN", !!known, known ? null : "AGENT_NOT_IN_FIXED_ROSTER");
+    const wantTeam = blueprint.role === "SEARCH" ? "SEARCH" : blueprint.role === "EXECUTION" ? "EXECUTION" : null;
+    add("ROLE_VALID", !!known && !!wantTeam && known.team === wantTeam, !wantTeam ? "ROLE_NOT_A_RUNTIME_TEAM" : known && known.team !== wantTeam ? "ROLE_TEAM_MISMATCH" : null);
+    add("TOPOLOGY_PERMITS", topology.ok && !!known, topology.ok ? null : "TOPOLOGY_INVALID");
+    const caps = Array.isArray(blueprint.capabilities) ? blueprint.capabilities : [];
+    const unreg = capabilityKnown ? caps.filter(c => !capabilityKnown(c)) : caps.length ? ["NO_CAPABILITY_REGISTRY"] : [];
+    add("CAPABILITIES_REGISTERED", unreg.length === 0, unreg.length ? "UNREGISTERED:" + unreg.join(",") : null);
+    const tl = Array.isArray(blueprint.tools) ? blueprint.tools : [], badTools = tl.filter(t => !toolReg.has(t));
+    add("PERMISSIONS_KNOWN", badTools.length === 0 && !!blueprint.approvalPolicy, badTools.length ? "UNREGISTERED_TOOLS:" + badTools.join(",") : !blueprint.approvalPolicy ? "APPROVAL_POLICY_MISSING" : null);
+    let d = null;
+    if (checks.every(c => c.ok)) {
+      d = chain.evaluate({ actor: { type: requestedBy.type, id: requestedBy.id }, operation: "INTERNAL_COMPUTE", params: { activate: blueprint.agentId }, pathId: "agents.runtime.30" });
+      add("CONTROL_CHAIN", d.allowed, d.allowed ? null : d.reason);
+    }
+    const admitted = checks.every(c => c.ok);
+    if (!known) security?.assess({ kind: "PRIVILEGE_REQUEST", agentId: blueprint.agentId ?? null, permission: "UNREGISTERED_AGENT" });
+    rec(admitted ? "AGENT_ADMITTED" : "AGENT_ADMISSION_REFUSED", { agentId: blueprint.agentId ?? null, decision: admitted ? "ALLOW" : "BLOCK", reason: checks.filter(c => !c.ok).map(c => c.name + (c.detail ? ":" + c.detail : "")).join(";") || "ALL_CHECKS_PASSED" });
+    return { admitted, checks, reason: admitted ? "ALL_CHECKS_PASSED" : checks.find(c => !c.ok).name, decision: d };
+  }
+  /** Any change to an agent's configuration (capabilities, tools, model policy, permissions) is a high-risk owner-gated change. */
+  function configure(agentId, change = {}, { requestedBy = { type: "AGENT", id: null }, ownerApproval = null } = {}) {
+    if (!ids.has(agentId)) { rec("AGENT_CONFIG_REFUSED", { agentId, decision: "BLOCK", reason: "AGENT_NOT_IN_FIXED_ROSTER" }); return { configured: false, reason: "AGENT_NOT_IN_FIXED_ROSTER" }; }
+    const d = chain.evaluate({ actor: { type: requestedBy.type, id: requestedBy.id }, operation: "HIGH_RISK_CHANGE", params: { agentId, keys: Object.keys(change).sort() }, ownerApproval, pathId: "agents.configure" });
+    rec(d.allowed ? "AGENT_CONFIG_ALLOWED" : "AGENT_CONFIG_REFUSED", { agentId, decision: d.verdict, reason: d.reason });
+    return { configured: d.allowed, reason: d.reason, decision: d };
+  }
+  return { act, createAgent, registerTool, admit, configure, report, isRegistered: id => ids.has(id) };
 }

@@ -1,1 +1,1 @@
-{"mode":"NORMAL","reason":null,"since":null,"boots":[],"healthyAt":"2026-10-07T19:03:53.557Z"}
+{"mode":"SAFE_MODE","reason":"CRASH_LOOP","since":"2026-10-07T21:50:26.872Z","boots":[1791409890269,1791409933690,1791409953497,1791409973515,1791409993570],"healthyAt":"2026-10-07T21:49:14.673Z"}

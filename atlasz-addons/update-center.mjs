@@ -34,7 +34,12 @@ export const COMPONENT_KINDS = Object.freeze(["SYSTEM", "MODULE", "PLUGIN", "CON
 export const HIGH_RISK_TAGS = Object.freeze(["FINANCIAL", "SECURITY", "PERMISSIONS", "CREDENTIAL_AUTH", "DB_SCHEMA", "CONTRACT", "SPENDING", "OWNER_AUTH"]);
 // Core safety components: any update to these always needs a signed owner approval.
 export const PROTECTED_COMPONENTS = Object.freeze(["owner-auth", "approval-command-gateway", "emergency-stop", "guardrail-engine", "budget-consumption-governor",
-  "enterprise-control-plane", "payment-confirmation-adapter", "money-pipeline-controller", "tax-accounting-engine", "backup-recovery", "update-center", "audit-chain"]);
+  "enterprise-control-plane", "payment-confirmation-adapter", "money-pipeline-controller", "tax-accounting-engine", "backup-recovery", "update-center", "audit-chain",
+  // V7.3 Owner Control + Safety System
+  "owner-authority", "approval-gateway", "claim-distinctions", "control-chain", "financial-firewall", "money-state-guard", "agent-governor",
+  "recovery-points", "safe-mode-scope", "system-doctor", "owner-control-system", "owner-keystore", "safe-mode", "secret-vault", "tenant-isolation",
+  // V7.3 Brain (governance, security, verification, orchestration and their evidence)
+  "governance", "security-brain", "verifier", "black-box", "orchestrator", "governed-dispatch", "central-brain", "brain-system", "disaster-recovery", "capability-graph", "owner-command"]);
 
 // ---- minimal semver (x.y.z, optional -pre); ranges: *, exact, ^, ~, >=, >, <=, <, space = AND ----
 export function parseVersion(v) {

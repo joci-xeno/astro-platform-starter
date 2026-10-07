@@ -12,7 +12,7 @@ import { createRecoveryManager } from "./recovery-points.mjs";
 import { createSystemDoctor } from "./system-doctor.mjs";
 import { createClaimTracker } from "./claim-distinctions.mjs";
 
-export function createOwnerControlSystem({ dir, ownerAuth, gate, emergencyStatus = null, safeMode = null, security = null, blackBox = null, verifier = null, roster = [], tools = [], sources = {}, budget = null, extraProbes = {}, now = () => new Date().toISOString() } = {}) {
+export function createOwnerControlSystem({ capabilityKnown = null, dir, ownerAuth, gate, emergencyStatus = null, safeMode = null, security = null, blackBox = null, verifier = null, roster = [], tools = [], sources = {}, budget = null, extraProbes = {}, now = () => new Date().toISOString() } = {}) {
   if (!dir || !ownerAuth || typeof gate !== "function") throw new Error("DIR_OWNERAUTH_GATE_REQUIRED");
   const authority = createOwnerAuthority({ ownerAuth });
   const firewall = createFinancialFirewall({ file: path.join(dir, "financial-firewall.json"), ownerAuth, budget, now });
@@ -22,7 +22,7 @@ export function createOwnerControlSystem({ dir, ownerAuth, gate, emergencyStatus
   const gateway = createApprovalGateway({ dir: path.join(dir, "approvals"), ownerAuth });
   const claims = createClaimTracker({ verifier });
   const moneyGuard = verifier ? createMoneyStateGuard({ chain, verifier, firewall, blackBox }) : null;
-  const agents = createAgentGovernor({ roster, chain, security, blackBox, tools });
+  const agents = createAgentGovernor({ roster, chain, security, blackBox, tools, capabilityKnown });
   const recovery = createRecoveryManager({ root: path.join(dir, "recovery"), sources, chain });
   const st = (state, detail) => ({ state, detail });
   const probes = {
@@ -48,5 +48,6 @@ export function createOwnerControlSystem({ dir, ownerAuth, gate, emergencyStatus
       safeMode: sm ? { ...sm, ...safeModeBanner(sm) } : "UNKNOWN", recovery: recovery.readiness(), controlledPaths: chain.paths().length, decisions: chain.tally(), isolation: isolation.list(),
     };
   }
-  return { authority, chain, gateway, firewall, moneyGuard, claims, agents, isolation, recovery, doctor, status };
+  const probe = name => (probes[name] ? probes[name]() : null);
+  return { authority, chain, gateway, firewall, moneyGuard, claims, agents, isolation, recovery, doctor, status, probe };
 }
