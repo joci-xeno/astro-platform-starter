@@ -95,7 +95,7 @@
     52
    ]
   },
-  "item_verified_count": 224
+  "item_verified_count": 450
  },
  "requirements": [
   {
@@ -2309,18 +2309,18 @@
    "dependencies": [
     "V73-S08"
    ],
-   "implementation_location": "atlasz-addons/multi-model-brain.mjs; cost-model-router.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/multi-model-brain.mjs",
+   "status": "EXTERNAL_BLOCKER",
    "tests": [
     "atlasz-tests/probe-evidence.test.mjs"
    ],
    "evidence": [
-    "provider LIVE now requires probe evidence"
+    "Provider slot exists; nothing attached"
    ],
-   "blocker": "EXTERNAL: no model provider credentials; spend needs Joci approval",
+   "blocker": "EXTERNAL: no credentials/provider connected; any paid API needs separate Joci approval",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S08-002",
@@ -2333,18 +2333,18 @@
    "dependencies": [
     "V73-S08"
    ],
-   "implementation_location": "atlasz-addons/multi-model-brain.mjs; cost-model-router.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/multi-model-brain.mjs",
+   "status": "EXTERNAL_BLOCKER",
    "tests": [
     "atlasz-tests/probe-evidence.test.mjs"
    ],
    "evidence": [
-    "provider LIVE now requires probe evidence"
+    "Provider slot exists; nothing attached"
    ],
-   "blocker": "EXTERNAL: no model provider credentials; spend needs Joci approval",
+   "blocker": "EXTERNAL: no credentials/provider connected; any paid API needs separate Joci approval",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S08-003",
@@ -2357,18 +2357,18 @@
    "dependencies": [
     "V73-S08"
    ],
-   "implementation_location": "atlasz-addons/multi-model-brain.mjs; cost-model-router.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/multi-model-brain.mjs",
+   "status": "EXTERNAL_BLOCKER",
    "tests": [
     "atlasz-tests/probe-evidence.test.mjs"
    ],
    "evidence": [
-    "provider LIVE now requires probe evidence"
+    "Provider slot exists; nothing attached"
    ],
-   "blocker": "EXTERNAL: no model provider credentials; spend needs Joci approval",
+   "blocker": "EXTERNAL: no credentials/provider connected; any paid API needs separate Joci approval",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S08-004",
@@ -2381,18 +2381,18 @@
    "dependencies": [
     "V73-S08"
    ],
-   "implementation_location": "atlasz-addons/multi-model-brain.mjs; cost-model-router.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/multi-model-brain.mjs",
+   "status": "EXTERNAL_BLOCKER",
    "tests": [
     "atlasz-tests/probe-evidence.test.mjs"
    ],
    "evidence": [
-    "provider LIVE now requires probe evidence"
+    "Provider slot exists; nothing attached"
    ],
-   "blocker": "EXTERNAL: no model provider credentials; spend needs Joci approval",
+   "blocker": "EXTERNAL: no credentials/provider connected; any paid API needs separate Joci approval",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S08-005",
@@ -2405,18 +2405,18 @@
    "dependencies": [
     "V73-S08"
    ],
-   "implementation_location": "atlasz-addons/multi-model-brain.mjs; cost-model-router.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/multi-model-brain.mjs",
+   "status": "EXTERNAL_BLOCKER",
    "tests": [
     "atlasz-tests/probe-evidence.test.mjs"
    ],
    "evidence": [
-    "provider LIVE now requires probe evidence"
+    "Provider slot exists; nothing attached"
    ],
-   "blocker": "EXTERNAL: no model provider credentials; spend needs Joci approval",
+   "blocker": "EXTERNAL: no credentials/provider connected; any paid API needs separate Joci approval",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S08-006",
@@ -2429,18 +2429,18 @@
    "dependencies": [
     "V73-S08"
    ],
-   "implementation_location": "atlasz-addons/multi-model-brain.mjs; cost-model-router.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/multi-model-brain.mjs",
+   "status": "EXTERNAL_BLOCKER",
    "tests": [
     "atlasz-tests/probe-evidence.test.mjs"
    ],
    "evidence": [
-    "provider LIVE now requires probe evidence"
+    "Provider slot exists; nothing attached"
    ],
-   "blocker": "EXTERNAL: no model provider credentials; spend needs Joci approval",
+   "blocker": "EXTERNAL: no credentials/provider connected; any paid API needs separate Joci approval",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S08-007",
@@ -2453,18 +2453,18 @@
    "dependencies": [
     "V73-S08"
    ],
-   "implementation_location": "atlasz-addons/multi-model-brain.mjs; cost-model-router.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/multi-model-brain.mjs",
+   "status": "EXTERNAL_BLOCKER",
    "tests": [
     "atlasz-tests/probe-evidence.test.mjs"
    ],
    "evidence": [
-    "provider LIVE now requires probe evidence"
+    "Provider slot exists; nothing attached"
    ],
-   "blocker": "EXTERNAL: no model provider credentials; spend needs Joci approval",
+   "blocker": "EXTERNAL: no credentials/provider connected; any paid API needs separate Joci approval",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S08-008",
@@ -2477,18 +2477,18 @@
    "dependencies": [
     "V73-S08"
    ],
-   "implementation_location": "atlasz-addons/multi-model-brain.mjs; cost-model-router.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/multi-model-brain.mjs",
+   "status": "PARTIAL",
    "tests": [
     "atlasz-tests/probe-evidence.test.mjs"
    ],
    "evidence": [
-    "provider LIVE now requires probe evidence"
+    "Any provider needs probe evidence; Joci-approval gating of new models not enforced in code"
    ],
-   "blocker": "EXTERNAL: no model provider credentials; spend needs Joci approval",
+   "blocker": "Add owner-gated provider registration",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S08-009",
@@ -2501,18 +2501,19 @@
    "dependencies": [
     "V73-S08"
    ],
-   "implementation_location": "atlasz-addons/multi-model-brain.mjs; cost-model-router.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/multi-model-brain.mjs",
+   "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
+    "atlasz-tests/probe-evidence.test.mjs",
+    "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "provider LIVE now requires probe evidence"
+    "registerModelProvider/modelProviderList tested"
    ],
-   "blocker": "EXTERNAL: no model provider credentials; spend needs Joci approval",
+   "blocker": "In-memory module state: lost on restart",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S08-010",
@@ -2525,18 +2526,18 @@
    "dependencies": [
     "V73-S08"
    ],
-   "implementation_location": "atlasz-addons/multi-model-brain.mjs; cost-model-router.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/multi-model-brain.mjs",
+   "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
+    "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "provider LIVE now requires probe evidence"
+    "selectModel by required capabilities; untested providers never chosen"
    ],
-   "blocker": "EXTERNAL: no model provider credentials; spend needs Joci approval",
+   "blocker": "In-memory module state: lost on restart",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S08-011",
@@ -2549,18 +2550,18 @@
    "dependencies": [
     "V73-S08"
    ],
-   "implementation_location": "atlasz-addons/multi-model-brain.mjs; cost-model-router.mjs",
+   "implementation_location": "atlasz-addons/cost-model-router.mjs",
    "status": "STRUCTURAL_ONLY",
    "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
+    "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "provider LIVE now requires probe evidence"
+    "Routes by cost/quality only; no task classification"
    ],
-   "blocker": "EXTERNAL: no model provider credentials; spend needs Joci approval",
+   "blocker": "Needs a task classifier (model)",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S08-012",
@@ -2573,18 +2574,16 @@
    "dependencies": [
     "V73-S08"
    ],
-   "implementation_location": "atlasz-addons/multi-model-brain.mjs; cost-model-router.mjs",
-   "status": "STRUCTURAL_ONLY",
-   "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "provider LIVE now requires probe evidence"
+    "No fast/deep router"
    ],
-   "blocker": "EXTERNAL: no model provider credentials; spend needs Joci approval",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S08-013",
@@ -2597,18 +2596,18 @@
    "dependencies": [
     "V73-S08"
    ],
-   "implementation_location": "atlasz-addons/multi-model-brain.mjs; cost-model-router.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/cost-model-router.mjs",
+   "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
+    "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "provider LIVE now requires probe evidence"
+    "Budget-bounded route choice; none within budget -> owner approval"
    ],
-   "blocker": "EXTERNAL: no model provider credentials; spend needs Joci approval",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S08-014",
@@ -2621,18 +2620,18 @@
    "dependencies": [
     "V73-S08"
    ],
-   "implementation_location": "atlasz-addons/multi-model-brain.mjs; cost-model-router.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/cost-model-router.mjs",
+   "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
+    "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "provider LIVE now requires probe evidence"
+    "minimumQuality filter on caller-supplied scores"
    ],
-   "blocker": "EXTERNAL: no model provider credentials; spend needs Joci approval",
+   "blocker": "No measured quality data",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S08-015",
@@ -2645,18 +2644,16 @@
    "dependencies": [
     "V73-S08"
    ],
-   "implementation_location": "atlasz-addons/multi-model-brain.mjs; cost-model-router.mjs",
-   "status": "STRUCTURAL_ONLY",
-   "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "provider LIVE now requires probe evidence"
+    "No fallback router (self-heal has an alternate hook only)"
    ],
-   "blocker": "EXTERNAL: no model provider credentials; spend needs Joci approval",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S08-016",
@@ -2669,18 +2666,18 @@
    "dependencies": [
     "V73-S08"
    ],
-   "implementation_location": "atlasz-addons/multi-model-brain.mjs; cost-model-router.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/multi-model-brain.mjs",
+   "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
+    "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "provider LIVE now requires probe evidence"
+    "independentJudgePlan requires a different live provider"
    ],
-   "blocker": "EXTERNAL: no model provider credentials; spend needs Joci approval",
+   "blocker": "EXTERNAL: no credentials/provider connected; any paid API needs separate Joci approval",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S08-017",
@@ -2693,18 +2690,18 @@
    "dependencies": [
     "V73-S08"
    ],
-   "implementation_location": "atlasz-addons/multi-model-brain.mjs; cost-model-router.mjs",
+   "implementation_location": "atlasz-addons/multi-model-brain.mjs",
    "status": "STRUCTURAL_ONLY",
    "tests": [
     "atlasz-tests/probe-evidence.test.mjs"
    ],
    "evidence": [
-    "provider LIVE now requires probe evidence"
+    "modelProviderHealth lists registered state; no live probing"
    ],
-   "blocker": "EXTERNAL: no model provider credentials; spend needs Joci approval",
+   "blocker": "EXTERNAL: no credentials/provider connected; any paid API needs separate Joci approval",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S08-018",
@@ -2717,18 +2714,19 @@
    "dependencies": [
     "V73-S08"
    ],
-   "implementation_location": "atlasz-addons/multi-model-brain.mjs; cost-model-router.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/budget-consumption-governor.mjs; cost-model-router.mjs",
+   "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
+    "atlasz-tests/contract-existing-modules.test.mjs",
+    "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "provider LIVE now requires probe evidence"
+    "Budget usage and actualCost tested"
    ],
-   "blocker": "EXTERNAL: no model provider credentials; spend needs Joci approval",
+   "blocker": "In-memory module state: lost on restart",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S08-019",
@@ -2741,18 +2739,16 @@
    "dependencies": [
     "V73-S08"
    ],
-   "implementation_location": "atlasz-addons/multi-model-brain.mjs; cost-model-router.mjs",
-   "status": "STRUCTURAL_ONLY",
-   "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "provider LIVE now requires probe evidence"
+    "No model performance memory"
    ],
-   "blocker": "EXTERNAL: no model provider credentials; spend needs Joci approval",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S08-020",
@@ -2765,18 +2761,16 @@
    "dependencies": [
     "V73-S08"
    ],
-   "implementation_location": "atlasz-addons/multi-model-brain.mjs; cost-model-router.mjs",
-   "status": "STRUCTURAL_ONLY",
-   "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "provider LIVE now requires probe evidence"
+    "No availability monitoring"
    ],
-   "blocker": "EXTERNAL: no model provider credentials; spend needs Joci approval",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S09",
@@ -5452,18 +5446,18 @@
    "dependencies": [
     "V73-S15"
    ],
-   "implementation_location": "atlasz-addons/qa-reviewer.mjs; guardrail-engine.mjs; anti-collusion-guard.mjs",
+   "implementation_location": "atlasz-addons/multi-model-brain.mjs; qa-reviewer.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs"
+    "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "QA PASS needs evidence per check"
+    "Plan requires a different provider"
    ],
-   "blocker": "Independent judge needs a second provider (S08)",
+   "blocker": "EXTERNAL: no credentials/provider connected; any paid API needs separate Joci approval",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S15-002",
@@ -5476,18 +5470,18 @@
    "dependencies": [
     "V73-S15"
    ],
-   "implementation_location": "atlasz-addons/qa-reviewer.mjs; guardrail-engine.mjs; anti-collusion-guard.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/qa-reviewer.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/contract-existing-modules.test.mjs"
    ],
    "evidence": [
-    "QA PASS needs evidence per check"
+    "PASS only with evidence for every required check"
    ],
-   "blocker": "Independent judge needs a second provider (S08)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S15-003",
@@ -5500,18 +5494,16 @@
    "dependencies": [
     "V73-S15"
    ],
-   "implementation_location": "atlasz-addons/qa-reviewer.mjs; guardrail-engine.mjs; anti-collusion-guard.mjs",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "QA PASS needs evidence per check"
+    "No human impact judge"
    ],
-   "blocker": "Independent judge needs a second provider (S08)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S15-004",
@@ -5524,18 +5516,19 @@
    "dependencies": [
     "V73-S15"
    ],
-   "implementation_location": "atlasz-addons/qa-reviewer.mjs; guardrail-engine.mjs; anti-collusion-guard.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/guardrail-engine.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs"
+    "atlasz-tests/contract-core-engine.test.mjs",
+    "atlasz-tests/stop-enforcement.test.mjs"
    ],
    "evidence": [
-    "QA PASS needs evidence per check"
+    "High-risk actions, truthfulness, credentials"
    ],
-   "blocker": "Independent judge needs a second provider (S08)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S15-005",
@@ -5548,18 +5541,18 @@
    "dependencies": [
     "V73-S15"
    ],
-   "implementation_location": "atlasz-addons/qa-reviewer.mjs; guardrail-engine.mjs; anti-collusion-guard.mjs",
+   "implementation_location": "atlasz-addons/guardrail-engine.mjs; tax-accounting-engine.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs"
+    "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "QA PASS needs evidence per check"
+    "Risk classification only"
    ],
-   "blocker": "Independent judge needs a second provider (S08)",
+   "blocker": "No transaction risk model",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S15-006",
@@ -5572,18 +5565,18 @@
    "dependencies": [
     "V73-S15"
    ],
-   "implementation_location": "atlasz-addons/qa-reviewer.mjs; guardrail-engine.mjs; anti-collusion-guard.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/anti-collusion-guard.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs"
+    "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "QA PASS needs evidence per check"
+    "Unauthorised goals, self-evaluation, hidden channels flagged"
    ],
-   "blocker": "Independent judge needs a second provider (S08)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S15-007",
@@ -5596,18 +5589,18 @@
    "dependencies": [
     "V73-S15"
    ],
-   "implementation_location": "atlasz-addons/qa-reviewer.mjs; guardrail-engine.mjs; anti-collusion-guard.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/anti-collusion-guard.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs"
+    "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "QA PASS needs evidence per check"
+    "GAME_EVALUATION/SACRIFICE intents flagged"
    ],
-   "blocker": "Independent judge needs a second provider (S08)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S15-008",
@@ -5620,18 +5613,16 @@
    "dependencies": [
     "V73-S15"
    ],
-   "implementation_location": "atlasz-addons/qa-reviewer.mjs; guardrail-engine.mjs; anti-collusion-guard.mjs",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "QA PASS needs evidence per check"
+    "No emergent behaviour monitor"
    ],
-   "blocker": "Independent judge needs a second provider (S08)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S15-009",
@@ -5644,18 +5635,18 @@
    "dependencies": [
     "V73-S15"
    ],
-   "implementation_location": "atlasz-addons/qa-reviewer.mjs; guardrail-engine.mjs; anti-collusion-guard.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/regression-eval-suite.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs"
+    "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "QA PASS needs evidence per check"
+    "Failing/throwing/duplicate tests handled; regression gate"
    ],
-   "blocker": "Independent judge needs a second provider (S08)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S15-010",
@@ -5668,18 +5659,16 @@
    "dependencies": [
     "V73-S15"
    ],
-   "implementation_location": "atlasz-addons/qa-reviewer.mjs; guardrail-engine.mjs; anti-collusion-guard.mjs",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "QA PASS needs evidence per check"
+    "No contradiction checks"
    ],
-   "blocker": "Independent judge needs a second provider (S08)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S15-011",
@@ -5692,18 +5681,19 @@
    "dependencies": [
     "V73-S15"
    ],
-   "implementation_location": "atlasz-addons/qa-reviewer.mjs; guardrail-engine.mjs; anti-collusion-guard.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/qa-reviewer.mjs; tracing-evals.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/contract-existing-modules.test.mjs"
+    "atlasz-tests/contract-existing-modules.test.mjs",
+    "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "QA PASS needs evidence per check"
+    "Evidence required per check/criterion"
    ],
-   "blocker": "Independent judge needs a second provider (S08)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S16",
@@ -5891,19 +5881,18 @@
    "dependencies": [
     "V73-S17"
    ],
-   "implementation_location": "atlasz-runtime/supervisor-safe.mjs; atlasz-addons/self-healing-loop.mjs; recovery.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-control-center/core.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/canonical-runtime.test.mjs",
-    "atlasz-tests/contract-existing-modules.test.mjs"
+    "atlasz-tests/control-center.test.mjs"
    ],
    "evidence": [
-    "restart recovery; self-heal never fakes success"
+    "Doctor: self-check + audit verification + backup/LKG/runtime findings with remedies"
    ],
-   "blocker": "No watchdog / system doctor / safe mode / crash-loop protection",
+   "blocker": "Runs on demand, not scheduled",
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S17-002",
@@ -5916,19 +5905,18 @@
    "dependencies": [
     "V73-S17"
    ],
-   "implementation_location": "atlasz-runtime/supervisor-safe.mjs; atlasz-addons/self-healing-loop.mjs; recovery.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/watchdog.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/canonical-runtime.test.mjs",
-    "atlasz-tests/contract-existing-modules.test.mjs"
+    "atlasz-tests/safety-modules.test.mjs"
    ],
    "evidence": [
-    "restart recovery; self-heal never fakes success"
+    "Heartbeat/probe/hang detection, escalation to Safe Mode"
    ],
-   "blocker": "No watchdog / system doctor / safe mode / crash-loop protection",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S17-003",
@@ -5941,19 +5929,19 @@
    "dependencies": [
     "V73-S17"
    ],
-   "implementation_location": "atlasz-runtime/supervisor-safe.mjs; atlasz-addons/self-healing-loop.mjs; recovery.mjs",
+   "implementation_location": "atlasz-runtime/supervisor-safe.mjs; atlasz-addons/startup-self-check.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/canonical-runtime.test.mjs",
-    "atlasz-tests/contract-existing-modules.test.mjs"
+    "atlasz-tests/canonical-queue-safety.test.mjs",
+    "atlasz-tests/safety-modules.test.mjs"
    ],
    "evidence": [
-    "restart recovery; self-heal never fakes success"
+    "/health, startup self-check, watchdog"
    ],
-   "blocker": "No watchdog / system doctor / safe mode / crash-loop protection",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S17-004",
@@ -5966,19 +5954,18 @@
    "dependencies": [
     "V73-S17"
    ],
-   "implementation_location": "atlasz-runtime/supervisor-safe.mjs; atlasz-addons/self-healing-loop.mjs; recovery.mjs",
+   "implementation_location": "atlasz-addons/startup-self-check.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/canonical-runtime.test.mjs",
-    "atlasz-tests/contract-existing-modules.test.mjs"
+    "atlasz-tests/safety-modules.test.mjs"
    ],
    "evidence": [
-    "restart recovery; self-heal never fakes success"
+    "Node, disk, state files"
    ],
-   "blocker": "No watchdog / system doctor / safe mode / crash-loop protection",
+   "blocker": "No external dependency probing",
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S17-005",
@@ -5991,19 +5978,18 @@
    "dependencies": [
     "V73-S17"
    ],
-   "implementation_location": "atlasz-runtime/supervisor-safe.mjs; atlasz-addons/self-healing-loop.mjs; recovery.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/multi-model-brain.mjs",
+   "status": "STRUCTURAL_ONLY",
    "tests": [
-    "atlasz-tests/canonical-runtime.test.mjs",
-    "atlasz-tests/contract-existing-modules.test.mjs"
+    "atlasz-tests/probe-evidence.test.mjs"
    ],
    "evidence": [
-    "restart recovery; self-heal never fakes success"
+    "Registered state only"
    ],
-   "blocker": "No watchdog / system doctor / safe mode / crash-loop protection",
+   "blocker": "EXTERNAL: no credentials/provider connected; any paid API needs separate Joci approval",
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S17-006",
@@ -6016,19 +6002,16 @@
    "dependencies": [
     "V73-S17"
    ],
-   "implementation_location": "atlasz-runtime/supervisor-safe.mjs; atlasz-addons/self-healing-loop.mjs; recovery.mjs",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/canonical-runtime.test.mjs",
-    "atlasz-tests/contract-existing-modules.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "restart recovery; self-heal never fakes success"
+    "No anomaly detection"
    ],
-   "blocker": "No watchdog / system doctor / safe mode / crash-loop protection",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S17-007",
@@ -6041,19 +6024,19 @@
    "dependencies": [
     "V73-S17"
    ],
-   "implementation_location": "atlasz-runtime/supervisor-safe.mjs; atlasz-addons/self-healing-loop.mjs; recovery.mjs",
+   "implementation_location": "atlasz-addons/self-healing-loop.mjs; update-center.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/canonical-runtime.test.mjs",
-    "atlasz-tests/contract-existing-modules.test.mjs"
+    "atlasz-tests/contract-existing-modules.test.mjs",
+    "atlasz-tests/update-center.test.mjs"
    ],
    "evidence": [
-    "restart recovery; self-heal never fakes success"
+    "Repair limited to retry/alternate/rollback; otherwise BLOCKED for human"
    ],
-   "blocker": "No watchdog / system doctor / safe mode / crash-loop protection",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S17-008",
@@ -6066,19 +6049,20 @@
    "dependencies": [
     "V73-S17"
    ],
-   "implementation_location": "atlasz-runtime/supervisor-safe.mjs; atlasz-addons/self-healing-loop.mjs; recovery.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/update-center.mjs; backup-recovery.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/canonical-runtime.test.mjs",
-    "atlasz-tests/contract-existing-modules.test.mjs"
+    "atlasz-tests/update-center.test.mjs",
+    "atlasz-tests/backup-recovery.test.mjs",
+    "atlasz-tests/control-center.test.mjs"
    ],
    "evidence": [
-    "restart recovery; self-heal never fakes success"
+    "Automatic and manual rollback, LKG restore"
    ],
-   "blocker": "No watchdog / system doctor / safe mode / crash-loop protection",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S17-009",
@@ -6091,19 +6075,19 @@
    "dependencies": [
     "V73-S17"
    ],
-   "implementation_location": "atlasz-runtime/supervisor-safe.mjs; atlasz-addons/self-healing-loop.mjs; recovery.mjs",
+   "implementation_location": "atlasz-addons/audit-chain.mjs; update-center.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/canonical-runtime.test.mjs",
-    "atlasz-tests/contract-existing-modules.test.mjs"
+    "atlasz-tests/update-center.test.mjs",
+    "atlasz-tests/safety-modules.test.mjs"
    ],
    "evidence": [
-    "restart recovery; self-heal never fakes success"
+    "Audit chains record failures; no incident entity"
    ],
-   "blocker": "No watchdog / system doctor / safe mode / crash-loop protection",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S17-010",
@@ -6116,19 +6100,16 @@
    "dependencies": [
     "V73-S17"
    ],
-   "implementation_location": "atlasz-runtime/supervisor-safe.mjs; atlasz-addons/self-healing-loop.mjs; recovery.mjs",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/canonical-runtime.test.mjs",
-    "atlasz-tests/contract-existing-modules.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "restart recovery; self-heal never fakes success"
+    "No push/email alerting; banner only while the UI is open"
    ],
-   "blocker": "No watchdog / system doctor / safe mode / crash-loop protection",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S18",
@@ -6163,18 +6144,18 @@
    "dependencies": [
     "V73-S18"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs; capability-registry.mjs; tool-bridge.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/tool-fabric.mjs",
+   "status": "PARTIAL",
    "tests": [
     "atlasz-tests/probe-evidence.test.mjs"
    ],
    "evidence": [
-    "LIVE needs probe evidence"
+    "Catalogue + evidence-gated connect"
    ],
-   "blocker": "EXTERNAL: no real tool adapters connected",
+   "blocker": "EXTERNAL: no credentials/provider connected; any paid API needs separate Joci approval",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S18-002",
@@ -6187,18 +6168,19 @@
    "dependencies": [
     "V73-S18"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs; capability-registry.mjs; tool-bridge.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/executor-toolbox-registry.mjs",
+   "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
+    "atlasz-tests/probe-evidence.test.mjs",
+    "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "LIVE needs probe evidence"
+    "Registry with evidence-gated availability"
    ],
-   "blocker": "EXTERNAL: no real tool adapters connected",
+   "blocker": "In-memory module state: lost on restart",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S18-003",
@@ -6211,18 +6193,18 @@
    "dependencies": [
     "V73-S18"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs; capability-registry.mjs; tool-bridge.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/capability-registry.mjs",
+   "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
+    "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "LIVE needs probe evidence"
+    "Match agents by capabilities"
    ],
-   "blocker": "EXTERNAL: no real tool adapters connected",
+   "blocker": "In-memory module state: lost on restart",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S18-004",
@@ -6235,18 +6217,16 @@
    "dependencies": [
     "V73-S18"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs; capability-registry.mjs; tool-bridge.mjs",
-   "status": "STRUCTURAL_ONLY",
-   "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
-   ],
+   "implementation_location": "atlasz-addons/skill-factory.mjs",
+   "status": "EXISTS_NEEDS_TEST",
+   "tests": [],
    "evidence": [
-    "LIVE needs probe evidence"
+    "Not covered by tests"
    ],
-   "blocker": "EXTERNAL: no real tool adapters connected",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S18-005",
@@ -6259,18 +6239,18 @@
    "dependencies": [
     "V73-S18"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs; capability-registry.mjs; tool-bridge.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/agent-factory.mjs",
+   "status": "EXISTS_NEEDS_TEST",
    "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
+    "atlasz-tests/gated-modules.test.mjs"
    ],
    "evidence": [
-    "LIVE needs probe evidence"
+    "Owner gate tested; creation logic not"
    ],
-   "blocker": "EXTERNAL: no real tool adapters connected",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S18-006",
@@ -6283,18 +6263,18 @@
    "dependencies": [
     "V73-S18"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs; capability-registry.mjs; tool-bridge.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/execution-factory.mjs",
+   "status": "EXISTS_NEEDS_TEST",
    "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
+    "atlasz-tests/gated-modules.test.mjs"
    ],
    "evidence": [
-    "LIVE needs probe evidence"
+    "Owner gate tested; logic not"
    ],
-   "blocker": "EXTERNAL: no real tool adapters connected",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S18-007",
@@ -6307,18 +6287,16 @@
    "dependencies": [
     "V73-S18"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs; capability-registry.mjs; tool-bridge.mjs",
+   "implementation_location": "atlasz-addons/tool-fabric.mjs",
    "status": "STRUCTURAL_ONLY",
-   "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
-   ],
+   "tests": [],
    "evidence": [
-    "LIVE needs probe evidence"
+    "Catalogue lookup only"
    ],
-   "blocker": "EXTERNAL: no real tool adapters connected",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S18-008",
@@ -6331,18 +6309,18 @@
    "dependencies": [
     "V73-S18"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs; capability-registry.mjs; tool-bridge.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/executor-toolbox-registry.mjs",
+   "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
+    "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "LIVE needs probe evidence"
+    "executionPlan reports missing capabilities"
    ],
-   "blocker": "EXTERNAL: no real tool adapters connected",
+   "blocker": "In-memory module state: lost on restart",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S18-009",
@@ -6355,18 +6333,18 @@
    "dependencies": [
     "V73-S18"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs; capability-registry.mjs; tool-bridge.mjs",
+   "implementation_location": "atlasz-addons/probe-evidence.mjs",
    "status": "STRUCTURAL_ONLY",
    "tests": [
     "atlasz-tests/probe-evidence.test.mjs"
    ],
    "evidence": [
-    "LIVE needs probe evidence"
+    "Evidence gate exists; nothing runs probes"
    ],
-   "blocker": "EXTERNAL: no real tool adapters connected",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S18-010",
@@ -6379,18 +6357,18 @@
    "dependencies": [
     "V73-S18"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs; capability-registry.mjs; tool-bridge.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/universal-connector-layer.mjs",
+   "status": "PARTIAL",
    "tests": [
     "atlasz-tests/probe-evidence.test.mjs"
    ],
    "evidence": [
-    "LIVE needs probe evidence"
+    "Evidence-gated TESTED status; permission match"
    ],
-   "blocker": "EXTERNAL: no real tool adapters connected",
+   "blocker": "EXTERNAL: no credentials/provider connected; any paid API needs separate Joci approval",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S18-011",
@@ -6403,18 +6381,16 @@
    "dependencies": [
     "V73-S18"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs; capability-registry.mjs; tool-bridge.mjs",
-   "status": "STRUCTURAL_ONLY",
-   "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
-   ],
+   "implementation_location": "atlasz-addons/tool-bridge.mjs",
+   "status": "EXISTS_NEEDS_TEST",
+   "tests": [],
    "evidence": [
-    "LIVE needs probe evidence"
+    "attach() wires three registries; not tested directly"
    ],
-   "blocker": "EXTERNAL: no real tool adapters connected",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S18-012",
@@ -6427,18 +6403,18 @@
    "dependencies": [
     "V73-S18"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs; capability-registry.mjs; tool-bridge.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/internal-integration-hub.mjs",
+   "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
+    "atlasz-tests/canonical-queue-safety.test.mjs"
    ],
    "evidence": [
-    "LIVE needs probe evidence"
+    "Runs inside the runtime; internal only, no external side effects"
    ],
-   "blocker": "EXTERNAL: no real tool adapters connected",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S18-013",
@@ -6451,18 +6427,16 @@
    "dependencies": [
     "V73-S18"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs; capability-registry.mjs; tool-bridge.mjs",
-   "status": "STRUCTURAL_ONLY",
-   "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "LIVE needs probe evidence"
+    "No real provider adapters"
    ],
-   "blocker": "EXTERNAL: no real tool adapters connected",
+   "blocker": "EXTERNAL: no credentials/provider connected; any paid API needs separate Joci approval",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S18-014",
@@ -6475,18 +6449,18 @@
    "dependencies": [
     "V73-S18"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs; capability-registry.mjs; tool-bridge.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/universal-connector-layer.mjs",
+   "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
+    "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "LIVE needs probe evidence"
+    "permission match in resolveConnector"
    ],
-   "blocker": "EXTERNAL: no real tool adapters connected",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S18-015",
@@ -6499,18 +6473,18 @@
    "dependencies": [
     "V73-S18"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs; capability-registry.mjs; tool-bridge.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/tool-fabric.mjs",
+   "status": "PARTIAL",
    "tests": [
     "atlasz-tests/probe-evidence.test.mjs"
    ],
    "evidence": [
-    "LIVE needs probe evidence"
+    "toolFabricSummary counts only evidenced tools"
    ],
-   "blocker": "EXTERNAL: no real tool adapters connected",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S18-016",
@@ -6523,18 +6497,18 @@
    "dependencies": [
     "V73-S18"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs; capability-registry.mjs; tool-bridge.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/update-center.mjs",
+   "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/probe-evidence.test.mjs"
+    "atlasz-tests/update-center.test.mjs"
    ],
    "evidence": [
-    "LIVE needs probe evidence"
+    "Component versions tracked for updates"
    ],
-   "blocker": "EXTERNAL: no real tool adapters connected",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S18-017",
@@ -6547,18 +6521,18 @@
    "dependencies": [
     "V73-S18"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs; capability-registry.mjs; tool-bridge.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": "atlasz-addons/probe-evidence.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/probe-evidence.test.mjs"
    ],
    "evidence": [
-    "LIVE needs probe evidence"
+    "LIVE requires structured probe evidence; mutation-tested"
    ],
-   "blocker": "EXTERNAL: no real tool adapters connected",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S19",
@@ -6595,18 +6569,18 @@
     "V73-S19"
    ],
    "implementation_location": "atlasz-addons/computer-use-fabric.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "status": "EXTERNAL_BLOCKER",
    "tests": [
     "atlasz-tests/probe-evidence.test.mjs",
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/stop-enforcement.test.mjs"
    ],
    "evidence": [
-    "owner-gated; LIVE needs probe evidence"
+    "Owner-gated provider slot; no provider attached"
    ],
    "blocker": "EXTERNAL: no computer-use provider",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S19-002",
@@ -6620,18 +6594,18 @@
     "V73-S19"
    ],
    "implementation_location": "atlasz-addons/computer-use-fabric.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "status": "EXTERNAL_BLOCKER",
    "tests": [
     "atlasz-tests/probe-evidence.test.mjs",
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/stop-enforcement.test.mjs"
    ],
    "evidence": [
-    "owner-gated; LIVE needs probe evidence"
+    "Owner-gated provider slot; no provider attached"
    ],
    "blocker": "EXTERNAL: no computer-use provider",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S19-003",
@@ -6645,18 +6619,18 @@
     "V73-S19"
    ],
    "implementation_location": "atlasz-addons/computer-use-fabric.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "status": "EXTERNAL_BLOCKER",
    "tests": [
     "atlasz-tests/probe-evidence.test.mjs",
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/stop-enforcement.test.mjs"
    ],
    "evidence": [
-    "owner-gated; LIVE needs probe evidence"
+    "Owner-gated provider slot; no provider attached"
    ],
    "blocker": "EXTERNAL: no computer-use provider",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S19-004",
@@ -6670,18 +6644,18 @@
     "V73-S19"
    ],
    "implementation_location": "atlasz-addons/computer-use-fabric.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "status": "EXTERNAL_BLOCKER",
    "tests": [
     "atlasz-tests/probe-evidence.test.mjs",
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/stop-enforcement.test.mjs"
    ],
    "evidence": [
-    "owner-gated; LIVE needs probe evidence"
+    "Owner-gated provider slot; no provider attached"
    ],
    "blocker": "EXTERNAL: no computer-use provider",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S19-005",
@@ -6695,18 +6669,18 @@
     "V73-S19"
    ],
    "implementation_location": "atlasz-addons/computer-use-fabric.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "status": "EXTERNAL_BLOCKER",
    "tests": [
     "atlasz-tests/probe-evidence.test.mjs",
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/stop-enforcement.test.mjs"
    ],
    "evidence": [
-    "owner-gated; LIVE needs probe evidence"
+    "Owner-gated provider slot; no provider attached"
    ],
    "blocker": "EXTERNAL: no computer-use provider",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S19-006",
@@ -6720,18 +6694,18 @@
     "V73-S19"
    ],
    "implementation_location": "atlasz-addons/computer-use-fabric.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "status": "EXTERNAL_BLOCKER",
    "tests": [
     "atlasz-tests/probe-evidence.test.mjs",
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/stop-enforcement.test.mjs"
    ],
    "evidence": [
-    "owner-gated; LIVE needs probe evidence"
+    "Owner-gated provider slot; no provider attached"
    ],
    "blocker": "EXTERNAL: no computer-use provider",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S19-007",
@@ -6745,18 +6719,18 @@
     "V73-S19"
    ],
    "implementation_location": "atlasz-addons/computer-use-fabric.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "status": "EXTERNAL_BLOCKER",
    "tests": [
     "atlasz-tests/probe-evidence.test.mjs",
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/stop-enforcement.test.mjs"
    ],
    "evidence": [
-    "owner-gated; LIVE needs probe evidence"
+    "Owner-gated provider slot; no provider attached"
    ],
    "blocker": "EXTERNAL: no computer-use provider",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S19-008",
@@ -6770,18 +6744,18 @@
     "V73-S19"
    ],
    "implementation_location": "atlasz-addons/computer-use-fabric.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "status": "EXTERNAL_BLOCKER",
    "tests": [
     "atlasz-tests/probe-evidence.test.mjs",
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/stop-enforcement.test.mjs"
    ],
    "evidence": [
-    "owner-gated; LIVE needs probe evidence"
+    "Owner-gated provider slot; no provider attached"
    ],
    "blocker": "EXTERNAL: no computer-use provider",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S19-009",
@@ -6794,19 +6768,16 @@
    "dependencies": [
     "V73-S19"
    ],
-   "implementation_location": "atlasz-addons/computer-use-fabric.mjs",
-   "status": "STRUCTURAL_ONLY",
-   "tests": [
-    "atlasz-tests/probe-evidence.test.mjs",
-    "atlasz-tests/gated-modules.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "EXTERNAL_BLOCKER",
+   "tests": [],
    "evidence": [
-    "owner-gated; LIVE needs probe evidence"
+    "No sandboxed browser provider attached"
    ],
-   "blocker": "EXTERNAL: no computer-use provider",
+   "blocker": "EXTERNAL: provider",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S19-010",
@@ -6820,18 +6791,18 @@
     "V73-S19"
    ],
    "implementation_location": "atlasz-addons/computer-use-fabric.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "status": "PARTIAL",
    "tests": [
     "atlasz-tests/probe-evidence.test.mjs",
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/stop-enforcement.test.mjs"
    ],
    "evidence": [
-    "owner-gated; LIVE needs probe evidence"
+    "Authorize decisions audited"
    ],
-   "blocker": "EXTERNAL: no computer-use provider",
+   "blocker": "In-memory module state: lost on restart",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S20",
@@ -6862,14 +6833,16 @@
    "dependencies": [
     "V73-S20"
    ],
-   "implementation_location": "atlasz-addons/universal-connector-layer.mjs; tool-bridge.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "EXTERNAL: no real connectors; status flag still caller-set",
+   "evidence": [
+    "No real adapters"
+   ],
+   "blocker": "EXTERNAL: no credentials/provider connected; any paid API needs separate Joci approval",
    "owner_decision": null,
    "strategy": "REPAIR",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S20-002",
@@ -6882,14 +6855,16 @@
    "dependencies": [
     "V73-S20"
    ],
-   "implementation_location": "atlasz-addons/universal-connector-layer.mjs; tool-bridge.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "EXTERNAL: no real connectors; status flag still caller-set",
+   "evidence": [
+    "No connector auth flow"
+   ],
+   "blocker": "EXTERNAL: no credentials/provider connected; any paid API needs separate Joci approval",
    "owner_decision": null,
    "strategy": "REPAIR",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S20-003",
@@ -6902,14 +6877,18 @@
    "dependencies": [
     "V73-S20"
    ],
-   "implementation_location": "atlasz-addons/universal-connector-layer.mjs; tool-bridge.mjs",
-   "status": "STRUCTURAL_ONLY",
-   "tests": [],
-   "evidence": [],
-   "blocker": "EXTERNAL: no real connectors; status flag still caller-set",
+   "implementation_location": "atlasz-addons/universal-connector-layer.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/contract-core-engine.test.mjs"
+   ],
+   "evidence": [
+    "Permission matching"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "REPAIR",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S20-004",
@@ -6922,14 +6901,18 @@
    "dependencies": [
     "V73-S20"
    ],
-   "implementation_location": "atlasz-addons/universal-connector-layer.mjs; tool-bridge.mjs",
-   "status": "STRUCTURAL_ONLY",
-   "tests": [],
-   "evidence": [],
-   "blocker": "EXTERNAL: no real connectors; status flag still caller-set",
+   "implementation_location": "atlasz-addons/secret-vault.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/safety-modules.test.mjs"
+   ],
+   "evidence": [
+    "Vault exists; no connector uses it"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "REPAIR",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S20-005",
@@ -6942,14 +6925,18 @@
    "dependencies": [
     "V73-S20"
    ],
-   "implementation_location": "atlasz-addons/universal-connector-layer.mjs; tool-bridge.mjs",
-   "status": "STRUCTURAL_ONLY",
-   "tests": [],
-   "evidence": [],
-   "blocker": "EXTERNAL: no real connectors; status flag still caller-set",
+   "implementation_location": "atlasz-addons/universal-connector-layer.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/probe-evidence.test.mjs"
+   ],
+   "evidence": [
+    "connectorHealth"
+   ],
+   "blocker": "EXTERNAL: no credentials/provider connected; any paid API needs separate Joci approval",
    "owner_decision": null,
    "strategy": "REPAIR",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S20-006",
@@ -6962,14 +6949,16 @@
    "dependencies": [
     "V73-S20"
    ],
-   "implementation_location": "atlasz-addons/universal-connector-layer.mjs; tool-bridge.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "EXTERNAL_BLOCKER",
    "tests": [],
-   "evidence": [],
-   "blocker": "EXTERNAL: no real connectors; status flag still caller-set",
+   "evidence": [
+    "Needs authorized real accounts"
+   ],
+   "blocker": "EXTERNAL + Joci approval",
    "owner_decision": null,
    "strategy": "REPAIR",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S20-007",
@@ -6982,14 +6971,16 @@
    "dependencies": [
     "V73-S20"
    ],
-   "implementation_location": "atlasz-addons/universal-connector-layer.mjs; tool-bridge.mjs",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "EXTERNAL_BLOCKER",
    "tests": [],
-   "evidence": [],
-   "blocker": "EXTERNAL: no real connectors; status flag still caller-set",
+   "evidence": [
+    "None collected"
+   ],
+   "blocker": "EXTERNAL",
    "owner_decision": null,
    "strategy": "REPAIR",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S20-008",
@@ -7002,14 +6993,19 @@
    "dependencies": [
     "V73-S20"
    ],
-   "implementation_location": "atlasz-addons/universal-connector-layer.mjs; tool-bridge.mjs",
-   "status": "STRUCTURAL_ONLY",
-   "tests": [],
-   "evidence": [],
-   "blocker": "EXTERNAL: no real connectors; status flag still caller-set",
+   "implementation_location": "atlasz-addons/self-healing-loop.mjs; update-center.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/contract-existing-modules.test.mjs",
+    "atlasz-tests/update-center.test.mjs"
+   ],
+   "evidence": [
+    "Fail-closed/BLOCKED behaviour"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "REPAIR",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S21",
@@ -8640,14 +8636,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-002",
@@ -8660,14 +8658,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-003",
@@ -8680,14 +8680,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-004",
@@ -8700,14 +8702,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-005",
@@ -8720,14 +8724,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-006",
@@ -8740,14 +8746,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-007",
@@ -8760,14 +8768,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-008",
@@ -8780,14 +8790,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-009",
@@ -8800,14 +8812,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-010",
@@ -8820,14 +8834,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-011",
@@ -8840,14 +8856,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-012",
@@ -8860,14 +8878,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-013",
@@ -8880,14 +8900,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-014",
@@ -8900,14 +8922,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-015",
@@ -8920,14 +8944,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-016",
@@ -8940,14 +8966,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-017",
@@ -8960,14 +8988,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-018",
@@ -8980,14 +9010,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-019",
@@ -9000,14 +9032,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-020",
@@ -9020,14 +9054,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-021",
@@ -9040,14 +9076,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-022",
@@ -9060,14 +9098,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-023",
@@ -9080,14 +9120,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-024",
@@ -9100,14 +9142,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-025",
@@ -9120,14 +9164,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document center module; document-format tools exist only as catalogue entries"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-026",
@@ -9140,14 +9186,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No document versioning"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-027",
@@ -9160,14 +9208,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "Not built"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-028",
@@ -9180,14 +9230,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "Not built"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-029",
@@ -9200,14 +9252,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "Not built"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-030",
@@ -9220,14 +9274,18 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
-   "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "implementation_location": "atlasz-addons/audit-chain.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/safety-modules.test.mjs"
+   ],
+   "evidence": [
+    "Generic audit chain exists; not document-specific"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-031",
@@ -9240,14 +9298,18 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
-   "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "implementation_location": "atlasz-addons/backup-recovery.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/backup-recovery.test.mjs"
+   ],
+   "evidence": [
+    "Backs up the state directory, not a document store"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-032",
@@ -9260,14 +9322,18 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
-   "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "implementation_location": "atlasz-addons/backup-recovery.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/backup-recovery.test.mjs"
+   ],
+   "evidence": [
+    "Restore of state directory only"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-033",
@@ -9280,14 +9346,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No conversions"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-034",
@@ -9300,14 +9368,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No archive handling"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-035",
@@ -9320,14 +9390,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No archive extraction (backup walk skips symlinks)"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S23-036",
@@ -9340,14 +9412,16 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": "atlasz-addons/tool-fabric.mjs (catalogue entries only)",
-   "status": "STRUCTURAL_ONLY",
+   "implementation_location": null,
+   "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "No file/document center",
+   "evidence": [
+    "No extraction"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S24",
@@ -9381,11 +9455,13 @@
    "implementation_location": null,
    "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "Not built"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S24-002",
@@ -9401,11 +9477,13 @@
    "implementation_location": null,
    "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "Not built"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S24-003",
@@ -9421,11 +9499,13 @@
    "implementation_location": null,
    "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "Not built"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S24-004",
@@ -9441,11 +9521,13 @@
    "implementation_location": null,
    "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "Not built"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S24-005",
@@ -9461,11 +9543,13 @@
    "implementation_location": null,
    "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "Not built"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S24-006",
@@ -9481,11 +9565,13 @@
    "implementation_location": null,
    "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "Not built"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S24-007",
@@ -9501,11 +9587,13 @@
    "implementation_location": null,
    "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "Not built"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S24-008",
@@ -9521,11 +9609,13 @@
    "implementation_location": null,
    "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "Not built"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S24-009",
@@ -9538,14 +9628,18 @@
    "dependencies": [
     "V73-S24"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [],
+   "implementation_location": "atlasz-addons/enterprise-knowledge-agentic-rag.mjs",
+   "status": "STRUCTURAL_ONLY",
+   "tests": [
+    "atlasz-tests/contract-existing-modules.test.mjs"
+   ],
+   "evidence": [
+    "Lexical token overlap, not semantic"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S24-010",
@@ -9558,14 +9652,18 @@
    "dependencies": [
     "V73-S24"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [],
-   "blocker": null,
+   "implementation_location": "atlasz-addons/enterprise-knowledge-agentic-rag.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/contract-existing-modules.test.mjs"
+   ],
+   "evidence": [
+    "Tenant/role-isolated lexical retrieval"
+   ],
+   "blocker": "In-memory module state: lost on restart; no embeddings",
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S24-011",
@@ -9578,14 +9676,18 @@
    "dependencies": [
     "V73-S24"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [],
+   "implementation_location": "atlasz-addons/enterprise-knowledge-agentic-rag.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/contract-existing-modules.test.mjs"
+   ],
+   "evidence": [
+    "Citations carry sourceId/uri"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S24-012",
@@ -9601,11 +9703,13 @@
    "implementation_location": null,
    "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "Not built"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S24-013",
@@ -9621,11 +9725,13 @@
    "implementation_location": null,
    "status": "MISSING",
    "tests": [],
-   "evidence": [],
+   "evidence": [
+    "Not built"
+   ],
    "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S25",
@@ -13588,18 +13694,16 @@
    "dependencies": [
     "V73-S37"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/backup-recovery.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "manifest sha256, recovery drill, restore overwrite needs signed approval"
+    "No automatic backup policy/scheduler"
    ],
-   "blocker": "Not scheduled; not wired to production volume (Railway UNKNOWN)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S37-002",
@@ -13612,18 +13716,19 @@
    "dependencies": [
     "V73-S37"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-control-center/core.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
+    "atlasz-tests/control-center.test.mjs",
     "atlasz-tests/backup-recovery.test.mjs"
    ],
    "evidence": [
-    "manifest sha256, recovery drill, restore overwrite needs signed approval"
+    "backupNow with sha256 manifest"
    ],
-   "blocker": "Not scheduled; not wired to production volume (Railway UNKNOWN)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S37-003",
@@ -13637,17 +13742,18 @@
     "V73-S37"
    ],
    "implementation_location": "atlasz-addons/backup-recovery.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/backup-recovery.test.mjs"
+    "atlasz-tests/backup-recovery.test.mjs",
+    "atlasz-tests/control-center.test.mjs"
    ],
    "evidence": [
-    "manifest sha256, recovery drill, restore overwrite needs signed approval"
+    "Verified restore; overwrite needs signed approval"
    ],
-   "blocker": "Not scheduled; not wired to production volume (Railway UNKNOWN)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S37-004",
@@ -13660,18 +13766,19 @@
    "dependencies": [
     "V73-S37"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/backup-recovery.mjs; update-center.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/backup-recovery.test.mjs"
+    "atlasz-tests/backup-recovery.test.mjs",
+    "atlasz-tests/update-center.test.mjs"
    ],
    "evidence": [
-    "manifest sha256, recovery drill, restore overwrite needs signed approval"
+    "LKG rollback and update rollback"
    ],
-   "blocker": "Not scheduled; not wired to production volume (Railway UNKNOWN)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S37-005",
@@ -13690,12 +13797,12 @@
     "atlasz-tests/backup-recovery.test.mjs"
    ],
    "evidence": [
-    "manifest sha256, recovery drill, restore overwrite needs signed approval"
+    "Backup ids/manifests; no version browser"
    ],
-   "blocker": "Not scheduled; not wired to production volume (Railway UNKNOWN)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S37-006",
@@ -13708,18 +13815,16 @@
    "dependencies": [
     "V73-S37"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/backup-recovery.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "manifest sha256, recovery drill, restore overwrite needs signed approval"
+    "No point-in-time recovery"
    ],
-   "blocker": "Not scheduled; not wired to production volume (Railway UNKNOWN)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S37-007",
@@ -13732,18 +13837,16 @@
    "dependencies": [
     "V73-S37"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/backup-recovery.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "manifest sha256, recovery drill, restore overwrite needs signed approval"
+    "No disaster-recovery package"
    ],
-   "blocker": "Not scheduled; not wired to production volume (Railway UNKNOWN)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S37-008",
@@ -13762,12 +13865,12 @@
     "atlasz-tests/backup-recovery.test.mjs"
    ],
    "evidence": [
-    "manifest sha256, recovery drill, restore overwrite needs signed approval"
+    "Config in the state dir is covered; owner key dir is separate"
    ],
-   "blocker": "Not scheduled; not wired to production volume (Railway UNKNOWN)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S37-009",
@@ -13780,18 +13883,16 @@
    "dependencies": [
     "V73-S37"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/backup-recovery.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "manifest sha256, recovery drill, restore overwrite needs signed approval"
+    "No database exists (state is files)"
    ],
-   "blocker": "Not scheduled; not wired to production volume (Railway UNKNOWN)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S37-010",
@@ -13810,12 +13911,12 @@
     "atlasz-tests/backup-recovery.test.mjs"
    ],
    "evidence": [
-    "manifest sha256, recovery drill, restore overwrite needs signed approval"
+    "State dir backup"
    ],
-   "blocker": "Not scheduled; not wired to production volume (Railway UNKNOWN)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S37-011",
@@ -13834,12 +13935,12 @@
     "atlasz-tests/backup-recovery.test.mjs"
    ],
    "evidence": [
-    "manifest sha256, recovery drill, restore overwrite needs signed approval"
+    "Audit/evidence files in state dir are covered"
    ],
-   "blocker": "Not scheduled; not wired to production volume (Railway UNKNOWN)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S37-012",
@@ -13853,17 +13954,18 @@
     "V73-S37"
    ],
    "implementation_location": "atlasz-addons/backup-recovery.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/backup-recovery.test.mjs"
+    "atlasz-tests/backup-recovery.test.mjs",
+    "atlasz-tests/control-center.test.mjs"
    ],
    "evidence": [
-    "manifest sha256, recovery drill, restore overwrite needs signed approval"
+    "recoveryDrill restores to scratch and compares hashes"
    ],
-   "blocker": "Not scheduled; not wired to production volume (Railway UNKNOWN)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S38",
@@ -15783,14 +15885,18 @@
    "dependencies": [
     "V73-S46"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "implementation_location": "atlasz-control-center/",
+   "status": "EXTERNAL_BLOCKER",
+   "tests": [
+    "atlasz-tests/control-center.test.mjs"
+   ],
+   "evidence": [
+    "Installer config written; never built or run on Windows"
+   ],
+   "blocker": "EXTERNAL: electron/electron-builder blocked (403) here; needs GitHub push or a Windows build",
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-002",
@@ -15803,14 +15909,16 @@
    "dependencies": [
     "V73-S46"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
+   "implementation_location": ".github/workflows/build-windows-installer.yml",
+   "status": "EXTERNAL_BLOCKER",
    "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "evidence": [
+    "Installer creates desktop shortcut by config only"
+   ],
+   "blocker": "Not built/run",
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-003",
@@ -15823,14 +15931,18 @@
    "dependencies": [
     "V73-S46"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "implementation_location": "atlasz-control-center/",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/control-center.test.mjs"
+   ],
+   "evidence": [
+    "Owner key + passphrase; local token session; no user accounts"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-004",
@@ -15846,11 +15958,13 @@
    "implementation_location": null,
    "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "evidence": [
+    "No MASTER chat"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-005",
@@ -15864,13 +15978,15 @@
     "V73-S46"
    ],
    "implementation_location": null,
-   "status": "MISSING",
+   "status": "EXTERNAL_BLOCKER",
    "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "evidence": [
+    "No voice provider"
+   ],
+   "blocker": "EXTERNAL",
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-006",
@@ -15886,11 +16002,13 @@
    "implementation_location": null,
    "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "evidence": [
+    "No Human Core"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-007",
@@ -15903,14 +16021,19 @@
    "dependencies": [
     "V73-S46"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "implementation_location": "atlasz-control-center/core.mjs; atlasz-runtime/supervisor-safe.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/control-center.test.mjs",
+    "atlasz-tests/canonical-runtime.test.mjs"
+   ],
+   "evidence": [
+    "Agents panel + runtime show 5+25"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-008",
@@ -15923,14 +16046,18 @@
    "dependencies": [
     "V73-S46"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "implementation_location": "atlasz-runtime/supervisor-safe.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/canonical-queue-safety.test.mjs"
+   ],
+   "evidence": [
+    "Queue works; scheduler is timers"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-009",
@@ -15946,11 +16073,13 @@
    "implementation_location": null,
    "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "evidence": [
+    "No user-startable task (only automatic screening)"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-010",
@@ -15963,14 +16092,18 @@
    "dependencies": [
     "V73-S46"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "implementation_location": "atlasz-runtime/supervisor-safe.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/canonical-queue-safety.test.mjs"
+   ],
+   "evidence": [
+    "Screening checkpoint/resume only"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-011",
@@ -15983,14 +16116,18 @@
    "dependencies": [
     "V73-S46"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "implementation_location": "atlasz-addons/computer-use-fabric.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/stop-enforcement.test.mjs"
+   ],
+   "evidence": [
+    "Gate tested; no provider"
+   ],
+   "blocker": "EXTERNAL",
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-012",
@@ -16003,14 +16140,18 @@
    "dependencies": [
     "V73-S46"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "implementation_location": "atlasz-addons/tool-fabric.mjs",
+   "status": "STRUCTURAL_ONLY",
+   "tests": [
+    "atlasz-tests/probe-evidence.test.mjs"
+   ],
+   "evidence": [
+    "No real tool connected"
+   ],
+   "blocker": "EXTERNAL: no credentials/provider connected; any paid API needs separate Joci approval",
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-013",
@@ -16024,13 +16165,15 @@
     "V73-S46"
    ],
    "implementation_location": null,
-   "status": "MISSING",
+   "status": "EXTERNAL_BLOCKER",
    "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "evidence": [
+    "No connectors"
+   ],
+   "blocker": "EXTERNAL + Joci approval",
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-014",
@@ -16046,11 +16189,13 @@
    "implementation_location": null,
    "status": "MISSING",
    "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "evidence": [
+    "No document center"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-015",
@@ -16063,14 +16208,18 @@
    "dependencies": [
     "V73-S46"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "implementation_location": "atlasz-addons/money-pipeline-controller.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/contract-existing-modules.test.mjs"
+   ],
+   "evidence": [
+    "States real in code; no real money data"
+   ],
+   "blocker": "EXTERNAL: payment evidence source",
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-016",
@@ -16083,14 +16232,18 @@
    "dependencies": [
     "V73-S46"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "implementation_location": "atlasz-addons/money-pipeline-controller.mjs; profit-ledger.mjs; payment-confirmation-adapter.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/contract-existing-modules.test.mjs"
+   ],
+   "evidence": [
+    "PAID requires evidence; nothing counted without it"
+   ],
+   "blocker": "Provider signature verification is caller-asserted (adapter wiring pending)",
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-017",
@@ -16103,14 +16256,18 @@
    "dependencies": [
     "V73-S46"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "implementation_location": "atlasz-addons/multi-model-brain.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/contract-core-engine.test.mjs"
+   ],
+   "evidence": [
+    "Needs a second provider"
+   ],
+   "blocker": "EXTERNAL: no credentials/provider connected; any paid API needs separate Joci approval",
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-018",
@@ -16123,14 +16280,19 @@
    "dependencies": [
     "V73-S46"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "implementation_location": "atlasz-addons/owner-auth.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/owner-auth.test.mjs",
+    "atlasz-tests/approval-requests.test.mjs"
+   ],
+   "evidence": [
+    "Mechanism works; key not provisioned"
+   ],
+   "blocker": "Joci must create the owner key",
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-019",
@@ -16143,14 +16305,20 @@
    "dependencies": [
     "V73-S46"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "implementation_location": "atlasz-addons/emergency-stop.mjs; atlasz-control-center/core.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/emergency-stop.test.mjs",
+    "atlasz-tests/control-center.test.mjs",
+    "atlasz-tests/stop-enforcement.test.mjs"
+   ],
+   "evidence": [
+    "Real runtime process paused by signed approval, CLI and GUI paths"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-020",
@@ -16163,14 +16331,18 @@
    "dependencies": [
     "V73-S46"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "implementation_location": "atlasz-control-center/",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/control-center.test.mjs"
+   ],
+   "evidence": [
+    "Approvals history, doctor, blockers visible; no event log panel"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-021",
@@ -16183,14 +16355,19 @@
    "dependencies": [
     "V73-S46"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "implementation_location": "atlasz-addons/backup-recovery.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/backup-recovery.test.mjs",
+    "atlasz-tests/control-center.test.mjs"
+   ],
+   "evidence": [
+    "Backup + drill + signed restore tested"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-022",
@@ -16203,14 +16380,18 @@
    "dependencies": [
     "V73-S46"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "implementation_location": "atlasz-control-center/core.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/control-center.test.mjs"
+   ],
+   "evidence": [
+    "Doctor tested incl. tampered chain"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-023",
@@ -16223,14 +16404,18 @@
    "dependencies": [
     "V73-S46"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "implementation_location": "",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/policy-guards.test.mjs"
+   ],
+   "evidence": [
+    "Static secret-pattern scan of tracked files passes"
+   ],
+   "blocker": "Not a full secret scanner",
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-024",
@@ -16243,14 +16428,19 @@
    "dependencies": [
     "V73-S46"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "implementation_location": "atlasz-control-center/public/app.js",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/canonical-runtime.test.mjs",
+    "atlasz-tests/control-center.test.mjs"
+   ],
+   "evidence": [
+    "Blockers listed on Overview; honest NOT BUILT panels"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S46-025",
@@ -16263,14 +16453,20 @@
    "dependencies": [
     "V73-S46"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [],
-   "blocker": "Needs the Windows desktop (S21)",
+   "implementation_location": "",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/registry-integrity.test.mjs",
+    "atlasz-tests/probe-evidence.test.mjs",
+    "atlasz-tests/policy-guards.test.mjs"
+   ],
+   "evidence": [
+    "Registry forbids LIVE statuses; probe evidence gate"
+   ],
+   "blocker": "Not exhaustive across all modules",
    "owner_decision": null,
    "strategy": "BUILD",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S47",
@@ -16441,16 +16637,20 @@
    "dependencies": [
     "V73-S48"
    ],
-   "implementation_location": "owner-auth, guards across modules",
+   "implementation_location": "atlasz-addons/probe-evidence.mjs; money-pipeline-controller.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/probe-evidence.test.mjs",
+    "atlasz-tests/contract-existing-modules.test.mjs",
+    "atlasz-tests/registry-integrity.test.mjs"
    ],
-   "evidence": [],
-   "blocker": "Item-level check pending",
+   "evidence": [
+    "Gates exist and are mutation-tested"
+   ],
+   "blocker": "Payment provider confirmation flags are still caller-asserted",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S48-002",
@@ -16463,16 +16663,18 @@
    "dependencies": [
     "V73-S48"
    ],
-   "implementation_location": "owner-auth, guards across modules",
+   "implementation_location": "atlasz-addons/secret-vault.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/safety-modules.test.mjs"
    ],
-   "evidence": [],
-   "blocker": "Item-level check pending",
+   "evidence": [
+    "No credential is ever fabricated by code; vault stores real ones only"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S48-003",
@@ -16485,16 +16687,19 @@
    "dependencies": [
     "V73-S48"
    ],
-   "implementation_location": "owner-auth, guards across modules",
+   "implementation_location": "atlasz-addons/probe-evidence.mjs; payment-confirmation-adapter.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/probe-evidence.test.mjs",
+    "atlasz-tests/contract-existing-modules.test.mjs"
    ],
-   "evidence": [],
-   "blocker": "Item-level check pending",
+   "evidence": [
+    "Evidence structure enforced; authenticity not provable without provider"
+   ],
+   "blocker": "Needs real provider verification adapter",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S48-004",
@@ -16507,16 +16712,18 @@
    "dependencies": [
     "V73-S48"
    ],
-   "implementation_location": "owner-auth, guards across modules",
+   "implementation_location": "atlasz-runtime/supervisor-safe.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/canonical-runtime.test.mjs"
    ],
-   "evidence": [],
-   "blocker": "Item-level check pending",
+   "evidence": [
+    "No outreach exists at all; nothing is sent"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S48-005",
@@ -16529,16 +16736,16 @@
    "dependencies": [
     "V73-S48"
    ],
-   "implementation_location": "owner-auth, guards across modules",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/gated-modules.test.mjs"
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
+   "evidence": [
+    "No legality check on work types"
    ],
-   "evidence": [],
-   "blocker": "Item-level check pending",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S48-006",
@@ -16551,16 +16758,19 @@
    "dependencies": [
     "V73-S48"
    ],
-   "implementation_location": "owner-auth, guards across modules",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/owner-auth.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
+    "atlasz-tests/owner-auth.test.mjs",
     "atlasz-tests/gated-modules.test.mjs"
    ],
-   "evidence": [],
-   "blocker": "Item-level check pending",
+   "evidence": [
+    "Booleans rejected in 14 modules"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S48-007",
@@ -16573,16 +16783,19 @@
    "dependencies": [
     "V73-S48"
    ],
-   "implementation_location": "owner-auth, guards across modules",
+   "implementation_location": "atlasz-addons/owner-auth.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/owner-auth.test.mjs",
+    "atlasz-tests/stop-enforcement.test.mjs"
    ],
-   "evidence": [],
-   "blocker": "Item-level check pending",
+   "evidence": [
+    "Server cannot forge approvals; in-process code could bypass guards"
+   ],
+   "blocker": "No plugin sandbox",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S48-008",
@@ -16595,16 +16808,19 @@
    "dependencies": [
     "V73-S48"
    ],
-   "implementation_location": "owner-auth, guards across modules",
+   "implementation_location": "atlasz-addons/audit-chain.mjs; computer-use-fabric.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/safety-modules.test.mjs",
+    "atlasz-tests/contract-existing-modules.test.mjs"
    ],
-   "evidence": [],
-   "blocker": "Item-level check pending",
+   "evidence": [
+    "Tamper-evident; 'disable-audit-log' is a FORBIDDEN computer action"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S48-009",
@@ -16617,16 +16833,19 @@
    "dependencies": [
     "V73-S48"
    ],
-   "implementation_location": "owner-auth, guards across modules",
+   "implementation_location": "atlasz-addons/computer-use-fabric.mjs; secret-vault.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/contract-existing-modules.test.mjs",
+    "atlasz-tests/safety-modules.test.mjs"
    ],
-   "evidence": [],
-   "blocker": "Item-level check pending",
+   "evidence": [
+    "Forbidden action + redaction"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S48-010",
@@ -16639,16 +16858,19 @@
    "dependencies": [
     "V73-S48"
    ],
-   "implementation_location": "owner-auth, guards across modules",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/guardrail-engine.mjs; budget-consumption-governor.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/contract-core-engine.test.mjs",
+    "atlasz-tests/contract-existing-modules.test.mjs"
    ],
-   "evidence": [],
-   "blocker": "Item-level check pending",
+   "evidence": [
+    "Spend actions need owner approval; runtime budget $0"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S48-011",
@@ -16661,16 +16883,18 @@
    "dependencies": [
     "V73-S48"
    ],
-   "implementation_location": "owner-auth, guards across modules",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/guardrail-engine.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/stop-enforcement.test.mjs"
    ],
-   "evidence": [],
-   "blocker": "Item-level check pending",
+   "evidence": [
+    "Loan/credit need owner approval"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S48-012",
@@ -16683,16 +16907,18 @@
    "dependencies": [
     "V73-S48"
    ],
-   "implementation_location": "owner-auth, guards across modules",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-runtime/supervisor-safe.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/canonical-runtime.test.mjs"
    ],
-   "evidence": [],
-   "blocker": "Item-level check pending",
+   "evidence": [
+    "Fixed 30; self-check FAIL on other topology"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S48-013",
@@ -16705,16 +16931,18 @@
    "dependencies": [
     "V73-S48"
    ],
-   "implementation_location": "owner-auth, guards across modules",
-   "status": "PARTIAL",
+   "implementation_location": "runtime code",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/policy-guards.test.mjs"
    ],
-   "evidence": [],
-   "blocker": "Item-level check pending",
+   "evidence": [
+    "Static test: no VIRENA/GMP integration in runtime code"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S48-014",
@@ -16727,16 +16955,18 @@
    "dependencies": [
     "V73-S48"
    ],
-   "implementation_location": "owner-auth, guards across modules",
+   "implementation_location": "atlasz-runtime/worker.js",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/policy-guards.test.mjs"
    ],
-   "evidence": [],
-   "blocker": "Item-level check pending",
+   "evidence": [
+    "No 300-agent code; legacy worker.js still carries the 'atlasz-competition-v1' policy (30 agents, 6 teams, prize text); not reachable from start:canonical"
+   ],
+   "blocker": "JOCI DECISION: quarantine or remove legacy worker.js (EXCLUDED_LEGACY)",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S48-015",
@@ -16749,16 +16979,18 @@
    "dependencies": [
     "V73-S48"
    ],
-   "implementation_location": "owner-auth, guards across modules",
+   "implementation_location": "docs/",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/gated-modules.test.mjs"
+    "atlasz-tests/registry-integrity.test.mjs"
    ],
-   "evidence": [],
-   "blocker": "Item-level check pending",
+   "evidence": [
+    "Old Railway/commit statements recorded as historical only (Railway = UNKNOWN)"
+   ],
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S49",
@@ -17330,19 +17562,18 @@
    "dependencies": [
     "V73-S51"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs (LKG registry, rollbackInstall)",
+   "implementation_location": "atlasz-runtime/supervisor-safe.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/backup-recovery.test.mjs",
-    "atlasz-tests/update-center.test.mjs"
+    "atlasz-tests/canonical-runtime.test.mjs"
    ],
    "evidence": [
-    "LKG criteria enforced; auto-rollback incl. crash-mid-install"
+    "VERSION constant 3.3.0 + git hash in bundle"
    ],
-   "blocker": "Not wired to production deployment",
+   "blocker": "No build id endpoint",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S51-002",
@@ -17355,19 +17586,16 @@
    "dependencies": [
     "V73-S51"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs (LKG registry, rollbackInstall)",
+   "implementation_location": "package.json",
    "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/backup-recovery.test.mjs",
-    "atlasz-tests/update-center.test.mjs"
-   ],
+   "tests": [],
    "evidence": [
-    "LKG criteria enforced; auto-rollback incl. crash-mid-install"
+    "Versions in package.json; no lockfile check"
    ],
-   "blocker": "Not wired to production deployment",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S51-003",
@@ -17380,19 +17608,18 @@
    "dependencies": [
     "V73-S51"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs (LKG registry, rollbackInstall)",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/backup-recovery.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/backup-recovery.test.mjs",
-    "atlasz-tests/update-center.test.mjs"
+    "atlasz-tests/backup-recovery.test.mjs"
    ],
    "evidence": [
-    "LKG criteria enforced; auto-rollback incl. crash-mid-install"
+    "LKG criterion healthOk enforced"
    ],
-   "blocker": "Not wired to production deployment",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S51-004",
@@ -17405,19 +17632,18 @@
    "dependencies": [
     "V73-S51"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs (LKG registry, rollbackInstall)",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/backup-recovery.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/backup-recovery.test.mjs",
-    "atlasz-tests/update-center.test.mjs"
+    "atlasz-tests/backup-recovery.test.mjs"
    ],
    "evidence": [
-    "LKG criteria enforced; auto-rollback incl. crash-mid-install"
+    "LKG criterion smokeTestsPassed enforced (+evidence)"
    ],
-   "blocker": "Not wired to production deployment",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S51-005",
@@ -17430,19 +17656,18 @@
    "dependencies": [
     "V73-S51"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs (LKG registry, rollbackInstall)",
+   "implementation_location": "atlasz-addons/backup-recovery.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/backup-recovery.test.mjs",
-    "atlasz-tests/update-center.test.mjs"
+    "atlasz-tests/backup-recovery.test.mjs"
    ],
    "evidence": [
-    "LKG criteria enforced; auto-rollback incl. crash-mid-install"
+    "LKG criterion migrationStateKnown (no DB)"
    ],
-   "blocker": "Not wired to production deployment",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S51-006",
@@ -17455,19 +17680,19 @@
    "dependencies": [
     "V73-S51"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs (LKG registry, rollbackInstall)",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/backup-recovery.mjs; update-center.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/backup-recovery.test.mjs",
     "atlasz-tests/update-center.test.mjs"
    ],
    "evidence": [
-    "LKG criteria enforced; auto-rollback incl. crash-mid-install"
+    "Backup before every install"
    ],
-   "blocker": "Not wired to production deployment",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S51-007",
@@ -17480,19 +17705,19 @@
    "dependencies": [
     "V73-S51"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs (LKG registry, rollbackInstall)",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/backup-recovery.mjs; update-center.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/backup-recovery.test.mjs",
     "atlasz-tests/update-center.test.mjs"
    ],
    "evidence": [
-    "LKG criteria enforced; auto-rollback incl. crash-mid-install"
+    "Rollback path hash-verified"
    ],
-   "blocker": "Not wired to production deployment",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S51-008",
@@ -17505,19 +17730,18 @@
    "dependencies": [
     "V73-S51"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs (LKG registry, rollbackInstall)",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/backup-recovery.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/backup-recovery.test.mjs",
-    "atlasz-tests/update-center.test.mjs"
+    "atlasz-tests/backup-recovery.test.mjs"
    ],
    "evidence": [
-    "LKG criteria enforced; auto-rollback incl. crash-mid-install"
+    "LKG_EVIDENCE_REQUIRED"
    ],
-   "blocker": "Not wired to production deployment",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S51-009",
@@ -17530,19 +17754,18 @@
    "dependencies": [
     "V73-S51"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs (LKG registry, rollbackInstall)",
+   "implementation_location": "atlasz-addons/update-center.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/backup-recovery.test.mjs",
     "atlasz-tests/update-center.test.mjs"
    ],
    "evidence": [
-    "LKG criteria enforced; auto-rollback incl. crash-mid-install"
+    "Component versions"
    ],
-   "blocker": "Not wired to production deployment",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S51-010",
@@ -17555,19 +17778,16 @@
    "dependencies": [
     "V73-S51"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs (LKG registry, rollbackInstall)",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/backup-recovery.test.mjs",
-    "atlasz-tests/update-center.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "LKG criteria enforced; auto-rollback incl. crash-mid-install"
+    "No config versioning"
    ],
-   "blocker": "Not wired to production deployment",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S51-011",
@@ -17580,19 +17800,16 @@
    "dependencies": [
     "V73-S51"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs (LKG registry, rollbackInstall)",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/backup-recovery.test.mjs",
-    "atlasz-tests/update-center.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "LKG criteria enforced; auto-rollback incl. crash-mid-install"
+    "No schema version (no DB)"
    ],
-   "blocker": "Not wired to production deployment",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S51-012",
@@ -17605,19 +17822,16 @@
    "dependencies": [
     "V73-S51"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs (LKG registry, rollbackInstall)",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/backup-recovery.test.mjs",
-    "atlasz-tests/update-center.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "LKG criteria enforced; auto-rollback incl. crash-mid-install"
+    "No agent/workflow versions"
    ],
-   "blocker": "Not wired to production deployment",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S51-013",
@@ -17630,19 +17844,16 @@
    "dependencies": [
     "V73-S51"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs (LKG registry, rollbackInstall)",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/backup-recovery.test.mjs",
-    "atlasz-tests/update-center.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "LKG criteria enforced; auto-rollback incl. crash-mid-install"
+    "No connector config versions"
    ],
-   "blocker": "Not wired to production deployment",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S51-014",
@@ -17655,19 +17866,16 @@
    "dependencies": [
     "V73-S51"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs (LKG registry, rollbackInstall)",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/backup-recovery.test.mjs",
-    "atlasz-tests/update-center.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "LKG criteria enforced; auto-rollback incl. crash-mid-install"
+    "No routing config versions"
    ],
-   "blocker": "Not wired to production deployment",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S51-015",
@@ -17680,19 +17888,18 @@
    "dependencies": [
     "V73-S51"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs (LKG registry, rollbackInstall)",
+   "implementation_location": "atlasz-addons/update-center.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/backup-recovery.test.mjs",
     "atlasz-tests/update-center.test.mjs"
    ],
    "evidence": [
-    "LKG criteria enforced; auto-rollback incl. crash-mid-install"
+    "Per-component versions"
    ],
-   "blocker": "Not wired to production deployment",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S51-016",
@@ -17705,19 +17912,18 @@
    "dependencies": [
     "V73-S51"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs (LKG registry, rollbackInstall)",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/backup-recovery.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/backup-recovery.test.mjs",
-    "atlasz-tests/update-center.test.mjs"
+    "atlasz-tests/backup-recovery.test.mjs"
    ],
    "evidence": [
-    "LKG criteria enforced; auto-rollback incl. crash-mid-install"
+    "createLkgRegistry.latest()"
    ],
-   "blocker": "Not wired to production deployment",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S51-017",
@@ -17730,19 +17936,18 @@
    "dependencies": [
     "V73-S51"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs (LKG registry, rollbackInstall)",
+   "implementation_location": "atlasz-control-center/core.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/backup-recovery.test.mjs",
-    "atlasz-tests/update-center.test.mjs"
+    "atlasz-tests/control-center.test.mjs"
    ],
    "evidence": [
-    "LKG criteria enforced; auto-rollback incl. crash-mid-install"
+    "backups() lists verified backups"
    ],
-   "blocker": "Not wired to production deployment",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S51-018",
@@ -17755,19 +17960,18 @@
    "dependencies": [
     "V73-S51"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs (LKG registry, rollbackInstall)",
+   "implementation_location": "atlasz-addons/backup-recovery.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/backup-recovery.test.mjs",
-    "atlasz-tests/update-center.test.mjs"
+    "atlasz-tests/backup-recovery.test.mjs"
    ],
    "evidence": [
-    "LKG criteria enforced; auto-rollback incl. crash-mid-install"
+    "Drill result not persisted as 'last restore test'"
    ],
-   "blocker": "Not wired to production deployment",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S51-019",
@@ -17780,19 +17984,18 @@
    "dependencies": [
     "V73-S51"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs (LKG registry, rollbackInstall)",
+   "implementation_location": "atlasz-control-center/core.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/backup-recovery.test.mjs",
-    "atlasz-tests/update-center.test.mjs"
+    "atlasz-tests/control-center.test.mjs"
    ],
    "evidence": [
-    "LKG criteria enforced; auto-rollback incl. crash-mid-install"
+    "Doctor shows LKG/backups"
    ],
-   "blocker": "Not wired to production deployment",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S51-020",
@@ -17805,19 +18008,18 @@
    "dependencies": [
     "V73-S51"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs (LKG registry, rollbackInstall)",
+   "implementation_location": "atlasz-control-center/core.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/backup-recovery.test.mjs",
-    "atlasz-tests/update-center.test.mjs"
+    "atlasz-tests/control-center.test.mjs"
    ],
    "evidence": [
-    "LKG criteria enforced; auto-rollback incl. crash-mid-install"
+    "Doctor/backups show restore availability"
    ],
-   "blocker": "Not wired to production deployment",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S51-021",
@@ -17830,19 +18032,19 @@
    "dependencies": [
     "V73-S51"
    ],
-   "implementation_location": "atlasz-addons/backup-recovery.mjs (LKG registry, rollbackInstall)",
+   "implementation_location": "atlasz-addons/update-center.mjs; safe-mode.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/backup-recovery.test.mjs",
-    "atlasz-tests/update-center.test.mjs"
+    "atlasz-tests/update-center.test.mjs",
+    "atlasz-tests/safety-modules.test.mjs"
    ],
    "evidence": [
-    "LKG criteria enforced; auto-rollback incl. crash-mid-install"
+    "Freeze and Safe Mode states exist"
    ],
-   "blocker": "Not wired to production deployment",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52",
@@ -17878,19 +18080,19 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/startup-self-check.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/safety-modules.test.mjs",
+    "atlasz-tests/canonical-queue-safety.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "Runs at boot; FAIL -> Safe Mode"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-002",
@@ -17903,19 +18105,18 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
+   "implementation_location": "atlasz-addons/watchdog.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/safety-modules.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "Watchdog ticks every 15 s for scheduler and queue"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-003",
@@ -17928,19 +18129,18 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
+   "implementation_location": "atlasz-addons/startup-self-check.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/safety-modules.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "Self-check is pre-flight for the runtime only"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-004",
@@ -17953,19 +18153,18 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/update-center.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/update-center.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "Staged update flow with rollback"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": "Real adapters not written",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-005",
@@ -17978,19 +18177,18 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
+   "implementation_location": "atlasz-addons/startup-self-check.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/safety-modules.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "Topology and state shape validated"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-006",
@@ -18003,19 +18201,16 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "No database"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-007",
@@ -18028,19 +18223,20 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/audit-chain.mjs; durable-queue.mjs; backup-recovery.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/backup-recovery.test.mjs",
+    "atlasz-tests/safety-modules.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "Checksums/hash chains/manifest hashes verified"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-008",
@@ -18053,19 +18249,16 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "No circuit breaker"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-009",
@@ -18078,19 +18271,18 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
+   "implementation_location": "atlasz-addons/startup-self-check.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/safety-modules.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "Disk free check only"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-010",
@@ -18103,19 +18295,19 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/watchdog.mjs; durable-queue.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/safety-modules.test.mjs",
+    "atlasz-tests/durable-queue.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "Hanging probe timeout; stalled lease requeue"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-011",
@@ -18128,19 +18320,18 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/safe-mode.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/safety-modules.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "3 boots in window -> Safe Mode"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-012",
@@ -18153,19 +18344,18 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
+   "implementation_location": "atlasz-addons/update-center.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/update-center.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "Compatibility check (node/requirements)"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-013",
@@ -18178,19 +18368,19 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/durable-queue.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/canonical-queue-safety.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "Idempotency keys"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-014",
@@ -18203,19 +18393,18 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
+   "implementation_location": "atlasz-addons/durable-queue.mjs; supervisor-safe.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/canonical-queue-safety.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "Save-before-ack ordering"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-015",
@@ -18228,19 +18417,16 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "No time/schedule safety (clock jumps)"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-016",
@@ -18253,19 +18439,19 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
+   "implementation_location": "atlasz-addons/startup-self-check.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/safety-modules.test.mjs",
+    "atlasz-tests/policy-guards.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "Owner-auth/vault state + tracked-secret scan"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-017",
@@ -18278,19 +18464,19 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/backup-recovery.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/backup-recovery.test.mjs",
+    "atlasz-tests/control-center.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "recoveryDrill"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-018",
@@ -18303,19 +18489,16 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
-   "status": "PARTIAL",
-   "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
-   ],
+   "implementation_location": null,
+   "status": "MISSING",
+   "tests": [],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "No failure injection beyond unit tests"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-019",
@@ -18328,19 +18511,19 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/safe-mode.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/safety-modules.test.mjs",
+    "atlasz-tests/canonical-queue-safety.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "Safe Mode"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-020",
@@ -18353,19 +18536,19 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
-   "status": "PARTIAL",
+   "implementation_location": "atlasz-addons/update-center.mjs; backup-recovery.mjs",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/update-center.test.mjs",
+    "atlasz-tests/backup-recovery.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "Evidence records on update/LKG"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-021",
@@ -18378,19 +18561,18 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
+   "implementation_location": "atlasz-addons/update-center.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/update-center.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "Update/rollback audit entries record cause, versions and evidence; no unified incident report"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": "No Joci-facing incident report format",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-022",
@@ -18403,19 +18585,18 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
+   "implementation_location": "atlasz-addons/update-center.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/update-center.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "Update/rollback audit entries record cause, versions and evidence; no unified incident report"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": "No Joci-facing incident report format",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-023",
@@ -18428,19 +18609,18 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
+   "implementation_location": "atlasz-addons/update-center.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/update-center.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "Update/rollback audit entries record cause, versions and evidence; no unified incident report"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": "No Joci-facing incident report format",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-024",
@@ -18453,19 +18633,18 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
+   "implementation_location": "atlasz-addons/update-center.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/update-center.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "Update/rollback audit entries record cause, versions and evidence; no unified incident report"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": "No Joci-facing incident report format",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-025",
@@ -18478,19 +18657,18 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
+   "implementation_location": "atlasz-addons/update-center.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/update-center.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "Update/rollback audit entries record cause, versions and evidence; no unified incident report"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": "No Joci-facing incident report format",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-026",
@@ -18503,19 +18681,18 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
+   "implementation_location": "atlasz-addons/update-center.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/update-center.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "Update/rollback audit entries record cause, versions and evidence; no unified incident report"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": "No Joci-facing incident report format",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-027",
@@ -18528,19 +18705,18 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
+   "implementation_location": "atlasz-addons/update-center.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/update-center.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "Update/rollback audit entries record cause, versions and evidence; no unified incident report"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": "No Joci-facing incident report format",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "V73-S52-028",
@@ -18553,19 +18729,18 @@
    "dependencies": [
     "V73-S52"
    ],
-   "implementation_location": "durable-queue, audit-chain, emergency-stop, update-center, supervisor-safe",
+   "implementation_location": "atlasz-addons/update-center.mjs",
    "status": "PARTIAL",
    "tests": [
-    "atlasz-tests/durable-queue.test.mjs",
-    "atlasz-tests/canonical-runtime.test.mjs"
+    "atlasz-tests/update-center.test.mjs"
    ],
    "evidence": [
-    "idempotency, torn-write recovery, timeouts tested"
+    "Update/rollback audit entries record cause, versions and evidence; no unified incident report"
    ],
-   "blocker": "Startup self-check / health / watchdog missing",
+   "blocker": "No Joci-facing incident report format",
    "owner_decision": null,
    "strategy": "COMPLETE",
-   "status_basis": "SECTION_INHERITED_NOT_ITEM_VERIFIED"
+   "status_basis": "ITEM_VERIFIED"
   },
   {
    "id": "ATLASZ-UC-001",

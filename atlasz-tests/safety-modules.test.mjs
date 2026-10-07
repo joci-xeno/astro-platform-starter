@@ -21,13 +21,13 @@ test("vault: set needs signed owner approval; value is encrypted at rest and nev
   const d = tmp(), { auth, ap } = owner(), key = generateVaultKey();
   try {
     const v = createSecretVault({ dir: d, keyB64: key, ownerAuth: auth });
-    assert.throws(() => v.set("STRIPE", "sk_live_supersecret"), /OWNER_APPROVAL_REQUIRED/);
-    assert.throws(() => v.set("STRIPE", "sk_live_supersecret", { ownerApproval: true }), /OWNER_APPROVAL_REQUIRED/);
-    assert.throws(() => v.set("STRIPE", "sk_live_supersecret", { ownerApproval: ap("VAULT_SET", "OTHER") }), /OWNER_APPROVAL_REQUIRED/);
-    v.set("STRIPE", "sk_live_supersecret", { ownerApproval: ap("VAULT_SET", "STRIPE") });
-    assert.equal(v.get("STRIPE", { purpose: "test" }), "sk_live_supersecret");
+    assert.throws(() => v.set("STRIPE", "fixture-secret-value-0001"), /OWNER_APPROVAL_REQUIRED/);
+    assert.throws(() => v.set("STRIPE", "fixture-secret-value-0001", { ownerApproval: true }), /OWNER_APPROVAL_REQUIRED/);
+    assert.throws(() => v.set("STRIPE", "fixture-secret-value-0001", { ownerApproval: ap("VAULT_SET", "OTHER") }), /OWNER_APPROVAL_REQUIRED/);
+    v.set("STRIPE", "fixture-secret-value-0001", { ownerApproval: ap("VAULT_SET", "STRIPE") });
+    assert.equal(v.get("STRIPE", { purpose: "test" }), "fixture-secret-value-0001");
     const disk = fs.readFileSync(path.join(d, "vault.enc.json"), "utf8") + fs.readFileSync(path.join(d, "vault-audit.jsonl"), "utf8");
-    assert.equal(disk.includes("sk_live_supersecret"), false);
+    assert.equal(disk.includes("fixture-secret-value-0001"), false);
     assert.deepEqual(v.list(), ["STRIPE"]);
     assert.equal(v.auditVerify().ok ?? true, true);
   } finally { rm(d); }
