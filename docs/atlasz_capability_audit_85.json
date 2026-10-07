@@ -1,0 +1,1963 @@
+{
+ "meta": {
+  "generated": "from capability_audit_data.py",
+  "rule": "VERIFIED_WORKING needs reproducible evidence; structure/placeholders are PARTIAL or MISSING",
+  "shared": {
+   "TYPED_TOOLS_AND_SCHEMAS": [
+    "G06",
+    "GE08",
+    "P14",
+    "C06",
+    "M05",
+    "C05",
+    "A10",
+    "M04"
+   ],
+   "DURABLE_SCHEDULER": [
+    "C12",
+    "P06",
+    "P08",
+    "P11",
+    "GE11",
+    "P01"
+   ],
+   "MODALITY_FABRIC_AND_OBSERVATION_MEMORY": [
+    "G08",
+    "G09",
+    "G11",
+    "GE02",
+    "GE12",
+    "A01",
+    "A02",
+    "A05",
+    "A06",
+    "A07",
+    "A09",
+    "P12",
+    "P15",
+    "P18",
+    "P19",
+    "M09",
+    "M10"
+   ],
+   "CODE_SANDBOX": [
+    "M06",
+    "G05",
+    "GE07",
+    "M07",
+    "C01",
+    "P04"
+   ],
+   "KNOWLEDGE_PROJECTS": [
+    "M02",
+    "G07",
+    "GE09",
+    "GE01",
+    "P03",
+    "C07",
+    "C11"
+   ],
+   "RESEARCH_LEDGER": [
+    "M08",
+    "C08",
+    "G02",
+    "GE04",
+    "P13",
+    "G03",
+    "P10"
+   ],
+   "ENGINEERING_TOOLS": [
+    "C01",
+    "P07",
+    "P04"
+   ]
+  }
+ },
+ "summary": {
+  "MISSING": 18,
+  "PARTIAL": 42,
+  "EXTERNAL_BLOCKER": 23,
+  "VERIFIED_WORKING": 2,
+  "total": 85
+ },
+ "capabilities": [
+  {
+   "id": "M01",
+   "description": "Universal AI Browser Sidebar",
+   "registry_links": [
+    "V73-S19-001",
+    "V73-S19-002",
+    "V73-S19-003",
+    "V73-S19-004",
+    "V73-S19-005",
+    "V73-S19-006"
+   ],
+   "modules": "atlasz-addons/computer-use-fabric.mjs (action policy only); tool-fabric.mjs (catalogue entry 'browser')",
+   "status": "MISSING",
+   "evidence": "Policy tests for AUTO/ASK/FORBIDDEN actions only (computer-use-fabric tests). No browser companion exists.",
+   "missing": "Browser extension/sidebar, page extraction, page Q&A, task launch",
+   "integration_gaps": "Needs an extension host; page content is untrusted input -> must pass Security Brain",
+   "security": "Page text is hostile input; no auto-actions; owner approval for any task launch",
+   "plan": "Build page-content ingestion (security-screened, provenance) as a reusable module; extension shell itself needs a browser-extension build (blocked on distribution/approval)",
+   "tests_required": "ingest screening, injection quarantine, provenance, no-action-without-approval",
+   "final_status": "MISSING",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "M02",
+   "description": "Intelligent Knowledge Projects",
+   "registry_links": [
+    "V73-S03-017",
+    "V73-S05-013",
+    "V73-S06-002",
+    "V73-S06-007",
+    "V73-S07-001",
+    "V73-S07-002"
+   ],
+   "modules": "document-center.mjs; brain/knowledge-brain.mjs; brain/memory-fabric.mjs; shared-project-registry.mjs; business/entity-graph.mjs",
+   "status": "PARTIAL",
+   "evidence": "document-intelligence.test (6), doc-extractors.test (5), memory-fabric.test, knowledge-brain tests",
+   "missing": "Named workspaces grouping docs/notes/webpages/images with source refs; semantic (embedding) retrieval",
+   "integration_gaps": "Search is keyword-token based, no embeddings; shared-project-registry is in-process",
+   "security": "Tenant+role gates already enforced; screening before agent read",
+   "plan": "Build Knowledge Projects over document-center (collections, members, citations); embeddings need a provider (EXTERNAL) so token retrieval stays labelled non-semantic",
+   "tests_required": "project isolation, citation traceability, superseded versions, agent-read gating",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": [
+    "KNOWLEDGE_PROJECTS"
+   ]
+  },
+  {
+   "id": "M03",
+   "description": "Multi-Model Conversation Interface",
+   "registry_links": [
+    "V73-S02-002",
+    "V73-S03-007",
+    "V73-S03-010",
+    "V73-S08-001",
+    "V73-S08-002",
+    "V73-S08-003"
+   ],
+   "modules": "multi-model-brain.mjs; provider-resilience.mjs; brain/model-intelligence.mjs; cost-model-router.mjs",
+   "status": "PARTIAL",
+   "evidence": "provider-resilience.test, brain-systems.test (deterministic clock), contract tests",
+   "missing": "Shared conversation object, per-turn model switching, context windows, per-conversation cost",
+   "integration_gaps": "No provider is LIVE; no conversation/context manager",
+   "security": "Keys server-side only; LIVE only from our own probe",
+   "plan": "Conversation manager with context budget + token/cost accounting over existing router; providers stay blocked",
+   "tests_required": "context trimming, switch audit, cost accrual, no-LIVE-without-probe",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "M04",
+   "description": "Autonomous Task Agent",
+   "registry_links": [
+    "V73-S03-001",
+    "V73-S03-002",
+    "V73-S03-003",
+    "V73-S03-004",
+    "V73-S03-005",
+    "V73-S03-006"
+   ],
+   "modules": "brain/orchestrator.mjs; brain/planning-brain.mjs; brain/governed-dispatch.mjs; master-planner-orchestrator.mjs",
+   "status": "PARTIAL",
+   "evidence": "brain-orchestration.test, governed-dispatch.test, brain-runtime-wiring.test",
+   "missing": "Real tool/model execution for documents/research/calculations/artifacts (no live models)",
+   "integration_gaps": "Tool execution is adapter-gated; typed tool calls missing",
+   "security": "Control chain on every action",
+   "plan": "Typed tool registry (shared) + sandboxed calculation so plans can execute locally verifiable steps",
+   "tests_required": "plan->tool->verify loops, failure replan, approval points",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": [
+    "TYPED_TOOLS_AND_SCHEMAS"
+   ]
+  },
+  {
+   "id": "M05",
+   "description": "Skills and Plugin Framework",
+   "registry_links": [
+    "V73-S02-002",
+    "V73-S09-015",
+    "V73-S18-004",
+    "V73-S21-039",
+    "V73-S21-040",
+    "V73-S22-001"
+   ],
+   "modules": "plugin-manager.mjs; skill-factory.mjs; capability-registry.mjs; control-center plugin panel",
+   "status": "PARTIAL",
+   "evidence": "plugin-manager.test, control-center-plugins.test (manifest validation, permissions, isolated hook process, health)",
+   "missing": "Versioned install from package, rollback of a bad plugin version, skill testing harness",
+   "integration_gaps": "Skill Factory creates definitions only",
+   "security": "Plugin code never runs in core process; forbidden permissions refused",
+   "plan": "Add versioned skill packages with test-gate + rollback on the shared typed-tool registry",
+   "tests_required": "install/upgrade/rollback, permission escalation refused",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": [
+    "TYPED_TOOLS_AND_SCHEMAS"
+   ]
+  },
+  {
+   "id": "M06",
+   "description": "Isolated Sandbox Workspace",
+   "registry_links": [
+    "V73-S19-001",
+    "V73-S19-002",
+    "V73-S19-003",
+    "V73-S19-004",
+    "V73-S19-005",
+    "V73-S19-006"
+   ],
+   "modules": "computer-use-fabric.mjs (policy); plugin-manager.mjs (child process, minimal env, timeout)",
+   "status": "PARTIAL",
+   "evidence": "plugin-manager.test timeouts/containment",
+   "missing": "General code execution sandbox with CPU/memory/time/file limits and no network",
+   "integration_gaps": "No OS-level isolation (namespaces/containers) available to verify here",
+   "security": "Untrusted code must never get secrets; honest label if isolation is process-level only",
+   "plan": "Build code-sandbox runner (child process, rlimits, scrubbed env, temp dir, output caps) and label isolation level truthfully",
+   "tests_required": "timeout kill, memory cap, env scrub, path escape refused, output cap",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": [
+    "CODE_SANDBOX"
+   ]
+  },
+  {
+   "id": "M07",
+   "description": "Advanced Analyst Mode",
+   "registry_links": [
+    "V73-S09-020",
+    "V73-S26-006",
+    "V73-S30-007",
+    "ATLASZ-BR-004"
+   ],
+   "modules": "doc-extractors.mjs (XLSX/ODS read); tool-fabric.mjs (catalogue 'data-analysis')",
+   "status": "MISSING",
+   "evidence": "Extractors read spreadsheets as text only",
+   "missing": "Cleaning, calculation, statistics, charts, reproducible reports",
+   "integration_gaps": "Needs sandbox runner + deterministic calc library",
+   "security": "Computations must be reproducible and hash-recorded",
+   "plan": "Analyst module: CSV/XLSX table load, profile, clean, stats, chart spec (data only), report with input hashes",
+   "tests_required": "stats correctness vs known values, malformed input, reproducibility hash",
+   "final_status": "MISSING",
+   "shared_infrastructure": [
+    "CODE_SANDBOX"
+   ]
+  },
+  {
+   "id": "M08",
+   "description": "Deep Research",
+   "registry_links": [
+    "V73-S03-011",
+    "V73-S07-005",
+    "V73-S07-016",
+    "V73-S09-005",
+    "V73-S09-006",
+    "V73-S09-015"
+   ],
+   "modules": "brain/verifier.mjs; brain/evidence-sources.mjs; market-intelligence-engine.mjs; enterprise-knowledge-agentic-rag.mjs",
+   "status": "PARTIAL",
+   "evidence": "evidence-sources.test, brain verifier tests",
+   "missing": "Multi-source collection, citation tracking, evidence comparison, uncertainty report",
+   "integration_gaps": "No live web provider; no citation ledger",
+   "security": "Fetched pages are untrusted; claims need provenance",
+   "plan": "Research ledger: source records (url/hash/retrieved_at), claims linked to sources, agreement/conflict/uncertainty; fetcher is injected (provider blocked)",
+   "tests_required": "claim-source linkage, conflict flagging, stale-source detection, no uncited claim marked VERIFIED",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": [
+    "RESEARCH_LEDGER"
+   ]
+  },
+  {
+   "id": "M09",
+   "description": "Video Intelligence",
+   "registry_links": [
+    "V73-S05-012",
+    "V73-S05-013",
+    "V73-S28-002"
+   ],
+   "modules": "voice-session.mjs (state machine only)",
+   "status": "EXTERNAL_BLOCKER",
+   "evidence": "None for video",
+   "missing": "Video/transcript analysis, timestamps, summaries",
+   "integration_gaps": "Needs transcription/vision provider",
+   "security": "Authorized videos only; privacy class",
+   "plan": "Transcript-based pipeline (timestamped transcript ingest -> index -> summary/action steps) buildable without a provider when a transcript is supplied",
+   "tests_required": "timestamp integrity, transcript screening, action-step verification",
+   "final_status": "EXTERNAL_BLOCKER",
+   "shared_infrastructure": [
+    "MODALITY_FABRIC_AND_OBSERVATION_MEMORY"
+   ]
+  },
+  {
+   "id": "M10",
+   "description": "Creative Studio",
+   "registry_links": [
+    "V73-S09-024",
+    "V73-S22-006",
+    "V73-S23-012",
+    "V73-S28-001",
+    "V73-S28-002",
+    "V73-S28-003"
+   ],
+   "modules": "tool-fabric.mjs (catalogue only)",
+   "status": "EXTERNAL_BLOCKER",
+   "evidence": "None",
+   "missing": "Image/doc/slide creation through providers",
+   "integration_gaps": "No generation provider",
+   "security": "Generated content labelled; no impersonation/trademark reproduction",
+   "plan": "Modality fabric slots + job records; providers blocked",
+   "tests_required": "provider-slot honesty, content labelling",
+   "final_status": "EXTERNAL_BLOCKER",
+   "shared_infrastructure": [
+    "MODALITY_FABRIC_AND_OBSERVATION_MEMORY"
+   ]
+  },
+  {
+   "id": "M11",
+   "description": "Intelligent Communication Assistant",
+   "registry_links": [
+    "V73-S04-011",
+    "V73-S25-001",
+    "V73-S25-002",
+    "V73-S25-003",
+    "V73-S25-004",
+    "V73-S25-005"
+   ],
+   "modules": "business/communication-center.mjs; business/inbox-pipeline.mjs; universal-inbox.mjs; human-core.mjs",
+   "status": "PARTIAL",
+   "evidence": "inbox-pipeline.test (6), universal-inbox.test, business-engines.test (DRAFT/QUEUED != SENT)",
+   "missing": "Real email/chat connector; drafting with a language model",
+   "integration_gaps": "No connector credentials/model; sending is approval-gated",
+   "security": "External sending always needs owner approval + provider evidence",
+   "plan": "Keep as is; add draft-with-verified-context helper when a model is connected",
+   "tests_required": "draft provenance, approval before send, no SENT without provider ref",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "M12",
+   "description": "Custom AI Assistants",
+   "registry_links": [
+    "V73-S04-010",
+    "V73-S06-001",
+    "V73-S06-002",
+    "V73-S06-003",
+    "V73-S06-004",
+    "V73-S06-005"
+   ],
+   "modules": "agent-factory.mjs; owner-control/agent-governor.mjs; capability-graph.mjs",
+   "status": "PARTIAL",
+   "evidence": "agent-factory-governor.test (31st agent refused, unknown capability refused)",
+   "missing": "Configurable assistant profiles (instructions, tools, memory scope, permissions) separate from the fixed 30 runtime agents",
+   "integration_gaps": "Fixed 30 limit applies to runtime agents; profiles are not agents",
+   "security": "Profiles cannot add agents or permissions beyond the owner grant",
+   "plan": "Assistant Profiles module (config only, no extra agents) using memory scopes + typed tool allowlists",
+   "tests_required": "profile cannot exceed grants, scope isolation, no agent-count change",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "M13",
+   "description": "Interactive Artifacts and Prototypes",
+   "registry_links": [
+    "V73-S06-011",
+    "ATLASZ-BR-027",
+    "ATLASZ-PKG84-004",
+    "ATLASZ-PKG84-007",
+    "ATLASZ-PKG84-012"
+   ],
+   "modules": "business/artifact-registry.mjs; atlasz-control-center (own UI)",
+   "status": "PARTIAL",
+   "evidence": "business-engines.test (content-addressed artifacts, CREATED!=VERIFIED!=DELIVERED)",
+   "missing": "Chart/diagram/app preview generation and rendering",
+   "integration_gaps": "Artifact store has no preview renderer",
+   "security": "Previews must be sandboxed (no script from untrusted artifacts)",
+   "plan": "Static preview generator (SVG/HTML with CSP, data-only charts) registered as artifacts",
+   "tests_required": "preview sandbox/CSP, content hash, no remote loads",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "C01",
+   "description": "Advanced Software Engineering Agent",
+   "registry_links": [
+    "V73-S08-001",
+    "V73-S08-007",
+    "V73-S12-005",
+    "V73-S12-006",
+    "V73-S16-003",
+    "V73-S20-006"
+   ],
+   "modules": "tool-fabric.mjs (catalogue 'code','test','github'); regression-eval-suite.mjs; skill-factory.mjs",
+   "status": "MISSING",
+   "evidence": "Only catalogue entries and an eval suite scaffold",
+   "missing": "Repo analysis, edit, test run, review workflow as governed tools",
+   "integration_gaps": "No code tools wired; needs sandbox + typed tools",
+   "security": "Writes only inside a project sandbox; no push without approval",
+   "plan": "Engineering toolkit on shared sandbox: repo scan, test runner, diff review (P07) \u2014 read/analyze first",
+   "tests_required": "repo scan correctness, test-run capture, path escape refused",
+   "final_status": "MISSING",
+   "shared_infrastructure": [
+    "CODE_SANDBOX",
+    "ENGINEERING_TOOLS"
+   ]
+  },
+  {
+   "id": "C02",
+   "description": "Computer-Based Task Execution",
+   "registry_links": [
+    "V73-S02-001",
+    "V73-S05-016",
+    "V73-S19-001",
+    "V73-S19-002",
+    "V73-S19-003",
+    "V73-S19-004"
+   ],
+   "modules": "computer-use-fabric.mjs; tool-fabric.mjs",
+   "status": "PARTIAL",
+   "evidence": "computer-use-fabric tests (AUTO/ASK/FORBIDDEN, kill switch, audit)",
+   "missing": "Real provider executing actions",
+   "integration_gaps": "Provider PLACEHOLDER_UNCONNECTED; never reports LIVE",
+   "security": "Policy engine already fail-closed",
+   "plan": "Keep policy; connect a provider only when one exists and is probed",
+   "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "C03",
+   "description": "Multi-Agent Coordination",
+   "registry_links": [
+    "V73-S02-001",
+    "V73-S02-002",
+    "V73-S02-003",
+    "V73-S03-001",
+    "V73-S03-002",
+    "V73-S03-003"
+   ],
+   "modules": "brain/orchestrator.mjs; brain/capability-graph.mjs; owner-control/agent-governor.mjs; durable-queue.mjs; brain/governed-dispatch.mjs",
+   "status": "PARTIAL",
+   "evidence": "brain-orchestration.test, canonical-runtime.test (5+25), durable-queue.test (backpressure), governed-dispatch.test",
+   "missing": "Explicit task ownership/dependency handoff verification across agents at runtime; concurrency limits per type",
+   "integration_gaps": "Agent-to-agent handoff verification and duplicate-work detection only partly covered",
+   "security": "Topology fixed at 30; governor refuses extras",
+   "plan": "Handoff contract + duplicate-work check on top of governed dispatch",
+   "tests_required": "handoff acceptance, duplicate dispatch refused, dependency order",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "C04",
+   "description": "Computer Use",
+   "registry_links": [
+    "V73-S02-001",
+    "V73-S19-001",
+    "V73-S19-002",
+    "V73-S19-003",
+    "V73-S19-004",
+    "V73-S19-005"
+   ],
+   "modules": "computer-use-fabric.mjs",
+   "status": "EXTERNAL_BLOCKER",
+   "evidence": "Policy tests only",
+   "missing": "Visual interaction provider",
+   "integration_gaps": "No provider",
+   "security": "Same as C02",
+   "plan": "Provider-dependent; policy already built",
+   "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
+   "final_status": "EXTERNAL_BLOCKER",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "C05",
+   "description": "Reusable Agent Skills",
+   "registry_links": [
+    "V73-S09-015",
+    "V73-S18-004",
+    "V73-S29-004",
+    "V73-S29-008",
+    "ATLASZ-BR-014",
+    "ATLASZ-OSC-018"
+   ],
+   "modules": "skill-factory.mjs; capability-graph.mjs; plugin-manager.mjs",
+   "status": "PARTIAL",
+   "evidence": "skill-factory + capability-graph tests",
+   "missing": "Versioned skill definitions with permission boundary and a pass/fail test gate before activation",
+   "integration_gaps": "Skill Factory registers definitions untested",
+   "security": "Skills inherit caller permissions only",
+   "plan": "Skill package format + test gate (shared with M05)",
+   "tests_required": "version pin, test-gate refusal, permission boundary",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": [
+    "TYPED_TOOLS_AND_SCHEMAS"
+   ]
+  },
+  {
+   "id": "C06",
+   "description": "MCP Integration Framework",
+   "registry_links": [
+    "V73-S02-001",
+    "V73-S02-002",
+    "V73-S12-006",
+    "V73-S18-010",
+    "V73-S18-014",
+    "V73-S20-001"
+   ],
+   "modules": "connector-catalog.mjs; universal-connector-layer.mjs; tool-bridge.mjs; secret-vault.mjs",
+   "status": "PARTIAL",
+   "evidence": "connector-catalog.test (BLOCKED_NO_CREDENTIALS, probe-only LIVE)",
+   "missing": "MCP protocol client (capability discovery, auth, approval) \u2014 no MCP code exists",
+   "integration_gaps": "Tool Bridge has no tests; MCP transport missing",
+   "security": "Credentials only via vault; each MCP tool call approval-classed",
+   "plan": "Define MCP-style tool descriptor + typed invocation over the shared registry; transport blocked until an MCP server is available",
+   "tests_required": "descriptor validation, auth failure, approval classes, timeout/failure handling",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": [
+    "TYPED_TOOLS_AND_SCHEMAS"
+   ]
+  },
+  {
+   "id": "C07",
+   "description": "Project Memory",
+   "registry_links": [
+    "V73-S03-017",
+    "V73-S04-010",
+    "V73-S05-013",
+    "V73-S06-002",
+    "V73-S07-001",
+    "V73-S07-002"
+   ],
+   "modules": "brain/memory-fabric.mjs; brain/knowledge-brain.mjs; business-memory.mjs; experience-learning-engine.mjs; shared-project-registry.mjs",
+   "status": "PARTIAL",
+   "evidence": "memory-fabric.test (tenant isolation, HISTORICAL_RESULT only from independent ACCEPT)",
+   "missing": "Decision log with provenance across sessions; project registry is in-process",
+   "integration_gaps": "shared-project-registry not durable",
+   "security": "Tenant isolation verified",
+   "plan": "Persist shared-project-registry; decision records in Knowledge Projects",
+   "tests_required": "restart durability, tenant isolation, provenance required",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": [
+    "KNOWLEDGE_PROJECTS"
+   ]
+  },
+  {
+   "id": "C08",
+   "description": "Advanced Research",
+   "registry_links": [
+    "V73-S09-005",
+    "V73-S09-006",
+    "V73-S09-015",
+    "V73-S31-005",
+    "V73-S32-006",
+    "V73-S38-004"
+   ],
+   "modules": "see M08",
+   "status": "PARTIAL",
+   "evidence": "see M08",
+   "missing": "see M08",
+   "integration_gaps": "see M08",
+   "security": "see M08",
+   "plan": "Shared with M08 (research ledger)",
+   "tests_required": "see M08",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": [
+    "RESEARCH_LEDGER"
+   ]
+  },
+  {
+   "id": "C09",
+   "description": "Interactive Artifact Generation",
+   "registry_links": [
+    "ATLASZ-BR-027",
+    "ATLASZ-PKG84-004",
+    "ATLASZ-PKG84-007",
+    "ATLASZ-PKG84-012"
+   ],
+   "modules": "see M13",
+   "status": "PARTIAL",
+   "evidence": "see M13",
+   "missing": "see M13",
+   "integration_gaps": "see M13",
+   "security": "see M13",
+   "plan": "Shared with M13",
+   "tests_required": "see M13",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "C10",
+   "description": "Adaptive Reasoning Allocation",
+   "registry_links": [
+    "V73-S02-002",
+    "V73-S03-001",
+    "V73-S03-007",
+    "V73-S03-010",
+    "V73-S08-001",
+    "V73-S08-002"
+   ],
+   "modules": "brain/model-intelligence.mjs; cost-model-router.mjs; budget-consumption-governor.mjs",
+   "status": "PARTIAL",
+   "evidence": "brain-systems.test routing by measured suitability",
+   "missing": "Effort/depth selection by complexity, risk and budget",
+   "integration_gaps": "Router picks a model, not an effort level",
+   "security": "Spend limited by no-spend default",
+   "plan": "Effort policy function (complexity x risk x budget -> tier) feeding the router",
+   "tests_required": "tier monotonic in risk, never exceeds budget, no-spend respected",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "C11",
+   "description": "Permission-Aware Knowledge Search",
+   "registry_links": [
+    "V73-S02-003",
+    "V73-S06-007",
+    "V73-S07-001",
+    "V73-S07-002",
+    "V73-S07-003",
+    "V73-S07-004"
+   ],
+   "modules": "document-center.mjs; tenant-isolation.mjs; enterprise-knowledge-agentic-rag.mjs",
+   "status": "VERIFIED_WORKING",
+   "evidence": "document-intelligence.test (tenant+role gate on list/search/get/versions, forAgent read, 4 mutation checks); tenant-isolation.test",
+   "missing": "None for document scope; other knowledge stores covered by tenant-isolation",
+   "integration_gaps": "Enterprise RAG is in-memory demo (separate item G07/GE09)",
+   "security": "Role/tenant enforced at every read; SECRET hidden",
+   "plan": "Keep; reuse in Knowledge Projects",
+   "tests_required": "(done) + regression",
+   "final_status": "VERIFIED_WORKING",
+   "shared_infrastructure": [
+    "KNOWLEDGE_PROJECTS"
+   ]
+  },
+  {
+   "id": "C12",
+   "description": "Scheduled and Recurring Tasks",
+   "registry_links": [
+    "V73-S10-001",
+    "V73-S10-002",
+    "V73-S10-003",
+    "V73-S10-004",
+    "V73-S10-005",
+    "V73-S10-006"
+   ],
+   "modules": "supervisor-safe.mjs (in-process timers); business/recurring-billing.mjs (billing periods); follow-up-engine.mjs",
+   "status": "MISSING",
+   "evidence": "Recurring billing generateDue is idempotent, but there is no general durable scheduler",
+   "missing": "Durable schedule store, retry policy, owner controls, audited results",
+   "integration_gaps": "Only timers inside the supervisor; nothing survives restart as a schedule",
+   "security": "Schedules cannot grant authority; external actions still go through the control chain",
+   "plan": "Build durable scheduler (shared with P06/P08/P11)",
+   "tests_required": "restart persistence, catch-up limit, retry/backoff, kill-switch/safe-mode stop, owner pause",
+   "final_status": "MISSING",
+   "shared_infrastructure": [
+    "DURABLE_SCHEDULER"
+   ]
+  },
+  {
+   "id": "C13",
+   "description": "Advanced Administration and Security",
+   "registry_links": [
+    "V73-S02-001",
+    "V73-S02-002",
+    "V73-S02-003",
+    "V73-S03-014",
+    "V73-S06-004",
+    "V73-S06-007"
+   ],
+   "modules": "owner-auth.mjs; owner-control/*; secret-vault.mjs; audit-chain.mjs; brain/security-brain.mjs; safe-mode.mjs",
+   "status": "VERIFIED_WORKING",
+   "evidence": "owner-auth.test (24), owner-control-bypass/core/extra tests, safety-modules.test, control-center-ownersafety.test, emergency-stop.test",
+   "missing": "Multi-user RBAC (not required: single-owner model by design)",
+   "integration_gaps": "Single owner; no delegated admin roles",
+   "security": "Ed25519 single-use bound approvals; vault AES-256-GCM; hash-chained audit",
+   "plan": "Keep; only extend if the owner later wants delegated admins",
+   "tests_required": "(done) + regression",
+   "final_status": "VERIFIED_WORKING",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "G01",
+   "description": "Social Information Search",
+   "registry_links": [],
+   "modules": "market-intelligence-engine.mjs; tech-watch.mjs (file feeds)",
+   "status": "EXTERNAL_BLOCKER",
+   "evidence": "Offline feed-file monitoring only",
+   "missing": "Approved social sources",
+   "integration_gaps": "No credentials/provider; platform ToS",
+   "security": "Public/approved sources only; no scraping bypass",
+   "plan": "Source-adapter slot with provenance + rate state; blocked until credentials exist",
+   "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
+   "final_status": "EXTERNAL_BLOCKER",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "G02",
+   "description": "Live Web Research",
+   "registry_links": [
+    "V73-S09-005",
+    "V73-S09-006",
+    "V73-S09-015",
+    "V73-S09-022",
+    "V73-S29-007",
+    "V73-S30-001"
+   ],
+   "modules": "tool-fabric.mjs (catalogue 'web-search')",
+   "status": "EXTERNAL_BLOCKER",
+   "evidence": "None",
+   "missing": "Fresh retrieval and stale-claim detection",
+   "integration_gaps": "Web search runs through the agent's own tooling, not an ATLASZ runtime connector",
+   "security": "Fetched content untrusted",
+   "plan": "Research ledger with injected fetcher (see M08); freshness check uses retrieved_at",
+   "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
+   "final_status": "EXTERNAL_BLOCKER",
+   "shared_infrastructure": [
+    "RESEARCH_LEDGER"
+   ]
+  },
+  {
+   "id": "G03",
+   "description": "Multi-Agent Analysis",
+   "registry_links": [
+    "V73-S02-001",
+    "V73-S02-002",
+    "V73-S02-003",
+    "V73-S03-006",
+    "V73-S03-007",
+    "V73-S03-010"
+   ],
+   "modules": "business/judge.mjs; brain/verifier.mjs; anti-collusion-guard.mjs; brain/orchestrator.mjs",
+   "status": "PARTIAL",
+   "evidence": "judge tests (8), verifier tests (8)",
+   "missing": "Parallel independent investigations + synthesis with anti-collusion",
+   "integration_gaps": "Needs live models to be independent in practice",
+   "security": "Anti-collusion required",
+   "plan": "Parallel investigation runner with independence check on top of judge panel",
+   "tests_required": "independent routes, collusion flagged, synthesis cites each",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": [
+    "RESEARCH_LEDGER"
+   ]
+  },
+  {
+   "id": "G04",
+   "description": "Advanced Reasoning",
+   "registry_links": [
+    "V73-S03-001"
+   ],
+   "modules": "brain/model-intelligence.mjs; business/judge.mjs",
+   "status": "EXTERNAL_BLOCKER",
+   "evidence": "Routing exists; no reasoning provider live",
+   "missing": "Reasoning model + validation",
+   "integration_gaps": "No provider",
+   "security": "Independent validation for important conclusions",
+   "plan": "Covered by C10 + judge; provider blocked",
+   "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
+   "final_status": "EXTERNAL_BLOCKER",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "G05",
+   "description": "Secure Code Execution",
+   "registry_links": [
+    "V73-S02-003",
+    "V73-S09-002",
+    "V73-S09-013",
+    "V73-S09-014",
+    "V73-S09-029",
+    "V73-S10-001"
+   ],
+   "modules": "see M06",
+   "status": "PARTIAL",
+   "evidence": "see M06",
+   "missing": "see M06",
+   "integration_gaps": "see M06",
+   "security": "see M06",
+   "plan": "Shared with M06",
+   "tests_required": "see M06",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": [
+    "CODE_SANDBOX"
+   ]
+  },
+  {
+   "id": "G06",
+   "description": "Function Calling",
+   "registry_links": [
+    "V73-S02-001",
+    "V73-S03-007",
+    "V73-S03-013",
+    "V73-S09-016",
+    "V73-S09-017",
+    "V73-S09-018"
+   ],
+   "modules": "capability-registry.mjs; executor-toolbox-registry.mjs; tool-bridge.mjs",
+   "status": "MISSING",
+   "evidence": "No typed schema/argument validation exists (agent-factory validates definitions only)",
+   "missing": "Typed schemas, input/output validation, permission checks per function",
+   "integration_gaps": "No validator",
+   "security": "Every call classified by owner-authority",
+   "plan": "Build typed tool registry with strict schema validation (shared with GE08/P14)",
+   "tests_required": "reject extra/missing/typed-wrong args, output validation, permission class, unknown tool refused",
+   "final_status": "MISSING",
+   "shared_infrastructure": [
+    "TYPED_TOOLS_AND_SCHEMAS"
+   ]
+  },
+  {
+   "id": "G07",
+   "description": "Collections and Knowledge Search",
+   "registry_links": [
+    "V73-S06-007",
+    "V73-S07-001",
+    "V73-S07-002",
+    "V73-S07-003",
+    "V73-S07-004",
+    "V73-S07-005"
+   ],
+   "modules": "document-center.mjs; enterprise-knowledge-agentic-rag.mjs",
+   "status": "PARTIAL",
+   "evidence": "document-intelligence.test; enterprise RAG basic test",
+   "missing": "Named collections with citation spans; persistent index for RAG module",
+   "integration_gaps": "RAG module in-memory",
+   "security": "Tenant/role enforced",
+   "plan": "Collections via Knowledge Projects (M02)",
+   "tests_required": "citation to source+offset, tenant isolation",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": [
+    "KNOWLEDGE_PROJECTS"
+   ]
+  },
+  {
+   "id": "G08",
+   "description": "Image Understanding",
+   "registry_links": [
+    "V73-S03-008",
+    "V73-S23-012",
+    "V73-S28-001",
+    "ATLASZ-CR-007",
+    "ATLASZ-OSC-028"
+   ],
+   "modules": "doc-extractors.mjs (no OCR)",
+   "status": "EXTERNAL_BLOCKER",
+   "evidence": "Scanned PDFs reported NO_TEXT_LAYER, never faked",
+   "missing": "Vision model/OCR",
+   "integration_gaps": "No provider",
+   "security": "Images may be personal data",
+   "plan": "Modality fabric slot 'vision'",
+   "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
+   "final_status": "EXTERNAL_BLOCKER",
+   "shared_infrastructure": [
+    "MODALITY_FABRIC_AND_OBSERVATION_MEMORY"
+   ]
+  },
+  {
+   "id": "G09",
+   "description": "Video Understanding",
+   "registry_links": [
+    "V73-S28-002"
+   ],
+   "modules": "none",
+   "status": "EXTERNAL_BLOCKER",
+   "evidence": "None",
+   "missing": "Video model",
+   "integration_gaps": "No provider",
+   "security": "Authorized only",
+   "plan": "Modality fabric slot 'video-understanding'",
+   "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
+   "final_status": "EXTERNAL_BLOCKER",
+   "shared_infrastructure": [
+    "MODALITY_FABRIC_AND_OBSERVATION_MEMORY"
+   ]
+  },
+  {
+   "id": "G10",
+   "description": "Voice Intelligence",
+   "registry_links": [
+    "V73-S05-001",
+    "V73-S05-002",
+    "V73-S05-003",
+    "V73-S05-004",
+    "V73-S05-005",
+    "V73-S05-006"
+   ],
+   "modules": "voice-interface.mjs; voice-session.mjs",
+   "status": "EXTERNAL_BLOCKER",
+   "evidence": "voice-session.test: state machine reports BLOCKED_NO_PROVIDER, no LISTEN without probed chain, approvals same as text",
+   "missing": "Real STT/TTS",
+   "integration_gaps": "No provider",
+   "security": "Voice identity is not authentication",
+   "plan": "Keep state machine; provider slot",
+   "tests_required": "(done) + roundtrip when provider exists",
+   "final_status": "EXTERNAL_BLOCKER",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "G11",
+   "description": "Image and Video Generation",
+   "registry_links": [
+    "V73-S09-024",
+    "V73-S22-006",
+    "V73-S26-005",
+    "V73-S26-006",
+    "V73-S28-001",
+    "V73-S28-002"
+   ],
+   "modules": "tool-fabric.mjs (catalogue)",
+   "status": "EXTERNAL_BLOCKER",
+   "evidence": "None",
+   "missing": "Provider interface",
+   "integration_gaps": "No provider; spend gate",
+   "security": "Spending needs approval; content labelling",
+   "plan": "Media fabric slot with cost estimate + approval (no-spend default)",
+   "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
+   "final_status": "EXTERNAL_BLOCKER",
+   "shared_infrastructure": [
+    "MODALITY_FABRIC_AND_OBSERVATION_MEMORY"
+   ]
+  },
+  {
+   "id": "G12",
+   "description": "Streaming Tool Observability",
+   "registry_links": [
+    "V73-S03-008",
+    "V73-S10-014",
+    "V73-S13-004",
+    "V73-S34-001",
+    "V73-S34-002",
+    "V73-S34-003"
+   ],
+   "modules": "event-bus.mjs; brain/black-box.mjs; task-ledger.mjs; progress-ledger.mjs; Control Center polling",
+   "status": "PARTIAL",
+   "evidence": "black-box tests (8), control-center tests",
+   "missing": "Live push stream of tool calls/progress to the UI",
+   "integration_gaps": "UI polls; no server-sent events",
+   "security": "Black Box redacts secrets",
+   "plan": "Add SSE endpoint over event bus (read-only, token-gated)",
+   "tests_required": "token required, no secrets, ordering, reconnect",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "G13",
+   "description": "Context and Cost Optimization",
+   "registry_links": [
+    "V73-S03-007",
+    "V73-S03-018",
+    "V73-S04-004",
+    "V73-S04-011",
+    "V73-S08-011",
+    "V73-S08-013"
+   ],
+   "modules": "financial-ledger.mjs (token/API ledger); budget-consumption-governor.mjs; provider-resilience.mjs",
+   "status": "PARTIAL",
+   "evidence": "financial-ledger tests (6), provider-resilience tests",
+   "missing": "Context-window management, provider prompt caching, token accounting per conversation",
+   "integration_gaps": "No context manager; caching is provider-side",
+   "security": "No-spend default",
+   "plan": "Context budgeter (M03) ; caching deferred to provider adapters",
+   "tests_required": "budget never exceeded, accounting sums, unknown cost not zero",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "GE01",
+   "description": "Long-Context Intelligence",
+   "registry_links": [
+    "V73-S03-017",
+    "V73-S03-018",
+    "V73-S04-004",
+    "V73-S04-011",
+    "V73-S07-001",
+    "V73-S07-008"
+   ],
+   "modules": "document-center.mjs (tokens index); doc-extractors.mjs (size limits)",
+   "status": "PARTIAL",
+   "evidence": "extractor limit tests",
+   "missing": "Chunking/retrieval strategy for large docs and codebases",
+   "integration_gaps": "No chunker; limits truncate",
+   "security": "Truncation is flagged, not silent",
+   "plan": "Chunker + retrieval with source offsets in Knowledge Projects",
+   "tests_required": "chunk boundary integrity, truncation flagged",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": [
+    "KNOWLEDGE_PROJECTS"
+   ]
+  },
+  {
+   "id": "GE02",
+   "description": "Unified Multimodal Understanding",
+   "registry_links": [],
+   "modules": "none (text only)",
+   "status": "EXTERNAL_BLOCKER",
+   "evidence": "None",
+   "missing": "Cross-modal pipeline",
+   "integration_gaps": "Needs vision/audio/video providers",
+   "security": "Privacy class per modality",
+   "plan": "Modality fabric common envelope",
+   "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
+   "final_status": "EXTERNAL_BLOCKER",
+   "shared_infrastructure": [
+    "MODALITY_FABRIC_AND_OBSERVATION_MEMORY"
+   ]
+  },
+  {
+   "id": "GE03",
+   "description": "Real-Time Voice Interaction",
+   "registry_links": [
+    "V73-S05-001",
+    "V73-S05-002",
+    "V73-S05-003",
+    "V73-S05-004",
+    "V73-S05-005",
+    "V73-S05-006"
+   ],
+   "modules": "voice-session.mjs",
+   "status": "EXTERNAL_BLOCKER",
+   "evidence": "State machine (interruption states) tested",
+   "missing": "Low-latency streaming provider",
+   "integration_gaps": "No provider",
+   "security": "Same as G10",
+   "plan": "Keep",
+   "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
+   "final_status": "EXTERNAL_BLOCKER",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "GE04",
+   "description": "Grounded Search",
+   "registry_links": [],
+   "modules": "see M08",
+   "status": "PARTIAL",
+   "evidence": "see M08",
+   "missing": "Citation verification, freshness",
+   "integration_gaps": "see M08",
+   "security": "see M08",
+   "plan": "Shared with M08",
+   "tests_required": "see M08",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": [
+    "RESEARCH_LEDGER"
+   ]
+  },
+  {
+   "id": "GE05",
+   "description": "Productivity Suite Integration",
+   "registry_links": [
+    "V73-S02-001",
+    "V73-S02-002",
+    "V73-S12-006",
+    "V73-S18-010",
+    "V73-S18-014",
+    "V73-S20-001"
+   ],
+   "modules": "connector-catalog.mjs; universal-inbox.mjs",
+   "status": "EXTERNAL_BLOCKER",
+   "evidence": "Connector descriptors BLOCKED_NO_CREDENTIALS",
+   "missing": "Credentials and OAuth for email/calendar/drive",
+   "integration_gaps": "No credentials",
+   "security": "Read-only first; sending approval-gated",
+   "plan": "Keep descriptors; add calendar/task data model locally (Personal Command Center) independent of provider",
+   "tests_required": "vault-only credentials, no LIVE without probe",
+   "final_status": "EXTERNAL_BLOCKER",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "GE06",
+   "description": "Browser and Computer Interaction",
+   "registry_links": [
+    "V73-S02-001",
+    "V73-S12-004",
+    "V73-S14-005",
+    "V73-S19-001",
+    "V73-S19-002",
+    "V73-S19-003"
+   ],
+   "modules": "computer-use-fabric.mjs",
+   "status": "EXTERNAL_BLOCKER",
+   "evidence": "Policy only",
+   "missing": "Provider",
+   "integration_gaps": "No provider",
+   "security": "Same as C02",
+   "plan": "See C02",
+   "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
+   "final_status": "EXTERNAL_BLOCKER",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "GE07",
+   "description": "Analytical Code Execution",
+   "registry_links": [],
+   "modules": "see M07/M06",
+   "status": "MISSING",
+   "evidence": "None",
+   "missing": "Runner + libraries",
+   "integration_gaps": "depends on M06",
+   "security": "reproducible, hash recorded",
+   "plan": "Shared with M06/M07",
+   "tests_required": "see M07",
+   "final_status": "MISSING",
+   "shared_infrastructure": [
+    "CODE_SANDBOX"
+   ]
+  },
+  {
+   "id": "GE08",
+   "description": "Structured Tool Invocation",
+   "registry_links": [
+    "V73-S02-001",
+    "V73-S03-007",
+    "V73-S03-013",
+    "V73-S09-016",
+    "V73-S09-017",
+    "V73-S09-018"
+   ],
+   "modules": "see G06",
+   "status": "MISSING",
+   "evidence": "None",
+   "missing": "see G06",
+   "integration_gaps": "see G06",
+   "security": "see G06",
+   "plan": "Shared with G06",
+   "tests_required": "see G06",
+   "final_status": "MISSING",
+   "shared_infrastructure": [
+    "TYPED_TOOLS_AND_SCHEMAS"
+   ]
+  },
+  {
+   "id": "GE09",
+   "description": "File Search and RAG",
+   "registry_links": [
+    "V73-S07-009",
+    "V73-S07-010",
+    "V73-S07-016",
+    "V73-S07-017",
+    "V73-S09-019",
+    "V73-S21-031"
+   ],
+   "modules": "document-center.mjs; enterprise-knowledge-agentic-rag.mjs",
+   "status": "PARTIAL",
+   "evidence": "document-intelligence.test",
+   "missing": "Evidence-grounded answer assembly with citations",
+   "integration_gaps": "RAG not persistent",
+   "security": "tenant/role + screening",
+   "plan": "Knowledge Projects answer assembly (extractive, cited)",
+   "tests_required": "extractive answer cites source, refuses unsupported",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": [
+    "KNOWLEDGE_PROJECTS"
+   ]
+  },
+  {
+   "id": "GE10",
+   "description": "Geographic Intelligence",
+   "registry_links": [
+    "V73-S31-020",
+    "V73-S32-001",
+    "V73-S32-002",
+    "V73-S32-003",
+    "V73-S32-004",
+    "V73-S32-005"
+   ],
+   "modules": "none",
+   "status": "EXTERNAL_BLOCKER",
+   "evidence": "None",
+   "missing": "Mapping provider",
+   "integration_gaps": "No provider",
+   "security": "Location is personal data",
+   "plan": "Slot only",
+   "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
+   "final_status": "EXTERNAL_BLOCKER",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "GE11",
+   "description": "Agent Development Architecture",
+   "registry_links": [
+    "V73-S02-001",
+    "V73-S02-002",
+    "V73-S02-003",
+    "V73-S03-001",
+    "V73-S03-002",
+    "V73-S03-003"
+   ],
+   "modules": "brain/planning-brain.mjs; brain/orchestrator.mjs; team-lead-workflows.mjs; agent-factory.mjs",
+   "status": "PARTIAL",
+   "evidence": "planning-brain tests (4), orchestrator tests (11)",
+   "missing": "Reusable workflow templates, stateful delegation primitives",
+   "integration_gaps": "Workflows not reusable as templates",
+   "security": "Fixed topology",
+   "plan": "Workflow templates on durable scheduler (P06)",
+   "tests_required": "template instantiate/validate, state resume",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": [
+    "DURABLE_SCHEDULER"
+   ]
+  },
+  {
+   "id": "GE12",
+   "description": "Multimodal Content Generation",
+   "registry_links": [
+    "V73-S09-024",
+    "V73-S22-006",
+    "V73-S26-005",
+    "V73-S26-006",
+    "V73-S28-001",
+    "V73-S28-002"
+   ],
+   "modules": "see G11",
+   "status": "EXTERNAL_BLOCKER",
+   "evidence": "None",
+   "missing": "Providers",
+   "integration_gaps": "No provider",
+   "security": "see G11",
+   "plan": "see G11",
+   "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
+   "final_status": "EXTERNAL_BLOCKER",
+   "shared_infrastructure": [
+    "MODALITY_FABRIC_AND_OBSERVATION_MEMORY"
+   ]
+  },
+  {
+   "id": "GE13",
+   "description": "Scalable Deployment Architecture",
+   "registry_links": [
+    "V73-S08-017",
+    "V73-S08-020",
+    "V73-S10-018",
+    "V73-S14-005",
+    "V73-S15-006",
+    "V73-S15-008"
+   ],
+   "modules": "tenant-isolation.mjs; atlasz-runtime/Dockerfile.worker; watchdog.mjs; update-center.mjs; startup-self-check.mjs",
+   "status": "PARTIAL",
+   "evidence": "tenant-isolation.test, watchdog tests, update-center tests (4)",
+   "missing": "Deployment is not performed (production untouched); isolated instance bootstrap not rehearsed",
+   "integration_gaps": "Railway untouched by design",
+   "security": "Production changes need owner approval",
+   "plan": "Rehearse isolated-instance bootstrap locally (no deploy)",
+   "tests_required": "instance dir isolation, config separation",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "A01",
+   "description": "Live Visual Understanding",
+   "registry_links": [],
+   "modules": "none",
+   "status": "EXTERNAL_BLOCKER",
+   "evidence": "None",
+   "missing": "Camera pipeline + vision provider",
+   "integration_gaps": "No provider",
+   "security": "Camera = highest privacy class; explicit consent",
+   "plan": "Modality slot + consent gate",
+   "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
+   "final_status": "EXTERNAL_BLOCKER",
+   "shared_infrastructure": [
+    "MODALITY_FABRIC_AND_OBSERVATION_MEMORY"
+   ]
+  },
+  {
+   "id": "A02",
+   "description": "Screen Awareness",
+   "registry_links": [
+    "V73-S19-008",
+    "ATLASZ-BR-033",
+    "ATLASZ-PKG84-014",
+    "ATLASZ-PKG84-019"
+   ],
+   "modules": "computer-use-fabric.mjs (action 'screenshot' policy)",
+   "status": "EXTERNAL_BLOCKER",
+   "evidence": "Policy classification only",
+   "missing": "Screenshot ingestion + vision",
+   "integration_gaps": "No provider",
+   "security": "Screens may hold secrets -> redaction",
+   "plan": "Screenshot ingest with screening/redaction hook",
+   "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
+   "final_status": "EXTERNAL_BLOCKER",
+   "shared_infrastructure": [
+    "MODALITY_FABRIC_AND_OBSERVATION_MEMORY"
+   ]
+  },
+  {
+   "id": "A03",
+   "description": "Natural Real-Time Conversation",
+   "registry_links": [
+    "V73-S03-016",
+    "V73-S04-009",
+    "V73-S05-001",
+    "V73-S05-002",
+    "V73-S05-003",
+    "V73-S05-004"
+   ],
+   "modules": "voice-session.mjs; human-core.mjs",
+   "status": "EXTERNAL_BLOCKER",
+   "evidence": "State machine; Human Core tone",
+   "missing": "Streaming providers",
+   "integration_gaps": "No provider",
+   "security": "Approvals via strong auth only",
+   "plan": "Keep",
+   "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
+   "final_status": "EXTERNAL_BLOCKER",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "A04",
+   "description": "Multilingual Live Communication",
+   "registry_links": [
+    "V73-S09-025",
+    "V73-S12-001",
+    "V73-S12-002",
+    "V73-S12-003",
+    "V73-S12-004",
+    "V73-S12-005"
+   ],
+   "modules": "master-brief.mjs and owner-command.mjs (EN/HU templates only)",
+   "status": "PARTIAL",
+   "evidence": "human-core.test (hu/en)",
+   "missing": "General translation, language switching",
+   "integration_gaps": "No translation provider",
+   "security": "Translations of approvals must not alter bound subject",
+   "plan": "Language packs for system text; translation via provider slot",
+   "tests_required": "hu/en parity, approval text not machine-translated",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "A05",
+   "description": "Multimodal Memory",
+   "registry_links": [
+    "V73-S04-010",
+    "V73-S05-013",
+    "V73-S07-001",
+    "V73-S07-002",
+    "V73-S07-003",
+    "V73-S07-004"
+   ],
+   "modules": "brain/memory-fabric.mjs (text)",
+   "status": "MISSING",
+   "evidence": "Text memory only",
+   "missing": "Observation memory with modality, consent, retention, privacy class",
+   "integration_gaps": "none",
+   "security": "Consent + classification + deletion required",
+   "plan": "Observation memory module (metadata/descriptions; raw media not stored by default)",
+   "tests_required": "consent required, class enforced, retention expiry, recall permission",
+   "final_status": "MISSING",
+   "shared_infrastructure": [
+    "MODALITY_FABRIC_AND_OBSERVATION_MEMORY"
+   ]
+  },
+  {
+   "id": "A06",
+   "description": "Object and Equipment Recognition",
+   "registry_links": [
+    "V73-S24-007",
+    "ATLASZ-PKG84-016"
+   ],
+   "modules": "none",
+   "status": "EXTERNAL_BLOCKER",
+   "evidence": "None",
+   "missing": "Vision model",
+   "integration_gaps": "No provider",
+   "security": "Uncertainty must be expressed",
+   "plan": "Slot; uncertainty schema",
+   "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
+   "final_status": "EXTERNAL_BLOCKER",
+   "shared_infrastructure": [
+    "MODALITY_FABRIC_AND_OBSERVATION_MEMORY"
+   ]
+  },
+  {
+   "id": "A07",
+   "description": "Visual Guidance",
+   "registry_links": [],
+   "modules": "none",
+   "status": "MISSING",
+   "evidence": "None",
+   "missing": "Instruction/overlay descriptors",
+   "integration_gaps": "Needs a renderer in Control Center",
+   "security": "Overlays cannot execute actions",
+   "plan": "Data model for annotated steps (renderer later)",
+   "tests_required": "schema validation",
+   "final_status": "MISSING",
+   "shared_infrastructure": [
+    "MODALITY_FABRIC_AND_OBSERVATION_MEMORY"
+   ]
+  },
+  {
+   "id": "A08",
+   "description": "Contextual Proactive Assistance",
+   "registry_links": [
+    "ATLASZ-PKG84-012"
+   ],
+   "modules": "human-core.mjs (planHelp); master-brief.mjs; brain/central-brain.mjs",
+   "status": "PARTIAL",
+   "evidence": "human-core.test (7)",
+   "missing": "Suggestion engine across state sources, suppression, rate limits",
+   "integration_gaps": "Suggestions never act",
+   "security": "Suggest-only; restricted actions need approval",
+   "plan": "Suggestion queue fed by brief sources with dismissal memory",
+   "tests_required": "suggest-only, rate limit, no restricted action",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "A09",
+   "description": "Environmental Context Awareness",
+   "registry_links": [
+    "V73-S03-018",
+    "V73-S04-004",
+    "V73-S04-011",
+    "V73-S33-005",
+    "V73-S35-022",
+    "ATLASZ-SV-004"
+   ],
+   "modules": "none",
+   "status": "EXTERNAL_BLOCKER",
+   "evidence": "None",
+   "missing": "Sensors",
+   "integration_gaps": "No provider",
+   "security": "Consent",
+   "plan": "Slot",
+   "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
+   "final_status": "EXTERNAL_BLOCKER",
+   "shared_infrastructure": [
+    "MODALITY_FABRIC_AND_OBSERVATION_MEMORY"
+   ]
+  },
+  {
+   "id": "A10",
+   "description": "Application Assistance",
+   "registry_links": [
+    "V73-S02-001",
+    "V73-S03-007",
+    "V73-S03-013",
+    "V73-S09-016",
+    "V73-S09-017",
+    "V73-S09-018"
+   ],
+   "modules": "tool-bridge.mjs; computer-use-fabric.mjs",
+   "status": "PARTIAL",
+   "evidence": "policy tests",
+   "missing": "Validated tools per application",
+   "integration_gaps": "Provider missing",
+   "security": "Approval classes",
+   "plan": "Via typed tools",
+   "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": [
+    "TYPED_TOOLS_AND_SCHEMAS"
+   ]
+  },
+  {
+   "id": "A11",
+   "description": "Personalized Assistance",
+   "registry_links": [
+    "V73-S04-010",
+    "V73-S06-001",
+    "V73-S06-002",
+    "V73-S06-003",
+    "V73-S06-004",
+    "V73-S06-005"
+   ],
+   "modules": "master-brief.mjs (prefs); human-core.mjs; owner-keystore.mjs",
+   "status": "PARTIAL",
+   "evidence": "control-center-home.test prefs",
+   "missing": "Preference/history store beyond language+signature",
+   "integration_gaps": "Limited prefs",
+   "security": "No hardcoded personal data in reusable code (config only)",
+   "plan": "Profile store (config-driven) for Personal Command Center",
+   "tests_required": "prefs isolated per profile",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "A12",
+   "description": "Cross-Device Continuity",
+   "registry_links": [
+    "V73-S39-001",
+    "V73-S39-002",
+    "V73-S39-003",
+    "V73-S39-004",
+    "V73-S39-005",
+    "V73-S39-006"
+   ],
+   "modules": "mobile-api.mjs; durable server state; Control Center",
+   "status": "PARTIAL",
+   "evidence": "mobile-api.test (signed requests, nonce, rate limit)",
+   "missing": "Task handoff Windows<->mobile; no transport exposed",
+   "integration_gaps": "Mobile transport not hosted",
+   "security": "Every request owner-signed",
+   "plan": "Continuity token view on existing task ledger",
+   "tests_required": "signed handoff, replay refused",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "A13",
+   "description": "Visual Accessibility and Guidance",
+   "registry_links": [],
+   "modules": "Control Center UI",
+   "status": "PARTIAL",
+   "evidence": "none specific",
+   "missing": "Scene descriptions (provider), UI accessibility audit",
+   "integration_gaps": "Provider for scenes",
+   "security": "None",
+   "plan": "UI accessibility checklist tests (labels, contrast tokens)",
+   "tests_required": "a11y static checks",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "P01",
+   "description": "Personal Learning Tutor",
+   "registry_links": [
+    "V73-S07-001",
+    "V73-S07-002",
+    "V73-S07-003",
+    "V73-S07-004",
+    "V73-S07-005",
+    "V73-S07-006"
+   ],
+   "modules": "none",
+   "status": "MISSING",
+   "evidence": "None",
+   "missing": "Lessons, quizzes, adaptive plan",
+   "integration_gaps": "Content generation needs a model for novel lessons; spaced-repetition scheduler is local",
+   "security": "Personal data minimal",
+   "plan": "Tutor engine: deck/quiz store + spaced-repetition scheduler (local, deterministic); content authoring by model later",
+   "tests_required": "scheduler intervals, scoring, persistence",
+   "final_status": "MISSING",
+   "shared_infrastructure": [
+    "DURABLE_SCHEDULER"
+   ]
+  },
+  {
+   "id": "P02",
+   "description": "Video-to-Action Workflow",
+   "registry_links": [
+    "V73-S02-001",
+    "V73-S04-010",
+    "V73-S05-003",
+    "V73-S05-004",
+    "V73-S07-005",
+    "V73-S13-006"
+   ],
+   "modules": "none",
+   "status": "MISSING",
+   "evidence": "None",
+   "missing": "Transcript -> steps",
+   "integration_gaps": "Transcript source",
+   "security": "Authorized only",
+   "plan": "Transcript->actionable steps with verification checklist (see M09)",
+   "tests_required": "step extraction, each step verifiable",
+   "final_status": "MISSING",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "P03",
+   "description": "Personal Knowledge Organizer",
+   "registry_links": [
+    "V73-S06-007",
+    "V73-S07-001",
+    "V73-S07-002",
+    "V73-S07-003",
+    "V73-S07-004",
+    "V73-S07-005"
+   ],
+   "modules": "document-center.mjs; brain/knowledge-brain.mjs",
+   "status": "PARTIAL",
+   "evidence": "document-intelligence.test",
+   "missing": "Notes/books/ideas model with tags",
+   "integration_gaps": "No notes model",
+   "security": "Classification PERSONAL/CONFIDENTIAL",
+   "plan": "Knowledge Projects: notes + tags",
+   "tests_required": "tag search, classification",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": [
+    "KNOWLEDGE_PROJECTS"
+   ]
+  },
+  {
+   "id": "P04",
+   "description": "Rapid Prototype Builder",
+   "registry_links": [
+    "V73-S08-001",
+    "V73-S08-007",
+    "V73-S29-001",
+    "V73-S29-010",
+    "V73-S43-011",
+    "V73-S48-013"
+   ],
+   "modules": "none",
+   "status": "MISSING",
+   "evidence": "None",
+   "missing": "Idea->prototype with tests",
+   "integration_gaps": "Needs sandbox + model",
+   "security": "Sandbox only",
+   "plan": "After M06/C01",
+   "tests_required": "generated-test pass required",
+   "final_status": "MISSING",
+   "shared_infrastructure": [
+    "CODE_SANDBOX",
+    "ENGINEERING_TOOLS"
+   ]
+  },
+  {
+   "id": "P05",
+   "description": "Task State Rewind",
+   "registry_links": [
+    "V73-S03-018",
+    "V73-S10-012",
+    "V73-S14-007",
+    "V73-S23-032",
+    "V73-S35-017",
+    "V73-S37-003"
+   ],
+   "modules": "owner-control/recovery-points.mjs; checkpoint-engine.mjs; backup-recovery.mjs; durable-queue.mjs",
+   "status": "PARTIAL",
+   "evidence": "backup-recovery tests (3), recovery-points tests",
+   "missing": "Per-task state rewind without touching financial/audit facts",
+   "integration_gaps": "Restore is per category, not per task",
+   "security": "Audit and payment facts must never rewind",
+   "plan": "Task checkpoints with rewind that excludes immutable domains",
+   "tests_required": "rewind excludes audit/payments, verified hash",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "P06",
+   "description": "Reusable Personal Workflows",
+   "registry_links": [
+    "V73-S02-002",
+    "V73-S21-001",
+    "V73-S26-002",
+    "V73-S26-008",
+    "V73-S28-003",
+    "V73-S30-003"
+   ],
+   "modules": "brain/planning-brain.mjs; team-lead-workflows.mjs",
+   "status": "PARTIAL",
+   "evidence": "planning-brain tests",
+   "missing": "Templates parameterized + schedulable",
+   "integration_gaps": "none",
+   "security": "Approval points preserved",
+   "plan": "Workflow templates on scheduler",
+   "tests_required": "parameter validation, approval preserved",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": [
+    "DURABLE_SCHEDULER"
+   ]
+  },
+  {
+   "id": "P07",
+   "description": "Independent Code Reviewer",
+   "registry_links": [
+    "V73-S03-010",
+    "V73-S03-011",
+    "V73-S04-012",
+    "V73-S08-001",
+    "V73-S08-007",
+    "V73-S09-026"
+   ],
+   "modules": "qa-reviewer.mjs; business/judge.mjs; business/qa-factory.mjs",
+   "status": "PARTIAL",
+   "evidence": "qa-factory/judge tests (generic work QA)",
+   "missing": "Code-specific static checks (secrets, injection patterns, test presence)",
+   "integration_gaps": "none for code",
+   "security": "Findings advisory; Judge independent of author",
+   "plan": "Code review checks module (rule-based, no model needed)",
+   "tests_required": "detects seeded defects, no false OK on empty",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": [
+    "ENGINEERING_TOOLS"
+   ]
+  },
+  {
+   "id": "P08",
+   "description": "Interrupted Task Continuation",
+   "registry_links": [
+    "V73-S03-018",
+    "V73-S10-012",
+    "V73-S10-016",
+    "V73-S14-007",
+    "V73-S39-004",
+    "V73-S46-010"
+   ],
+   "modules": "durable-queue.mjs; checkpoint-engine.mjs; brain/planning-brain.mjs; startup-self-check.mjs",
+   "status": "PARTIAL",
+   "evidence": "durable-queue.test (replay, lease, DLQ), canonical-queue-safety.test",
+   "missing": "Task-level resume contract across modules",
+   "integration_gaps": "Per-module durable; no unified resume test across restart",
+   "security": "Corrupt state is never replaced",
+   "plan": "End-to-end restart scenario test + resume contract",
+   "tests_required": "kill mid-task, resume exactly once",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": [
+    "DURABLE_SCHEDULER"
+   ]
+  },
+  {
+   "id": "P09",
+   "description": "Social Signal Monitoring",
+   "registry_links": [
+    "V73-S08-017",
+    "V73-S08-020",
+    "V73-S10-018",
+    "V73-S15-006",
+    "V73-S15-008",
+    "ATLASZ-PKG84-016"
+   ],
+   "modules": "tech-watch.mjs; market-intelligence-engine.mjs",
+   "status": "EXTERNAL_BLOCKER",
+   "evidence": "Feed-file monitor only",
+   "missing": "Live social sources",
+   "integration_gaps": "No credentials",
+   "security": "Approved public sources only",
+   "plan": "Source slot",
+   "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
+   "final_status": "EXTERNAL_BLOCKER",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "P10",
+   "description": "Independent Multi-Model Verification",
+   "registry_links": [
+    "V73-S02-002",
+    "V73-S03-007",
+    "V73-S03-010",
+    "V73-S04-008",
+    "V73-S08-001",
+    "V73-S08-002"
+   ],
+   "modules": "business/judge.mjs; brain/verifier.mjs; brain/model-intelligence.mjs (different families required)",
+   "status": "PARTIAL",
+   "evidence": "judge + verifier tests (8+8); different-family rule tested",
+   "missing": "Disagreement escalation with real models",
+   "integration_gaps": "No live second provider",
+   "security": "Single-provider limit reported truthfully",
+   "plan": "Disagreement escalation path (exists) + live providers blocked",
+   "tests_required": "(done offline) + live when providers exist",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": [
+    "RESEARCH_LEDGER"
+   ]
+  },
+  {
+   "id": "P11",
+   "description": "Batch Processing Engine",
+   "registry_links": [
+    "V73-S03-002",
+    "V73-S03-017",
+    "V73-S07-006",
+    "V73-S10-001",
+    "V73-S10-002",
+    "V73-S10-003"
+   ],
+   "modules": "durable-queue.mjs; priority-queue-rate-limit-governor.mjs; dead-letter-queue.mjs",
+   "status": "PARTIAL",
+   "evidence": "durable-queue.test (maxPending, DLQ), canonical-queue-safety",
+   "missing": "Batch job abstraction with checkpoint per item, rate limit, error isolation",
+   "integration_gaps": "none",
+   "security": "Spend/approval gates per item",
+   "plan": "Batch runner on scheduler/queue",
+   "tests_required": "error isolation, resume mid-batch, rate limit",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": [
+    "DURABLE_SCHEDULER"
+   ]
+  },
+  {
+   "id": "P12",
+   "description": "Personal Media Organizer",
+   "registry_links": [
+    "V73-S09-024",
+    "V73-S22-006",
+    "V73-S28-001",
+    "V73-S28-002",
+    "V73-S28-003",
+    "V73-S28-004"
+   ],
+   "modules": "document-center.mjs (documents only)",
+   "status": "MISSING",
+   "evidence": "None",
+   "missing": "Photo/audio/video index",
+   "integration_gaps": "Metadata only without providers",
+   "security": "Personal/private class; consent",
+   "plan": "Media index: metadata, tags, classification via observation memory (no content analysis)",
+   "tests_required": "consent, class, no raw bytes leakage",
+   "final_status": "MISSING",
+   "shared_infrastructure": [
+    "MODALITY_FABRIC_AND_OBSERVATION_MEMORY"
+   ]
+  },
+  {
+   "id": "P13",
+   "description": "Multi-Website Comparison",
+   "registry_links": [
+    "V73-S16-006",
+    "V73-S30-001",
+    "V73-S30-002",
+    "V73-S30-003",
+    "V73-S30-004",
+    "V73-S30-005"
+   ],
+   "modules": "none",
+   "status": "MISSING",
+   "evidence": "None",
+   "missing": "Structured diff of user-specified pages",
+   "integration_gaps": "Fetcher is a provider/adapter",
+   "security": "Untrusted content",
+   "plan": "Comparison over fetched snapshots (injected fetcher) with structured differences",
+   "tests_required": "diff correctness, injection screened",
+   "final_status": "MISSING",
+   "shared_infrastructure": [
+    "RESEARCH_LEDGER"
+   ]
+  },
+  {
+   "id": "P14",
+   "description": "Strict Structured Output Engine",
+   "registry_links": [
+    "V73-S24-005",
+    "V73-S34-001",
+    "V73-S43-006",
+    "V73-S51-011",
+    "ATLASZ-OSC-014",
+    "ATLASZ-OSC-015"
+   ],
+   "modules": "business/qa-factory.mjs (QA only)",
+   "status": "MISSING",
+   "evidence": "None",
+   "missing": "Schema enforcement with rejection",
+   "integration_gaps": "none",
+   "security": "Reject invalid, never coerce silently",
+   "plan": "Shared schema validator (see G06)",
+   "tests_required": "accept/reject matrix, no coercion",
+   "final_status": "MISSING",
+   "shared_infrastructure": [
+    "TYPED_TOOLS_AND_SCHEMAS"
+   ]
+  },
+  {
+   "id": "P15",
+   "description": "Adaptive Multimodal Processing",
+   "registry_links": [],
+   "modules": "none",
+   "status": "MISSING",
+   "evidence": "None",
+   "missing": "Detail-level chooser",
+   "integration_gaps": "Providers",
+   "security": "Cost gating",
+   "plan": "Policy function in modality fabric",
+   "tests_required": "detail never exceeds budget",
+   "final_status": "MISSING",
+   "shared_infrastructure": [
+    "MODALITY_FABRIC_AND_OBSERVATION_MEMORY"
+   ]
+  },
+  {
+   "id": "P16",
+   "description": "Long-Session Continuity",
+   "registry_links": [
+    "V73-S03-018",
+    "V73-S04-004",
+    "V73-S04-011",
+    "V73-S05-001",
+    "V73-S05-002",
+    "V73-S05-005"
+   ],
+   "modules": "brain/memory-fabric.mjs; checkpoint-engine.mjs; planning-brain.mjs",
+   "status": "PARTIAL",
+   "evidence": "memory-fabric.test",
+   "missing": "Conversation state persistence",
+   "integration_gaps": "Conversation object missing (M03)",
+   "security": "Provenance retained",
+   "plan": "With M03 conversation store",
+   "tests_required": "restart restores validated state",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "P17",
+   "description": "Voice Focus and Noise Handling",
+   "registry_links": [
+    "V73-S05-001",
+    "V73-S05-002",
+    "V73-S05-003",
+    "V73-S05-004",
+    "V73-S05-005",
+    "V73-S05-006"
+   ],
+   "modules": "voice-session.mjs",
+   "status": "EXTERNAL_BLOCKER",
+   "evidence": "State machine only",
+   "missing": "Audio DSP/provider",
+   "integration_gaps": "No provider",
+   "security": "Speaker intent != authentication",
+   "plan": "Slot",
+   "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
+   "final_status": "EXTERNAL_BLOCKER",
+   "shared_infrastructure": []
+  },
+  {
+   "id": "P18",
+   "description": "Visual Highlighting",
+   "registry_links": [],
+   "modules": "none",
+   "status": "MISSING",
+   "evidence": "None",
+   "missing": "Region annotation schema",
+   "integration_gaps": "Renderer",
+   "security": "Annotations cannot act",
+   "plan": "Annotation schema (see A07)",
+   "tests_required": "schema validation",
+   "final_status": "MISSING",
+   "shared_infrastructure": [
+    "MODALITY_FABRIC_AND_OBSERVATION_MEMORY"
+   ]
+  },
+  {
+   "id": "P19",
+   "description": "Personal Object and Information Recall",
+   "registry_links": [
+    "V73-S04-010",
+    "V73-S05-013",
+    "V73-S07-001",
+    "V73-S07-002",
+    "V73-S07-003",
+    "V73-S07-004"
+   ],
+   "modules": "brain/memory-fabric.mjs (text)",
+   "status": "MISSING",
+   "evidence": "Text only",
+   "missing": "Authorized observation recall",
+   "integration_gaps": "none",
+   "security": "Consent, retention, deletion",
+   "plan": "Observation memory (A05)",
+   "tests_required": "recall requires permission and consent",
+   "final_status": "MISSING",
+   "shared_infrastructure": [
+    "MODALITY_FABRIC_AND_OBSERVATION_MEMORY"
+   ]
+  },
+  {
+   "id": "P20",
+   "description": "Situational Assistance",
+   "registry_links": [
+    "V73-S38-001"
+   ],
+   "modules": "human-core.mjs; master-brief.mjs",
+   "status": "PARTIAL",
+   "evidence": "human-core.test",
+   "missing": "Cross-source next-step suggestions",
+   "integration_gaps": "Suggestions limited to brief",
+   "security": "Suggest-only",
+   "plan": "Suggestion queue (A08)",
+   "tests_required": "suggest-only",
+   "final_status": "PARTIAL",
+   "shared_infrastructure": []
+  }
+ ]
+}
