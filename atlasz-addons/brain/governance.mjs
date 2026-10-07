@@ -29,5 +29,11 @@ export function createGovernance({ gate = emergencyGate, ownerAuth, safeGate = n
     }
     return out("ALLOW", needsApproval ? "OWNER_APPROVED" : "NO_APPROVAL_REQUIRED");
   }
-  return { authorize, audit: { verify: () => audit.verify(), entries: () => audit.entries(), head: () => audit.head() } };
+  /** Dry run: what would be needed? No audit entry, no approval consumed. */
+  function requirements(p = {}) {
+    if (BRAIN_FORBIDDEN.includes(p.action)) return { denied: true, approvalAction: null, reason: "FORBIDDEN_FOR_BRAINS" };
+    const spend = Number(p.spendUsd ?? 0);
+    return { denied: false, approvalAction: spend > 0 ? "BRAIN_SPEND" : APPROVAL_ACTIONS.includes(p.action) ? "BRAIN_" + p.action : null, external: Boolean(p.external) || EXTERNAL_ACTIONS.includes(p.action) };
+  }
+  return { authorize, requirements, audit: { verify: () => audit.verify(), entries: () => audit.entries(), head: () => audit.head() } };
 }

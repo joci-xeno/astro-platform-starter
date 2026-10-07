@@ -18,7 +18,7 @@ export function createCapabilityGraph({ file = null, now = () => new Date().toIS
     const old = nodes[n.id];
     nodes[n.id] = { id: n.id, type: n.type, capabilities: [...new Set(n.capabilities ?? old?.capabilities ?? [])], provider: n.provider ?? old?.provider ?? null, supportedTasks: n.supportedTasks ?? old?.supportedTasks ?? [],
       limitations: n.limitations ?? old?.limitations ?? [], permissions: n.permissions ?? old?.permissions ?? [], requiredCredentials: n.requiredCredentials ?? old?.requiredCredentials ?? [],
-      costClass: n.costClass ?? old?.costClass ?? "UNKNOWN", speedClass: n.speedClass ?? old?.speedClass ?? "UNKNOWN", family: n.family ?? old?.family ?? n.id,
+      costClass: n.costClass ?? old?.costClass ?? "UNKNOWN", speedClass: n.speedClass ?? old?.speedClass ?? "UNKNOWN", family: n.family ?? old?.family ?? n.id, attrs: { ...(old?.attrs ?? {}), ...(n.attrs ?? {}) },
       stats: old?.stats ?? { runs: 0, ok: 0, totalMs: 0, qualitySum: 0, qualityN: 0, recent: [] }, available: old?.available ?? true, health: old?.health ?? "UNKNOWN", evidence: old?.evidence ?? null, credentialsPresent: old?.credentialsPresent ?? false, updatedAt: now() };
     save(); return nodes[n.id];
   }
