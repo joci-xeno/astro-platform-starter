@@ -1,3 +1,4 @@
+import { ownerGranted } from "./owner-auth.mjs";
 // ATLASZ Money Pipeline Controller
 // Composes existing revenue modules into one auditable state machine.
 // No external send, spend, contract acceptance, banking action, or payment claim happens here.
@@ -44,7 +45,7 @@ export function transitionMoneyPipeline(pipeline,next,{evidence=null,ownerApprov
   if(!pipeline||!STATES.includes(pipeline.state)) throw new Error("INVALID_MONEY_PIPELINE");
   if(!STATES.includes(next)) throw new Error("INVALID_MONEY_PIPELINE_STATE");
   if(!(ALLOWED[pipeline.state]||[]).includes(next)) throw new Error("INVALID_MONEY_PIPELINE_TRANSITION:"+pipeline.state+"->"+next);
-  if(ownerGateStates.has(next)&&!ownerApproved) throw new Error("OWNER_APPROVAL_REQUIRED");
+  if(ownerGateStates.has(next)&&!ownerGranted(ownerApproved,"MONEY_"+next,pipeline.id)) throw new Error("OWNER_APPROVAL_REQUIRED");
   if(evidenceStates.has(next)&&!evidence) throw new Error("EXTERNAL_OR_QA_EVIDENCE_REQUIRED:"+next);
   const at=new Date().toISOString();
   return {...clone(pipeline),state:next,updatedAt:at,history:[...(pipeline.history||[]),{at,state:next,evidence:evidence||null,note:note||null}]};

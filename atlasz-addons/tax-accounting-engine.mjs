@@ -1,3 +1,4 @@
+import { ownerGranted } from "./owner-auth.mjs";
 /**
  * ATLASZ Universal Tax & Accounting Engine
  * Additive starter module. No filing, payment, bank action, or secret handling.
@@ -77,7 +78,7 @@ export class TaxAccountingEngine {
   }
 
   authorizeExternalAction(action, ownerApproved = false) {
-    if (TAX_CAPABILITY.requiresOwnerApproval.includes(action) && !ownerApproved) {
+    if (TAX_CAPABILITY.requiresOwnerApproval.includes(action) && !ownerGranted(ownerApproved, "TAX_" + String(action).trim().toUpperCase().replace(/-/g, "_"))) {
       return { status: TAX_STATES.OWNER_APPROVAL_REQUIRED, action };
     }
     return { status: "AUTHORIZED", action };

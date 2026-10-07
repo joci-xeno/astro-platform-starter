@@ -12,13 +12,16 @@ const CRITICAL=new Set([
 const canonical=v=>String(v||"").trim().toUpperCase().replace(/-/g,"_");
 const clone=v=>structuredClone(v);
 
-export function createApprovalGateway({ownerId="JOCI",verifier=null,verifierTested=false}={}){
+export function createApprovalGateway({ownerId="JOCI",verifier=null,verifierTested=false,ownerAuth=null}={}){
  const audit=[];
- const connected=typeof verifier==="function";
- const live=connected&&verifierTested===true;
+ // With ownerAuth the verifier is the real Ed25519 owner verifier and LIVE derives from a proven owner channel
+ // (a real owner-signed challenge), never from a caller-asserted flag.
+ if(ownerAuth&&!verifier)verifier=async({action,approval})=>{const r=ownerAuth.verifyApproval(approval,{action});return {authenticated:r.allowed,ownerId:r.allowed?ownerAuth.status().ownerId:null,action:canonical(action),resultId:r.nonce||null,verifiedAt:new Date().toISOString()};};
+ const connected=()=>typeof verifier==="function"&&(!ownerAuth||ownerAuth.status().configured);
+ const isLive=()=>connected()&&(ownerAuth?ownerAuth.status().channelProven===true:verifierTested===true);
  const status=()=>({
-   state:live?"LIVE":connected?"CONNECTED_UNTESTED":"PLACEHOLDER_UNCONNECTED",
-   ownerId,connected,verifierTested:live,
+   state:isLive()?"LIVE":connected()?"CONNECTED_UNTESTED":"PLACEHOLDER_UNCONNECTED",
+   ownerId,connected:connected(),verifierTested:isLive(),
    rule:"CRITICAL_ACTIONS_REQUIRE_AUTHENTICATED_OWNER_APPROVAL"
  });
  async function verify({action,approval=null,context={}}={}){
@@ -26,7 +29,7 @@ export function createApprovalGateway({ownerId="JOCI",verifier=null,verifierTest
    if(!a)throw new Error("ACTION_REQUIRED");
    const critical=CRITICAL.has(a);
    if(!critical)return {allowed:true,action:a,critical:false,reason:null,evidence:null};
-   if(!live){
+   if(!isLive()){
      const out={allowed:false,action:a,critical:true,reason:"AUTHENTICATED_APPROVAL_PROVIDER_NOT_LIVE",evidence:null};
      audit.push({at:new Date().toISOString(),...out});return out;
    }

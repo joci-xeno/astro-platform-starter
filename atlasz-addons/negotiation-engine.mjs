@@ -1,3 +1,4 @@
+import { ownerGranted } from "./owner-auth.mjs";
 export const NEGOTIATION_VERSION="1.0.0";
 export function assessMessage({message,currentOffer,minAcceptableUsd,agreedScope}={}){
  const text=String(message||"");
@@ -17,6 +18,6 @@ export function negotiationNextAction(a){
  return "CONTINUE_NEGOTIATION";
 }
 export function markAgreement(terms,{ownerApproved=false}={}){
- if(!ownerApproved) throw new Error("OWNER_APPROVAL_REQUIRED_FOR_AGREEMENT");
+ if(!ownerGranted(ownerApproved,"MARK_AGREEMENT")) throw new Error("OWNER_APPROVAL_REQUIRED_FOR_AGREEMENT");
  return {...terms,status:"AGREED",agreedAt:new Date().toISOString()};
 }

@@ -1,3 +1,4 @@
+import { ownerGranted } from "./owner-auth.mjs";
 // ATLASZ Computer Use Fabric v1.0
 // Owner-first desktop/browser execution policy. No provider is LIVE until attached and tested.
 export const OWNER_AUTHORITY=Object.freeze({ownerId:"JOCI",rank:1,masterRank:2,agentRank:3,immutable:true});
@@ -15,7 +16,7 @@ export function createComputerUseFabric({provider=null}={}){
  const status=()=>({id:"computer-use-fabric",provider:provider?.name||null,state:provider?(provider.tested?"LIVE":"CONNECTED_UNTESTED"):"PLACEHOLDER_UNCONNECTED",tested:Boolean(provider?.tested),live:Boolean(provider?.tested),owner:OWNER_AUTHORITY.ownerId});
  function authorize({agentId,action,ownerApproved=false}={}){
    const level=classifyComputerAction(action);
-   const decision=level==="FORBIDDEN"?"DENY":level==="ASK_JOCI"&&!ownerApproved?"WAIT_OWNER":"ALLOW";
+   const decision=level==="FORBIDDEN"?"DENY":level==="ASK_JOCI"&&!ownerGranted(ownerApproved,"COMPUTER_"+String(action).trim().toUpperCase().replace(/-/g,"_"))?"WAIT_OWNER":"ALLOW";
    audit.push({at:new Date().toISOString(),agentId:agentId||null,action,level,decision});
    return {level,decision,ownerApprovalRequired:level==="ASK_JOCI"};
  }

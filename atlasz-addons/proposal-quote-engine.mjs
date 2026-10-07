@@ -1,3 +1,4 @@
+import { ownerGranted } from "./owner-auth.mjs";
 export const PROPOSAL_ENGINE_VERSION="1.0.0";
 export function buildProposal({dealId,client,scope,deliverables=[],priceUsd,deadline,assumptions=[],exclusions=[],evidence=[]}={}){
  if(!dealId||!scope||!Number.isFinite(Number(priceUsd))||Number(priceUsd)<=0) throw new Error("PROPOSAL_MISSING_REQUIRED_FIELDS");
@@ -13,7 +14,7 @@ export function validateProposal(p){
  return {passed:errors.length===0,errors};
 }
 export function approveProposal(p,{ownerApproved=false}={}){
- if(!ownerApproved) throw new Error("OWNER_APPROVAL_REQUIRED");
+ if(!ownerGranted(ownerApproved,"APPROVE_PROPOSAL")) throw new Error("OWNER_APPROVAL_REQUIRED");
  const v=validateProposal(p); if(!v.passed) throw new Error("PROPOSAL_VALIDATION_FAILED:"+v.errors.join(","));
  return {...p,status:"APPROVED_TO_SEND",approvedAt:new Date().toISOString()};
 }

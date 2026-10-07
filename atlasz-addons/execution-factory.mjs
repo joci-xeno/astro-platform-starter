@@ -1,3 +1,4 @@
+import { ownerGranted } from "./owner-auth.mjs";
 export const EXECUTION_FACTORY_VERSION="1.0.0";
 export const EXECUTION_STAGES=["PLAN","EXECUTE","TEST","QA","FIX","PACKAGE","DELIVERY_APPROVAL","READY_TO_DELIVER"];
 
@@ -14,7 +15,7 @@ export function assignExecution(job,agentId){
 export function advanceExecution(job,next,{qaPassed=false,ownerApproved=false}={}){
   if(!job?.jobId||!EXECUTION_STAGES.includes(job.stage))throw new Error("VALID_EXECUTION_JOB_REQUIRED");const i=EXECUTION_STAGES.indexOf(job.stage), n=EXECUTION_STAGES.indexOf(next);
   if(n<0) throw new Error("UNKNOWN_EXECUTION_STAGE");
-  if(next==="READY_TO_DELIVER"&&!ownerApproved) throw new Error("OWNER_DELIVERY_APPROVAL_REQUIRED");
+  if(next==="READY_TO_DELIVER"&&!ownerGranted(ownerApproved,"APPROVE_DELIVERY",job.jobId)) throw new Error("OWNER_DELIVERY_APPROVAL_REQUIRED");
   if(next==="DELIVERY_APPROVAL"&&!qaPassed) throw new Error("QA_PASS_REQUIRED");
   if(next!=="FIX" && n!==i+1) throw new Error("INVALID_EXECUTION_TRANSITION");
   return {...job,stage:next,status:next==="READY_TO_DELIVER"?"READY":"IN_PROGRESS",updatedAt:new Date().toISOString()};

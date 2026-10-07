@@ -1,3 +1,4 @@
+import { ownerGranted } from "./owner-auth.mjs";
 export const AGENT_FACTORY_VERSION="1.0.0";
 const ROLES=new Set(["SEARCH","EXECUTION","REVIEWER","PLANNER","RESEARCH","SUPPORT","SPECIALIST"]);
 const uid=()=>globalThis.crypto?.randomUUID?.()||("agent-"+Date.now()+"-"+Math.random().toString(16).slice(2));
@@ -17,7 +18,7 @@ export function instantiateAgent(blueprint,{availableCapabilities=[],availableTo
  const missingCapabilities=blueprint.capabilities.filter(x=>!availableCapabilities.includes(x));
  const missingTools=blueprint.tools.filter(x=>!availableTools.includes(x));
  if(missingCapabilities.length||missingTools.length)return {...blueprint,status:"BLOCKED",blocker:{missingCapabilities,missingTools}};
- if(blueprint.approvalPolicy==="OWNER_BEFORE_CREATE"&&!ownerApproved) return {...blueprint,status:"AWAITING_OWNER_APPROVAL"};
+ if(blueprint.approvalPolicy==="OWNER_BEFORE_CREATE"&&!ownerGranted(ownerApproved,"CREATE_AGENT")) return {...blueprint,status:"AWAITING_OWNER_APPROVAL"};
  return {...blueprint,status:"READY_FOR_RUNTIME",instantiatedAt:new Date().toISOString()};
 }
 export function cloneBlueprint(template,{name,goal,metadata={}}={}){

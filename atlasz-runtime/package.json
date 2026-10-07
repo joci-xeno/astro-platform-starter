@@ -1,8 +1,14 @@
 {
-  "name":"atlasz-30-independent",
-  "version":"2.0.0",
-  "private":true,
-  "type":"module",
-  "scripts":{"start":"node supervisor.js"},
-  "engines":{"node":">=20"}
+  "name": "atlasz-30-independent",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node supervisor.js",
+    "start:canonical": "node supervisor-safe.mjs",
+    "test": "node --test ../atlasz-tests/"
+  },
+  "engines": {
+    "node": ">=20"
+  }
 }

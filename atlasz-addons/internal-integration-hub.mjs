@@ -57,6 +57,7 @@ import { registerModelProvider, modelProviderList, modelProviderHealth, selectMo
 import { analyzeMarketSignals, proposeSearchStrategy } from "./market-intelligence-engine.mjs";
 import { createTeamLeadWorkflow, teamLeadDispatch } from "./team-lead-workflows.mjs";
 import { createApprovalGateway } from "./approval-command-gateway.mjs";
+import { getDefaultOwnerAuth } from "./owner-auth.mjs";
 import { createMoneyPipeline, transitionMoneyPipeline, recordInvoice as recordMoneyPipelineInvoice, recordVerifiedPayment, moneyPipelineSummary, MONEY_PIPELINE_STATES } from "./money-pipeline-controller.mjs";
 
 const safe=(fn,...args)=>{try{return {ok:true,value:fn(...args)}}catch(e){return {ok:false,error:String(e?.message||e)}}};
@@ -68,7 +69,7 @@ export function createInternalAddonHub({tenantId="ATLASZ-MAIN",dailyBudgetUsd=0}
   const voice=createVoiceInterface();
   const computerUse=createComputerUseFabric();
   const toolBridge=createToolBridge({registerConnector,connectFabricTool,registerTool});
-  const approvalGateway=createApprovalGateway();
+  const approvalGateway=createApprovalGateway({ownerAuth:getDefaultOwnerAuth()});
   seedAtlaszCompletionRegistry();
   function onAgentRegistered(agent){
     safe(registerAgentControl,{tenantId,agentId:agent.id,owner:"JOCI",permissions:["INTERNAL_STATE"],tools:[],risk:"NORMAL"});

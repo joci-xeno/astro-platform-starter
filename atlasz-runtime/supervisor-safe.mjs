@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { createInternalAddonHub } from "../atlasz-addons/internal-integration-hub.mjs";
+import { emergencyGate, emergencyStatus } from "../atlasz-addons/emergency-stop.mjs";
 
 export const VERSION = "3.3.0";
 const now = () => new Date().toISOString();
@@ -49,6 +50,9 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
     if (!Array.isArray(restored.leads) || !Array.isArray(restored.candidates)) throw new Error("Invalid saved state: refusing to overwrite");
     state = { ...state, ...restored, version: VERSION };
   }
+  // Stall recovery (V7.3 §52 #10/#11): a crash mid-screening leaves candidates stuck in PROCESSING forever.
+  let recoveredStalled = 0;
+  for (const c of state.candidates) if (c.status === "PROCESSING") { c.status = "NEW"; recoveredStalled++; }
   state.agents = Array.from({ length: 30 }, (_, i) => ({
     id: i < 5 ? "SEARCH-" + (i + 1) : "EXECUTION-" + (i - 4),
     role: i < 5 ? "SEARCH" : "EXECUTION", status: "STARTING", currentTask: null,
@@ -61,7 +65,8 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
   let stopping = false;
   function save() {
     const temp = file + ".tmp";
-    fs.writeFileSync(temp, JSON.stringify(state), { mode: 0o600 });
+    const fd = fs.openSync(temp, "w", 0o600);
+    try { fs.writeSync(fd, JSON.stringify(state)); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
     fs.renameSync(temp, file);
   }
   function event(type, details = {}) {
@@ -76,6 +81,8 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
   }
   async function search(index) {
     const agent = state.agents[index];
+    const gate = emergencyGate({ external: true });
+    if (!gate.allowed) { update(agent, "HALTED_BY_OWNER_STOP", "Owner emergency stop active", gate.reason); event("dispatch_blocked", { agentId: agent.id, reason: gate.reason }); return; }
     const round = Math.floor(state.searchCycles / 5);
     const query = queryLanes[(index + round) % queryLanes.length] + (round % 2 ? " " + topics[(index + round) % topics.length] : "");
     update(agent, "RUNNING", "Search recent public project requests: " + query);
@@ -109,6 +116,8 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
   }
   function execute(index) {
     const agent = state.agents[index];
+    const gate = emergencyGate({ external: false });
+    if (!gate.allowed) { update(agent, "HALTED_BY_OWNER_STOP", "Owner emergency stop active", gate.reason); return; }
     const candidate = state.candidates.find(c => c.status === "NEW");
     if (!candidate) {
       update(agent, "WAITING_FOR_INPUT", "No unprocessed project request", "NO_QUALIFICATION_TASK_OR_CLIENT_JOB");
@@ -170,7 +179,7 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
       metrics: { candidatesFound: state.candidates.length, activeLeads: state.leads.length, qualifiedOpportunities: 0, scopeReviews: state.artifacts.length, outreachSent: 0, replies: 0, won: 0, inProgress: 0, delivered: 0, awaitingPayment: 0, confirmedPaid: 0, costs: null, verifiedNetProfit: null, monthlyRecurringRevenue: 0 },
       lastSystemRun: state.lastSystemRun, searchCycles: state.searchCycles,
       persistence: { savedLocally: true, durableVolume: persistent },
-      agents: state.agents, blockers, sourceErrors: state.sourceErrors, internalAddons: addonSnapshot()
+      agents: state.agents, blockers, sourceErrors: state.sourceErrors, emergency: emergencyStatus(), internalAddons: addonSnapshot()
     };
   }
   function schedule(fn, delay) {
@@ -191,7 +200,7 @@ export function createRuntime({ dataDir = process.env.ATLASZ_STATE_DIR || "./dat
     for (let i = 5; i < 30; i++) schedule(() => execute(i), 1000 + (i - 5) * 50);
   }
   function stop() { stopping = true; for (const t of timers) clearTimeout(t); save(); }
-  return { state, search, execute, dashboard, save, start, stop };
+  return { state, search, execute, dashboard, save, start, stop, recoveredStalled };
 }
 
 if (process.env.ATLASZ_TEST_MODE !== "1") {
