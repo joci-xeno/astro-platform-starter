@@ -1,0 +1,21 @@
+{
+ "at": "2026-10-07T20:12:52.035Z",
+ "component": "atlasz-v73-integration (all tests)",
+ "version": null,
+ "commit": "9dacf1f",
+ "build": null,
+ "environment": "sandbox (linux, node 22.22.0)",
+ "label": "SANDBOX",
+ "testType": "REGRESSION",
+ "result": "PASS",
+ "traceId": "4e35bb3a-d2cb-4c8f-aa91-f1759aba5527",
+ "error": null,
+ "blocker": null,
+ "details": {
+  "tests": 312,
+  "pass": 312,
+  "fail": 0,
+  "skipped": 0,
+  "failedTests": []
+ }
+}
