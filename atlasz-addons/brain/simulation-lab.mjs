@@ -5,11 +5,20 @@ export const ENVIRONMENTS = Object.freeze(["SIMULATION", "STAGING", "LIVE"]);
 export const MONEY_STATES = MONEY_PIPELINE_STATES;
 const MONEY_NEXT = MONEY_PIPELINE_ALLOWED;
 
+import fs from "node:fs";
+import path from "node:path";
 import { MONEY_PIPELINE_STATES, MONEY_PIPELINE_ALLOWED } from "../money-pipeline-controller.mjs";
 export class SimulationLiveActionBlocked extends Error { constructor(what) { super("SIMULATION_LIVE_ACTION_BLOCKED:" + what); this.name = "SimulationLiveActionBlocked"; } }
 
-export function createSimulationLab({ now = () => new Date().toISOString() } = {}) {
-  const runs = [];
+export const SIM_RECORD_VERSION = 2;
+/** file: optional durable store. Every run is persisted with id, version, config, input, planned action, result, tests, failures, risk, evidence and timestamp
+ *  (SIMULATION / STAGING / LIVE records are kept strictly apart: a record carries its environment and compare() refuses to mix environments). */
+export function createSimulationLab({ now = () => new Date().toISOString(), file = null } = {}) {
+  let runs = [];
+  if (file && fs.existsSync(file)) { try { runs = JSON.parse(fs.readFileSync(file, "utf8")).runs ?? []; } catch { throw new Error("SIMULATION_STORE_UNREADABLE"); } }
+  const persist = () => { if (!file) return; fs.mkdirSync(path.dirname(file), { recursive: true }); const t = file + ".tmp"; fs.writeFileSync(t, JSON.stringify({ version: SIM_RECORD_VERSION, runs })); fs.renameSync(t, file); };
+  const riskOf = (violations, attempts) => (attempts.length ? "CRITICAL" : violations.length ? "HIGH" : "LOW");
+  const clip = v => { const j = JSON.stringify(v ?? null); return j.length > 20000 ? { truncated: true, bytes: j.length } : JSON.parse(j); };
   /** world.live.<name>() are traps. A scenario that calls them fails the run (and the attempt is recorded). */
   function makeWorld(state, liveNames) {
     const attempts = []; const live = {};
@@ -24,9 +33,10 @@ export function createSimulationLab({ now = () => new Date().toISOString() } = {
     const before = JSON.stringify(state), world = makeWorld(state, liveNames), violations = [], notes = [];
     try { const r = scenario(world) ?? {}; violations.push(...(r.violations ?? [])); notes.push(...(r.notes ?? [])); } catch (e) { violations.push(e instanceof SimulationLiveActionBlocked ? e.message : "SCENARIO_ERROR:" + String(e.message).slice(0, 100)); }
     for (const inv of invariants) { const r = inv.check(world.state); if (r !== true) violations.push("INVARIANT_FAILED:" + inv.name); }
-    const rec = { id: "sim-" + (runs.length + 1), at: now(), name, kind, environment, verdict: violations.length ? "FAIL" : "PASS_IN_SIMULATION", violations, notes, liveAttemptsBlocked: world.attempts, isProof: false, stateUntouched: JSON.stringify(state) === before,
+    const rec = { id: "sim-" + (runs.length + 1), recordVersion: SIM_RECORD_VERSION, at: now(), name, kind, environment, config: { liveTraps: [...liveNames], invariants: invariants.map(i => i.name) }, input: clip(state), plannedAction: { name, kind }, tests: invariants.map(i => i.name), failures: violations.length, risk: riskOf(violations, world.attempts), verdict: violations.length ? "FAIL" : "PASS_IN_SIMULATION", violations, notes, liveAttemptsBlocked: world.attempts, isProof: false, stateUntouched: JSON.stringify(state) === before,
       disclaimer: "SIMULATION result. Not proof of STAGING or LIVE behaviour and not an authorization." };
-    runs.push(rec); return structuredClone(rec);
+    rec.evidence = { stateUntouched: rec.stateUntouched, liveAttemptsBlocked: world.attempts.length, notProof: true };
+    runs.push(rec); persist(); return structuredClone(rec);
   }
   // ---- ready-made scenarios ----
   const providerOutage = ({ providers, outage = [], attempts = 1 }) => run({ name: "provider outage", kind: "PROVIDER_OUTAGE", state: { providers }, scenario: w => {
@@ -49,5 +59,14 @@ export function createSimulationLab({ now = () => new Date().toISOString() } = {
   const rollback = ({ before, change, rollbackFn }) => run({ name: "rollback", kind: "ROLLBACK", state: before, scenario: w => { change(w.state); rollbackFn(w.state); return {}; }, invariants: [{ name: "state restored exactly", check: s => JSON.stringify(s) === JSON.stringify(before) }] });
   /** Generic change simulation: apply `mutate` to a clone and check invariants. Used for routing/config/update/automation changes. */
   const change = ({ kind, name, state, mutate, invariants }) => run({ name, kind, state, scenario: w => { mutate(w.state); return {}; }, invariants });
-  return { run, providerOutage, queueFailure, moneyTransitions, rollback, change, runs: () => runs.map(r => structuredClone(r)), environments: ENVIRONMENTS };
+  /** Compare two persisted runs. Different environments are never compared (SIMULATION != STAGING != LIVE). */
+  function compare(idA, idB) {
+    const a = runs.find(r => r.id === idA), b = runs.find(r => r.id === idB);
+    if (!a || !b) throw new Error("UNKNOWN_RUN");
+    if (a.environment !== b.environment) return { comparable: false, reason: "ENVIRONMENT_MISMATCH:" + a.environment + "_vs_" + b.environment };
+    const va = new Set(a.violations), vb = new Set(b.violations);
+    return { comparable: true, same: a.verdict === b.verdict && [...va].every(x => vb.has(x)) && [...vb].every(x => va.has(x)), verdicts: [a.verdict, b.verdict], risk: [a.risk, b.risk], newFailures: [...vb].filter(x => !va.has(x)), resolvedFailures: [...va].filter(x => !vb.has(x)), kinds: [a.kind, b.kind] };
+  }
+  const get = id => { const r = runs.find(x => x.id === id); return r ? structuredClone(r) : null; };
+  return { compare, get, run, providerOutage, queueFailure, moneyTransitions, rollback, change, runs: () => runs.map(r => structuredClone(r)), environments: ENVIRONMENTS };
 }

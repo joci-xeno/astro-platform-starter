@@ -27,11 +27,11 @@ export function createKnowledgeBrain({ file = null, ownerAuth = null, now = () =
     if (kind === "FACT" && (["MODEL", "AGENT"].includes(i.source.type) || !i.evidenceRef)) { kind = ["MODEL", "AGENT"].includes(i.source.type) ? "INFERENCE" : "UNVERIFIED"; notes.push("DOWNGRADED_FROM_FACT:" + (i.evidenceRef ? "MODEL_SOURCE" : "NO_EVIDENCE")); }
     if (kind === "HISTORICAL_RESULT" && !i.evidenceRef) { kind = "UNVERIFIED"; notes.push("DOWNGRADED_FROM_HISTORICAL_RESULT:NO_EVIDENCE"); }
     const id = "k-" + crypto.randomUUID().slice(0, 10), item = { id, tenantId: i.tenantId, key: i.key, value: i.value, kind, requestedKind: i.kind, notes, source: i.source, evidenceRef: i.evidenceRef ?? null, confidence: Math.min(1, Math.max(0, Number(i.confidence ?? (kind === "FACT" || kind === "OWNER_DECISION" || kind === "APPROVED_POLICY" ? 0.9 : 0.4)))),
-      projectId: i.projectId ?? null, jobId: i.jobId ?? null, ttlDays: i.ttlDays === null ? null : (i.ttlDays ?? (["OWNER_DECISION", "APPROVED_POLICY"].includes(kind) ? null : defaultTtlDays)), shareable: i.shareable === true, createdAt: now(), supersededBy: null };
+      projectId: i.projectId ?? null, jobId: i.jobId ?? null, ttlDays: i.ttlDays === null ? null : (i.ttlDays ?? (["OWNER_DECISION", "APPROVED_POLICY"].includes(kind) ? null : defaultTtlDays)), shareable: i.shareable === true, scope: i.scope ?? "BUSINESS", owner: i.owner ?? i.tenantId, createdAt: now(), supersededBy: null };
     db.items[id] = item; save(); return structuredClone(item);
   }
   /** Retrieval is tenant-scoped; other projects only if the item is shareable AND the caller asks for cross-project. Stale items are excluded unless asked. */
-  function retrieve({ tenantId, query = "", projectId = null, jobId = null, crossProject = false, includeStale = false, kinds = null, limit = 10 } = {}) {
+  function retrieve({ tenantId, query = "", projectId = null, jobId = null, crossProject = false, includeStale = false, kinds = null, scopes = null, limit = 10 } = {}) {
     if (!tenantId) throw new Error("TENANT_REQUIRED");
     const q = new Set(tok(query)); const rows = [];
     for (const i of Object.values(db.items)) {
@@ -39,6 +39,7 @@ export function createKnowledgeBrain({ file = null, ownerAuth = null, now = () =
       if (projectId && i.projectId && i.projectId !== projectId && !(crossProject && i.shareable)) continue;
       if (jobId && i.jobId && i.jobId !== jobId && !(crossProject && i.shareable)) continue;
       if (kinds && !kinds.includes(i.kind)) continue;
+      if (scopes && !scopes.includes(i.scope ?? "BUSINESS")) continue;
       const st = stale(i); if (st && !includeStale) continue;
       const words = new Set(tok(i.key + " " + (typeof i.value === "string" ? i.value : JSON.stringify(i.value)))); let hit = 0; for (const w of q) if (words.has(w)) hit++;
       if (q.size && !hit) continue;
