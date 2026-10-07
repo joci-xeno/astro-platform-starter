@@ -1,5 +1,7 @@
 // V7.3 §Conversation-First / Daily Brief: a deterministic startup brief built ONLY from current durable state. No invented events.
 // The greeting and phrase are owner-configurable; the phrase is a friendly signature, never a credential.
+import fs from "node:fs";
+import path from "node:path";
 import { assertNoFalseClaims } from "./human-core.mjs";
 
 export const DEFAULT_PREFS = Object.freeze({ language: "hu", greetingName: "Joci", signaturePhrase: "Indul a mandula!", enabled: true });
@@ -9,7 +11,36 @@ const T = {
 };
 const usd = v => "$" + Number(v ?? 0).toFixed(2);
 /** status: Control Center status(); finance: ledger summary; approvals: {pending:[]} */
-export function buildDailyBrief({ status, finance, approvals, prefs = {} } = {}) {
+const T2 = {
+  hu: { me: "Money Engine", notConn: "nincs csatlakoztatva — számot nem állítok", sent: "elküldött megkeresés", won: "megnyert", pay: "igazolt befizetés", claimed: "nem igazolt (állítás)", unread: "olvashatatlan állapot", inbox: "Beérkezők", owner: "tulajdonosra vár", quar: "karanténban", fu: "lejárt követés", beh: "Viselkedés-figyelő", open: "nyitott", high: "magas", sbx: "SANDBOX nem számít bevételnek" },
+  en: { me: "Money Engine", notConn: "not connected — no figures claimed", sent: "outreach sent", won: "won", pay: "verified payments", claimed: "claimed, unverified", unread: "unreadable state", inbox: "Inbox", owner: "need you", quar: "quarantined", fu: "overdue follow-ups", beh: "Behaviour monitor", open: "open", high: "high", sbx: "SANDBOX is never counted as revenue" }
+};
+/** Optional engine sections come straight from the persisted-state views (money-views / brain-views). A missing or unreadable section is reported as such, never as zero. */
+function engineLines(t2, { moneyEngine, crmInbox, behavior }) {
+  const out = [];
+  if (moneyEngine) {
+    if (moneyEngine.state === "NOT_CONNECTED") out.push(`${t2.me}: ${t2.notConn}`);
+    else {
+      const l = moneyEngine.live ?? {}, won = l.deals?.WON ?? 0;
+      out.push(`${t2.me}: ${t2.sent} ${l.outreachSent ?? 0}, ${t2.won} ${won}, ${t2.pay} ${l.payments?.VERIFIED ?? 0} ($${Number(l.verifiedReceivedUsd ?? 0).toFixed(2)}), ${t2.claimed} $${Number(l.claimedNotVerifiedUsd ?? 0).toFixed(2)}${moneyEngine.unreadable?.length ? `; ${t2.unread}: ${moneyEngine.unreadable.join(",")}` : ""} (${t2.sbx})`);
+    }
+  }
+  if (crmInbox) {
+    const i = crmInbox.inbox, f = crmInbox.followups;
+    if (i?.state === "CONNECTED") out.push(`${t2.inbox}: ${i.needsOwner} ${t2.owner}, ${i.quarantined} ${t2.quar}`);
+    if (f?.state === "CONNECTED" && f.overdue) out.push(`${t2.fu}: ${f.overdue}`);
+  }
+  if (behavior?.state === "CONNECTED" && behavior.open) out.push(`${t2.beh}: ${behavior.open} ${t2.open}, ${behavior.high} ${t2.high}`);
+  return out;
+}
+/** Startup brief shows on the first interaction of a local day (or when forced). The gate state is one tiny file; an unreadable file means "show it". */
+export function briefDue({ file, now = new Date(), force = false } = {}) {
+  const day = now.toISOString().slice(0, 10);
+  let last = null; try { last = JSON.parse(fs.readFileSync(file, "utf8")).lastShownDay; } catch { /* unreadable or absent -> due */ }
+  return { due: force || last !== day, day, lastShownDay: last };
+}
+export function markBriefShown({ file, now = new Date() } = {}) { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, JSON.stringify({ lastShownDay: now.toISOString().slice(0, 10), at: now.toISOString() })); }
+export function buildDailyBrief({ status, finance, approvals, prefs = {}, moneyEngine, crmInbox, behavior } = {}) {
   const p = { ...DEFAULT_PREFS, ...prefs }, t = T[p.language] ?? T.en, lines = [];
   lines.push(t.greet(p.greetingName, p.signaturePhrase));
   const rt = status?.runtime;
@@ -20,6 +51,7 @@ export function buildDailyBrief({ status, finance, approvals, prefs = {} } = {})
   lines.push(`${t.approvals}: ${pend.length ? pend.length : t.none}${pend.slice(0, 3).map(r => `\n  • ${r.what}`).join("")}`);
   if (status?.queue) lines.push(`${t.queue}: ${status.queue.ready} ready / ${status.queue.done} done / ${t.dead}: ${status.queue.dead}`);
   if (finance) lines.push(`${t.money}: ${t.verified} ${usd(finance.revenue.verifiedReceivedUsd)}, ${t.cost} ${usd(finance.costs.totalUsd)}, ${t.net} ${usd(finance.profit.verifiedNetUsd)}; ${t.pipeline}: ${usd(finance.revenue.unconfirmedPipelineUsd)}`);
+  lines.push(...engineLines(T2[p.language] ?? T2.en, { moneyEngine, crmInbox, behavior }));
   const blockers = status?.blockers ?? [];
   if (blockers.length) lines.push(`${t.blockers}: ${blockers.map(b => b.code).join(", ")}`);
   lines.push(t.honest);

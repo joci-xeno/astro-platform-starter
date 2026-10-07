@@ -15,7 +15,7 @@ import { readAuditFile, verifyChain } from "../atlasz-addons/audit-chain.mjs";
 import { createFinancialLedger } from "../atlasz-addons/financial-ledger.mjs";
 import { createLocalUpdateAdapters, SELFTEST } from "../atlasz-addons/local-update-adapters.mjs";
 import { createPluginManager } from "../atlasz-addons/plugin-manager.mjs";
-import { buildDailyBrief, answerQuery, DEFAULT_PREFS } from "../atlasz-addons/master-brief.mjs";
+import { buildDailyBrief, answerQuery, DEFAULT_PREFS, briefDue, markBriefShown } from "../atlasz-addons/master-brief.mjs";
 import { assessImpact } from "../atlasz-addons/human-core.mjs";
 import { createMobileApi } from "../atlasz-addons/mobile-api.mjs";
 import { createApprovalRequests } from "../atlasz-addons/approval-requests.mjs";
@@ -126,7 +126,12 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
       REFRESH: async () => { const s = await status(); return { at: s.at, runtime: s.runtime.status }; }, APPROVALS: async () => approvals().pending.map(r => ({ id: r.id, what: r.what, risk: r.risk, cost: r.costUsd })),
       ALERTS: async () => { const s = await status(); return { blockers: s.blockers, safeMode: s.safeMode.mode === "SAFE_MODE" ? s.safeMode.reason : null, dead: s.queue?.dead ?? 0 }; }, MONEY: async () => { const f = finance(); return { verifiedRevenueUsd: f.revenue.verifiedReceivedUsd, costsUsd: f.costs.totalUsd, verifiedNetProfitUsd: f.profit.verifiedNetUsd, unconfirmedPipelineUsd: f.revenue.unconfirmedPipelineUsd }; },
       JOBS: async () => opportunities().items.slice(-20).map(l => ({ id: l.id, title: l.title, outreach: l.outreachStatus, project: l.projectStatus })), HEALTH: async () => { const d = await doctor(); return { level: d.level, findings: d.findings.length }; } } }));
-  async function brief() { return { prefs: prefs(), ...buildDailyBrief({ status: await status(), finance: finance(), approvals: approvals(), prefs: prefs() }) }; }
+  const briefGate = path.join(stateDir, "brief-gate.json");
+  async function brief({ markShown = false, force = false } = {}) {
+    const gate = briefDue({ file: briefGate, force }), b = buildDailyBrief({ status: await status(), finance: finance(), approvals: approvals(), prefs: prefs(), moneyEngine: moneyViews.money(), crmInbox: moneyViews.crmInbox(), behavior: (await brainViews.all())?.behavior });
+    if (markShown && gate.due) markBriefShown({ file: briefGate });
+    return { prefs: prefs(), firstOfDay: gate.due, ...b };
+  }
   async function chat({ q = "" } = {}) { return answerQuery(String(q).slice(0, 500), { status: await status(), finance: finance(), approvals: approvals() }); }
   function opportunities() {
     const f = path.join(stateDir, "atlasz-state.json");

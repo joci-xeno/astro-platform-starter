@@ -95,7 +95,7 @@
     52
    ]
   },
-  "item_verified_count": 909
+  "item_verified_count": 910
  },
  "requirements": [
   {
@@ -22816,6 +22816,32 @@
    "test_status": "TESTED_SANDBOX",
    "classification": "SANDBOX",
    "next_action": "Wire document actions into Decision Engine / Control Center panel"
+  },
+  {
+   "id": "ATLASZ-PKG84-020",
+   "title": "Daily/Startup Brief completed: Money Engine (LIVE only; unknown != zero; SANDBOX excluded; claims separate from verified), inbox, follow-up and anomaly sections from persisted views; first-of-day gate (unreadable gate shows the brief); hu/en; owner-configurable signature phrase stays a non-credential",
+   "level": "item",
+   "section": 77,
+   "description": "Daily/Startup Brief completed: Money Engine (LIVE only; unknown != zero; SANDBOX excluded; claims separate from verified), inbox, follow-up and anomaly sections from persisted views; first-of-day gate (unreadable gate shows the brief); hu/en; owner-configurable signature phrase stays a non-credential",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/master-brief.mjs; atlasz-control-center/core.mjs; atlasz-control-center/server.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/human-core.test.mjs"
+   ],
+   "evidence": [
+    "1 new test + 4 mutation checks caught; no tasks/deadlines source, provider-health or recovery lines yet; no language model, so chat is state-only"
+   ],
+   "blocker": "Personal Command Center (tasks/deadlines) not built",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Add tasks/deadlines, provider health and recovery status lines once those sources exist"
   }
  ]
 }

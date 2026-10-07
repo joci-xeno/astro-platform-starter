@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs"; import path from "node:path"; import os from "node:os";
 import { CHARACTER, assertNoFalseClaims, detectContext, adaptTone, planHelp, rankByCompassion, assessImpact, decidePrecedence } from "../atlasz-addons/human-core.mjs";
 import { buildDailyBrief, answerQuery } from "../atlasz-addons/master-brief.mjs";
 
@@ -54,4 +55,24 @@ test("daily brief is built only from supplied state, honours language + signatur
   assert.match(buildDailyBrief({ status: { runtime: { reachable: false } } }).text, /nem fut/);
   assert.equal(answerQuery("pause everything").intent, "OWNER_CONTROL"); assert.equal(answerQuery("what is the weather").intent, "UNKNOWN");
   assert.match(answerQuery("money", { finance }).text, /not revenue/);
+});
+
+test("daily brief: Money Engine / inbox / anomaly sections come from persisted views; unknown is never zero; SANDBOX never counted; first-of-day gate", async () => {
+  const { briefDue, markBriefShown } = await import("../atlasz-addons/master-brief.mjs");
+  const st = { runtime: { reachable: true, status: "RUNNING", version: "7.3" }, topology: { actualSearch: 5, actualExecution: 25 } };
+  const none = buildDailyBrief({ status: st, prefs: { language: "en" }, moneyEngine: { state: "NOT_CONNECTED" } });
+  assert.match(none.text, /Money Engine: not connected — no figures claimed/); assert.doesNotMatch(none.text, /\$0\.00 verified payments/);
+  const me = { state: "CONNECTED", live: { outreachSent: 4, deals: { WON: 1 }, payments: { VERIFIED: 1 }, verifiedReceivedUsd: 250, claimedNotVerifiedUsd: 400 }, sandbox: { payments: { VERIFIED: 9 }, verifiedReceivedUsd: 99999 }, unreadable: ["invoices"] };
+  const b = buildDailyBrief({ status: st, prefs: { language: "en" }, moneyEngine: me, crmInbox: { inbox: { state: "CONNECTED", needsOwner: 2, quarantined: 1 }, followups: { state: "CONNECTED", overdue: 3 } }, behavior: { state: "CONNECTED", open: 2, high: 1 } });
+  assert.match(b.text, /outreach sent 4, won 1, verified payments 1 \(\$250\.00\), claimed, unverified \$400\.00; unreadable state: invoices/);
+  assert.doesNotMatch(b.text, /99999/);                                                             // sandbox figures never leak into the brief
+  assert.match(b.text, /2 need you, 1 quarantined/); assert.match(b.text, /overdue follow-ups: 3/); assert.match(b.text, /Behaviour monitor: 2 open, 1 high/);
+  assert.equal(b.falseClaimCheck, true);
+  const hu = buildDailyBrief({ status: st, prefs: { language: "hu" }, moneyEngine: { state: "NOT_CONNECTED" } }); assert.match(hu.text, /nincs csatlakoztatva/);
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), "bg-")), file = path.join(d, "g.json"), t1 = new Date("2026-10-07T10:00:00Z"), t2 = new Date("2026-10-08T10:00:00Z");
+  try {
+    assert.equal(briefDue({ file, now: t1 }).due, true); markBriefShown({ file, now: t1 });
+    assert.equal(briefDue({ file, now: t1 }).due, false); assert.equal(briefDue({ file, now: t2 }).due, true); assert.equal(briefDue({ file, now: t1, force: true }).due, true);
+    fs.writeFileSync(file, "{broken"); assert.equal(briefDue({ file, now: t1 }).due, true);       // unreadable gate -> show the brief, never hide it
+  } finally { fs.rmSync(d, { recursive: true, force: true }); }
 });
