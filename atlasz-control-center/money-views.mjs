@@ -35,6 +35,14 @@ export function createMoneyViews({ stateDir }) {
     return { state: unreadable.length ? "PARTIAL_UNREADABLE" : "CONNECTED", unreadable, live, sandbox: { ...sandbox, note: "SANDBOX flow. Never counted as revenue or profit." },
       note: "Opportunity value is not revenue. SENT/WON/PAID appear only where an engine recorded evidence." };
   }
+  function recurring() {
+    const f = load("subscriptions.json"); if (!f) return { state: "NOT_CONNECTED", note: "No subscriptions recorded." }; if (f.__unreadable) return { state: "UNREADABLE" };
+    const subs = vals(f.subs), per = vals(f.periods), env = e => subs.filter(s => (s.environment ?? "UNLABELLED") === e);
+    const inv = vals(load("invoices.json")?.invoices), paid = new Set(inv.filter(i => i.status === "VERIFIED_PAID" && (i.environment ?? "UNLABELLED") === "LIVE").map(i => i.id));
+    const live = env("LIVE"), liveKeys = new Set(live.map(s => s.id));
+    return { state: "CONNECTED", live: { subscriptions: count(live, "status"), contractedMrrUsd: sum(live.filter(s => s.status === "ACTIVE").map(s => s.interval === "WEEKLY" ? s.amount * 52 / 12 : s.amount / ({ MONTHLY: 1, QUARTERLY: 3, ANNUAL: 12 }[s.interval] ?? Infinity))), verifiedReceivedUsd: sum(per.filter(p => liveKeys.has(p.subscriptionId) && paid.has(p.invoiceId)).map(p => p.amount)), note: "Contracted MRR is a claim about the future, not revenue." },
+      sandbox: { subscriptions: count(env("SANDBOX"), "status"), note: "SANDBOX: never revenue." } };
+  }
   function jobs() {
     const f = load("jobs-universal.json"); if (!f) return { state: "NOT_CONNECTED", items: [] }; if (f.__unreadable) return { state: "UNREADABLE", items: [] };
     return { state: "CONNECTED", items: vals(f.jobs).map(j => ({ id: j.id, goal: j.goal, status: j.status, environment: j.environment ?? "LIVE", agents: j.assignedAgents ?? [], blocked: j.blocked ?? null, dealId: j.dealId ?? null, artifacts: (j.artifacts ?? []).length, updatedAt: j.updatedAt })) };
@@ -44,5 +52,5 @@ export function createMoneyViews({ stateDir }) {
     const list = Object.values(g).filter(n => n.type === "AGENT").map(n => ({ id: n.id, team: n.team ?? null, capabilities: n.capabilities ?? [], health: n.health ?? "UNKNOWN", available: n.available, runs: n.stats?.runs ?? 0, ok: n.stats?.ok ?? 0 }));
     return { state: "CONNECTED", expected: 30, count: list.length, topologyOk: list.length === 30, items: list };
   }
-  return { money, jobs, agents };
+  return { money, jobs, agents, recurring };
 }

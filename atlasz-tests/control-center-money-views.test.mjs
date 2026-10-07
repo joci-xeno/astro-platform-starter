@@ -62,3 +62,14 @@ test("HTTP: money-engine / money-jobs / money-agents are token-protected and rep
     }
   } finally { await cc.close?.(); rm(base); }
 });
+
+test("recurring view: contracted MRR is labelled a claim; verified receipts need a VERIFIED_PAID LIVE invoice; sandbox subscriptions are separate", () => {
+  const d = tmp(); try {
+    w(d, "money/subscriptions.json", { subs: { a: { id: "a", status: "ACTIVE", interval: "MONTHLY", amount: 100, environment: "LIVE" }, b: { id: "b", status: "ACTIVE", interval: "ANNUAL", amount: 1200, environment: "LIVE" }, c: { id: "c", status: "ACTIVE", interval: "MONTHLY", amount: 999, environment: "SANDBOX" } },
+      periods: { p1: { subscriptionId: "a", invoiceId: "i1", amount: 100 }, p2: { subscriptionId: "a", invoiceId: "i2", amount: 100 } } });
+    w(d, "money/invoices.json", { invoices: { i1: { id: "i1", status: "VERIFIED_PAID", environment: "LIVE" }, i2: { id: "i2", status: "PAYMENT_VERIFICATION_REQUIRED", environment: "LIVE" } } });
+    const r = createMoneyViews({ stateDir: d }).recurring();
+    assert.equal(r.live.contractedMrrUsd, 200); assert.equal(r.live.verifiedReceivedUsd, 100); assert.match(r.live.note, /not revenue/); assert.equal(r.sandbox.subscriptions.ACTIVE, 1);
+    assert.equal(createMoneyViews({ stateDir: tmp() }).recurring().state, "NOT_CONNECTED");
+  } finally { rm(d); }
+});

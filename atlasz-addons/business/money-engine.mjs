@@ -18,6 +18,7 @@ import { createDeliveryService } from "./delivery-service.mjs";
 import { createInvoiceService } from "./invoice-service.mjs";
 import { createPaymentVerifier } from "./payment-verification.mjs";
 import { createFinanceIntelligence } from "./finance-intelligence.mjs";
+import { createRecurringBilling } from "./recurring-billing.mjs";
 
 export function createMoneyEngine({ dir, ownerAuth, brain, environment = "SANDBOX", adapters = {}, extract, qaRunners = {}, now = () => new Date().toISOString(), tenantId = "ATLASZ", requiredCapabilities = ["screen"] } = {}) {
   if (!dir || !ownerAuth || !brain || typeof extract !== "function") throw new Error("DIR_OWNERAUTH_BRAIN_EXTRACT_REQUIRED");
@@ -30,6 +31,7 @@ export function createMoneyEngine({ dir, ownerAuth, brain, environment = "SANDBO
   const deals = createDealPipeline({ file: p("deals.json"), ownerAuth, environment, now, blackBox: bb, lookups: { communication: id => comms.get(id) } });
   const delivery = createDeliveryService({ file: p("deliveries.json"), ownerAuth, adapters: adapters.delivery ?? {}, lookups: { artifact: id => artifacts.get(id) }, environment, now, blackBox: bb });
   const invoices = createInvoiceService({ file: p("invoices.json"), ownerAuth, environment, now, blackBox: bb, lookups: { communication: id => comms.get(id), payments: id => payments.list().filter(x => x.invoiceId === id), job: id => jobs.get(id) } });
+  const recurring = createRecurringBilling({ file: p("subscriptions.json"), ownerAuth, invoices, lookups: { invoice: id => invoices.get(id) }, environment, now, blackBox: bb });
   const qa = createQaFactory({ security: brain.security, runners: qaRunners, blackBox: bb, now });
   const judges = createJudgePanel({ blackBox: bb, now });
   const finance = createFinanceIntelligence({ file: p("finance.json"), ledger, jobs, payments, environment, now });
@@ -165,9 +167,9 @@ export function createMoneyEngine({ dir, ownerAuth, brain, environment = "SANDBO
   /** Control Center panel data: recorded values only (zero when nothing is recorded). */
   function panel() {
     const fr = finance.report();
-    return { environment, deals: deals.summary(), jobs: Object.fromEntries(jobs.statuses.map(s => [s, jobs.list({ status: s }).length])), artifacts: artifacts.summary(), communications: comms.summary(), deliveries: delivery.summary(), invoices: invoices.summary(), payments: payments.summary(),
+    return { environment, deals: deals.summary(), jobs: Object.fromEntries(jobs.statuses.map(s => [s, jobs.list({ status: s }).length])), artifacts: artifacts.summary(), communications: comms.summary(), deliveries: delivery.summary(), invoices: invoices.summary(), payments: payments.summary(), recurring: recurring.report(),
       money: { forecastUsd: fr.FORECAST.totalUsd, estimateCostUsd: fr.ESTIMATE.costUsd, claimedNotVerifiedUsd: fr.CLAIM.amountUsd, actualUnverifiedCostUsd: fr.ACTUAL.costUsd, verifiedRevenueUsd: fr.VERIFIED_ACTUAL.revenueUsd, verifiedCostUsd: fr.VERIFIED_ACTUAL.costUsd, grossProfitUsd: fr.VERIFIED_ACTUAL.grossProfitUsd, verifiedNetProfitUsd: fr.VERIFIED_ACTUAL.netProfitUsd, countsAsRevenue: fr.VERIFIED_ACTUAL.countsAsRevenue }, judges: judges.list().map(x => x.id) };
   }
   return { discover, prepareOutreach, sendOutreach, recordReply, win, execute, checkWork, prepareDelivery, deliver, draftInvoice, issueInvoice, sendInvoice, claimPayment, verifyPayment, recordCost, close, trace, panel,
-    engines: { jobs, artifacts, qa, judges, comms, deals, delivery, invoices, payments, finance, ledger, search, evidence }, environment };
+    engines: { recurring, jobs, artifacts, qa, judges, comms, deals, delivery, invoices, payments, finance, ledger, search, evidence }, environment };
 }

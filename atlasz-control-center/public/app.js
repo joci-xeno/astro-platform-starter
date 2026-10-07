@@ -264,11 +264,12 @@ views.brain_command = async () => {
     table(["Operation", "Needs your approval"], b.ownerCommand.commands.map(c => [c.intent, c.consequential ? "yes" : "no"])), note("Command audit chain " + (b.ownerCommand.audit.ok ? "OK" : "BROKEN") + " · entries " + b.ownerCommand.audit.entries)];
 };
 async function moneyEngineNodes() {
-  const e = await api("/api/money-engine"), j = await api("/api/money-jobs"), g = await api("/api/money-agents");
+  const e = await api("/api/money-engine"), j = await api("/api/money-jobs"), g = await api("/api/money-agents"), rc = await api("/api/money-recurring");
   const kv = o => Object.entries(o ?? {}).map(([k, v]) => [k, String(v)]);
   const env = (t, x) => x ? [h("h3", {}, t), h("div", { class: "grid" }, card("Verified received (USD)", "$" + x.verifiedReceivedUsd), card("Claimed, NOT verified (USD)", "$" + x.claimedNotVerifiedUsd), card("Recorded actual cost (USD)", "$" + x.actualCostUsd), card("Outreach SENT", String(x.outreachSent))),
     table(["Area", "Status counts"], [["Deals", JSON.stringify(x.deals)], ["Jobs", JSON.stringify(x.jobs)], ["Invoices", JSON.stringify(x.invoices)], ["Payments", JSON.stringify(x.payments)], ["Deliveries", JSON.stringify(x.deliveries)]])] : [];
   return [h("h3", {}, "Engine ledger (recorded state)"), ncNote(e), e.live ? note(e.live.profitNote + " Verified net profit: $" + e.live.verifiedNetProfitUsd) : null, ...env("LIVE", e.live), ...env("SANDBOX — never revenue", e.sandbox),
+    h("h3", {}, "Recurring / subscriptions"), ncNote(rc), rc.live ? [note(rc.live.note), table(["Environment", "Subscriptions", "Contracted MRR (claim)", "Verified received (USD)"], [["LIVE", JSON.stringify(rc.live.subscriptions), "$" + rc.live.contractedMrrUsd, "$" + rc.live.verifiedReceivedUsd], ["SANDBOX (never revenue)", JSON.stringify(rc.sandbox.subscriptions), "—", "—"]])] : null,
     h("h3", {}, "Engine jobs"), ncNote(j), table(["Job", "Goal", "Status", "Env", "Agents", "Artifacts"], (j.items ?? []).map(x => [x.id, x.goal ?? "", pill(x.status), x.environment, (x.agents ?? []).join(","), String(x.artifacts)])),
     h("h3", {}, "Agents in capability graph (" + (g.count ?? 0) + " / 30)"), ncNote(g), g.items?.length ? [note(g.topologyOk ? "Topology: exactly 30 agents." : "Topology MISMATCH: expected 30, found " + g.count, g.topologyOk ? "" : "bad"), table(["Agent", "Team", "Health", "Runs", "OK"], g.items.map(a => [a.id, a.team ?? "", pill(a.health), String(a.runs), String(a.ok)]))] : null];
 }
