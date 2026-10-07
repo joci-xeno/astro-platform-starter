@@ -22511,14 +22511,14 @@
    "evidence": [
     "9 tests; sandbox payment never revenue; LIVE books stay at zero"
    ],
-   "blocker": "SANDBOX only: no real SENT/WON/PAID evidence exists; not hosted by the runtime yet",
+   "blocker": "No real SENT/WON/PAID evidence exists; runtime-hosted instance has no adapters",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED",
    "integration_status": "CONNECTED_SANDBOX",
    "test_status": "TESTED_SANDBOX",
    "classification": "SANDBOX",
-   "next_action": "Host in runtime; real provider adapters"
+   "next_action": "Real provider adapters and credentials; hosted in the runtime (LIVE env, no adapters) since this checkpoint"
   },
   {
    "id": "ATLASZ-PKG84-009",
@@ -22565,14 +22565,14 @@
    "evidence": [
     "5 tests incl. HTTP token protection, sandbox-vs-live separation, mutation check; real sandbox run read back through the view"
    ],
-   "blocker": "Runtime does not yet host the Money Engine, so panels show NOT_CONNECTED in a real install; Electron app not run",
+   "blocker": "Electron app not run on Windows; no real opportunities/payments recorded yet (hosted engine has no provider adapters)",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED",
    "integration_status": "CONNECTED_SANDBOX",
    "test_status": "TESTED_SANDBOX",
    "classification": "SANDBOX",
-   "next_action": "Host engine in supervisor; Windows run evidence"
+   "next_action": "Windows run evidence; provider adapters"
   }
  ]
 }
