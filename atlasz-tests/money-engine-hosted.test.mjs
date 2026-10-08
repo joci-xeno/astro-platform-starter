@@ -46,12 +46,17 @@ test("hosted typed tools: read-only built-ins work through the control chain; ba
   const dir = tmp("tt-");
   try {
     const rt = createRuntime({ dataDir: dir, retryBaseMs: 0, fetchImpl: async () => ({ ok: false, status: 500, json: async () => ({}), text: async () => "" }) });
-    const names = rt.tools.describe().map(t => t.name).sort(); assert.deepEqual(names, ["atlasz.queue", "inbox.summary", "money.panel"]);
+    const names = rt.tools.describe().map(t => t.name).sort(); assert.deepEqual(names, ["atlasz.queue", "inbox.summary", "money.panel", "pcc.add", "pcc.agenda", "pcc.complete", "pcc.summary"]);
     const A = { actor: { type: "AGENT", id: "E1" } };
     const q = await rt.tools.invoke("atlasz.queue", {}, A); assert.equal(q.status, "OK"); assert.equal(typeof q.result.full, "boolean");
     const mp = await rt.tools.invoke("money.panel", {}, A); assert.equal(mp.status, "OK"); assert.equal(mp.result.money.verifiedRevenueUsd, 0);
     assert.equal((await rt.tools.invoke("money.panel", { x: 1 }, A)).status, "INVALID_ARGUMENTS");
     assert.equal((await rt.tools.invoke("inbox.send_all", {}, A)).status, "UNKNOWN_TOOL");
-    assert.equal(rt.tools.stats().tools, 3);
+    assert.equal(rt.tools.stats().tools, 7);
+    // hosted scheduler: a due job calls a typed tool through the chain and the PCC item shows in the dashboard summary
+    const job = rt.scheduler.create({ name: "hosted", kind: "ONCE", spec: { at: new Date(Date.now() + 1000).toISOString() }, tool: "pcc.add", args: { type: "TASK", title: "hosted-created" } });
+    assert.equal(rt.dashboard().scheduler.total, 1); assert.equal(rt.dashboard().pcc.openTotal, 0);
+    await new Promise(r => setTimeout(r, 1100)); const t = await rt.scheduler.tick(); assert.equal(t.ran, 1, JSON.stringify(t));
+    assert.equal(rt.pcc.list()[0].source, "AGENT"); assert.equal(rt.dashboard().pcc.openTotal, 1); assert.equal(rt.scheduler.get(job.id).state, "DONE");
   } finally { rm(dir); }
 });

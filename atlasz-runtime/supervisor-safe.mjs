@@ -19,6 +19,8 @@ import { createBrainSystem } from "../atlasz-addons/brain/brain-system.mjs";
 import { createSearchPipeline } from "../atlasz-addons/brain/search-pipeline.mjs";
 import { createMoneyEngine } from "../atlasz-addons/business/money-engine.mjs";
 import { createUniversalInbox } from "../atlasz-addons/universal-inbox.mjs";
+import { createScheduler } from "../atlasz-addons/scheduler.mjs";
+import { createPersonalCommandCenter, registerPccTools } from "../atlasz-addons/personal-command-center.mjs";
 import { createToolRegistry } from "../atlasz-addons/typed-tools.mjs";
 import { createInboxPipeline } from "../atlasz-addons/business/inbox-pipeline.mjs";
 import { createOwnerControlSystem } from "../atlasz-addons/owner-control/owner-control-system.mjs";
@@ -122,6 +124,11 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
   tools.register({ name: "atlasz.queue", description: "Durable queue pressure (ready/leased/dead counts).", operation: "READ_STATUS", input: EMPTY, output: { type: "object", properties: { full: { type: "boolean" } }, additionalProperties: true }, handler: () => queue.pressure() });
   tools.register({ name: "money.panel", description: "Money Engine panel (LIVE vs SANDBOX separate; verified vs claimed).", operation: "READ_STATUS", input: EMPTY, output: { type: "object", properties: {}, additionalProperties: true }, handler: () => moneyEngine.panel() });
   tools.register({ name: "inbox.summary", description: "Inbox pipeline summary (counts only, no message bodies).", operation: "READ_STATUS", input: EMPTY, output: { type: "object", properties: {}, additionalProperties: true }, handler: () => inboxPipeline.summary() });
+  // Personal Command Center + durable scheduler: schedules call ONLY registered typed tools (control chain on every run, actor SCHEDULER). Emergency stop / Safe Mode halt the whole tick.
+  const pcc = createPersonalCommandCenter({ file: path.join(dataDir, "pcc", "items.json"), now, blackBox: brain.blackBox });
+  registerPccTools(tools, pcc);
+  const scheduler = createScheduler({ file: path.join(dataDir, "scheduler", "schedules.json"), tools, now, blackBox: brain.blackBox,
+    gate: o => { const e = emergencyGate(o); if (!e.allowed) return e; return safeMode.gate({ ...o, write: true }); } });
   const brainSafe = fn => { try { return fn(); } catch (e) { try { console.log(JSON.stringify({ at: now(), type: "brain_error", error: String(e.message).slice(0, 120) })); } catch { /* ignore */ } return null; } };
   brainSafe(() => brain.dispatch?.resumeAll());                           // restart: in-flight governed jobs go back to QUEUED (attempts, plans, checkpoints preserved)
   const seen = new Set(state.candidates.map(c => c.id));
@@ -331,7 +338,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
       agents: state.agents, blockers, sourceErrors: state.sourceErrors, emergency: emergencyStatus(), safeMode: safeMode.status(), pendingApprovals: approvalRequests.pending().length, queue: queue.stats(), watchdog: watchdog.status(),
       selfCheck: { level: selfCheck.level, problems: selfCheck.checks.filter(c => c.status !== "OK").map(c => ({ id: c.id, status: c.status, detail: c.detail })) },
       vault: vault.status(), internalAddons: addonSnapshot(),
-      brain: brainSafe(() => brain.summary()) ?? { state: "ERROR" }, moneyEngine: brainSafe(() => moneyEngine.panel()) ?? { state: "ERROR" }, behavior: brainSafe(() => brain.behavior.summary()) ?? { state: "ERROR" }, inbox: brainSafe(() => ({ ...inbox.counts(), pipeline: inboxPipeline.summary() })) ?? { state: "ERROR" }, ownerControl: brainSafe(() => ownerControl.status()) ?? { state: "ERROR" }, ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
+      brain: brainSafe(() => brain.summary()) ?? { state: "ERROR" }, scheduler: brainSafe(() => scheduler.summary()) ?? { state: "ERROR" }, pcc: brainSafe(() => pcc.summary()) ?? { state: "ERROR" }, moneyEngine: brainSafe(() => moneyEngine.panel()) ?? { state: "ERROR" }, behavior: brainSafe(() => brain.behavior.summary()) ?? { state: "ERROR" }, inbox: brainSafe(() => ({ ...inbox.counts(), pipeline: inboxPipeline.summary() })) ?? { state: "ERROR" }, ownerControl: brainSafe(() => ownerControl.status()) ?? { state: "ERROR" }, ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
     };
   }
   const watchdog = createWatchdog({ onEscalate: e => safeMode.enter("WATCHDOG:" + e.id, { detail: e.detail }) });
@@ -356,10 +363,11 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
       schedule(() => search(i), 300000 + i * 10000);
     }
     for (let i = 5; i < 30; i++) schedule(() => execute(i), 1000 + (i - 5) * 50);
+    schedule(() => brainSafe(() => scheduler.tick()), 30000);               // durable scheduler tick (typed tools only; at-least-once)
     schedule(() => brainSafe(() => brain.behavior.scan()), 60000);          // behaviour anomaly scan over the tamper-evident Black Box (detect + recommend only)
   }
   function stop() { stopping = true; watchdog.stop(); for (const t of timers) clearTimeout(t); save(); }
-  return { tools, inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
+  return { tools, pcc, scheduler, inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
 }
 
 if (process.env.ATLASZ_TEST_MODE !== "1") {

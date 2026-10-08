@@ -1,6 +1,6 @@
 # ATLASZ V7.3 — 85-capability audit
 
-Statuses: MISSING 15, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 5, total 85
+Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total 85
 
 ## M01 — Universal AI Browser Sidebar — **MISSING**
 - Registry links (candidates): V73-S19-001, V73-S19-002, V73-S19-003, V73-S19-004, V73-S19-005, V73-S19-006
@@ -242,12 +242,12 @@ Statuses: MISSING 15, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 5, total
 - Plan: Keep; reuse in Knowledge Projects
 - Tests required: (done) + regression
 
-## C12 — Scheduled and Recurring Tasks — **MISSING**
+## C12 — Scheduled and Recurring Tasks — **VERIFIED_WORKING**
 - Registry links (candidates): V73-S10-001, V73-S10-002, V73-S10-003, V73-S10-004, V73-S10-005, V73-S10-006
-- Modules: supervisor-safe.mjs (in-process timers); business/recurring-billing.mjs (billing periods); follow-up-engine.mjs
-- Evidence: Recurring billing generateDue is idempotent, but there is no general durable scheduler
-- Missing: Durable schedule store, retry policy, owner controls, audited results
-- Integration gaps / blockers: Only timers inside the supervisor; nothing survives restart as a schedule
+- Modules: atlasz-addons/scheduler.mjs; atlasz-addons/typed-tools.mjs; atlasz-addons/personal-command-center.mjs; supervisor-safe.mjs (tick every 30s); business/recurring-billing.mjs
+- Evidence: scheduler.test (7: restart persistence, outage = one run + missedRuns, exponential backoff, failed-ONCE/paused-by-failures, approval-gated external tools, emergency-stop halt, crash->INTERRUPTED, corrupt file never replaced; 8 mutation checks caught, 1 equivalent), personal-command-center.test E2E (scheduled job -> typed tool -> PCC item, survives restart, halted by stop), money-engine-hosted.test (hosted tick)
+- Missing: Cron expressions (ONCE/INTERVAL/DAILY only); exactly-once delivery (at-least-once, disclosed); calendar-aware (timezone/DST) schedules
+- Integration gaps / blockers: Runs inside the supervisor process; the Control Center only reads the persisted schedule file (no schedule creation UI yet)
 - Security: Schedules cannot grant authority; external actions still go through the control chain
 - Plan: Build durable scheduler (shared with P06/P08/P11)
 - Tests required: restart persistence, catch-up limit, retry/backoff, kill-switch/safe-mode stop, owner pause
@@ -625,8 +625,8 @@ Statuses: MISSING 15, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 5, total
 ## A11 — Personalized Assistance — **PARTIAL**
 - Registry links (candidates): V73-S04-010, V73-S06-001, V73-S06-002, V73-S06-003, V73-S06-004, V73-S06-005
 - Modules: master-brief.mjs (prefs); human-core.mjs; owner-keystore.mjs
-- Evidence: control-center-home.test prefs
-- Missing: Preference/history store beyond language+signature
+- Evidence: control-center-home.test prefs; personal-command-center.test (owner-local day via utcOffsetMinutes, tasks/reminders/deadlines, hu/en brief)
+- Missing: Preference/history store beyond language, signature and UTC offset; suggestion engine (A08)
 - Integration gaps / blockers: Limited prefs
 - Security: No hardcoded personal data in reusable code (config only)
 - Plan: Profile store (config-driven) for Personal Command Center
@@ -725,8 +725,8 @@ Statuses: MISSING 15, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 5, total
 ## P08 — Interrupted Task Continuation — **PARTIAL**
 - Registry links (candidates): V73-S03-018, V73-S10-012, V73-S10-016, V73-S14-007, V73-S39-004, V73-S46-010
 - Modules: durable-queue.mjs; checkpoint-engine.mjs; brain/planning-brain.mjs; startup-self-check.mjs
-- Evidence: durable-queue.test (replay, lease, DLQ), canonical-queue-safety.test
-- Missing: Task-level resume contract across modules
+- Evidence: durable-queue.test (replay, lease, DLQ), canonical-queue-safety, scheduler.test (crash mid-run recorded INTERRUPTED and rerun)
+- Missing: Task-level resume contract for planning-brain tasks across a real process restart (module-level only)
 - Integration gaps / blockers: Per-module durable; no unified resume test across restart
 - Security: Corrupt state is never replaced
 - Plan: End-to-end restart scenario test + resume contract

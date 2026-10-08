@@ -95,7 +95,7 @@
     52
    ]
   },
-  "item_verified_count": 911
+  "item_verified_count": 913
  },
  "requirements": [
   {
@@ -22869,6 +22869,60 @@
    "test_status": "TESTED_SANDBOX",
    "classification": "SANDBOX",
    "next_action": "Register more domain tools (documents, CRM) and attach a model when a provider is live"
+  },
+  {
+   "id": "ATLASZ-PKG84-022",
+   "title": "Durable scheduler (85-cap C12): ONCE/INTERVAL/DAILY schedules that call only registered typed tools via the control chain (actor SCHEDULER); persisted atomically; exponential retry; failed/paused-by-failures states; approval-gated external tools (AWAITING_APPROVAL); emergency stop/Safe Mode halts the tick; crash mid-run recorded INTERRUPTED (at-least-once); outage = one run + missedRuns; corrupt file never replaced; hosted in runtime (30s tick)",
+   "level": "item",
+   "section": 77,
+   "description": "Durable scheduler (85-cap C12): ONCE/INTERVAL/DAILY schedules that call only registered typed tools via the control chain (actor SCHEDULER); persisted atomically; exponential retry; failed/paused-by-failures states; approval-gated external tools (AWAITING_APPROVAL); emergency stop/Safe Mode halts the tick; crash mid-run recorded INTERRUPTED (at-least-once); outage = one run + missedRuns; corrupt file never replaced; hosted in runtime (30s tick)",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/scheduler.mjs; atlasz-runtime/supervisor-safe.mjs; atlasz-control-center/core.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/scheduler.test.mjs",
+    "atlasz-tests/personal-command-center.test.mjs",
+    "atlasz-tests/money-engine-hosted.test.mjs"
+   ],
+   "evidence": [
+    "7+1+1 tests; 8 mutation checks caught (1 equivalent); at-least-once delivery; no cron expressions or DST-aware schedules; no schedule-creation UI"
+   ],
+   "blocker": "None external",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Cron-style specs, timezone/DST rules, Control Center creation form"
+  },
+  {
+   "id": "ATLASZ-PKG84-023",
+   "title": "Personal Command Center (tasks, reminders, deadlines) wired into Daily Brief and Control Center: computed agenda (overdue/today in owner local day/upcoming/reminders), provenance (OWNER vs AGENT), tenant isolation, second-writer safe reload, corrupt store never replaced; empty = nothing recorded; reminders are surfaced only (no notification provider)",
+   "level": "item",
+   "section": 77,
+   "description": "Personal Command Center (tasks, reminders, deadlines) wired into Daily Brief and Control Center: computed agenda (overdue/today in owner local day/upcoming/reminders), provenance (OWNER vs AGENT), tenant isolation, second-writer safe reload, corrupt store never replaced; empty = nothing recorded; reminders are surfaced only (no notification provider)",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/personal-command-center.mjs; atlasz-addons/master-brief.mjs; atlasz-control-center/core.mjs; atlasz-control-center/server.mjs; atlasz-control-center/public/app.js",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/personal-command-center.test.mjs"
+   ],
+   "evidence": [
+    "6 tests incl. scheduler->PCC->brief E2E and Control Center HTTP; 8 mutation checks caught; cross-process write window disclosed"
+   ],
+   "blocker": "No push/notification provider; no calendar connector",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Calendar/email connectors (EXTERNAL); recurring-task templates; suggestion engine (A08)"
   }
  ]
 }

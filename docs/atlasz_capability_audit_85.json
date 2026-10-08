@@ -74,10 +74,10 @@
   }
  },
  "summary": {
-  "MISSING": 15,
+  "MISSING": 14,
   "PARTIAL": 42,
   "EXTERNAL_BLOCKER": 23,
-  "VERIFIED_WORKING": 5,
+  "VERIFIED_WORKING": 6,
   "total": 85
  },
  "capabilities": [
@@ -641,15 +641,15 @@
     "V73-S10-005",
     "V73-S10-006"
    ],
-   "modules": "supervisor-safe.mjs (in-process timers); business/recurring-billing.mjs (billing periods); follow-up-engine.mjs",
-   "status": "MISSING",
-   "evidence": "Recurring billing generateDue is idempotent, but there is no general durable scheduler",
-   "missing": "Durable schedule store, retry policy, owner controls, audited results",
-   "integration_gaps": "Only timers inside the supervisor; nothing survives restart as a schedule",
+   "modules": "atlasz-addons/scheduler.mjs; atlasz-addons/typed-tools.mjs; atlasz-addons/personal-command-center.mjs; supervisor-safe.mjs (tick every 30s); business/recurring-billing.mjs",
+   "status": "VERIFIED_WORKING",
+   "evidence": "scheduler.test (7: restart persistence, outage = one run + missedRuns, exponential backoff, failed-ONCE/paused-by-failures, approval-gated external tools, emergency-stop halt, crash->INTERRUPTED, corrupt file never replaced; 8 mutation checks caught, 1 equivalent), personal-command-center.test E2E (scheduled job -> typed tool -> PCC item, survives restart, halted by stop), money-engine-hosted.test (hosted tick)",
+   "missing": "Cron expressions (ONCE/INTERVAL/DAILY only); exactly-once delivery (at-least-once, disclosed); calendar-aware (timezone/DST) schedules",
+   "integration_gaps": "Runs inside the supervisor process; the Control Center only reads the persisted schedule file (no schedule creation UI yet)",
    "security": "Schedules cannot grant authority; external actions still go through the control chain",
    "plan": "Build durable scheduler (shared with P06/P08/P11)",
    "tests_required": "restart persistence, catch-up limit, retry/backoff, kill-switch/safe-mode stop, owner pause",
-   "final_status": "MISSING",
+   "final_status": "VERIFIED_WORKING",
    "shared_infrastructure": [
     "DURABLE_SCHEDULER"
    ]
@@ -1463,8 +1463,8 @@
    ],
    "modules": "master-brief.mjs (prefs); human-core.mjs; owner-keystore.mjs",
    "status": "PARTIAL",
-   "evidence": "control-center-home.test prefs",
-   "missing": "Preference/history store beyond language+signature",
+   "evidence": "control-center-home.test prefs; personal-command-center.test (owner-local day via utcOffsetMinutes, tasks/reminders/deadlines, hu/en brief)",
+   "missing": "Preference/history store beyond language, signature and UTC offset; suggestion engine (A08)",
    "integration_gaps": "Limited prefs",
    "security": "No hardcoded personal data in reusable code (config only)",
    "plan": "Profile store (config-driven) for Personal Command Center",
@@ -1687,8 +1687,8 @@
    ],
    "modules": "durable-queue.mjs; checkpoint-engine.mjs; brain/planning-brain.mjs; startup-self-check.mjs",
    "status": "PARTIAL",
-   "evidence": "durable-queue.test (replay, lease, DLQ), canonical-queue-safety.test",
-   "missing": "Task-level resume contract across modules",
+   "evidence": "durable-queue.test (replay, lease, DLQ), canonical-queue-safety, scheduler.test (crash mid-run recorded INTERRUPTED and rerun)",
+   "missing": "Task-level resume contract for planning-brain tasks across a real process restart (module-level only)",
    "integration_gaps": "Per-module durable; no unified resume test across restart",
    "security": "Corrupt state is never replaced",
    "plan": "End-to-end restart scenario test + resume contract",

@@ -15,6 +15,7 @@ import { readAuditFile, verifyChain } from "../atlasz-addons/audit-chain.mjs";
 import { createFinancialLedger } from "../atlasz-addons/financial-ledger.mjs";
 import { createLocalUpdateAdapters, SELFTEST } from "../atlasz-addons/local-update-adapters.mjs";
 import { createPluginManager } from "../atlasz-addons/plugin-manager.mjs";
+import { createPersonalCommandCenter } from "../atlasz-addons/personal-command-center.mjs";
 import { buildDailyBrief, answerQuery, DEFAULT_PREFS, briefDue, markBriefShown } from "../atlasz-addons/master-brief.mjs";
 import { assessImpact } from "../atlasz-addons/human-core.mjs";
 import { createMobileApi } from "../atlasz-addons/mobile-api.mjs";
@@ -127,8 +128,24 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
       ALERTS: async () => { const s = await status(); return { blockers: s.blockers, safeMode: s.safeMode.mode === "SAFE_MODE" ? s.safeMode.reason : null, dead: s.queue?.dead ?? 0 }; }, MONEY: async () => { const f = finance(); return { verifiedRevenueUsd: f.revenue.verifiedReceivedUsd, costsUsd: f.costs.totalUsd, verifiedNetProfitUsd: f.profit.verifiedNetUsd, unconfirmedPipelineUsd: f.revenue.unconfirmedPipelineUsd }; },
       JOBS: async () => opportunities().items.slice(-20).map(l => ({ id: l.id, title: l.title, outreach: l.outreachStatus, project: l.projectStatus })), HEALTH: async () => { const d = await doctor(); return { level: d.level, findings: d.findings.length }; } } }));
   const briefGate = path.join(stateDir, "brief-gate.json");
+  // Personal Command Center: tasks / reminders / deadlines. The owner's local day comes from the saved preference (utcOffsetMinutes), default UTC.
+  const pccFile = path.join(stateDir, "pcc", "items.json");
+  const pccInst = () => createPersonalCommandCenter({ file: pccFile, utcOffsetMinutes: Number(prefs().utcOffsetMinutes) || 0 });
+  const schedules = () => { const f = path.join(stateDir, "scheduler", "schedules.json"); if (!fs.existsSync(f)) return { state: "NOT_CONNECTED", note: "No schedules recorded.", jobs: [] }; try { const j = Object.values(JSON.parse(fs.readFileSync(f, "utf8")).jobs ?? {}); return { state: "CONNECTED", delivery: "AT_LEAST_ONCE", jobs: j.map(x => ({ id: x.id, name: x.name, kind: x.kind, tool: x.tool, state: x.state, nextRunAt: x.nextRunAt, lastStatus: x.lastResult?.status ?? null, missedRuns: x.missedRuns, interruptedRuns: x.interruptedRuns ?? 0 })) }; } catch { return { state: "UNREADABLE", jobs: [] }; } };
+  const pcc = () => { try { const c = pccInst(); return { state: "CONNECTED", agenda: c.agenda(), open: c.list({ status: "OPEN" }), summary: c.summary(), schedules: schedules() }; } catch (e) { return { state: "UNREADABLE", error: String(e.message) }; } };
+  function pccAction({ op, id, ...rest } = {}) {
+    const c = pccInst();
+    switch (op) {
+      case "add": return c.add({ ...rest, source: "OWNER" });
+      case "complete": return c.complete(id, "OWNER");
+      case "cancel": return c.cancel(id, "OWNER");
+      case "ack": return c.ack(id);
+      case "reschedule": return c.reschedule(id, { dueAt: rest.dueAt, remindAt: rest.remindAt }, "OWNER");
+      default: throw new Error("UNKNOWN_PCC_OP");
+    }
+  }
   async function brief({ markShown = false, force = false } = {}) {
-    const gate = briefDue({ file: briefGate, force }), b = buildDailyBrief({ status: await status(), finance: finance(), approvals: approvals(), prefs: prefs(), moneyEngine: moneyViews.money(), crmInbox: moneyViews.crmInbox(), behavior: (await brainViews.all())?.behavior });
+    const gate = briefDue({ file: briefGate, force }), b = buildDailyBrief({ status: await status(), finance: finance(), approvals: approvals(), prefs: prefs(), moneyEngine: moneyViews.money(), crmInbox: moneyViews.crmInbox(), behavior: (await brainViews.all())?.behavior, agenda: (() => { try { return pccInst().agenda(); } catch { return null; } })() });
     if (markShown && gate.due) markBriefShown({ file: briefGate });
     return { prefs: prefs(), firstOfDay: gate.due, ...b };
   }
@@ -358,6 +375,6 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   };
 
   const moneyViews = createMoneyViews({ stateDir });
-  return { moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { pcc, pccAction, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }
