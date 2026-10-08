@@ -71,17 +71,17 @@ test("generate: owner only, never overwrites, atomic, secrets redacted, hostile 
 });
 
 test("status tracks edits: a changed file is reported and an edited-then-tested folder keeps its own hash", async () => {
-  const stub = async ({ root }) => ({ ok: true, ran: 1, passed: 1, failed: 0, results: [], isolation: "STUB" });
+  const stub = async ({ root }) => ({ ok: true, hash: analyzeRepo(root).hash, ran: 1, passed: 1, failed: 0, results: [], isolation: "STUB" });
   const { base, repoRoot, b } = mk({ run: stub }); try {
     b.generate(SPECS["csv-to-json"], { actor: "OWNER" }); fs.appendFileSync(path.join(repoRoot, "csv", "src", "index.mjs"), "// edit\n"); assert.equal(b.status("csv").status, "MODIFIED_BEFORE_TEST");
-    const t = await b.test("csv", { ownerAuth: auth }); assert.equal(t.ok, true); assert.equal(t.status, "TESTS_PASSED_IN_SANDBOX");
+    const t = await b.test("csv", { ownerAuth: auth }); assert.equal(t.ok, true); assert.equal(t.status, "MODIFIED_AFTER_GENERATION", "a pass on tampered (non-test) files is never reported as passing the generated prototype");
     fs.appendFileSync(path.join(repoRoot, "csv", "src", "index.mjs"), "// edit 2\n"); assert.equal(b.status("csv").status, "MODIFIED_AFTER_TEST", "a passed result does not carry over to changed files");
     assert.equal((await b.test("ghost", {})).reason, "PROTOTYPE_NOT_FOUND");
   } finally { rm(base); }
 });
 
 test("the gate: zero tests or any failing test never counts as passed; a refused run records nothing", async () => {
-  let res = { ok: true, ran: 0, passed: 0, failed: 0, results: [] }; const { base, b } = mk({ run: async () => res }); try {
+  let res = { ok: true, ran: 0, passed: 0, failed: 0, results: [] }; const { base, b } = mk({ run: async o => (res.ok ? { ...res, hash: analyzeRepo(o.root).hash } : res) }); try {
     b.generate(SPECS["csv-to-json"], { actor: "OWNER" });
     await b.test("csv", { ownerAuth: auth }); assert.equal(b.status("csv").status, "TESTS_FAILED", "ran = 0 is not a pass");
     res = { ok: true, ran: 2, passed: 1, failed: 1, results: [] }; await b.test("csv", { ownerAuth: auth }); assert.equal(b.status("csv").status, "TESTS_FAILED");
@@ -105,7 +105,7 @@ test("generated prototypes really pass their own generated tests in the restrict
     // a deliberately broken prototype must FAIL its generated tests (the gate can fail)
     const f = path.join(repoRoot, "csv", "src", "index.mjs"); fs.writeFileSync(f, fs.readFileSync(f, "utf8").replace('throw new SyntaxError("unterminated quote")', "return []"));
     const sub = "csv#" + analyzeRepo(path.join(repoRoot, "csv")).hash; const r = await b.test("csv", { ownerAuth: auth, isStopped: () => false, ownerApproval: ap("REPO_TEST_RUN", sub) });
-    assert.equal(r.ok, true); assert.ok(r.failed >= 1); assert.equal(b.status("csv").status, "TESTS_FAILED");
+    assert.equal(r.ok, true); assert.ok(r.failed >= 1); { const st = b.status("csv"); assert.equal(st.status, "MODIFIED_AFTER_GENERATION"); assert.equal(st.tested.passed, false); }
   } finally { rm(base); rm(scr); }
 });
 
@@ -151,5 +151,26 @@ test("preview: a static page is returned for a sandboxed iframe with CSS inlined
     fs.rmSync(path.join(repoRoot, "page", "style.css")); fs.symlinkSync("/etc/hostname", path.join(repoRoot, "page", "style.css")); assert.doesNotMatch(b.previewPage("page").srcdoc, new RegExp(fs.readFileSync("/etc/hostname", "utf8").trim()), "a symlinked stylesheet is not followed"); assert.match(b.previewPage("page").srcdoc, /<style><\/style>/);
     const keep = fs.readFileSync(path.join(repoRoot, "page", "index.html"), "utf8"); fs.writeFileSync(path.join(repoRoot, "page", "index.html"), keep + "x".repeat(100001)); assert.equal(b.previewPage("page").reason, "PAGE_UNAVAILABLE", "oversize page"); fs.writeFileSync(path.join(repoRoot, "page", "index.html"), keep);
     fs.rmSync(path.join(repoRoot, "page", "index.html")); fs.symlinkSync("/etc/passwd", path.join(repoRoot, "page", "index.html")); assert.equal(b.previewPage("page").reason, "PAGE_UNAVAILABLE", "a symlink is not followed");
+  } finally { rm(base); }
+});
+
+test("verification fixes H2/M1: a pass is bound to the hash the run was approved for; content changed mid-run voids it; edits to any file void a pass", async () => {
+  const { base, repoRoot, b } = mk({ run: async o => ({ ok: true, hash: analyzeRepo(o.root).hash, contentUnchanged: false, ran: 1, passed: 1, failed: 0, results: [] }) }); try {
+    b.generate(SPECS["csv-to-json"], { actor: "OWNER" });
+    const t = await b.test("csv", { ownerAuth: auth }); assert.equal(t.ok, true); assert.equal(b.status("csv").tested.passed, false, "files changed during the run: no pass is recorded");
+    assert.notEqual(b.status("csv").status, "TESTS_PASSED_IN_SANDBOX");
+  } finally { rm(base); }
+  const m2 = mk({ run: async () => ({ ok: true, ran: 1, passed: 1, failed: 0, results: [] }) }); try {
+    m2.b.generate(SPECS["csv-to-json"], { actor: "OWNER" }); assert.equal((await m2.b.test("csv", { ownerAuth: auth })).reason, "RUN_HASH_MISSING");
+  } finally { rm(m2.base); }
+  const m3 = mk({ run: async o => ({ ok: true, hash: analyzeRepo(o.root).hash, contentUnchanged: true, ran: 1, passed: 1, failed: 0, results: [] }) }); try {
+    m3.b.generate(SPECS["csv-to-json"], { actor: "OWNER" }); await m3.b.test("csv", { ownerAuth: auth }); assert.equal(m3.b.status("csv").status, "TESTS_PASSED_IN_SANDBOX");
+    fs.appendFileSync(path.join(m3.repoRoot, "csv", "README.md"), "\nchanged\n"); assert.equal(m3.b.status("csv").status, "MODIFIED_AFTER_TEST");
+    await m3.b.test("csv", { ownerAuth: auth }); assert.equal(m3.b.status("csv").status, "MODIFIED_AFTER_GENERATION", "re-testing tampered content does not restore the pass");
+  } finally { rm(m3.base); }
+});
+test("verification fix M1: the recorded hash is the one the run was approved for, even if files change right after the run", async () => {
+  const { base, repoRoot, b } = mk({ run: async o => { const h = analyzeRepo(o.root).hash; fs.appendFileSync(path.join(o.root, "src", "index.mjs"), "// sneaky\n"); return { ok: true, hash: h, contentUnchanged: true, ran: 1, passed: 1, failed: 0, results: [] }; } }); try {
+    b.generate(SPECS["csv-to-json"], { actor: "OWNER" }); await b.test("csv", { ownerAuth: auth }); assert.equal(b.status("csv").status, "MODIFIED_AFTER_TEST");
   } finally { rm(base); }
 });

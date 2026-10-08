@@ -27,7 +27,7 @@ const done = (svg, extra = {}) => {
 };
 export const svgToDataUri = svg => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 const frame = (w, h, title, desc, body) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-labelledby="t d"><title id="t">${esc(title)}</title><desc id="d">${esc(desc)}</desc><rect width="${w}" height="${h}" fill="#ffffff"/>${body}</svg>`;
-function niceTicks(lo, hi, n = 5) { if (lo === hi) { lo -= 1; hi += 1; } const span = hi - lo, step0 = span / n, mag = 10 ** Math.floor(Math.log10(step0)), r = step0 / mag, step = (r < 1.5 ? 1 : r < 3 ? 2 : r < 7 ? 5 : 10) * mag, a = Math.floor(lo / step) * step, b = Math.ceil(hi / step) * step, t = []; for (let v = a; v <= b + step / 2; v += step) t.push(Math.round(v / step) * step); return { a, b, t }; }
+function niceTicks(lo, hi, n = 5) { if (!Number.isFinite(lo) || !Number.isFinite(hi)) { lo = 0; hi = 1; } if (Math.abs(hi - lo) <= Math.max(Math.abs(lo), Math.abs(hi)) * 1e-9) { const pad = Math.max(Math.abs(lo) * 1e-3, 1); lo -= pad; hi += pad; } const span = hi - lo, step0 = span / n, mag = 10 ** Math.floor(Math.log10(step0)), r = step0 / mag, step = (r < 1.5 ? 1 : r < 3 ? 2 : r < 7 ? 5 : 10) * mag, a = Math.floor(lo / step) * step, b = Math.ceil(hi / step) * step, t = []; for (let i = 0, v = a; v <= b + step / 2 && i < 50; i++, v = a + i * step) t.push(Math.round(v / step) * step); return { a, b, t }; }
 const tickLabel = v => Math.abs(v) >= 1e6 || (v !== 0 && Math.abs(v) < 1e-3) ? v.toExponential(1) : String(+v.toPrecision(4));
 
 function renderChart_(spec, { width = 640, height = 360 } = {}) {

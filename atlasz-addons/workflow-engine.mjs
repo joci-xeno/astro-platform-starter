@@ -10,10 +10,10 @@ import crypto from "node:crypto";
 import { createStore, clone } from "./business/store.mjs";
 
 export const LIMITS = Object.freeze({ maxTemplates: 200, maxSteps: 50, maxParams: 20, maxParamChars: 10000, maxInstances: 2000, maxBatchItems: 500, maxBatches: 100, stepTimeoutMs: 10000, maxRetries: 3, maxOutputChars: 20000 });
-const SECRET = /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)|(?<![A-Za-z0-9])sk-[A-Za-z0-9_-]{20,}|(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}\b|(?<![A-Za-z0-9])ghp_[A-Za-z0-9]{30,}/g;
-const redactStr = s => { SECRET.lastIndex = 0; return s.replace(SECRET, "[redacted]"); };
+import { scrub, containsSecret } from "./secret-patterns.mjs";
+const redactStr = s => scrub(s, "[redacted]");
 const redactDeep = v => typeof v === "string" ? redactStr(v) : Array.isArray(v) ? v.map(redactDeep) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, redactDeep(x)])) : v;
-const hasSecret = v => { if (typeof v === "string") { SECRET.lastIndex = 0; return SECRET.test(v); } if (Array.isArray(v)) return v.some(hasSecret); if (v && typeof v === "object") return Object.values(v).some(hasSecret); return false; };
+const hasSecret = v => { if (typeof v === "string") return containsSecret(v); if (Array.isArray(v)) return v.some(hasSecret); if (v && typeof v === "object") return Object.keys(v).some(k => containsSecret(k)) || Object.values(v).some(hasSecret); return false; };
 const rid = p => p + crypto.randomBytes(6).toString("hex");
 const ID = /^[a-z][a-z0-9_-]{0,39}$/, PARAM_TYPES = new Set(["string", "number", "boolean", "enum"]);
 const PLACE = /\{\{\s*(p|s)\.([A-Za-z0-9_.-]+)\s*\}\}/g, ONLY = /^\{\{\s*(p|s)\.([A-Za-z0-9_.-]+)\s*\}\}$/;
@@ -74,7 +74,8 @@ export function createWorkflowEngine({ file = null, actions = {}, now = () => ne
   const getTemplate = (id, { tenantId } = {}) => { const t = d.templates[tenantId + ":" + id]; return t ? { ok: true, template: clone(t) } : { ok: false, reason: "NOT_FOUND" }; };
 
   // ---------------- instances
-  const inst = (id, tenantId) => { const i = d.instances[id]; return i && i.tenantId === tenantId ? i : null; };
+  const inst = (id, tenantId) => { const i = typeof id === "string" && Object.hasOwn(d.instances, id) ? d.instances[id] : null; return i && i.tenantId === tenantId ? i : null; };
+  const bat = (id, tenantId) => { const b = typeof id === "string" && Object.hasOwn(d.batches, id) ? d.batches[id] : null; return b && b.tenantId === tenantId ? b : null; };
   function bindParams(t, given) {
     const out = {};
     if (given !== undefined && (!given || typeof given !== "object" || Array.isArray(given))) return { ok: false, reason: "PARAMS_INVALID" };
@@ -91,7 +92,12 @@ export function createWorkflowEngine({ file = null, actions = {}, now = () => ne
   function start({ tenantId, templateId, params } = {}) {
     const t = d.templates[tenantId + ":" + templateId]; if (!t) return { ok: false, reason: "TEMPLATE_NOT_FOUND" };
     const b = bindParams(t, params); if (!b.ok) return b;
-    if (Object.keys(d.instances).length >= L.maxInstances) return { ok: false, reason: "TOO_MANY_INSTANCES" };
+    if (Object.keys(d.instances).length >= L.maxInstances) {                                     // make room by archiving the oldest FINISHED instances that no batch item points at; unfinished work is never dropped
+      const used = new Set(Object.values(d.batches).flatMap(b => (b.items ?? []).map(x => x.instanceId)));
+      const old = Object.values(d.instances).filter(x => ["DONE", "DONE_WITH_ERRORS", "CANCELLED", "FAILED"].includes(x.status) && !used.has(x.id) && !running.has(x.id)).sort((a, b) => (a.updatedAt < b.updatedAt ? -1 : 1));
+      for (const x of old.slice(0, Math.max(1, Math.ceil(L.maxInstances / 10)))) delete d.instances[x.id];
+      if (Object.keys(d.instances).length >= L.maxInstances) return { ok: false, reason: "TOO_MANY_INSTANCES" };
+    }
     const i = { id: rid("wf_"), tenantId, templateId, templateVersion: t.version, params: b.params, status: "PENDING", reason: null, createdAt: now(), updatedAt: now(), checkpoints: 0,
       steps: t.steps.map(s => ({ id: s.id, action: s.action, args: clone(s.args), onError: s.onError, retries: s.retries, status: "PENDING", attempts: 0, output: null, error: null, startedAt: null, finishedAt: null })) };
     d.instances[i.id] = i; save(); return { ok: true, id: i.id };
@@ -139,7 +145,8 @@ export function createWorkflowEngine({ file = null, actions = {}, now = () => ne
         if (!a) { s.status = "FAILED"; s.error = "ACTION_NOT_AVAILABLE"; touch(i, "FAILED", "ACTION_NOT_AVAILABLE:" + s.id); return { ok: true, status: "FAILED", reason: i.reason }; }
         const args = resolve(i, s.args);
         if (!args.ok) { s.status = "FAILED"; s.error = args.reason; touch(i, "FAILED", args.reason); return { ok: true, status: "FAILED", reason: args.reason }; }
-        s.status = "RUNNING"; s.startedAt = now(); s.args = args.value; if (!keepRunning(i)) return { ok: true, status: "CANCELLED" };                 // checkpoint BEFORE the step
+        if (hasSecret(args.value)) { s.status = "FAILED"; s.error = "SECRET_IN_RESOLVED_ARGS"; touch(i, "FAILED", "SECRET_IN_RESOLVED_ARGS:" + s.id); return { ok: true, status: "FAILED", reason: i.reason }; }   // e.g. a key split over two parameters
+        s.status = "RUNNING"; s.startedAt = now(); s.resolvedArgs = redactDeep(args.value); if (!keepRunning(i)) return { ok: true, status: "CANCELLED" };                 // checkpoint BEFORE the step
         let lastErr = null, done = false, unknownOutcome = false; const safeToRepeat = a.idempotent === true, tries = safeToRepeat ? s.retries : 0;
         for (let att = 0; att <= tries && !done; att++) {
           s.attempts++;
@@ -149,8 +156,8 @@ export function createWorkflowEngine({ file = null, actions = {}, now = () => ne
             s.output = safe; s.status = "DONE"; s.error = null; s.finishedAt = now(); done = true;
           } catch (e) { lastErr = redactStr(String(e?.message ?? e)).slice(0, 300); if (!safeToRepeat && lastErr === "STEP_TIMEOUT") { unknownOutcome = true; break; } }       // a timed-out side-effecting step may still be running or may have finished: never guess
         }
-        if (unknownOutcome) { s.status = "NEEDS_REVIEW"; s.error = "STEP_OUTCOME_UNKNOWN_AFTER_TIMEOUT"; s.finishedAt = now(); touch(i, "PAUSED", "NEEDS_REVIEW:" + s.id); return { ok: true, status: "PAUSED", reason: i.reason }; }
-        if (!done) { s.status = "FAILED"; s.error = lastErr; s.finishedAt = now(); if (s.onError === "stop") { touch(i, "FAILED", "STEP_FAILED:" + s.id); return { ok: true, status: "FAILED", reason: i.reason }; } }
+        if (unknownOutcome) { s.status = "NEEDS_REVIEW"; s.error = "STEP_OUTCOME_UNKNOWN_AFTER_TIMEOUT"; s.finishedAt = now(); if (i.status === "CANCELLED") { save(); return { ok: true, status: "CANCELLED" }; } touch(i, "PAUSED", "NEEDS_REVIEW:" + s.id); return { ok: true, status: "PAUSED", reason: i.reason }; }
+        if (!done) { s.status = "FAILED"; s.error = lastErr; s.finishedAt = now(); if (s.onError === "stop") { if (i.status === "CANCELLED") { save(); return { ok: true, status: "CANCELLED" }; } touch(i, "FAILED", "STEP_FAILED:" + s.id); return { ok: true, status: "FAILED", reason: i.reason }; } }
         if (!keepRunning(i)) return { ok: true, status: "CANCELLED" };                                       // checkpoint AFTER the step (and honour a cancel that arrived meanwhile)
       }
       touch(i, i.steps.some(s => s.status === "FAILED") ? "DONE_WITH_ERRORS" : "DONE"); return { ok: true, status: i.status };
@@ -166,6 +173,7 @@ export function createWorkflowEngine({ file = null, actions = {}, now = () => ne
   }
   function review(id, stepId, { tenantId, decision } = {}) {
     const i = inst(id, tenantId); if (!i) return { ok: false, reason: "NOT_FOUND" };
+    if (["CANCELLED", "DONE", "DONE_WITH_ERRORS"].includes(i.status)) return { ok: false, reason: "NOT_REVIEWABLE:" + i.status };
     const s = i.steps.find(x => x.id === stepId); if (!s || s.status !== "NEEDS_REVIEW") return { ok: false, reason: "NOT_AWAITING_REVIEW" };
     if (!["RETRY", "SKIP"].includes(decision)) return { ok: false, reason: "DECISION_INVALID" };
     s.status = decision === "RETRY" ? "PENDING" : "SKIPPED"; s.error = null; touch(i, "PAUSED", "REVIEWED"); return { ok: true };
@@ -174,12 +182,16 @@ export function createWorkflowEngine({ file = null, actions = {}, now = () => ne
   function recover() {
     let n = 0;
     for (const i of Object.values(d.instances)) {
-      if (i.status !== "RUNNING") continue;
+      if (!i.steps.some(s => s.status === "RUNNING") && i.status !== "RUNNING") continue;
+      if (["CANCELLED", "DONE", "DONE_WITH_ERRORS"].includes(i.status)) { for (const s of i.steps) if (s.status === "RUNNING") { s.status = "NEEDS_REVIEW"; s.error = "INTERRUPTED_NON_IDEMPOTENT_STEP"; } continue; }
       for (const s of i.steps) if (s.status === "RUNNING") { const a = act(s.action); if (a?.idempotent === true) { s.status = "PENDING"; s.error = null; } else { s.status = "NEEDS_REVIEW"; s.error = "INTERRUPTED_NON_IDEMPOTENT_STEP"; } }
       i.status = "PAUSED"; i.reason = i.steps.some(s => s.status === "NEEDS_REVIEW") ? "RECOVERED_NEEDS_REVIEW" : "RECOVERED"; i.updatedAt = now(); i.checkpoints++; n++;
     }
     if (n) save(); return n;
   }
+  const shapeOk = () => Object.values(d.instances).every(i => i && typeof i === "object" && typeof i.id === "string" && Array.isArray(i.steps) && i.steps.every(s => s && typeof s === "object" && typeof s.id === "string" && typeof s.status === "string") && typeof i.status === "string")
+    && Object.values(d.batches).every(b => b && typeof b === "object" && Array.isArray(b.items) && b.items.every(x => x && typeof x === "object" && typeof x.status === "string")) && Object.values(d.templates).every(t => t && typeof t === "object" && Array.isArray(t.steps));
+  if (!shapeOk()) throw new Error("STORE_UNREADABLE:workflow");                                 // a malformed file is refused as a whole and never rewritten
   const recovered = recover();
   /** Rewind to just after `toStepId` (or to the start with toStepId=null). Only this instance's step results change. */
   function rewind(id, toStepId, { tenantId } = {}) {
@@ -208,9 +220,9 @@ export function createWorkflowEngine({ file = null, actions = {}, now = () => ne
     d.batches[b.id] = b; save(); return { ok: true, id: b.id, items: b.items.length };
   }
   const bsum = b => { const c = { PENDING: 0, DONE: 0, FAILED: 0 }; for (const x of b.items) c[x.status] = (c[x.status] ?? 0) + 1; return { id: b.id, templateId: b.templateId, status: b.status, total: b.items.length, ...c, ratePerMinute: b.ratePerMinute }; };
-  const stamps = [];
+  const stampsBy = new Map();
   async function runBatch(id, { tenantId } = {}) {
-    const b = d.batches[id]; if (!b || b.tenantId !== tenantId) return { ok: false, reason: "NOT_FOUND" };
+    const b = bat(id, tenantId); if (!b) return { ok: false, reason: "NOT_FOUND" };
     if (running.has(id)) return { ok: false, reason: "ALREADY_RUNNING" };
     running.add(id); b.status = "RUNNING"; save();
     try {
@@ -219,7 +231,7 @@ export function createWorkflowEngine({ file = null, actions = {}, now = () => ne
         let stopped = false; try { stopped = Boolean(isStopped()); } catch { stopped = true; }
         if (stopped) { b.status = "PAUSED"; save(); return { ok: true, ...bsum(b), reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" }; }
         for (;;) {                                                                                 // sliding-window rate limit
-          const t = clock(); while (stamps.length && t - stamps[0] >= 60000) stamps.shift();
+          const stamps = stampsBy.get(tenantId) ?? (stampsBy.set(tenantId, []), stampsBy.get(tenantId)); const t = clock(); while (stamps.length && t - stamps[0] >= 60000) stamps.shift();
           if (stamps.length < b.ratePerMinute) { stamps.push(t); break; }
           await sleep(Math.max(1, 60000 - (t - stamps[0])));
         }
@@ -241,20 +253,21 @@ export function createWorkflowEngine({ file = null, actions = {}, now = () => ne
     } finally { running.delete(id); }
   }
   /** Retry only the failed items of a finished batch. */
-  function requeueFailed(id, { tenantId } = {}) { const b = d.batches[id]; if (!b || b.tenantId !== tenantId) return { ok: false, reason: "NOT_FOUND" }; let n = 0; for (const it of b.items) if (it.status === "FAILED") {
+  function requeueFailed(id, { tenantId } = {}) { const b = bat(id, tenantId); if (!b) return { ok: false, reason: "NOT_FOUND" }; let n = 0; for (const it of b.items) if (it.status === "FAILED") {
       const i = it.instanceId ? inst(it.instanceId, tenantId) : null;                           // keep the instance: finished steps are never executed twice
       if (i && ["DONE_WITH_ERRORS", "FAILED", "PAUSED"].includes(i.status)) { for (const st of i.steps) if (st.status === "FAILED") { st.status = act(st.action)?.idempotent === true ? "PENDING" : "NEEDS_REVIEW"; st.error = st.status === "PENDING" ? null : "REQUEUED_NEEDS_REVIEW"; } if (i.status !== "PAUSED") touch(i, "PAUSED", "REQUEUED"); }
       it.status = "PENDING"; it.error = null; n++; } if (n) { b.status = "PENDING"; save(); } return { ok: true, requeued: n }; }
-  const getBatch = (id, { tenantId } = {}) => { const b = d.batches[id]; return b && b.tenantId === tenantId ? { ok: true, batch: { ...bsum(b), items: b.items.map(x => ({ index: x.index, status: x.status, instanceId: x.instanceId, error: x.error })) } } : { ok: false, reason: "NOT_FOUND" }; };
+  const getBatch = (id, { tenantId } = {}) => { const b = bat(id, tenantId); return b ? { ok: true, batch: { ...bsum(b), items: b.items.map(x => ({ index: x.index, status: x.status, instanceId: x.instanceId, error: x.error })) } } : { ok: false, reason: "NOT_FOUND" }; };
 
   // ---------------- schedulable templates (P06): the engine only says WHAT is due; the host decides when to call tick()
   function due({ tenantId } = {}) { const t0 = Date.parse(now()); return Object.values(d.templates).filter(t => t.tenantId === tenantId && t.schedule && (!t.schedule.lastRunAt || t0 - Date.parse(t.schedule.lastRunAt) >= t.schedule.everyMinutes * 60000)).map(t => t.id); }
   async function tick({ tenantId } = {}) {
-    const out = []; let stopped = false; try { stopped = Boolean(isStopped()); } catch { stopped = true; }
-    if (stopped) return out;                                                                      // while stopped nothing starts and no period is consumed
+    const out = [], stoppedNow = () => { try { return Boolean(isStopped()); } catch { return true; } };
     for (const tid of due({ tenantId })) {
+      if (stoppedNow()) break;                                                                    // checked before EVERY start: while stopped nothing starts and no period is consumed
+      if (!due({ tenantId }).includes(tid)) continue;                                             // another tick (concurrent caller) already took this period
       const t = d.templates[tenantId + ":" + tid];
-      const s = start({ tenantId, templateId: tid, params: t.schedule.params }); t.schedule.lastRunAt = now(); save();
+      const s = start({ tenantId, templateId: tid, params: t.schedule.params }); if (s.ok) { t.schedule.lastRunAt = now(); save(); }
       out.push({ templateId: tid, started: s.ok, ...(s.ok ? { instanceId: s.id, result: (await execute(s.id, { tenantId })).status } : { reason: s.reason }) });
     }
     return out;

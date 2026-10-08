@@ -8,11 +8,13 @@ const KIND_WEIGHT = Object.freeze({ LOOKUP: 0, SUMMARISE: 1, TRANSFORM: 1, DRAFT
 export function complexityScore({ kind = "LOOKUP", inputTokens = 0, constraints = 0, requiresTools = false, steps = 1 } = {}) {
   const k = own(KIND_WEIGHT, kind); if (k === undefined) return { ok: false, reason: "KIND_UNKNOWN" };
   for (const v of [inputTokens, constraints, steps]) if (!Number.isFinite(v) || v < 0) return { ok: false, reason: "NUMBERS_INVALID" };
+  if (steps < 1) return { ok: false, reason: "NUMBERS_INVALID" };                  // a task has at least one step; 0 must not lower the score
   const size = inputTokens > 50000 ? 3 : inputTokens > 8000 ? 2 : inputTokens > 1500 ? 1 : 0;
   const score = k + size + Math.min(3, Math.floor(constraints / 3)) + Math.min(3, Math.floor((steps - 1) / 2)) + (requiresTools ? 1 : 0);
   return { ok: true, score };
 }
-export function chooseEffort(task = {}, { budgetUsd = 0, freeOnly = true } = {}) {
+export function chooseEffort(task = {}, opts = {}) {
+  const { budgetUsd = 0, freeOnly = true } = opts && typeof opts === "object" ? opts : {};
   if (!task || typeof task !== "object") return { ok: false, reason: "TASK_REQUIRED" };
   if (!Number.isFinite(budgetUsd) || budgetUsd < 0) return { ok: false, reason: "BUDGET_INVALID" };
   const c = complexityScore(task); if (!c.ok) return c;

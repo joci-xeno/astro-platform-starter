@@ -2,12 +2,10 @@
 import crypto from "node:crypto";
 import { createAuditChain } from "../audit-chain.mjs";
 
-const SECRET_PATTERNS = [/-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)/g, /(?<![A-Za-z0-9])sk-[A-Za-z0-9_-]{16,}\b/g, /(?<![A-Za-z0-9])ghp_[A-Za-z0-9]{20,}\b/g, /(?<![A-Za-z0-9])github_pat_[A-Za-z0-9_]{20,}\b/g, /(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}\b/g,
-  /(?<![A-Za-z0-9])AIza[0-9A-Za-z_-]{30,}\b/g, /(?<![A-Za-z0-9])xox[baprs]-[A-Za-z0-9-]{10,}\b/g, /\b(?:bearer|token|password|passwd|secret|api[_-]?key)\s*[:=]\s*["']?[^\s"',;]{6,}/gi,
-  /\bbearer\s+[A-Za-z0-9._~+\/=-]{8,}/gi, /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g, /(?<=:\/\/)[^\s\/:@]+:[^\s\/@]+(?=@)/g];
-const SECRET_KEY = /secret|password|passwd|passphrase|apikey|api_key|private/i, STRICT_SECRET_KEY = /^(?:token|access_?token|auth_?token|refresh_?token|bearer|authorization|credentials?)$/i;
+import { scrub, SECRET_KEY as SECRET_KEY_RE } from "../secret-patterns.mjs";
+const SECRET_KEY = SECRET_KEY_RE, STRICT_SECRET_KEY = /^$/;
 export function redactSecrets(v, extra = s => s) {
-  const f = s => { let o = String(s); for (const p of SECRET_PATTERNS) o = o.replace(p, "[REDACTED]"); return extra(o); };
+  const f = s => extra(scrub(s, "[REDACTED]"));
   if (v === null || v === undefined) return v;
   if (typeof v === "string") return f(v);
   if (Array.isArray(v)) return v.map(x => redactSecrets(x, extra));

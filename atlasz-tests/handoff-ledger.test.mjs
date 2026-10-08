@@ -136,3 +136,11 @@ test("hardening: duplicate detection compares meaning (case, whitespace, undefin
   assert.equal(l.register("t", { id: "ok", kind: "research", payload: { q: "different", n: 1 }, owner: E(2) }).ok, true);
   assert.equal(l.register("t", { id: "k2", kind: "other", payload: { q: "find the report", n: 1 }, owner: E(3) }).ok, true, "same payload, different kind is not a duplicate");
 });
+
+test("verification fix C-1: a full ledger archives the oldest verified-done, unreferenced tasks instead of staying full forever", () => {
+  const l = createHandoffLedger({ limits: { ...LIMITS, maxTasks: 10 } }); const done = id => { l.start("t", id, { agent: E(1) }); l.complete("t", id, { agent: E(1), resultSha256: H("c") }); return l.verify("t", id, { verifier: S(1), decision: "ACCEPT", resultSha256: H("c") }); };
+  reg(l, "base"); assert.equal(done("base").ok, true); reg(l, "dep", { dependsOn: ["base"], payload: { x: "dep" } });
+  for (let i = 0; i < 8; i++) { reg(l, "t" + i, { payload: { i } }); assert.equal(done("t" + i).ok, true, "t" + i); }
+  const r = reg(l, "new", { payload: { n: 1 } }); assert.equal(r.ok, true, JSON.stringify(r)); assert.equal(l.get("t", "base").ok, true, "a task another task depends on is never archived"); assert.equal(l.get("t", "dep").ok, true, "an unfinished task is never archived");
+  const l2 = createHandoffLedger({ limits: { ...LIMITS, maxTasks: 2 } }); reg(l2, "x", { payload: 1 }); reg(l2, "y", { payload: 2 }); assert.equal(reg(l2, "z", { payload: 3 }).reason, "TOO_MANY_TASKS", "nothing finished to archive: still refused");
+});

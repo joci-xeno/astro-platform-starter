@@ -90,3 +90,11 @@ test("hardening: odd inputs are refused not thrown; huge magnitudes never yield 
 test("hardening: esc drops each XML-invalid character class individually", () => {
   assert.equal(esc("a￾b"), "ab"); assert.equal(esc("a￿b"), "ab"); assert.equal(esc("a\uD800b"), "ab", "lone high surrogate"); assert.equal(esc("a\uDC00b"), "ab", "lone low surrogate"); assert.equal(esc("a😀b"), "a😀b", "a valid pair survives"); assert.equal(esc("x\uD800"), "x"); assert.equal(esc("\uDC00y"), "y"); assert.equal(esc("\uD83D😀"), "😀", "high surrogate before a pair is the lone one");
 });
+
+test("verification fix R-1: near-identical, huge and tiny values never hang or explode the tick loop", () => {
+  const cases = [[1e16, 1e16 + 2], [1e15, 1e15 + 0.0001], [1, 1 + 1e-12], [5e-324, 1e-323], [1e308, 1.7e308], [0, 0], [-3, -3]];
+  for (const [a, b] of cases) for (const type of ["line", "scatter", "bar"]) {
+    const spec = type === "bar" ? { type, title: "t", labels: ["a", "b"], values: [a, b] } : type === "line" ? { type, title: "t", values: [a, b] } : { type, title: "t", points: [[a, a], [b, b]] };
+    const t0 = Date.now(); const r = renderChart(spec); assert.ok(Date.now() - t0 < 500, `${type} ${a} ${b} took too long`); if (!r.ok) { assert.match(r.reason, /INVALID|RANGE|SELF_CHECK/, `${type} ${a} ${b} refused cleanly`); continue; } assert.ok(r.svg.length < 100000); assert.equal(checkSvgSafe(r.svg).safe, true);
+  }
+});

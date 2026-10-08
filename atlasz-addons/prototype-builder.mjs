@@ -117,8 +117,9 @@ export function createPrototypeBuilder({ repoRoot, file = null, now = () => Date
     const testsChanged = m.files.filter(f => f.path.startsWith("tests/")).some(f => { try { return sha(fs.readFileSync(path.join(repoRoot, name, f.path), "utf8")) !== f.sha256; } catch { return true; } })
       || a.testFiles.some(t => !m.files.some(f => f.path === t));                              // a replaced, emptied or additional test file means "passed" no longer says what it used to
     if (testsChanged) s = "TESTS_MODIFIED";
-    else if (m.tested) s = m.tested.hash !== a.hash ? "MODIFIED_AFTER_TEST" : m.tested.passed ? "TESTS_PASSED_IN_SANDBOX" : "TESTS_FAILED";
-    else if (m.generatedHash !== a.hash) s = "MODIFIED_BEFORE_TEST";
+    else if (m.tested && m.tested.hash !== a.hash) s = "MODIFIED_AFTER_TEST";
+    else if (m.generatedHash !== a.hash) s = m.tested ? "MODIFIED_AFTER_GENERATION" : "MODIFIED_BEFORE_TEST";   // a pass only describes the files as generated; any later change to any file voids it
+    else if (m.tested) s = m.tested.passed ? "TESTS_PASSED_IN_SANDBOX" : "TESTS_FAILED";
     return { ok: true, name, template: m.template, idea: m.idea, createdAt: m.createdAt, status: s, hash: a.hash, tested: m.tested ? { at: m.tested.at, passed: m.tested.passed, ran: m.tested.ran, failed: m.tested.failed, hash: m.tested.hash } : null, note: "Sandbox prototype. TESTS_PASSED_IN_SANDBOX is not a production-readiness claim." };
   }
 
@@ -126,9 +127,9 @@ export function createPrototypeBuilder({ repoRoot, file = null, now = () => Date
   async function test(name, { ownerAuth, ownerApproval = null, isStopped, nodeBin, caps, scratchRoot } = {}) {
     const m = Object.hasOwn(d.prototypes, name) ? d.prototypes[name] : null; if (!m) return { ok: false, reason: "PROTOTYPE_NOT_FOUND" };
     const root = path.join(repoRoot, name), r = await run({ name, root, ownerAuth, ownerApproval, isStopped, nodeBin, caps, scratchRoot, ...{} }); if (!r.ok) return r;
-    const a = analyzeRepo(root); if (!a.ok) return a;
-    const passed = r.ran > 0 && r.failed === 0;
-    m.tested = { at: new Date(now()).toISOString(), hash: a.hash, passed, ran: r.ran, failed: r.failed }; store.save();
+    if (typeof r.hash !== "string") return { ok: false, reason: "RUN_HASH_MISSING" };            // the outcome is bound to the hash the owner approved and the tests ran against, never to a re-read afterwards
+    const passed = r.ran > 0 && r.failed === 0 && r.contentUnchanged !== false;
+    m.tested = { at: new Date(now()).toISOString(), hash: r.hash, passed, ran: r.ran, failed: r.failed }; store.save();
     return { ok: true, name, status: status(name).status, ran: r.ran, passed: r.passed, failed: r.failed, results: r.results, isolation: r.isolation };
   }
   /** Static-page preview for a sandboxed iframe (sandbox="" => no scripts, no forms, no navigation, unique origin). The page is read as found on disk, so it is untrusted; a CSP is injected as well. */

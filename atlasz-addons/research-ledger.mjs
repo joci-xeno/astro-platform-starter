@@ -20,8 +20,8 @@ export const FINDING_KINDS = Object.freeze(["CLAIM", "ASSUMPTION"]);
 export const RELATIONS = Object.freeze(["SUPPORTS", "REFUTES"]);
 export const STATUSES = Object.freeze(["VERIFIED", "UNSUPPORTED", "ASSUMPTION", "OUTDATED", "CONFLICTED", "REFUTED", "REJECTED", "UNVERIFIABLE"]);
 export const LIMITS = Object.freeze({ questionChars: 500, claimChars: 1000, noteChars: 1000, topicChars: 120, valueChars: 200, evidencePerFinding: 50, minCoverage: 0.5, freshnessDays: 30 });
+import { scrub, containsSecret } from "./secret-patterns.mjs";
 const sha = s => crypto.createHash("sha256").update(s).digest("hex");
-const SECRET = /-----BEGIN [A-Z ]*PRIVATE KEY-----|(?<![A-Za-z0-9])sk-[A-Za-z0-9]{20,}|(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}\b|(?<![A-Za-z0-9])ghp_[A-Za-z0-9]{30,}/;
 const norm = s => String(s ?? "").toLowerCase().replace(/\s+/g, " ").trim();
 
 export function createResearchLedger({ file = null, knowledge, security = null, blackBox = null, now = () => new Date().toISOString(), freshnessDays = LIMITS.freshnessDays } = {}) {
@@ -50,7 +50,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   const finding = (fid, w) => { const f = S.findings[fid]; if (!f || f.tenantId !== w?.tenantId) throw new Error("UNKNOWN_FINDING"); question(f.questionId, w); return f; };
   function vet(text, max, field, by) {
     const t = String(text ?? "").trim(); if (!t) throw new Error(field + "_REQUIRED"); if (t.length > max) throw new Error(field + "_TOO_LONG");
-    if (SECRET.test(t)) throw new Error(field + "_CONTAINS_SECRET");
+    if (containsSecret(t)) throw new Error(field + "_CONTAINS_SECRET");
     let sc = { decision: "NOT_SCREENED" }; if (security) { const a = security.assess({ kind: "EXTERNAL_INSTRUCTION", agentId: null, source: "research:" + field, text: t }); sc = { decision: a.decision }; if (a.allowed === false && by !== "OWNER") throw new Error(field + "_BLOCKED_BY_SECURITY"); }
     return { text: t, screening: sc.decision };
   }

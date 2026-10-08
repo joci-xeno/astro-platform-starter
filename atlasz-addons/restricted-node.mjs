@@ -4,7 +4,7 @@
 // What is enforced (and what is not):
 //   FILESYSTEM  Node's permission model (`--permission`): the child can read only the directories listed and write only where listed; it cannot spawn processes, start workers,
 //               load native addons or use WASI. Enforced by the Node runtime, not by us.
-//   NETWORK     On Linux, when `unshare` works, the child runs in its own user+net namespace = no network at all. Node's permission model does NOT restrict the network, so where
+//   NETWORK     On Linux, when `unshare` works, the child runs in its own user+net+PID namespace = no network at all and no way to signal host processes (it cannot even see them). Node's permission model does NOT restrict the network, so where
 //               the namespace is unavailable (Windows, locked-down hosts) the network is NOT blocked: the result says so (`networkBlocked:false`), and callers that need
 //               "no network" can refuse to run (`requireNoNetwork`).
 //   ENVIRONMENT Only the variables passed in are visible (plus PATH and, under Electron, ELECTRON_RUN_AS_NODE). No inherited secrets.
@@ -20,7 +20,7 @@ export function detectNodeRestrictions(nodeBin = process.execPath, { fresh = fal
   if (!fresh && cache.has(nodeBin)) return cache.get(nodeBin);
   const env = baseEnv({});
   const permission = probe(nodeBin, ["--permission", "-e", "0"], env);
-  const namespace = permission && !IS_WIN && process.platform === "linux" && probe("unshare", ["--user", "--map-root-user", "--net", "true"]);
+  const namespace = permission && !IS_WIN && process.platform === "linux" && probe("unshare", ["--user", "--map-root-user", "--net", "--pid", "--fork", "--kill-child", "true"]);
   const r = { permission, namespace, platform: process.platform };
   cache.set(nodeBin, r); return r;
 }
@@ -43,6 +43,6 @@ export function restrictedNodeCommand({ nodeBin = process.execPath, script, scri
   if (wantNetBlock && requireNoNetwork && !c.namespace) return { ok: false, reason: "NETWORK_ISOLATION_UNAVAILABLE" };
   const args = ["--permission", ...[...new Set([script, ...readDirs])].map(d => "--allow-fs-read=" + norm(d)), ...[...new Set(writeDirs)].map(d => "--allow-fs-write=" + norm(d)), ...nodeFlags, script, ...scriptArgs];
   const useNs = wantNetBlock && c.namespace;
-  const out = useNs ? { cmd: "unshare", args: ["--user", "--map-root-user", "--net", nodeBin, ...args] } : { cmd: nodeBin, args };
+  const out = useNs ? { cmd: "unshare", args: ["--user", "--map-root-user", "--net", "--pid", "--fork", "--kill-child", nodeBin, ...args] } : { cmd: nodeBin, args };
   return { ok: true, ...out, env: baseEnv(env), level: useNs ? "PERMISSION+NETWORK_NAMESPACE" : "PERMISSION", networkBlocked: useNs, filesystemRestricted: true };
 }

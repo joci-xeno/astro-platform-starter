@@ -68,7 +68,8 @@ export function analyzeRepo(root) {
   if (pj) { try { const j = JSON.parse(fs.readFileSync(pj.abs, "utf8")); pkg = { name: typeof j.name === "string" ? j.name.slice(0, 100) : null, version: typeof j.version === "string" ? j.version.slice(0, 40) : null, scripts: Object.fromEntries(Object.entries(j.scripts ?? {}).slice(0, LIMITS.maxScripts).map(([k, v]) => [k.slice(0, 40), redactSecrets(String(v)).slice(0, 200)])), dependencies: Object.keys(j.dependencies ?? {}).length, devDependencies: Object.keys(j.devDependencies ?? {}).length }; } catch { pkg = { error: "PACKAGE_JSON_UNREADABLE" }; } }
   const rv0 = review.length ? reviewCode({ files: review }) : { ok: true, verdict: "NO_FINDINGS_BY_THESE_RULES", counts: { HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 }, findings: [], truncated: false, tests: { testFiles: [], sourceFiles: 0, untested: [] }, notes: [] };
   const rv = rv0.ok ? rv0 : { ...rv0, verdict: "INCOMPLETE_REVIEW", counts: { HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 }, findings: [], truncated: true, tests: { testFiles: [], sourceFiles: 0, untested: [] }, notes: ["REVIEW_FAILED:" + rv0.reason] };
-  const skippedTotal = Object.values(notReviewed).reduce((x, y) => x + y, 0), unseen = w.capped || skippedTotal > 0 || w.skipped.oversize > 0;
+  const skippedTotal = Object.values(notReviewed).reduce((x, y) => x + y, 0), sk0 = w.skipped, unseen = w.capped || skippedTotal > 0 || (sk0.oversize + sk0.symlinks + sk0.special + sk0.dirs + sk0.hidden + (sk0.vcs ?? 0)) > 0;   // hidden, linked, special and vendored parts were not looked at either
+  if (!review.length && !unseen && rv.verdict === "NO_FINDINGS_BY_THESE_RULES") rv.verdict = "NOTHING_REVIEWED";             // an empty or non-source tree has no findings only because nothing was read
   if (unseen && !["BLOCK"].includes(rv.verdict)) rv.verdict = "INCOMPLETE_REVIEW";            // "no findings" must never be reported when part of the tree was not looked at
   return { ok: true, untrusted: true, files: w.files.length, bytes: w.bytes, capped: w.capped, skipped: w.skipped, languages: langs, sourceLinesReviewed: lines, notReviewed, testFiles: tests, package: pkg,
     hash: contentHash(w.files), review: { verdict: rv.verdict, coverage: { reviewed: review.length, notReviewed, skippedOversizeFiles: w.skipped.oversize, treeCapped: w.capped }, counts: rv.counts, findings: rv.findings.slice(0, 100), untested: rv.tests.untested.slice(0, 100), truncated: rv.truncated, notes: rv.notes },
@@ -82,13 +83,14 @@ export async function runRepoTests({ name, root, ownerAuth, ownerApproval = null
   let stopped = true; try { stopped = Boolean(isStopped()); } catch { /* fail closed */ }
   if (stopped) return { ok: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" };
   const a = analyzeRepo(root); if (!a.ok) return a;
-  const sk = a.skipped, unhashed = { symlinks: sk.symlinks, special: sk.special, oversize: sk.oversize, dirs: sk.dirs, hidden: sk.hidden, capped: a.capped ? 1 : 0 };
+  const sk = a.skipped, unhashed = { symlinks: sk.symlinks, special: sk.special, oversize: sk.oversize, dirs: sk.dirs, hidden: sk.hidden, vcs: sk.vcs ?? 0, capped: a.capped ? 1 : 0 };
   if (Object.values(unhashed).some(n => n > 0)) return { ok: false, reason: "UNHASHED_CONTENT_PRESENT", unhashed, note: "Part of the tree (symlinks, oversize or hidden files, node_modules/dist/build, a capped walk) is not covered by the content hash the owner approves, and the tests could read or run it. Remove it or test a clean copy." };
   const v = ownerAuth.verifyApproval(ownerApproval, { action: "REPO_TEST_RUN", subject: name + "#" + a.hash });
   if (!v.allowed) return { ok: false, reason: "OWNER_APPROVAL_REQUIRED:" + v.reason, subject: name + "#" + a.hash };
-  const targets = a.testFiles.slice(0, LIMITS.maxTestFiles); if (!targets.length) return { ok: true, ran: 0, results: [], note: "No Node test files found (tests/ folder, *.test.mjs/js, *.spec.mjs/js)." };
+  const targets = a.testFiles.slice(0, LIMITS.maxTestFiles); if (!targets.length) return { ok: true, hash: a.hash, contentUnchanged: true, ran: 0, results: [], note: "No Node test files found (tests/ folder, *.test.mjs/js, *.spec.mjs/js)." };
   const results = []; let level = null;
   for (const rel of targets) {
+    { const cur = analyzeRepo(root); if (!cur.ok || cur.hash !== a.hash) return { ok: false, reason: "CONTENT_CHANGED_DURING_RUN", results, approvedHash: a.hash }; }   // the approval covers exactly this content: re-verified before every file
     const scratch = fs.mkdtempSync(path.join(scratchRoot, "repo-test-"));
     const rc = restrictedNodeCommand({ nodeBin, script: path.join(root, rel), readDirs: [root, scratch], writeDirs: [scratch], allowNetwork: false, requireNoNetwork: true, caps, env: { TMPDIR: scratch, ATLASZ_REPO_TEST: "1" } });
     if (!rc.ok) { fs.rmSync(scratch, { recursive: true, force: true }); return { ok: false, reason: rc.reason, results }; }       // fail closed: never run unrestricted
@@ -105,5 +107,6 @@ export async function runRepoTests({ name, root, ownerAuth, ownerApproval = null
     }));
   }
   const failed = results.filter(r => r.status !== "PASSED").length;
-  return { ok: true, untrusted: true, ran: results.length, passed: results.length - failed, failed, results, isolation: level, note: "Each file ran alone in a read-only, no-network, no-child-process sandbox. A pass means the file exited 0 here, not that the repo is correct." };
+  const after = analyzeRepo(root), unchanged = after.ok && after.hash === a.hash;
+  return { ok: true, untrusted: true, hash: a.hash, contentUnchanged: unchanged, ran: results.length, passed: results.length - failed, failed, results, isolation: level, note: "Each file ran alone in a read-only, no-network, no-child-process sandbox. A pass means the file exited 0 here, not that the repo is correct." };
 }

@@ -105,3 +105,10 @@ test("hardening: urgent items are ranked before the cut and are never starved by
   const { s: s4 } = mk(); s4.offer("y", [cand("approval:first", { priority: 5 })]); assert.equal(s4.offer("y", Array.from({ length: 8 }, (_, i) => cand("o" + i, { priority: 2 }))).shown.length, 5, "an urgent item does not use the ordinary daily allowance");
   now.adv(0);
 });
+
+test("verification fixes S-2/S-3: unsnooze ignores inherited names; hostile candidates are invalid, not fatal; the highest-priority duplicate wins", () => {
+  const { s } = mk(); for (const k of ["constructor", "toString", "__proto__"]) assert.equal(s.unsnooze("t", k, { actor: "OWNER" }).reason, "NOT_SNOOZED", k);
+  const evil = { get key() { throw new Error("boom"); }, source: "approvals", title: "t" };
+  const r = s.offer("t", [evil, cand("a", { priority: 2 }), cand("a", { priority: 5 }), cand("b")]); assert.equal(r.ok, true);
+  assert.equal(r.shown.find(x => x.key === "a").priority, 5, "duplicate keys keep the higher priority"); assert.equal(r.suppressed.invalid, 1); assert.equal(r.suppressed.duplicate, 1);
+});

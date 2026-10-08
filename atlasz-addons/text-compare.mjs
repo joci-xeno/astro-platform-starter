@@ -1,6 +1,7 @@
 // Multi-page comparison (85-capability programme: P13). Compares TEXTS THE CALLER SUPPLIES (already fetched by an authorised path) - it never fetches anything.
 // Output is structured: per-page facts (title, headings, numbers/prices, links, size), then a pairwise diff (line-level LCS, added/removed/unchanged counts, changed numbers and
 // headings) and an "only here / in all" term table. Page text is untrusted DATA: it is stripped of markup, scanned for injection signals (reported, never obeyed) and secrets are redacted.
+import { scrub } from "./secret-patterns.mjs";
 export const LIMITS = Object.freeze({ maxPages: 6, maxChars: 200000, maxLines: 2000, maxDiffLines: 200 });
 const SECRET = /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)|(?<![A-Za-z0-9])sk-[A-Za-z0-9_-]{20,}|(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}\b|(?<![A-Za-z0-9])ghp_[A-Za-z0-9]{30,}/g;
 const INJECTION = [/ignore (all |any )?(the )?(previous|prior|above) (instructions|rules)/i, /disregard (all |any )?(the )?(previous|prior|above)/i, /you are now\b/i, /reveal (your |the )?(system prompt|secrets?|api key)/i, /\bsystem prompt\b/i, /(wire|send|transfer) \$?\d[\d,.]* ?(usd|dollars|eur|huf)?/i, /do not tell (the )?(user|owner)/i,
@@ -19,7 +20,7 @@ export function toPlainText(input) {
 const NUM = /(?:[$€£]|\bUSD |\bEUR |\bHUF )?\d[\d.,]*\d(?:\s?(?:%|USD|EUR|HUF|Ft|\$|€|£))?|\b\d\b/g;
 const words = t => (t.toLowerCase().match(/[\p{L}\p{N}]{3,}/gu) ?? []);
 const STOP = new Set("the and for with that this from are was were have has not you your our their they them his her its into out all any can will would about more than then them also but".split(" "));
-export const redactSecrets = s => { SECRET.lastIndex = 0; return String(s).replace(SECRET, "[redacted]"); };
+export const redactSecrets = s => scrub(s, "[redacted]");
 /** Normalise before matching: compatibility forms (full-width letters), zero-width / format characters and any run of whitespace (including newlines) cannot be used to split a phrase. One-entry memo: callers test many patterns against the same text. */
 let memoIn = null, memoOut = "";
 const squash = t => { const x = String(t); if (x === memoIn) return memoOut; memoIn = x; memoOut = x.normalize("NFKC").replace(/[\p{Cf}\u00ad]/gu, "").replace(/\s+/g, " "); return memoOut; };

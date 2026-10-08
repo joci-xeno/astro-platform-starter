@@ -203,3 +203,70 @@ test("hardening: a stop arriving DURING an item leaves it PENDING (batch PAUSED)
   stop = false; e.saveTemplate({ ...T, id: "f", name: "f", steps: [{ id: "a", action: "two" }, { id: "x", action: "bad", onError: "continue" }] }); const id = e.start({ ...T, templateId: "f" }).id; await e.execute(id, T);
   assert.equal(e.getInstance(id, T).instance.steps[1].status, "FAILED"); assert.equal(e.rewind(id, "a", T).reason, "REWIND_BLOCKED:x");
 });
+test("verification fixes: cancel is never overwritten by a failing/timed-out step; review cannot revive a cancelled instance; rewind re-resolves arguments; split secrets are refused", async () => {
+  let release; const acts = { gate: { run: () => new Promise((res, rej) => { release = () => rej(new Error("late failure")); }), idempotent: true }, val: { run: async () => ({ v: globalThis.__v ?? 1 }), idempotent: true, rewindable: true }, take: { run: async a => ({ got: a.x }), idempotent: true, rewindable: true }, up: mkActions().upper };
+  const e = createWorkflowEngine({ actions: acts, limits: { ...LIMITS, stepTimeoutMs: 80 } });
+  e.saveTemplate({ ...T, id: "c", name: "c", steps: [{ id: "a", action: "gate" }] }); const c = e.start({ ...T, templateId: "c" }).id; const run = e.execute(c, T); await new Promise(r => setTimeout(r, 10)); assert.equal(e.cancel(c, T).ok, true); release(); const rc = await run;
+  assert.deepEqual([rc.status, e.getInstance(c, T).instance.status], ["CANCELLED", "CANCELLED"], "a step failing after a cancel does not overwrite it");
+  const hang = createWorkflowEngine({ actions: { h: { run: () => new Promise(() => {}), idempotent: false } }, limits: { ...LIMITS, stepTimeoutMs: 60 } });
+  hang.saveTemplate({ ...T, id: "h", name: "h", steps: [{ id: "a", action: "h" }, { id: "b", action: "h" }] }); const h = hang.start({ ...T, templateId: "h" }).id; const rh = hang.execute(h, T); await new Promise(r => setTimeout(r, 10)); hang.cancel(h, T); assert.equal((await rh).status, "CANCELLED");
+  const h2 = hang.start({ ...T, templateId: "h" }).id; assert.equal((await hang.execute(h2, T)).status, "PAUSED"); hang.cancel(h2, T); assert.equal(hang.review(h2, "a", { ...T, decision: "SKIP" }).reason, "NOT_REVIEWABLE:CANCELLED"); assert.equal(hang.getInstance(h2, T).instance.status, "CANCELLED");
+  e.saveTemplate({ ...T, id: "r", name: "r", steps: [{ id: "a", action: "val" }, { id: "b", action: "take", args: { x: "{{s.a.v}}" } }] }); const r = e.start({ ...T, templateId: "r" }).id; await e.execute(r, T);
+  assert.equal(e.getInstance(r, T).instance.steps[1].output.got, 1); globalThis.__v = 2; assert.equal(e.rewind(r, null, T).ok, true); await e.resume(r, T); assert.equal(e.getInstance(r, T).instance.steps[1].output.got, 2, "downstream step saw the NEW upstream value"); delete globalThis.__v;
+  assert.equal(e.getInstance(r, T).instance.steps[1].args.x, "{{s.a.v}}", "the template argument is kept");
+  const SK = "s" + "k-ABCDEFGHIJKLMNOPQRSTUVWX";
+  e.saveTemplate({ ...T, id: "sp", name: "sp", params: { a: { type: "string", required: true }, b: { type: "string", required: true } }, steps: [{ id: "x", action: "up", args: { text: "{{p.a}}{{p.b}}" } }] });
+  const sp = e.start({ ...T, templateId: "sp", params: { a: SK.slice(0, 8), b: SK.slice(8) } }).id; const rs = await e.execute(sp, T); assert.deepEqual([rs.status, rs.reason], ["FAILED", "SECRET_IN_RESOLVED_ARGS:x"]); assert.ok(!JSON.stringify(e.getInstance(sp, T).instance).includes("ABCDEFGHIJKLMNOPQRSTUVWX"));
+  assert.match(String(e.saveTemplate({ ...T, id: "k", name: "k", steps: [{ id: "x", action: "up", args: { [SK]: 1 } }] }).reason), /^SECRET_IN_INPUT/);
+});
+test("verification fixes: scheduler honours a stop mid-tick and concurrent ticks; rate windows are per tenant; finished instances are archived at the cap; own-key lookups; malformed state is refused", async () => {
+  let ms = Date.parse("2026-10-07T10:00:00Z"), stop = false, hold; const runs = {};
+  const acts = { a: { run: async () => { runs.a = (runs.a ?? 0) + 1; stop = true; return {}; }, idempotent: true }, b: { run: async () => { runs.b = (runs.b ?? 0) + 1; await new Promise(r => { hold = r; setTimeout(r, 30); }); return {}; }, idempotent: true } };
+  const e = createWorkflowEngine({ actions: acts, isStopped: () => stop, now: () => new Date(ms).toISOString() });
+  e.saveTemplate({ ...T, id: "ta", name: "a", steps: [{ id: "s", action: "a" }], schedule: { everyMinutes: 60, params: {} } }); e.saveTemplate({ ...T, id: "tb", name: "b", steps: [{ id: "s", action: "b" }], schedule: { everyMinutes: 60, params: {} } });
+  const t1 = await e.tick(T); assert.deepEqual(t1.map(x => x.templateId), ["ta"], "stop landed during the first run: the second template was not started"); assert.deepEqual(e.due(T), ["tb"], "its period was NOT consumed");
+  stop = false; const [x, y] = await Promise.all([e.tick(T), e.tick(T)]); assert.equal(runs.b, 1, "two concurrent ticks run a due template once"); assert.equal(x.length + y.length, 1);
+  // per-tenant rate window
+  let clk = 0; const sleeps = []; const e2 = createWorkflowEngine({ actions: { w: { run: async () => ({}), idempotent: true } }, clock: () => clk, sleep: async n => { sleeps.push(n); clk += n; } });
+  for (const t of ["A", "B"]) e2.saveTemplate({ tenantId: t, id: "w", name: "w", steps: [{ id: "s", action: "w" }] });
+  const ba = e2.createBatch({ tenantId: "A", templateId: "w", items: [{}, {}, {}], ratePerMinute: 3 }).id; await e2.runBatch(ba, { tenantId: "A" });
+  const bb = e2.createBatch({ tenantId: "B", templateId: "w", items: [{}, {}, {}], ratePerMinute: 3 }).id; await e2.runBatch(bb, { tenantId: "B" }); assert.deepEqual(sleeps, [], "tenant B never waits for tenant A's window");
+  // instance cap: archive finished, keep unfinished and batch-referenced
+  const e3 = createWorkflowEngine({ actions: { w: { run: async () => ({}), idempotent: true } }, limits: { ...LIMITS, maxInstances: 10 } }); e3.saveTemplate({ ...T, id: "w", name: "w", steps: [{ id: "s", action: "w" }] });
+  const ids = []; for (let i = 0; i < 10; i++) { const id = e3.start({ ...T, templateId: "w" }).id; ids.push(id); await e3.execute(id, T); }
+  const pend = e3.start({ ...T, templateId: "w" }); assert.equal(pend.ok, true, "room was made by archiving the oldest finished instance"); assert.equal(e3.listInstances(T).length, 10); assert.equal(e3.getInstance(ids[0], T).ok, false); assert.equal(e3.getInstance(pend.id, T).ok, true);
+  // own-key lookups: reserved ids are plain misses and pollute nothing
+  for (const id of ["__proto__", "constructor", "toString"]) { assert.equal(e.cancel(id, {}).reason, "NOT_FOUND"); assert.equal(e.getBatch(id, {}).reason, "NOT_FOUND"); assert.equal((await e.runBatch(id, T)).reason, "NOT_FOUND"); } assert.equal({}.status, undefined);
+  // malformed state files
+  const d = tmp("wfs-"); try {
+    const f = path.join(d, "w.json"); for (const bad of ['{"templates":{},"instances":{"x":{"id":"x","status":"RUNNING"}},"batches":{}}', '{"templates":{},"instances":{},"batches":{"b":{"items":5}}}', '{"templates":{"t":{}},"instances":{},"batches":{}}']) { fs.writeFileSync(f, bad); assert.throws(() => createWorkflowEngine({ file: f, actions: {} }), /STORE_UNREADABLE/); assert.equal(fs.readFileSync(f, "utf8"), bad, "file untouched"); }
+  } finally { rm(d); }
+  // a RUNNING step inside a non-RUNNING instance is not silently re-executed after a restart
+  const d2 = tmp("wfr-"); try {
+    const f = path.join(d2, "w.json"), log = []; const act = { save: { run: async a => { log.push(1); return {}; }, idempotent: false } };
+    const e4 = createWorkflowEngine({ file: f, actions: act }); e4.saveTemplate({ ...T, id: "s", name: "s", steps: [{ id: "x", action: "save" }] }); const id = e4.start({ ...T, templateId: "s" }).id;
+    const j = JSON.parse(fs.readFileSync(f, "utf8")); j.instances[id].status = "PAUSED"; j.instances[id].steps[0].status = "RUNNING"; fs.writeFileSync(f, JSON.stringify(j));
+    const e5 = createWorkflowEngine({ file: f, actions: act }); assert.equal((await e5.resume(id, T)).reason, "NEEDS_REVIEW"); assert.equal(log.length, 0);
+  } finally { rm(d2); }
+});
+
+test("schedule: concurrent ticks never start the same template twice; a failed start does not consume the period", async () => {
+  let ms = Date.parse("2026-10-07T10:00:00Z"); const log = [], now = () => new Date(ms).toISOString();
+  const e = createWorkflowEngine({ actions: mkActions(log), now });
+  for (const id of ["a1", "b1"]) e.saveTemplate({ ...T, id, name: id, params: {}, steps: [{ id: "s", action: "count", args: { value: 1 } }], schedule: { everyMinutes: 60, params: {} } });
+  const [r1, r2] = await Promise.all([e.tick(T), e.tick(T)]);
+  assert.equal([...r1, ...r2].filter(x => x.started).length, 2, "each template started exactly once across both ticks"); assert.equal(e.listInstances(T).length, 2);
+  // a start that fails (instance cap reached with unfinished work) must leave the template due
+  const e2 = createWorkflowEngine({ actions: mkActions(), now, limits: { ...LIMITS, maxInstances: 1 } });
+  e2.saveTemplate({ ...T, id: "m", name: "m", params: {}, steps: [{ id: "s", action: "count", args: { value: 1 } }] }); assert.equal(e2.start({ ...T, templateId: "m" }).ok, true);
+  e2.saveTemplate({ ...T, id: "s2", name: "s2", params: {}, steps: [{ id: "s", action: "count", args: { value: 1 } }], schedule: { everyMinutes: 60, params: {} } });
+  const r = await e2.tick(T); assert.deepEqual(r.map(x => [x.started, x.reason]), [[false, "TOO_MANY_INSTANCES"]]); assert.deepEqual(e2.due(T), ["s2"], "the period was not consumed");
+});
+
+test("instance cap: archiving never deletes instances a batch still points at", async () => {
+  const e = createWorkflowEngine({ actions: mkActions(), limits: { ...LIMITS, maxInstances: 1 }, sleep: async () => {} });
+  e.saveTemplate({ ...T, id: "w", name: "w", params: {}, steps: [{ id: "s", action: "count", args: { value: 1 } }] });
+  const b = e.createBatch({ ...T, templateId: "w", items: [{}] }); assert.equal(b.ok, true); await e.runBatch(b.id, T);
+  const item = e.getBatch(b.id, T).batch.items[0].instanceId; assert.ok(item && e.getInstance(item, T).ok);
+  assert.equal(e.start({ ...T, templateId: "w" }).reason, "TOO_MANY_INSTANCES"); assert.ok(e.getInstance(item, T).ok, "batch-referenced instance survived");
+});

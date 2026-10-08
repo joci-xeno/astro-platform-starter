@@ -2,8 +2,8 @@
 // INPUT IS A TRANSCRIPT THE CALLER ALREADY HAS (pasted or from a captions file). Nothing is downloaded or transcribed here: no ASR/video provider exists in this workspace, so
 // "video in, steps out" stays EXTERNAL. Supports WebVTT/SRT cues or plain text. Everything extracted is EXTRACTIVE (copied sentences with their timestamps), never invented, and
 // the transcript is untrusted data: instruction-like content is reported as a signal and is never acted on.
+import { scrub, containsSecret } from "./secret-patterns.mjs";
 export const LIMITS = Object.freeze({ maxChars: 400000, maxCues: 20000, maxSteps: 60 });
-const SECRET = /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)|(?<![A-Za-z0-9])sk-[A-Za-z0-9_-]{20,}|(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}\b|(?<![A-Za-z0-9])ghp_[A-Za-z0-9]{30,}/g;
 const TS = /(?:(\d{1,2}):)?(\d{2}):(\d{2})[.,](\d{3})\s*-->\s*(?:(\d{1,2}):)?(\d{2}):(\d{2})[.,](\d{3})/;
 const toSec = (h, m, s, ms) => Number(h ?? 0) * 3600 + Number(m) * 60 + Number(s) + Number(ms) / 1000;
 export const fmt = sec => { const s = Math.floor(sec), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60); return (h ? String(h).padStart(2, "0") + ":" : "") + String(m).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); };
@@ -21,7 +21,7 @@ export function parseTranscript(raw) {
   }
   if (!cues.length) return { ok: false, reason: "NO_CUES_FOUND" };
   if (timed && cues.some((c, i) => c.start === null || (i && c.start < cues[i - 1].start - 0.001))) return { ok: false, reason: "CUES_OUT_OF_ORDER_OR_MIXED" };
-  SECRET.lastIndex = 0; return { ok: true, timed, cues: cues.map(c => ({ ...c, text: c.text.replace(SECRET, "[redacted]") })) };
+  return { ok: true, timed, cues: cues.map(c => ({ ...c, text: scrub(c.text, "[redacted]", { assign: false }) })) };
 }
 const SENT = /[^.!?]+[.!?]+|[^.!?]+$/g;
 const STOPW = new Set("the and for with that this from are was were have has not you your our they them his her its into out all any can will would about more than then also but just like what when where which there their here very really some one now going gonna okay yeah right know get got let".split(" "));

@@ -311,8 +311,8 @@
   {
    "id": "P52",
    "claim": "P04: a prototype is never reported as tested without a real gated run, and a changed file voids an earlier pass",
-   "ok": true,
-   "note": "GENERATED_UNTESTED>MODIFIED_BEFORE_TEST>TESTS_PASSED_IN_SANDBOX"
+   "ok": false,
+   "note": "GENERATED_UNTESTED>MODIFIED_BEFORE_TEST>MODIFIED_BEFORE_TEST"
   }
  ]
 }

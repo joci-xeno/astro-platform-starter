@@ -124,3 +124,39 @@ test("hardening: a lone oversize file alone makes the review INCOMPLETE; an unre
   const q = mkRepo({ "src/we\\ird.mjs": "export const w = 1;\n" });
   try { q.put("src/pay.mjs", "export const pay = 2;\n"); const a = analyzeRepo(q.root); assert.equal(a.ok, true); assert.equal(a.review.verdict, "INCOMPLETE_REVIEW"); assert.match(a.review.notes[0], /^REVIEW_FAILED:PATH_INVALID/); } finally { q.done(); }
 });
+test("hardening: a sandboxed test cannot signal the host process (own PID namespace)", { skip: !ISOLATED && "restricted launcher not available on this host" }, async () => {
+  const r = mkRepo({ "tests/kill.test.mjs": `import test from 'node:test'; import assert from 'node:assert/strict';
+test('cannot kill the parent or the host', () => {
+  assert.equal(process.ppid, 0, "the sandbox is PID 1 of its own namespace"); for (const pid of [${process.pid}, ${process.ppid}].filter(p => p > 1)) { let err = null; try { process.kill(pid, 0); } catch (e) { err = e.code; } assert.ok(err === 'ESRCH' || err === 'EPERM', 'host pid ' + pid + ' must not be signalable, got ' + err); }
+});` });
+  const scr = tmp("scr-"); try {
+    r.put("src/pay.mjs", "export const pay = 1;\n"); fs.rmSync(path.join(r.root, "tests", "pay.test.mjs"));
+    const res = await runRepoTests({ name: "demo", root: r.root, ownerAuth: auth, ownerApproval: ap("REPO_TEST_RUN", "demo#" + analyzeRepo(r.root).hash), timeoutMs: 8000, scratchRoot: scr, caps });
+    assert.equal(res.ok, true, JSON.stringify(res)); assert.equal(res.results[0].status, "PASSED", res.results[0].output); assert.equal(process.kill(process.pid, 0), true, "the host survived");
+  } finally { r.done(); rm(scr); }
+});
+
+test("verification fixes M1/M2: content changed between approval and run is refused; a .git folder blocks the run; the result carries the approved hash", async () => {
+  const r = mkRepo(); try {
+    const a = analyzeRepo(r.root), real = auth;
+    const swap = { verifyApproval: (...x) => { r.put("src/ship.mjs", "export const ship = 'swapped after approval';\n"); return real.verifyApproval(...x); } };
+    const res = await runRepoTests({ name: "r", root: r.root, ownerAuth: swap, ownerApproval: ap("REPO_TEST_RUN", "r#" + a.hash), isStopped: () => false });
+    assert.deepEqual([res.ok, res.reason], [false, "CONTENT_CHANGED_DURING_RUN"]); assert.equal(res.approvedHash, a.hash);
+    const r2 = mkRepo({ "tests/none.txt": "x" }); try {
+      const empty = await runRepoTests({ name: "r", root: r2.root, ownerAuth: auth, ownerApproval: ap("REPO_TEST_RUN", "r#" + analyzeRepo(r2.root).hash), isStopped: () => false, caps }); assert.equal(empty.ok, true);
+      fs.mkdirSync(path.join(r2.root, ".git")); fs.writeFileSync(path.join(r2.root, ".git", "config"), "[core]");
+      const g = await runRepoTests({ name: "r", root: r2.root, ownerAuth: auth, ownerApproval: ap("REPO_TEST_RUN", "r#" + analyzeRepo(r2.root).hash), isStopped: () => false, caps });
+      assert.deepEqual([g.ok, g.reason, g.unhashed.vcs], [false, "UNHASHED_CONTENT_PRESENT", 1]);
+    } finally { r2.done(); }
+  } finally { r.done(); }
+});
+
+test("verification fix M7: an empty or non-source tree, or one with unread hidden/linked parts, is never reported as having no findings", () => {
+  const base = tmp("empty-"); try {
+    const e = path.join(base, "e"); fs.mkdirSync(e); assert.equal(analyzeRepo(e).review.verdict, "NOTHING_REVIEWED");
+    fs.writeFileSync(path.join(e, "README.md"), "# x"); assert.equal(analyzeRepo(e).review.verdict, "NOTHING_REVIEWED");
+    fs.writeFileSync(path.join(e, "a.mjs"), "export const a = 1;\n"); assert.equal(analyzeRepo(e).review.verdict, "NO_FINDINGS_BY_THESE_RULES");
+    fs.mkdirSync(path.join(e, ".secret")); fs.writeFileSync(path.join(e, ".secret", "evil.mjs"), "eval(x)"); assert.equal(analyzeRepo(e).review.verdict, "INCOMPLETE_REVIEW", "hidden folder");
+    fs.rmSync(path.join(e, ".secret"), { recursive: true }); fs.symlinkSync("/etc", path.join(e, "lnk")); assert.equal(analyzeRepo(e).review.verdict, "INCOMPLETE_REVIEW", "symlink");
+  } finally { rm(base); }
+});

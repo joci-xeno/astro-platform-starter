@@ -18,13 +18,15 @@ export const CLASSES = Object.freeze(["PUBLIC", "PERSONAL", "CONFIDENTIAL", "SEC
 export const SCOPES = Object.freeze(["PERSONAL", "BUSINESS", "CUSTOMER", "SYSTEM"]);
 const NEEDS_CONSENT = new Set(["image", "audio", "video", "screen"]);
 export const LIMITS = Object.freeze({ textChars: 4000, maxRetentionDays: 730, defaultRetention: { PUBLIC: 365, PERSONAL: 90, CONFIDENTIAL: 30 }, maxRecords: 20000, tags: 10 });
-const SECRET = /-----BEGIN [A-Z ]*PRIVATE KEY-----|(?<![A-Za-z0-9])sk-[A-Za-z0-9]{20,}|(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}\b|(?<![A-Za-z0-9])ghp_[A-Za-z0-9]{30,}/;
 const sha = s => crypto.createHash("sha256").update(s).digest("hex");
+import { scrub, containsSecret } from "./secret-patterns.mjs";
 const RANK = { PUBLIC: 0, PERSONAL: 1, CONFIDENTIAL: 2, SECRET: 3 };
 
 export function createObservationMemory({ file = null, security = null, blackBox = null, now = () => new Date().toISOString(), maxRecords = LIMITS.maxRecords } = {}) {
   const store = createStore({ file, init: () => ({ items: {}, tombstones: {}, events: [], seq: 0 }) }), S = store.data;      // unreadable file => STORE_UNREADABLE, never replaced
-  const reload = () => { if (!file) return; let d; try { d = JSON.parse(fs.readFileSync(file, "utf8")); } catch (e) { if (e.code === "ENOENT") return; throw new Error("STORE_UNREADABLE:" + file.split(/[\\/]/).pop()); } S.items = d.items ?? {}; S.tombstones = d.tombstones ?? {}; S.events = d.events ?? []; S.seq = d.seq ?? 0; };
+  const reload = () => { if (!file) return; let d; try { d = JSON.parse(fs.readFileSync(file, "utf8")); } catch (e) { if (e.code === "ENOENT") return; throw new Error("STORE_UNREADABLE:" + file.split(/[\\/]/).pop()); } const obj = x => x !== null && typeof x === "object" && !Array.isArray(x);
+    if (!obj(d) || !obj(d.items ?? {}) || !obj(d.tombstones ?? {}) || !Array.isArray(d.events ?? []) || !Number.isInteger(d.seq ?? 0)) throw new Error("STORE_UNREADABLE:" + file.split(/[\\/]/).pop());   // same shape rules as at construction: a wrong-kind file is refused, never adopted and overwritten
+    S.items = d.items ?? {}; S.tombstones = d.tombstones ?? {}; S.events = d.events ?? []; S.seq = d.seq ?? 0; };
   const log = (kind, d) => { try { blackBox?.record({ kind, ...d }); } catch { /* audit must not change behaviour */ } };
   function event(type, by, d) {
     const prev = S.events.length ? S.events.at(-1).hash : "GENESIS", e = { n: S.events.length + 1, at: now(), type, by, ...d, prev }; e.hash = sha(prev + JSON.stringify({ ...e, hash: undefined })); S.events.push(e); log("OBSERVATION_" + type, { by, ...d }); return e;
@@ -45,13 +47,14 @@ export function createObservationMemory({ file = null, security = null, blackBox
     const kind = o.kind ?? "OBSERVATION", modality = o.modality ?? "text", scope = o.scope ?? "PERSONAL"; let cls = o.classification ?? "PERSONAL";
     if (!KINDS.includes(kind)) throw new Error("KIND_INVALID"); if (!MODALITIES.includes(modality)) throw new Error("MODALITY_INVALID"); if (!SCOPES.includes(scope)) throw new Error("SCOPE_INVALID"); if (!CLASSES.includes(cls)) throw new Error("CLASSIFICATION_INVALID");
     const text = String(o.text ?? "").trim(); if (!text) throw new Error("TEXT_REQUIRED"); if (text.length > LIMITS.textChars) throw new Error("TEXT_TOO_LONG");
-    if (cls === "SECRET" || SECRET.test(text)) throw new Error("SECRET_NOT_STORED");
+    if (cls === "SECRET" || containsSecret(text)) throw new Error("SECRET_NOT_STORED");
     if (NEEDS_CONSENT.has(modality) && !(o.consent?.granted === true && o.consent?.by === "OWNER" && o.consent?.purpose)) throw new Error("CONSENT_REQUIRED");
     if (o.privacyFlags?.exifGps || o.privacyFlags?.faces) cls = RANK[cls] < RANK.CONFIDENTIAL ? "CONFIDENTIAL" : cls;             // location/people raise the class automatically
     let screening = "NOT_SCREENED"; if (security) { const a = security.assess({ kind: "EXTERNAL_INSTRUCTION", agentId: null, source: "observation:" + kind, text }); screening = a.decision; if (a.allowed === false && w.forAgent) throw new Error("BLOCKED_BY_SECURITY"); if (a.allowed === false) screening = "BLOCK_OWNER_OVERRIDE_STORED_OWNER_ONLY"; }
     const tags = Array.isArray(o.tags) ? o.tags.slice(0, LIMITS.tags).map(t => String(t).toLowerCase().slice(0, 40)) : [];
+    if (tags.some(containsSecret) || containsSecret(JSON.stringify(o.source?.ref ?? "")) || containsSecret(JSON.stringify(o.ref ?? ""))) throw new Error("SECRET_NOT_STORED");
     const days = Math.min(Number(o.retentionDays) || LIMITS.defaultRetention[cls], LIMITS.maxRetentionDays); if (!(days > 0)) throw new Error("RETENTION_INVALID");
-    if (Object.keys(S.items).length >= maxRecords) throw new Error("MEMORY_FULL");
+    if (Object.values(S.items).filter(x => x.tenantId === w.tenantId).length >= maxRecords) throw new Error("MEMORY_FULL");
     const id = "ob-" + (++S.seq) + "-" + crypto.randomBytes(3).toString("hex"), t = now();
     const i = { id, tenantId: w.tenantId, kind, modality, scope, classification: cls, text, textSha256: sha(text), tags, source: { type: w.forAgent ? "AGENT" : (o.source?.type ?? "OWNER"), actor: w.actorId ?? null, ref: o.source?.ref ?? null }, ref: o.ref ?? null,
       consent: o.consent ? { granted: o.consent.granted === true, by: o.consent.by ?? null, purpose: o.consent.purpose ?? null, at: t } : { granted: false, by: null, purpose: null, at: null }, createdAt: t, retentionUntil: addDays(t, days), version: 1, history: [], screening, verification: o.verification ?? "UNVERIFIED", mediaSha256: o.mediaSha256 ?? null };
@@ -88,7 +91,7 @@ export function createObservationMemory({ file = null, security = null, blackBox
   /** New version with the corrected text. Owner may correct any record; an agent only agent-created records. The previous text is kept in owner-only history. */
   function correct(id, { text, reason = "" } = {}, w) {
     w = need(w); reload(); const i = mine(id, w); if (!i || expired(i)) throw new Error("UNKNOWN_OBSERVATION"); if (!canTouch(i, w)) throw new Error("NOT_PERMITTED");
-    const t = String(text ?? "").trim(); if (!t) throw new Error("TEXT_REQUIRED"); if (t.length > LIMITS.textChars) throw new Error("TEXT_TOO_LONG"); if (SECRET.test(t)) throw new Error("SECRET_NOT_STORED");
+    const t = String(text ?? "").trim(); if (!t) throw new Error("TEXT_REQUIRED"); if (t.length > LIMITS.textChars) throw new Error("TEXT_TOO_LONG"); if (containsSecret(t)) throw new Error("SECRET_NOT_STORED");
     if (security && w.forAgent) { const a = security.assess({ kind: "EXTERNAL_INSTRUCTION", agentId: null, source: "observation:correct", text: t }); if (a.allowed === false) throw new Error("BLOCKED_BY_SECURITY"); i.screening = a.decision; }
     i.history.push({ version: i.version, text: i.text, textSha256: i.textSha256, replacedAt: now(), by: by(w), reason: String(reason).slice(0, 280) }); i.text = t; i.textSha256 = sha(t); i.version++; i.correctedAt = now(); if (i.verification !== "UNVERIFIED") i.verification = "UNVERIFIED_AFTER_CORRECTION";
     event("CORRECTED", by(w), { id, version: i.version }); store.save(); return pub(i, w);

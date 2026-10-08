@@ -39,7 +39,13 @@ export function createSuggestions({ file = null, prefs, now = () => Date.now() }
     const t = T(tenantId), t0 = now(); prune(t, t0);
     const sup = { invalid: 0, duplicate: 0, disabled: 0, muted: 0, snoozed: 0, dailyLimit: 0, overInput: 0 };
     const list = Array.isArray(candidates) ? candidates : []; sup.overInput = Math.max(0, list.length - LIMITS.maxInput);
-    const seen = new Set(), ok = []; for (const raw of list.slice(0, LIMITS.maxInput)) { const c = normalizeCandidate(raw); if (!c) { sup.invalid++; continue; } if (seen.has(c.key)) { sup.duplicate++; continue; } seen.add(c.key); ok.push(c); }
+    const byKey = new Map(); for (let i = 0; i < Math.min(list.length, LIMITS.maxInput); i++) {
+      let c = null; try { c = normalizeCandidate(list[i]); } catch { c = null; }                 // a hostile candidate (throwing getter, odd prototype) is just invalid
+      if (!c) { sup.invalid++; continue; }
+      const prev = byKey.get(c.key); if (prev) { sup.duplicate++; if (c.priority > prev.priority) byKey.set(c.key, c); continue; }      // for duplicates the highest priority wins, not the first one
+      byKey.set(c.key, c);
+    }
+    const ok = [...byKey.values()];
     if (!pv(tenantId, "suggestions.enabled")) { sup.disabled = ok.length; return { ok: true, shown: [], suppressed: sup, note: "Suggestions are turned off in the preferences." }; }
     const muted = new Set(pv(tenantId, "suggestions.mutedSources")), cap = Math.min(LIMITS.maxShownHardCap, pv(tenantId, "suggestions.maxPerDay")), today = (t.days[dayOf(t0)] ??= { shown: [] }), shownToday = new Set(today.shown);
     ok.sort((a, b) => b.priority - a.priority || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));        // ALL valid candidates are ranked before anything is cut
@@ -65,7 +71,7 @@ export function createSuggestions({ file = null, prefs, now = () => Date.now() }
     const rc = prefs.recordChoice(tenantId, { kind, subject: k.source, actor: "OWNER" }); return { ok: true, key, hiddenUntil: new Date(t.snoozed[key]).toISOString(), counted: Boolean(rc.ok && rc.recorded) };
   }
   const dismiss = (tenantId, key, { actor } = {}) => settle(tenantId, key, "dismissed", actor), acknowledge = (tenantId, key, { actor } = {}) => settle(tenantId, key, "acknowledged", actor);
-  function unsnooze(tenantId, key, { actor } = {}) { if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_UNSNOOZE" }; const t = T(tenantId); if (!(key in t.snoozed)) return { ok: false, reason: "NOT_SNOOZED" }; delete t.snoozed[key]; store.save(); return { ok: true, key }; }
+  function unsnooze(tenantId, key, { actor } = {}) { if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_UNSNOOZE" }; const t = T(tenantId); if (!Object.hasOwn(t.snoozed, key)) return { ok: false, reason: "NOT_SNOOZED" }; delete t.snoozed[key]; store.save(); return { ok: true, key }; }
   const status = tenantId => { const t = T(tenantId), t0 = now(); prune(t, t0); return { ok: true, snoozed: Object.entries(t.snoozed).map(([key, u]) => ({ key, until: new Date(u).toISOString() })), shownToday: (t.days[dayOf(t0)]?.shown ?? []).length }; };
   return { offer, dismiss, acknowledge, unsnooze, status, limits: LIMITS };
 }
