@@ -121,6 +121,36 @@
    "claim": "Money Engine panel reports unknown revenue as unknown, not zero-verified",
    "ok": true,
    "note": "{\"environment\":\"LIVE\",\"deals\":{\"DISCOVERED\":0,\"SCREENED\":0,\"QUALIFIED\":0,\"FEASIBLE\":0,\"READY_FOR_OUTREACH\":0,\"OUTREACH_DRAFTED\":0,\"OUTREACH_APPROVED_IF_REQUIRED"
+  },
+  {
+   "id": "P21",
+   "claim": "Runtime HTTP: every sensitive route is 401 without the token, and an unconfigured token fails closed (503)",
+   "ok": true,
+   "note": "401,401,503,200,401,401,503,200,401,401,503,200,401,401,503,200,401,401,503,200"
+  },
+  {
+   "id": "P22",
+   "claim": "Plugin hook child: cannot read outside, write, spawn; sees no inherited secrets",
+   "ok": true,
+   "note": "[0,0,0,0] level=PERMISSION+NETWORK_NAMESPACE"
+  },
+  {
+   "id": "P23",
+   "claim": "Restricted launcher fails closed when the host cannot restrict Node",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "id": "P24",
+   "claim": "No production source uses Math.random()",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "id": "P25",
+   "claim": "Agents cannot enable/rollback/restore via the chain: RESTORE-class operations fail closed without owner approval",
+   "ok": true,
+   "note": "allowed: "
   }
  ]
 }

@@ -55,3 +55,17 @@ test("POST /api/updates/auto: token required; enabling automatic updates WITHOUT
     const st = await c.get("/api/updates"); assert.equal(st.status, 200); assert.ok(!/"auto(Update)?(Enabled)?"\s*:\s*true/.test(st.body), st.body.slice(0, 300));
   } finally { await c.close(); }
 });
+test("ATLASZ-T3-006: restore is reachable from the Owner Safety action (UI path) AND the direct route, and both refuse without a valid owner signature, leaving state untouched", async () => {
+  const c = await boot();
+  try {
+    const f = path.join(c.stateDir, "important.json"); fs.writeFileSync(f, '{"v":1}');
+    const b = JSON.parse((await c.post("/api/backup", { label: "pre" })).body).result;
+    fs.writeFileSync(f, '{"v":2}');
+    for (const [p, body] of [["/api/owner-safety/action", { action: "RESTORE", id: b.id, passphrase: "wrong passphrase" }], ["/api/restore/backup", { id: b.id, passphrase: "wrong passphrase" }]]) {
+      const r = await c.post(p, body); const j = JSON.parse(r.body);
+      assert.ok(r.status >= 400 || j.result?.ok === false || j.result?.restored === false, p + " must not restore: " + r.body.slice(0, 200));
+      assert.equal(fs.readFileSync(f, "utf8"), '{"v":2}', p + " changed state without approval");
+    }
+    assert.equal((await c.post("/api/restore/backup", { id: b.id }, null)).status, 401);
+  } finally { await c.close(); }
+});
