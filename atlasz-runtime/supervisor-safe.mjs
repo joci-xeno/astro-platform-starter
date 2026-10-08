@@ -26,6 +26,7 @@ import { createPersonalCommandCenter, registerPccTools } from "../atlasz-addons/
 import { createDocumentCenter } from "../atlasz-addons/document-center.mjs";
 import { createKnowledgeProjects } from "../atlasz-addons/knowledge-projects.mjs";
 import { createResearchLedger } from "../atlasz-addons/research-ledger.mjs";
+import { createCodeSandbox, registerSandboxTools } from "../atlasz-addons/code-sandbox.mjs";
 import { createToolRegistry } from "../atlasz-addons/typed-tools.mjs";
 import { createInboxPipeline } from "../atlasz-addons/business/inbox-pipeline.mjs";
 import { createOwnerControlSystem } from "../atlasz-addons/owner-control/owner-control-system.mjs";
@@ -161,6 +162,9 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
   rtool("research.declare_contradiction", "Flag two findings of one question as contradicting. Only the owner can resolve it.", "INTERNAL_COMPUTE", { a: RID, b: RID, note: { type: "string", maxLength: 1000 } }, ["a", "b"], x => research.declareContradiction(x.a, x.b, { note: x.note }, kpWho));
   rtool("research.report", "Structured report: verified facts, conflicted, refuted, outdated, unverifiable, unsupported, assumptions (re-verified now).", "READ_STATUS", { questionId: RID }, ["questionId"], a => research.report(a.questionId, kpWho));
   rtool("research.unresolved", "Questions without a verified, uncontested answer.", "READ_STATUS", { projectId: RID }, [], a => ({ questions: research.unresolved(kpWho, { projectId: a.projectId ?? null }) }));
+  // Code sandbox: untrusted code runs in a separate OS process (never in this runtime). Isolation level is detected and reported; process-only runs need a signed, argument-bound owner approval.
+  const sandbox = createCodeSandbox({ baseDir: path.join(dataDir, "sandbox", "runs"), auditFile: path.join(dataDir, "sandbox", "audit.jsonl"), blackBox: brain.blackBox, now });
+  registerSandboxTools(tools, sandbox);
   const scheduler = createScheduler({ file: path.join(dataDir, "scheduler", "schedules.json"), tools, now, blackBox: brain.blackBox,
     gate: o => { const e = emergencyGate(o); if (!e.allowed) return e; return safeMode.gate({ ...o, write: true }); } });
   const brainSafe = fn => { try { return fn(); } catch (e) { try { console.log(JSON.stringify({ at: now(), type: "brain_error", error: String(e.message).slice(0, 120) })); } catch { /* ignore */ } return null; } };
@@ -372,7 +376,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
       agents: state.agents, blockers, sourceErrors: state.sourceErrors, emergency: emergencyStatus(), safeMode: safeMode.status(), pendingApprovals: approvalRequests.pending().length, queue: queue.stats(), watchdog: watchdog.status(),
       selfCheck: { level: selfCheck.level, problems: selfCheck.checks.filter(c => c.status !== "OK").map(c => ({ id: c.id, status: c.status, detail: c.detail })) },
       vault: vault.status(), internalAddons: addonSnapshot(),
-      brain: brainSafe(() => brain.summary()) ?? { state: "ERROR" }, models: brainSafe(() => modelGateway.summary()) ?? { state: "ERROR" }, research: brainSafe(() => research.summary({ tenantId: KP_TENANT, role: "OWNER" })) ?? { state: "ERROR" }, knowledge: brainSafe(() => ({ projects: knowledge.list({ tenantId: KP_TENANT }).length, documents: documents.summary().total, method: "KEYWORD_BM25_NOT_SEMANTIC" })) ?? { state: "ERROR" }, scheduler: brainSafe(() => scheduler.summary()) ?? { state: "ERROR" }, pcc: brainSafe(() => pcc.summary()) ?? { state: "ERROR" }, moneyEngine: brainSafe(() => moneyEngine.panel()) ?? { state: "ERROR" }, behavior: brainSafe(() => brain.behavior.summary()) ?? { state: "ERROR" }, inbox: brainSafe(() => ({ ...inbox.counts(), pipeline: inboxPipeline.summary() })) ?? { state: "ERROR" }, ownerControl: brainSafe(() => ownerControl.status()) ?? { state: "ERROR" }, ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
+      brain: brainSafe(() => brain.summary()) ?? { state: "ERROR" }, models: brainSafe(() => modelGateway.summary()) ?? { state: "ERROR" }, sandbox: brainSafe(() => { const x = sandbox.summary(); return { level: x.level, languages: x.languages, runs: x.runs, audit: x.audit, label: x.label }; }) ?? { state: "ERROR" }, research: brainSafe(() => research.summary({ tenantId: KP_TENANT, role: "OWNER" })) ?? { state: "ERROR" }, knowledge: brainSafe(() => ({ projects: knowledge.list({ tenantId: KP_TENANT }).length, documents: documents.summary().total, method: "KEYWORD_BM25_NOT_SEMANTIC" })) ?? { state: "ERROR" }, scheduler: brainSafe(() => scheduler.summary()) ?? { state: "ERROR" }, pcc: brainSafe(() => pcc.summary()) ?? { state: "ERROR" }, moneyEngine: brainSafe(() => moneyEngine.panel()) ?? { state: "ERROR" }, behavior: brainSafe(() => brain.behavior.summary()) ?? { state: "ERROR" }, inbox: brainSafe(() => ({ ...inbox.counts(), pipeline: inboxPipeline.summary() })) ?? { state: "ERROR" }, ownerControl: brainSafe(() => ownerControl.status()) ?? { state: "ERROR" }, ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
     };
   }
   const watchdog = createWatchdog({ onEscalate: e => safeMode.enter("WATCHDOG:" + e.id, { detail: e.detail }) });
@@ -401,7 +405,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
     schedule(() => brainSafe(() => brain.behavior.scan()), 60000);          // behaviour anomaly scan over the tamper-evident Black Box (detect + recommend only)
   }
   function stop() { stopping = true; watchdog.stop(); for (const t of timers) clearTimeout(t); save(); }
-  return { tools, modelGateway, knowledge, research, documents, pcc, scheduler, inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
+  return { tools, modelGateway, knowledge, research, sandbox, documents, pcc, scheduler, inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
 }
 
 if (process.env.ATLASZ_TEST_MODE !== "1") {
