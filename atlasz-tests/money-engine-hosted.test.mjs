@@ -46,13 +46,13 @@ test("hosted typed tools: read-only built-ins work through the control chain; ba
   const dir = tmp("tt-");
   try {
     const rt = createRuntime({ dataDir: dir, retryBaseMs: 0, fetchImpl: async () => ({ ok: false, status: 500, json: async () => ({}), text: async () => "" }) });
-    const names = rt.tools.describe().map(t => t.name).sort(); assert.deepEqual(names, ["atlasz.queue", "inbox.summary", "kp.answer", "kp.list", "kp.search", "kp.verify", "media.inspect_document", "media.status", "model.complete", "money.panel", "pcc.add", "pcc.agenda", "pcc.complete", "pcc.summary", "research.add_finding", "research.add_source", "research.attach_evidence", "research.declare_contradiction", "research.open_question", "research.report", "research.unresolved", "sandbox.run", "sandbox.run_process_only", "sandbox.status"]);
+    const names = rt.tools.describe().map(t => t.name).sort(); assert.deepEqual(names, ["atlasz.queue", "inbox.summary", "kp.answer", "kp.list", "kp.search", "kp.verify", "media.inspect_document", "media.status", "model.complete", "money.panel", "obs.capture_research", "obs.correct", "obs.forget", "obs.observe", "obs.recall", "obs.summary", "pcc.add", "pcc.agenda", "pcc.complete", "pcc.summary", "research.add_finding", "research.add_source", "research.attach_evidence", "research.declare_contradiction", "research.open_question", "research.report", "research.unresolved", "sandbox.run", "sandbox.run_process_only", "sandbox.status"]);
     const A = { actor: { type: "AGENT", id: "E1" } };
     const q = await rt.tools.invoke("atlasz.queue", {}, A); assert.equal(q.status, "OK"); assert.equal(typeof q.result.full, "boolean");
     const mp = await rt.tools.invoke("money.panel", {}, A); assert.equal(mp.status, "OK"); assert.equal(mp.result.money.verifiedRevenueUsd, 0);
     assert.equal((await rt.tools.invoke("money.panel", { x: 1 }, A)).status, "INVALID_ARGUMENTS");
     assert.equal((await rt.tools.invoke("inbox.send_all", {}, A)).status, "UNKNOWN_TOOL");
-    assert.equal(rt.tools.stats().tools, 24);
+    assert.equal(rt.tools.stats().tools, 30);
     // model gateway is hosted but empty: no credentials => honest NO_ELIGIBLE_PROVIDER, never a fabricated answer; the call is typed + chain-classified + marked untrusted
     const mc = await rt.tools.invoke("model.complete", { prompt: "hello" }, A); assert.equal(mc.status, "OK"); assert.equal(mc.result.ok, false); assert.equal(mc.result.reason, "NO_ELIGIBLE_PROVIDER"); assert.equal(mc.result.untrusted, true);
     assert.equal((await rt.tools.invoke("model.complete", { prompt: "" }, A)).status, "INVALID_ARGUMENTS"); assert.equal((await rt.tools.invoke("model.complete", { prompt: "x", capability: "magic" }, A)).status, "INVALID_ARGUMENTS");

@@ -28,6 +28,7 @@ import { createKnowledgeProjects } from "../atlasz-addons/knowledge-projects.mjs
 import { createResearchLedger } from "../atlasz-addons/research-ledger.mjs";
 import { createCodeSandbox, registerSandboxTools } from "../atlasz-addons/code-sandbox.mjs";
 import { createModalityFabric, registerModalityTools } from "../atlasz-addons/modality-fabric.mjs";
+import { createObservationMemory, registerObservationTools, registerResearchCapture } from "../atlasz-addons/observation-memory.mjs";
 import { createToolRegistry } from "../atlasz-addons/typed-tools.mjs";
 import { createInboxPipeline } from "../atlasz-addons/business/inbox-pipeline.mjs";
 import { createOwnerControlSystem } from "../atlasz-addons/owner-control/owner-control-system.mjs";
@@ -169,6 +170,9 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
   // Code sandbox: untrusted code runs in a separate OS process (never in this runtime). Isolation level is detected and reported; process-only runs need a signed, argument-bound owner approval.
   const sandbox = createCodeSandbox({ baseDir: path.join(dataDir, "sandbox", "runs"), auditFile: path.join(dataDir, "sandbox", "audit.jsonl"), blackBox: brain.blackBox, now });
   registerSandboxTools(tools, sandbox);
+  // Observation memory: consent / retention / correction / deletion for personal observations. Agents reach it only through obs.* typed tools (role AGENT; PUBLIC/PERSONAL, Security-Brain ALLOW only).
+  const observations = createObservationMemory({ file: path.join(dataDir, "memory", "observations.json"), security: brain.security, blackBox: brain.blackBox, now });
+  registerObservationTools(tools, observations, { tenantId: KP_TENANT }); registerResearchCapture(tools, observations, research, { tenantId: KP_TENANT });
   const scheduler = createScheduler({ file: path.join(dataDir, "scheduler", "schedules.json"), tools, now, blackBox: brain.blackBox,
     gate: o => { const e = emergencyGate(o); if (!e.allowed) return e; return safeMode.gate({ ...o, write: true }); } });
   const brainSafe = fn => { try { return fn(); } catch (e) { try { console.log(JSON.stringify({ at: now(), type: "brain_error", error: String(e.message).slice(0, 120) })); } catch { /* ignore */ } return null; } };
@@ -380,7 +384,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
       agents: state.agents, blockers, sourceErrors: state.sourceErrors, emergency: emergencyStatus(), safeMode: safeMode.status(), pendingApprovals: approvalRequests.pending().length, queue: queue.stats(), watchdog: watchdog.status(),
       selfCheck: { level: selfCheck.level, problems: selfCheck.checks.filter(c => c.status !== "OK").map(c => ({ id: c.id, status: c.status, detail: c.detail })) },
       vault: vault.status(), internalAddons: addonSnapshot(),
-      brain: brainSafe(() => brain.summary()) ?? { state: "ERROR" }, models: brainSafe(() => modelGateway.summary()) ?? { state: "ERROR" }, modality: brainSafe(() => { const m = modality.summary(); return { builtIn: m.builtIn.length, externalSlotsNotLive: m.external, note: m.note }; }) ?? { state: "ERROR" }, sandbox: brainSafe(() => { const x = sandbox.summary(); return { level: x.level, languages: x.languages, runs: x.runs, audit: x.audit, label: x.label }; }) ?? { state: "ERROR" }, research: brainSafe(() => research.summary({ tenantId: KP_TENANT, role: "OWNER" })) ?? { state: "ERROR" }, knowledge: brainSafe(() => ({ projects: knowledge.list({ tenantId: KP_TENANT }).length, documents: documents.summary().total, method: "KEYWORD_BM25_NOT_SEMANTIC" })) ?? { state: "ERROR" }, scheduler: brainSafe(() => scheduler.summary()) ?? { state: "ERROR" }, pcc: brainSafe(() => pcc.summary()) ?? { state: "ERROR" }, moneyEngine: brainSafe(() => moneyEngine.panel()) ?? { state: "ERROR" }, behavior: brainSafe(() => brain.behavior.summary()) ?? { state: "ERROR" }, inbox: brainSafe(() => ({ ...inbox.counts(), pipeline: inboxPipeline.summary() })) ?? { state: "ERROR" }, ownerControl: brainSafe(() => ownerControl.status()) ?? { state: "ERROR" }, ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
+      brain: brainSafe(() => brain.summary()) ?? { state: "ERROR" }, models: brainSafe(() => modelGateway.summary()) ?? { state: "ERROR" }, observations: brainSafe(() => { const x = observations.summary({ tenantId: KP_TENANT, role: "OWNER" }); return { total: x.total, expired: x.expired, deleted: x.deleted, rawMediaStored: false, chain: x.chain, method: x.method }; }) ?? { state: "ERROR" }, modality: brainSafe(() => { const m = modality.summary(); return { builtIn: m.builtIn.length, externalSlotsNotLive: m.external, note: m.note }; }) ?? { state: "ERROR" }, sandbox: brainSafe(() => { const x = sandbox.summary(); return { level: x.level, languages: x.languages, runs: x.runs, audit: x.audit, label: x.label }; }) ?? { state: "ERROR" }, research: brainSafe(() => research.summary({ tenantId: KP_TENANT, role: "OWNER" })) ?? { state: "ERROR" }, knowledge: brainSafe(() => ({ projects: knowledge.list({ tenantId: KP_TENANT }).length, documents: documents.summary().total, method: "KEYWORD_BM25_NOT_SEMANTIC" })) ?? { state: "ERROR" }, scheduler: brainSafe(() => scheduler.summary()) ?? { state: "ERROR" }, pcc: brainSafe(() => pcc.summary()) ?? { state: "ERROR" }, moneyEngine: brainSafe(() => moneyEngine.panel()) ?? { state: "ERROR" }, behavior: brainSafe(() => brain.behavior.summary()) ?? { state: "ERROR" }, inbox: brainSafe(() => ({ ...inbox.counts(), pipeline: inboxPipeline.summary() })) ?? { state: "ERROR" }, ownerControl: brainSafe(() => ownerControl.status()) ?? { state: "ERROR" }, ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
     };
   }
   const watchdog = createWatchdog({ onEscalate: e => safeMode.enter("WATCHDOG:" + e.id, { detail: e.detail }) });
@@ -409,7 +413,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
     schedule(() => brainSafe(() => brain.behavior.scan()), 60000);          // behaviour anomaly scan over the tamper-evident Black Box (detect + recommend only)
   }
   function stop() { stopping = true; watchdog.stop(); for (const t of timers) clearTimeout(t); save(); }
-  return { tools, modelGateway, knowledge, research, sandbox, modality, documents, pcc, scheduler, inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
+  return { tools, modelGateway, knowledge, research, sandbox, modality, observations, documents, pcc, scheduler, inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
 }
 
 if (process.env.ATLASZ_TEST_MODE !== "1") {

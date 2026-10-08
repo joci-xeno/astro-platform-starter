@@ -20,6 +20,7 @@ import { buildDailyBrief, answerQuery, DEFAULT_PREFS, briefDue, markBriefShown }
 import { assessImpact } from "../atlasz-addons/human-core.mjs";
 import { createMobileApi } from "../atlasz-addons/mobile-api.mjs";
 import { createApprovalRequests } from "../atlasz-addons/approval-requests.mjs";
+import { createObservationMemory } from "../atlasz-addons/observation-memory.mjs";
 import { createModalityFabric } from "../atlasz-addons/modality-fabric.mjs";
 import { createCodeSandbox } from "../atlasz-addons/code-sandbox.mjs";
 import { createResearchLedger } from "../atlasz-addons/research-ledger.mjs";
@@ -316,6 +317,25 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
       default: throw new Error("UNKNOWN_RESEARCH_OP");
     }
   }
+  // Observation memory (owner view; same file as the runtime). Media observations are metadata-only and need explicit consent with a purpose.
+  const OW = { tenantId: KP_T, role: "OWNER" }, obsInst = () => createObservationMemory({ file: path.join(stateDir, "memory", "observations.json") });
+  const observations = ({ query = "", scopes = ["PERSONAL", "BUSINESS", "CUSTOMER", "SYSTEM"] } = {}) => { try { const m = obsInst(); return { state: "CONNECTED", summary: m.summary(OW), results: m.recall({ query, scopes, limit: 50 }, OW).results, events: m.events(OW, { limit: 20 }) }; } catch (e) { return { state: "UNREADABLE", error: String(e.message) }; } };
+  function observationsAction({ op, ...a } = {}) {
+    const m = obsInst();
+    switch (op) {
+      case "observe": return m.observe({ text: a.text, kind: a.kind, scope: a.scope, classification: a.classification, tags: a.tags, retentionDays: a.retentionDays, modality: a.modality, consent: a.consent }, OW);
+      case "observeDocument": { const bytes = docCenter().readBytes(a.documentId, { tenantId: KP_T, role: "OWNER" }); if (!bytes) throw new Error("DOCUMENT_NOT_AVAILABLE"); return m.observeMedia(modalityFabric.describe(bytes, {}), { consent: a.consent, tags: a.tags, retentionDays: a.retentionDays }, OW); }
+      case "search": return m.recall({ query: a.query, scopes: a.scopes ?? ["PERSONAL", "BUSINESS", "CUSTOMER", "SYSTEM"], limit: 50 }, OW);
+      case "correct": return m.correct(a.id, { text: a.text, reason: a.reason }, OW);
+      case "forget": return m.forget(a.id, { reason: a.reason }, OW);
+      case "forgetWhere": return m.forgetWhere(a.filter ?? {}, OW);
+      case "forgetAll": return m.forgetAll({ confirm: a.confirm }, OW);
+      case "purge": return m.purgeExpired(OW);
+      case "history": return m.history(a.id, OW);
+      case "export": return m.exportAll(OW);
+      default: throw new Error("UNKNOWN_OBSERVATION_OP");
+    }
+  }
   // Code sandbox (owner view). Runs here use NAMESPACE isolation only; a process-only run needs a signed approval through the control chain and is not offered from this form.
   const sandboxInst = () => createCodeSandbox({ baseDir: path.join(stateDir, "sandbox", "runs"), auditFile: path.join(stateDir, "sandbox", "audit.jsonl") });
   const sandbox = () => { try { const s = sandboxInst(); return { state: "CONNECTED", summary: s.summary(), history: s.history({ limit: 25 }).reverse() }; } catch (e) { return { state: "UNREADABLE", error: String(e.message) }; } };
@@ -418,6 +438,6 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   };
 
   const moneyViews = createMoneyViews({ stateDir });
-  return { pcc, pccAction, knowledge, knowledgeAction, research, researchAction, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }
