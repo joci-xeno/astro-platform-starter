@@ -81,3 +81,48 @@ test("themes are data-only: no approval needed, variables whitelisted, can be se
     r.pm.setTheme(null); assert.deepEqual(r.pm.activeTheme().variables, {});
   } finally { r.done(); }
 });
+
+// ---- Task 4 / M1.2 (ATLASZ-T3-002): least-privilege hooks ----
+const probeHook = (outsideFile, ownDir) => `let d='';process.stdin.on('data',c=>d+=c).on('end',async()=>{const fs=await import('node:fs');const cp=await import('node:child_process');
+const t=f=>{try{f();return 'ALLOWED'}catch{return 'DENIED'}};
+console.log(JSON.stringify({readOutside:t(()=>fs.readFileSync(${JSON.stringify(outsideFile)})),writeOwn:t(()=>fs.writeFileSync(${JSON.stringify(path.join(ownDir, "o.txt"))},'x')),spawn:t(()=>cp.execSync('echo hi')),env:Object.keys(process.env).sort()}));});`;
+test("hook runs with least privilege: cannot read outside its dir, cannot spawn, cannot write without FILESYSTEM_PLUGIN_DIR, env holds only PATH + plugin id/hook", async () => {
+  const r = rig(); const outside = path.join(r.root, "outside-secret.txt"); fs.writeFileSync(outside, "SECRET");
+  try {
+    const dir = path.join(r.root, "plugins", "probe");
+    r.mk("probe", { ...base, id: "probe", name: "P", kind: "PLUGIN", entry: "m.mjs" }, { "m.mjs": probeHook(outside, dir) });
+    assert.equal(r.pm.enable("probe", { ownerApproval: ap("PLUGIN_ENABLE", "probe") }).ok, true);
+    process.env.ATLASZ_VAULT_KEY = "vault-secret";
+    try {
+      const res = await r.pm.invoke("probe", "go"); assert.equal(res.ok, true, JSON.stringify(res));
+      const { env: childEnv, ...rest } = res.result;
+      assert.deepEqual(rest, { readOutside: "DENIED", writeOwn: "DENIED", spawn: "DENIED" });
+      assert.deepEqual(childEnv.filter(k => k !== "PATH"), ["ATLASZ_PLUGIN_HOOK", "ATLASZ_PLUGIN_ID"]);
+      assert.ok(!fs.existsSync(path.join(dir, "o.txt")));
+    } finally { delete process.env.ATLASZ_VAULT_KEY; }
+  } finally { r.done(); }
+});
+test("FILESYSTEM_PLUGIN_DIR grant (given at enable time) allows writing inside the plugin dir only", async () => {
+  const r = rig(); const outside = path.join(r.root, "outside-secret.txt"); fs.writeFileSync(outside, "SECRET");
+  try {
+    const dir = path.join(r.root, "plugins", "wr");
+    r.mk("wr", { ...base, id: "wr", name: "W", kind: "PLUGIN", entry: "m.mjs", permissions: ["READ_STATE", "FILESYSTEM_PLUGIN_DIR"] }, { "m.mjs": probeHook(outside, dir) });
+    assert.equal(r.pm.enable("wr", { ownerApproval: ap("PLUGIN_ENABLE", "wr") }).ok, true);
+    const res = await r.pm.invoke("wr", "go"); assert.equal(res.ok, true, JSON.stringify(res));
+    assert.equal(res.result.writeOwn, "ALLOWED"); assert.equal(res.result.readOutside, "DENIED"); assert.equal(res.result.spawn, "DENIED");
+  } finally { r.done(); }
+});
+test("host that cannot restrict Node => hook is NOT run (fails closed): SANDBOX_UNAVAILABLE, audited as PLUGIN_HOOK_NOT_RUN, plugin not quarantined, marker never written", async () => {
+  const r = rig(); const marker = path.join(r.root, "RAN.txt");
+  const fakeNode = path.join(r.root, "fake-node.sh"); fs.writeFileSync(fakeNode, `#!/bin/sh\nif [ "$1" = "--permission" ]; then exit 9; fi\necho ran > ${JSON.stringify(marker)}\n`, { mode: 0o755 });
+  try {
+    const plugins = path.join(r.root, "plugins");
+    const pm = createPluginManager({ roots: [plugins], stateDir: path.join(r.root, "state2"), ownerAuth: createOwnerAuth({ publicKeyB64: key.publicKeyB64 }), nodeBin: fakeNode, hookTimeoutMs: 1500, quarantineAfter: 1 });
+    r.mk("nr", { ...base, id: "nr", name: "N", kind: "PLUGIN", entry: "m.mjs" }, { "m.mjs": "console.log('{}')" });
+    assert.equal(pm.enable("nr", { ownerApproval: ap("PLUGIN_ENABLE", "nr") }).ok, true);
+    for (let i = 0; i < 3; i++) assert.deepEqual(await pm.invoke("nr", "go"), { ok: false, reason: "SANDBOX_UNAVAILABLE" });
+    assert.ok(!fs.existsSync(marker), "unrestricted fallback must never run");
+    assert.equal(pm.list().plugins.find(p => p.id === "nr").status, "ENABLED");
+    assert.ok(fs.readFileSync(path.join(r.root, "state2", "plugins-audit.jsonl"), "utf8").includes("PLUGIN_HOOK_NOT_RUN"));
+  } finally { r.done(); }
+});

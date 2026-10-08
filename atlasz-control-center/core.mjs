@@ -4,6 +4,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { createOwnerAuth } from "../atlasz-addons/owner-auth.mjs";
 import { createEmergencyStop } from "../atlasz-addons/emergency-stop.mjs";
@@ -77,9 +78,11 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   }
   const uc = () => { if (!updateCenter) { updateCenter = createUpdateCenter({ stateDir: path.join(stateDir, "updates"), backupRoot: path.join(backupRoot, "updates"), adapters, ownerAuth: ownerAuth(), lkgRegistry: lkg() }); ensureComponents(updateCenter); } return updateCenter; };
 
+  // Token the runtime requires on every route except /health (ATLASZ-T3-001). A runtime started outside the Control Center keeps its own token via ATLASZ_RUNTIME_TOKEN.
+  const runtimeToken = process.env.ATLASZ_RUNTIME_TOKEN && process.env.ATLASZ_RUNTIME_TOKEN.length >= 24 ? process.env.ATLASZ_RUNTIME_TOKEN : randomBytes(24).toString("hex");
   async function runtimeDashboard() {
     try {
-      const r = await fetchImpl("http://127.0.0.1:" + port + "/status", { signal: AbortSignal.timeout(3000) });
+      const r = await fetchImpl("http://127.0.0.1:" + port + "/status", { signal: AbortSignal.timeout(3000), headers: { "x-atlasz-token": runtimeToken } });
       if (!r.ok) return { reachable: false, reason: "HTTP_" + r.status, dashboard: null };
       return { reachable: true, reason: null, dashboard: await r.json() };
     } catch (e) { return { reachable: false, reason: String(e.cause?.code || e.message), dashboard: null }; }
@@ -197,7 +200,7 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   function startRuntime() {
     if (child && child.exitCode === null && child.signalCode === null) return { started: false, reason: "ALREADY_RUNNING", pid: child.pid };
     const k = keystoreStatus(configDir);
-    const env = { ...process.env, ATLASZ_STATE_DIR: stateDir, PORT: String(port), ...(k.publicKeyB64 ? { ATLASZ_OWNER_PUBLIC_KEY: k.publicKeyB64 } : {}) };
+    const env = { ...process.env, ATLASZ_STATE_DIR: stateDir, PORT: String(port), ATLASZ_RUNTIME_TOKEN: runtimeToken, ...(k.publicKeyB64 ? { ATLASZ_OWNER_PUBLIC_KEY: k.publicKeyB64 } : {}) };
     delete env.ATLASZ_TEST_MODE;
     if (process.versions.electron) env.ELECTRON_RUN_AS_NODE = "1";    // packaged app: the Electron binary doubles as Node for the runtime
     child = spawn(nodeBin, [runtimeEntry], { env, stdio: "ignore", windowsHide: true });

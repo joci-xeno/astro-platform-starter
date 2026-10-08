@@ -103,3 +103,33 @@ test("post-install failure triggers automatic rollback to the previous version, 
     assert.equal(r.uc.freezeStatus().active, false);
   } finally { r.done(); }
 });
+
+// ---- Task 4 / M1.2 (ATLASZ-T3-002): update self-tests are sandboxed ----
+test("update self-test runs restricted: cannot read outside the package, cannot spawn, cannot write, sees no inherited secrets; evidence records the isolation level", async () => {
+  const d = tmp("upd-iso-"), outside = tmp("upd-out-");
+  try {
+    fs.writeFileSync(path.join(outside, "s.txt"), "SECRET");
+    fs.writeFileSync(path.join(d, SELFTEST), `import fs from 'node:fs'; import cp from 'node:child_process';
+const t=f=>{try{f();return 'ALLOWED'}catch{return 'DENIED'}};
+const bad=[t(()=>fs.readFileSync(${JSON.stringify(path.join(outside, "s.txt"))})),t(()=>fs.writeFileSync('w.txt','x')),t(()=>cp.execSync('echo hi'))].filter(x=>x==='ALLOWED').length;
+process.exit(bad||process.env.ATLASZ_VAULT_KEY?3:0);\n`);
+    process.env.ATLASZ_VAULT_KEY = "vault-secret";
+    try {
+      const { adapters } = createLocalUpdateAdapters({ inboxDir: d });
+      const r = await adapters.tester({ dir: d, phase: "PRE_INSTALL" });
+      assert.equal(r.passed, true, JSON.stringify(r)); assert.equal(r.evidence.isolation.filesystemRestricted, true);
+      assert.equal(typeof r.evidence.isolation.networkBlocked, "boolean");
+      assert.ok(!fs.existsSync(path.join(d, "w.txt")));
+    } finally { delete process.env.ATLASZ_VAULT_KEY; }
+  } finally { rm(d); rm(outside); }
+});
+test("update self-test on a host that cannot restrict Node fails closed: not run, passed:false, marker never written", async () => {
+  const d = tmp("upd-nr-"), marker = path.join(d, "RAN.txt"), fake = path.join(d, "fake-node.sh");
+  try {
+    fs.writeFileSync(fake, `#!/bin/sh\nif [ "$1" = "--permission" ]; then exit 9; fi\necho ran > ${JSON.stringify(marker)}\n`, { mode: 0o755 });
+    fs.writeFileSync(path.join(d, SELFTEST), "process.exit(0)\n");
+    const { adapters } = createLocalUpdateAdapters({ inboxDir: d, nodeBin: fake });
+    const r = await adapters.tester({ dir: d, phase: "PRE_INSTALL" });
+    assert.equal(r.passed, false); assert.equal(r.evidence.error, "SANDBOX_UNAVAILABLE"); assert.ok(!fs.existsSync(marker));
+  } finally { rm(d); }
+});

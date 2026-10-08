@@ -82,7 +82,8 @@ test("update-freeze gate stops external search dispatch but not internal screeni
   } finally { rm(d); }
 });
 
-function get(port, p) { return new Promise((res, rej) => { http.get({ port, path: p, host: "127.0.0.1" }, r => { let b = ""; r.on("data", c => b += c); r.on("end", () => { try { res({ status: r.statusCode, body: JSON.parse(b) }); } catch (e) { rej(e); } }); }).on("error", rej); }); }
+const TOKEN = "t".repeat(8) + "k".repeat(24);
+function get(port, p, token = TOKEN) { return new Promise((res, rej) => { http.get({ port, path: p, host: "127.0.0.1", headers: token ? { "x-atlasz-token": token } : {} }, r => { let b = ""; r.on("data", c => b += c); r.on("end", () => { try { res({ status: r.statusCode, body: JSON.parse(b) }); } catch (e) { rej(e); } }); }).on("error", rej); }); }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function waitFor(fn, ms = 15000) { const t = Date.now(); let last; while (Date.now() - t < ms) { try { const v = await fn(); if (v) return v; } catch (e) { last = e; } await sleep(150); } throw new Error("TIMEOUT " + (last?.message || "")); }
 
@@ -90,7 +91,7 @@ test("REAL PROCESS: canonical server boots, serves read-only status, obeys an ex
   const dir = tmp(), keyDir = tmp(), port = 18000 + Math.floor(Math.random() * 1000);
   const keyFile = path.join(keyDir, "owner.pem");
   const pub = execFileSync("node", [path.join(RUNTIME, "owner-cli.mjs"), "keygen", "--out", keyFile], { encoding: "utf8" }).trim().split("\n").pop();
-  const child = spawn("node", [path.join(RUNTIME, "supervisor-safe.mjs")], { env: { ...process.env, ATLASZ_TEST_MODE: "0", PORT: String(port), ATLASZ_STATE_DIR: dir, ATLASZ_OWNER_PUBLIC_KEY: pub }, stdio: ["ignore", "pipe", "pipe"] });
+  const child = spawn("node", [path.join(RUNTIME, "supervisor-safe.mjs")], { env: { ...process.env, ATLASZ_TEST_MODE: "0", PORT: String(port), ATLASZ_STATE_DIR: dir, ATLASZ_OWNER_PUBLIC_KEY: pub, ATLASZ_RUNTIME_TOKEN: TOKEN }, stdio: ["ignore", "pipe", "pipe"] });
   let out = ""; child.stdout.on("data", d => out += d); child.stderr.on("data", d => out += d);
   const exited = new Promise(r => child.on("exit", (code, sig) => r({ code, sig })));
   try {

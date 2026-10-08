@@ -7,6 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
+import { restrictedNodeCommand } from "./restricted-node.mjs";
 import { parseVersion } from "./update-center.mjs";
 
 // Detector for the quarantined legacy policy marker. Built from parts so this scanner is not itself a carrier of the marker.
@@ -99,8 +100,12 @@ export function createLocalUpdateAdapters({ inboxDir, nodeBin = process.execPath
   async function tester({ dir, phase }) {
     const st = path.join(dir, SELFTEST);
     if (fs.existsSync(st)) {
-      const r = spawnSync(nodeBin, [st], { cwd: dir, timeout: selftestTimeoutMs, encoding: "utf8", env: { PATH: process.env.PATH ?? "", ATLASZ_UPDATE_PHASE: phase, NODE_ENV: "test" } });   // no inherited secrets
-      return { passed: r.status === 0, evidence: { phase, selftest: SELFTEST, exit: r.status, signal: r.signal, stdout: (r.stdout ?? "").slice(-300), stderr: (r.stderr ?? "").slice(-300) } };
+      // Least privilege (ATLASZ-T3-002): the self-test is code from the update package, so it runs under Node's permission model - it may read its own package directory and
+      // nothing else, cannot spawn processes, and (where the host supports it) has no network. If the host cannot restrict Node the test is NOT run unrestricted: it fails closed.
+      const rc = restrictedNodeCommand({ nodeBin, script: st, readDirs: [dir], env: { ATLASZ_UPDATE_PHASE: phase, NODE_ENV: "test" } });
+      if (!rc.ok) return { passed: false, evidence: { phase, selftest: SELFTEST, error: rc.reason, note: "Self-test not run: the host cannot restrict the child process (fails closed)" } };
+      const r = spawnSync(rc.cmd, rc.args, { cwd: dir, timeout: selftestTimeoutMs, encoding: "utf8", env: rc.env });   // no inherited secrets
+      return { passed: r.status === 0, evidence: { phase, selftest: SELFTEST, isolation: { level: rc.level, networkBlocked: rc.networkBlocked, filesystemRestricted: rc.filesystemRestricted }, exit: r.status, signal: r.signal, stdout: (r.stdout ?? "").slice(-300), stderr: (r.stderr ?? "").slice(-300) } };
     }
     const iv = verifyInstallManifest(dir);                                       // no selftest: only an integrity check is possible, and it is labelled as such
     if (iv.ok) return { passed: true, evidence: { phase, kind: "INTEGRITY_ONLY", note: "No self-test shipped; only file hashes verified", version: iv.version } };

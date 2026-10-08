@@ -28,6 +28,7 @@ import { createKnowledgeProjects } from "../atlasz-addons/knowledge-projects.mjs
 import { createResearchLedger } from "../atlasz-addons/research-ledger.mjs";
 import { createCodeSandbox, registerSandboxTools } from "../atlasz-addons/code-sandbox.mjs";
 import { createModalityFabric, registerModalityTools } from "../atlasz-addons/modality-fabric.mjs";
+import { createRuntimeHandler } from "./runtime-http.mjs";
 import { createVoiceSession } from "../atlasz-addons/voice-session.mjs";
 import { createVoiceConversation, registerVoiceTools } from "../atlasz-addons/voice-conversation.mjs";
 import { createObservationMemory, registerObservationTools, registerResearchCapture } from "../atlasz-addons/observation-memory.mjs";
@@ -425,22 +426,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
 
 if (process.env.ATLASZ_TEST_MODE !== "1") {
   const runtime = createRuntime();
-  const server = http.createServer((req, res) => {
-    const route = (req.url || "/").split("?")[0];
-    res.setHeader("Content-Type", "application/json; charset=utf-8");
-    res.setHeader("Cache-Control", "no-store");
-    if (req.method !== "GET") { res.writeHead(405); res.end('{"error":"read_only"}'); return; }
-    const dashboard = runtime.dashboard();
-    if (route === "/health") {
-      res.end(JSON.stringify({ ok: true, version: VERSION, status: dashboard.status, safeMode: dashboard.safeMode.mode, selfCheck: dashboard.selfCheck.level, search: dashboard.search, lastSystemRun: dashboard.lastSystemRun }));
-    } else if (route === "/opportunities") {
-      res.end(JSON.stringify({ count: runtime.state.leads.length, topActionable: [], opportunities: runtime.state.leads.map(({ description, assessment, ...l }) => ({ ...l, score: assessment.score, checks: assessment.checks })), warning: "Unverified candidates are not approved for outreach." }));
-    } else if (route === "/events") {
-      res.end(JSON.stringify(runtime.state.events.slice(-100)));
-    } else if (route === "/" || route === "/status" || route === "/revenue") {
-      res.end(JSON.stringify(dashboard));
-    } else { res.writeHead(404); res.end('{"error":"not_found"}'); }
-  });
+  const server = http.createServer(createRuntimeHandler({ runtime, version: VERSION }));      // authenticated; only /health is open (see runtime-http.mjs)
   server.listen(Number(process.env.PORT || 8080), "0.0.0.0", () => runtime.start());
   for (const signal of ["SIGTERM", "SIGINT"]) process.on(signal, () => { runtime.stop(); server.close(() => process.exit(0)); });
 }
