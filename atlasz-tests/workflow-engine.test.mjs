@@ -300,3 +300,17 @@ test("verification fix: the batch cap is per tenant", () => {
   for (const tn of ["A", "B"]) e.saveTemplate({ tenantId: tn, id: "t", name: "t", params: {}, steps: [{ id: "a", action: "count", args: { value: 1 } }] });
   assert.equal(e.createBatch({ tenantId: "A", templateId: "t", items: [{}] }).ok, true); assert.equal(e.createBatch({ tenantId: "A", templateId: "t", items: [{}] }).reason, "TOO_MANY_BATCHES"); assert.equal(e.createBatch({ tenantId: "B", templateId: "t", items: [{}] }).ok, true);
 });
+
+test("round-3 fixes: a FAILED instance (awaiting retry/rewind) is never archived by the instance cap", async () => {
+  const e = createWorkflowEngine({ actions: mkActions(), limits: { ...LIMITS, maxInstances: 1 }, sleep: async () => {} });
+  e.saveTemplate({ ...T, id: "b", name: "b", params: {}, steps: [{ id: "s", action: "boom" }] });
+  const s = e.start({ ...T, templateId: "b" }); assert.equal(s.ok, true); await e.execute(s.id, T);
+  assert.equal(e.getInstance(s.id, T).instance.status, "FAILED");
+  assert.equal(e.start({ ...T, templateId: "b" }).reason, "TOO_MANY_INSTANCES"); assert.ok(e.getInstance(s.id, T).ok, "the failed instance survived");
+});
+
+test("round-3 fixes: a template read back cannot be used to alter the stored parameter schema", () => {
+  const e = createWorkflowEngine({ actions: mkActions() }); e.saveTemplate(tpl());
+  const t = e.getTemplate("greet", T); const tt = t.template ?? t; if (tt.params?.who) tt.params.who.required = false;
+  const again = e.getTemplate("greet", T); assert.equal((again.template ?? again).params.who.required, true);
+});

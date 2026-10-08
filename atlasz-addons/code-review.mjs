@@ -6,8 +6,8 @@ import { redactSecrets, INJECTION_PATTERNS } from "./text-compare.mjs";
 
 export const LIMITS = Object.freeze({ maxFiles: 200, maxFileChars: 200000, maxTotalChars: 2000000, maxFindings: 500, maxPathChars: 200, maxSnippet: 160, maxLineChars: 2000 });
 const SEV = Object.freeze({ HIGH: 3, MEDIUM: 2, LOW: 1, INFO: 0 });
-const SOURCE_EXT = /\.(mjs|cjs|js|jsx|ts|tsx|py|sh|bash|rb|go|java|php|cs)$/i, TEST_PATH = /(^|\/)(tests?|__tests__|spec)(\/|$)|\.(test|spec)\.[a-z]+$|(^|\/)test_[^/]+\.py$|_test\.(go|py)$/i;
-const JS = /\.(mjs|cjs|js|jsx|ts|tsx)$/i, PY = /\.py$/i, SH = /\.(sh|bash)$/i;
+const SOURCE_EXT = /\.(mjs|cjs|js|jsx|ts|tsx|mts|cts|vue|svelte|html?|py|sh|bash|rb|go|java|php|cs)$/i, TEST_PATH = /(^|\/)(tests?|__tests__|spec)(\/|$)|\.(test|spec)\.[a-z]+$|(^|\/)test_[^/]+\.py$|_test\.(go|py)$/i;
+const JS = /\.(mjs|cjs|js|jsx|ts|tsx|mts|cts|vue|svelte|html?)$/i, PY = /\.py$/i, SH = /\.(sh|bash)$/i;
 // rule: [id, severity, languages regex|null, line regex, message]
 const RULES = [
   ["SECRET_LITERAL", "HIGH", null, /-----BEGIN [A-Z ]*PRIVATE KEY-----|(?<![A-Za-z0-9])sk-[A-Za-z0-9_-]{20,}|(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}\b|(?<![A-Za-z0-9])ghp_[A-Za-z0-9]{30,}|(?<![A-Za-z0-9])xox[baprs]-[A-Za-z0-9-]{10,}/, "A credential-shaped literal is committed in source."],

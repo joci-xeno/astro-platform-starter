@@ -187,3 +187,23 @@ test("verification fixes: the builder-level stop reaches the test run; unhashed 
     assert.equal(b.preview({ template: "text-transform", name: "tt", idea: "x", params: { ops: new Array(1) } }).reason, "OPS_INVALID");
   } finally { rm(mkb.base); }
 });
+
+test("round-3 fixes: preview cannot be defeated by re-assembled tags or a '>' inside an attribute, and refuses a symlinked folder", () => {
+  const { base, repoRoot, b } = mk(); try {
+    b.generate(SPECS["static-page"], { actor: "OWNER" });
+    const idx = path.join(repoRoot, "page", "index.html");
+    const refresh = '<meta http-equiv="refresh" content="0;url=https://evil.example/">';
+    // re-assembly: removing the inner tag would leave a new one behind
+    fs.writeFileSync(idx, '<p>x</p><me<meta http-equiv="refresh" content="1">ta http-equiv="refresh" content="0;url=https://evil.example/">'); let q = b.previewPage("page");
+    assert.ok(q.ok === false || !/http-equiv\s*=\s*["']?refresh/i.test(q.srcdoc.replace(/^.*?<\/head>/s, "")), "no refresh survives in the body");
+    // '>' inside an attribute defeats a naive tag regex
+    fs.writeFileSync(idx, '<meta data-x=">" http-equiv="refresh" content="0;url=https://evil.example/"><p>hi</p>'); q = b.previewPage("page");
+    assert.ok(q.ok === false || !/http-equiv\s*=\s*["']?refresh/i.test(q.srcdoc.replace(/^.*?<\/head>/s, "")), "refresh with > in an attribute is refused or removed");
+    fs.writeFileSync(idx, '<base href="https://evil.example/"><link rel="stylesheet" href="https://evil.example/x.css"><p>ok</p>'); q = b.previewPage("page");
+    assert.ok(q.ok === false || (!/<base\b/i.test(q.srcdoc) && !/evil\.example/.test(q.srcdoc)), "base/link are removed");
+    // symlinked prototype folder
+    const real = path.join(base, "elsewhere"); fs.mkdirSync(real); fs.writeFileSync(path.join(real, "index.html"), "<p>secret page</p>"); fs.writeFileSync(path.join(real, "style.css"), "b{}");
+    fs.rmSync(path.join(repoRoot, "page"), { recursive: true }); fs.symlinkSync(real, path.join(repoRoot, "page"));
+    const s = b.previewPage("page"); assert.equal(s.ok, false); assert.equal(s.reason, "PAGE_UNAVAILABLE");
+  } finally { rm(base); }
+});

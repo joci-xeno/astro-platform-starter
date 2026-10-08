@@ -191,3 +191,15 @@ test("verification fix: an agent cannot name itself OWNER (or anyone) through `b
     const o = w.rl.openQuestion({ projectId: w.p.id, text: "Owner question", by: "Alex" }, OWNER); assert.equal(o.createdBy, "Alex");
   } finally { w.done(); }
 });
+
+test("round-3 fixes: credential-shaped claim, topic and value are refused; a wrong-shaped store file is refused and left alone", async () => {
+  const w = await world();
+  try {
+    const q = w.rl.openQuestion({ projectId: w.p.id, text: "What is the monthly rent?" }, OWNER);
+    for (const bad of [{ claim: "password=hunter2hunter2 is the admin login" }, { claim: "fine claim", topic: "colour sk-" + "a".repeat(30), value: "blue" }, { claim: "fine claim", topic: "colour", value: "api_key=hunter2hunter2" }])
+      assert.throws(() => w.rl.addFinding(q.id, { ...bad }, OWNER), /CONTAINS_SECRET/, JSON.stringify(bad).slice(0, 50));
+    const f = path.join(w.d, "rl.json"); const before = fs.readFileSync(f, "utf8"); fs.writeFileSync(f, "[]");
+    assert.throws(() => w.rl.openQuestion({ projectId: w.p.id, text: "another question" }, OWNER), /STORE_UNREADABLE/); assert.equal(fs.readFileSync(f, "utf8"), "[]", "not overwritten");
+    fs.writeFileSync(f, JSON.stringify({ questions: [], findings: {}, contradictions: {} })); assert.throws(() => w.rl.openQuestion({ projectId: w.p.id, text: "q3" }, OWNER), /STORE_UNREADABLE/); fs.writeFileSync(f, JSON.stringify({ questions: {}, findings: {}, contradictions: {}, events: "x" })); assert.throws(() => w.rl.openQuestion({ projectId: w.p.id, text: "q4" }, OWNER), /STORE_UNREADABLE/); fs.writeFileSync(f, before);
+  } finally { w.done(); }
+});

@@ -111,3 +111,15 @@ test("verification fixes G12: a replaced (rotated) file is detected even when bi
     const f3 = path.join(dir, "big.jsonl"); fs.writeFileSync(f3, line(1, { blob: "y".repeat(300000) }) + line(2)); const t3 = createChainTail(f3), got = t3.read(); assert.deepEqual(got.map(e => e.seq), [1, 2]); assert.equal(got[0].oversize, true); assert.ok(JSON.stringify(got[0]).length < 500);
   } finally { rm(dir); }
 });
+
+test("createChainTail: a log larger than one read chunk is caught up over successive reads", async () => {
+  const { createChainTail } = await import("../atlasz-addons/event-stream.mjs"); const fs = await import("node:fs"); const path = await import("node:path"); const { tmp, rm } = await import("./helpers.mjs");
+  const d = tmp(); try {
+    const f = path.join(d, "big.jsonl"); const pad = "x".repeat(400); const n = 24000; const lines = [];
+    for (let i = 1; i <= n; i++) lines.push(JSON.stringify({ seq: i, event: "E", pad }));
+    fs.writeFileSync(f, lines.join("\n") + "\n"); assert.ok(fs.statSync(f).size > 8 * 1048576);
+    const tail = createChainTail(f, { keep: 5 }); let last = 0;
+    for (let i = 0; i < 5 && last < n; i++) { const r = tail.read(); last = r.length ? r[r.length - 1].seq : 0; }
+    assert.equal(last, n, "the tail reaches the end of a >8 MB log without a size change");
+  } finally { rm(d); }
+});

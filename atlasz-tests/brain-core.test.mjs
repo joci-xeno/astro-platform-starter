@@ -156,3 +156,9 @@ test("planning brain: replan keeps DONE work, revalidates graph; plans survive r
     const again = createPlanningBrain({ file: f }); assert.equal(again.progress(p.id).done, 1); assert.equal(again.get(p.id).version, 2);
   } finally { rm(d); }
 });
+
+test("black-box redaction: short key names pass/pwd are secret keys; secret-looking key NAMES are scrubbed; boolean pass flags are kept", () => {
+  const r = redactSecrets({ pass: "hunter22", pwd: "abc12345", passed: true, ok: "fine", ["Bearer " + "abcdefghijklmnop"]: 1 });
+  assert.equal(r.pass, "[REDACTED]"); assert.equal(r.pwd, "[REDACTED]"); assert.equal(r.passed, true); assert.equal(r.ok, "fine");
+  assert.ok(!JSON.stringify(r).includes("abcdefghijklmnop"));
+});

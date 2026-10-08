@@ -133,3 +133,9 @@ test("verification fix: an actor must be a string (arrays and objects that strin
   for (const actor of [["SEARCH-1"], { toString: () => "EXECUTION-2" }, 5, null]) { const r = p.propose("t1", "ui.language", "en", { actor }); assert.equal(r.ok, false, String(actor)); }
   assert.equal(p.propose("t1", "ui.language", "en", { actor: "SEARCH-1" }).ok !== undefined, true);
 });
+
+test("round-3 fixes: resolved proposals are kept bounded", () => {
+  const p = createPreferences({ now: clock() });
+  for (let i = 0; i < 260; i++) { const r = p.propose("t1", "suggestions.maxPerDay", 6 + (i % 10), { actor: "SYSTEM" }); assert.equal(r.ok, true, JSON.stringify(r)); assert.equal(p.rejectProposal("t1", r.id, { actor: "OWNER" }).ok, true); }
+  assert.ok(p.proposals("t1").length <= 201, "history of decided proposals is capped: " + p.proposals("t1").length);
+});

@@ -18,7 +18,7 @@ import { redactSecrets } from "./text-compare.mjs";
 export const LIMITS = Object.freeze({ maxFiles: 3000, maxDepth: 10, maxFileBytes: 1048576, maxTotalBytes: 30 * 1048576, reviewFiles: 200, reviewFileChars: 200000, maxTestFiles: 20, testTimeoutMs: 20000, outputChars: 4000, maxScripts: 20 });
 const SKIP_DIRS = new Set(["node_modules", ".git", ".hg", ".svn", "dist", "build", "coverage", "__pycache__", ".venv", "venv"]);
 const LANG = { ".mjs": "JavaScript", ".cjs": "JavaScript", ".js": "JavaScript", ".jsx": "JavaScript", ".ts": "TypeScript", ".tsx": "TypeScript", ".py": "Python", ".sh": "Shell", ".bash": "Shell", ".rb": "Ruby", ".go": "Go", ".java": "Java", ".php": "PHP", ".cs": "C#", ".json": "JSON", ".md": "Markdown", ".html": "HTML", ".css": "CSS", ".yml": "YAML", ".yaml": "YAML" };
-const SOURCE = /\.(mjs|cjs|js|jsx|ts|tsx|mts|cts|vue|svelte|py|sh|bash|rb|go|java|php|cs|json|ya?ml|toml|ini|cfg|conf|properties|xml|html?|txt|md|env|sql|tf)$/i, LOCKFILE = /(^|\/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|npm-shrinkwrap\.json)$/i, INERT = /\.(png|jpe?g|gif|webp|ico|svg|woff2?|ttf|eot|otf|map|pdf|zip|gz|mp3|mp4|wav)$/i, TEST_FILE = /(^|\/)(tests?|__tests__|spec)\/.*\.(mjs|cjs|js)$|\.(test|spec)\.(mjs|cjs|js)$/i;
+const SOURCE = /\.(mjs|cjs|js|jsx|ts|tsx|mts|cts|vue|svelte|py|sh|bash|rb|go|java|php|cs|json|ya?ml|toml|ini|cfg|conf|properties|xml|html?|txt|md|env|sql|tf)$/i, LOCKFILE = /(^|\/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|npm-shrinkwrap\.json)$/i, INERT = /\.(png|jpe?g|gif|webp|ico|woff2?|ttf|eot|otf|pdf|zip|gz|mp3|mp4|wav)$/i, TEST_FILE = /(^|\/)(tests?|__tests__|spec)\/.*\.(mjs|cjs|js)$|\.(test|spec)\.(mjs|cjs|js)$/i;
 const NAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
 
 /** Walk a repo folder. Returns {ok, files:[{rel, abs, size}], skipped:{...}} or {ok:false, reason}. */
@@ -57,7 +57,9 @@ export function analyzeRepo(root) {
   for (const f of w.files) {
     const ext = path.extname(f.rel).toLowerCase(), lang = LANG[ext]; if (lang) langs[lang] = (langs[lang] ?? 0) + 1;
     if (TEST_FILE.test(f.rel)) tests.push(f.rel);
-    if (!SOURCE.test(f.rel) || LOCKFILE.test(f.rel)) { if (!INERT.test(f.rel) && !LOCKFILE.test(f.rel) && !/(^|\/)(LICENSE|COPYING|NOTICE)[^/]*$/i.test(f.rel)) notReviewed.unsupported++; continue; }   // unknown file types are counted, not ignored
+    const docLike = LOCKFILE.test(f.rel) || /(^|\/)(LICENSE|COPYING|NOTICE)[^/]*$/i.test(f.rel);     // lockfiles and licences are read like text (secrets, odd URLs), not skipped unseen
+    if (!SOURCE.test(f.rel) && !docLike) { if (!INERT.test(f.rel)) notReviewed.unsupported++; continue; }
+    if (/\.(rb|go|java|php|cs)$/i.test(f.rel)) notReviewed.unsupported++;                // no language rules for these: counted as not (fully) reviewed   // unknown file types are counted, not ignored
     if (!reviewable(f.rel)) { notReviewed.badPath++; continue; }
     if (review.length >= LIMITS.reviewFiles) { notReviewed.pastFileLimit++; continue; }
     if (f.size > LIMITS.reviewFileChars) { notReviewed.oversize++; continue; }
@@ -91,24 +93,27 @@ export async function runRepoTests({ name, root, ownerAuth, ownerApproval = null
   const v = ownerAuth.verifyApproval(ownerApproval, { action: "REPO_TEST_RUN", subject: name + "#" + a.hash });
   if (!v.allowed) return { ok: false, reason: "OWNER_APPROVAL_REQUIRED:" + v.reason, subject: name + "#" + a.hash };
   const targets = a.testFiles.slice(0, LIMITS.maxTestFiles); if (!targets.length) return { ok: true, hash: a.hash, contentUnchanged: true, ran: 0, results: [], note: "No Node test files found (tests/ folder, *.test.mjs/js, *.spec.mjs/js)." };
-  const results = []; let level = null;
+  const results = []; let level = null, stoppedMid = false;
   for (const rel of targets) {
+    { let st = true; try { st = Boolean(isStopped()); } catch { /* fail closed */ } if (st) return { ok: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE", results, hash: a.hash }; }
     { const cur = analyzeRepo(root); if (!cur.ok || cur.hash !== a.hash) return { ok: false, reason: "CONTENT_CHANGED_DURING_RUN", results, approvedHash: a.hash }; }   // the approval covers exactly this content: re-verified before every file
     const scratch = fs.mkdtempSync(path.join(scratchRoot, "repo-test-"));
     const rc = restrictedNodeCommand({ nodeBin, script: path.join(root, rel), readDirs: [root, scratch], writeDirs: [scratch], allowNetwork: false, requireNoNetwork: true, caps, env: { TMPDIR: scratch, ATLASZ_REPO_TEST: "1" } });
     if (!rc.ok) { fs.rmSync(scratch, { recursive: true, force: true }); return { ok: false, reason: rc.reason, results }; }       // fail closed: never run unrestricted
     level = rc.level;
     results.push(await new Promise(resolve => {
-      let out = "", done = false; const t0 = Date.now();
-      const fin = r => { if (done) return; done = true; clearTimeout(timer); fs.rmSync(scratch, { recursive: true, force: true }); resolve({ file: rel, durationMs: Date.now() - t0, ...r }); };
+      let out = "", done = false, timer, poll; const t0 = Date.now();
+      const fin = r => { if (done) return; done = true; clearTimeout(timer); clearInterval(poll); fs.rmSync(scratch, { recursive: true, force: true }); resolve({ file: rel, durationMs: Date.now() - t0, ...r }); };
       let child; try { child = spawn(rc.cmd, rc.args, { cwd: root, env: rc.env, stdio: ["ignore", "pipe", "pipe"], windowsHide: true }); } catch { return fin({ status: "ERROR", exitCode: null, output: "SPAWN_FAILED" }); }
-      const timer = setTimeout(() => { try { child.kill("SIGKILL"); } catch { /* gone */ } fin({ status: "TIMEOUT", exitCode: null, output: redactSecrets(out).slice(-LIMITS.outputChars) }); }, timeoutMs);
+      timer = setTimeout(() => { try { child.kill("SIGKILL"); } catch { /* gone */ } fin({ status: "TIMEOUT", exitCode: null, output: redactSecrets(out).slice(-LIMITS.outputChars) }); }, timeoutMs);
+      poll = setInterval(() => { let st = true; try { st = Boolean(isStopped()); } catch { /* fail closed */ } if (st) { stoppedMid = true; try { child.kill("SIGKILL"); } catch { /* gone */ } fin({ status: "STOPPED", exitCode: null, output: redactSecrets(out).slice(-LIMITS.outputChars) }); } }, 100);
       const take = d => { if (out.length < LIMITS.outputChars * 4) out += d; };
       child.stdout.on("data", take); child.stderr.on("data", take);
       child.on("error", () => fin({ status: "ERROR", exitCode: null, output: "PROCESS_ERROR" }));
       child.on("close", code => fin({ status: code === 0 ? "PASSED" : "FAILED", exitCode: code, output: redactSecrets(out).slice(-LIMITS.outputChars) }));
     }));
   }
+  if (stoppedMid) return { ok: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE", results, hash: a.hash };      // a stop during a run kills the running file and ends the run
   const failed = results.filter(r => r.status !== "PASSED").length;
   const after = analyzeRepo(root), unchanged = after.ok && after.hash === a.hash;
   return { ok: true, untrusted: true, hash: a.hash, contentUnchanged: unchanged, ran: results.length, passed: results.length - failed, failed, results, isolation: level, note: "Each file ran alone in a read-only, no-child-process sandbox with no network (note: this does not cover unix sockets reachable through the filesystem, and there is no disk quota on the scratch folder). A pass means the file exited 0 here, not that the repo is correct." };

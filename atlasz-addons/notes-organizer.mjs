@@ -46,7 +46,7 @@ export function createNotesOrganizer({ file = null, now = () => new Date().toISO
   function addBook({ tenantId, title, author = "", tags = [], totalPages = null } = {}) {
     const b = base("book", tenantId, tags, title); if (!b.ok) return b;
     if (totalPages !== null && !(Number.isInteger(totalPages) && totalPages > 0 && totalPages <= 100000)) return { ok: false, reason: "PAGES_INVALID" };
-    const x = { ...b.item, author: redact(author).slice(0, LIMITS.maxTitle), status: "TO_READ", totalPages, pagesRead: 0, startedAt: null, finishedAt: null, takeaways: [] }; d.items[x.id] = x; store.save(); return { ok: true, id: x.id, item: pub(x) };
+    const x = { ...b.item, author: redact(author).replace(/\s+/g, " ").trim().slice(0, LIMITS.maxTitle), status: "TO_READ", totalPages, pagesRead: 0, startedAt: null, finishedAt: null, takeaways: [] }; d.items[x.id] = x; store.save(); return { ok: true, id: x.id, item: pub(x) };
   }
   function setReading(id, { tenantId, status, pagesRead } = {}) {
     const x = own(id, tenantId, "book"); if (!x) return { ok: false, reason: "NOT_FOUND" };

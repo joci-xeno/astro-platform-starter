@@ -161,3 +161,19 @@ test("verification fixes: an appended-only forged entry, a deleted anchor and a 
     fs.writeFileSync(f, JSON.stringify({ ...raw, log: [null] })); assert.equal(mk(f).verify().ok, false);
   } finally { rm(d); }
 });
+test("verification fix (round 3): a damaged history is never extended, so a later legitimate write cannot launder a truncation", () => {
+  const d = tmp("pm12-"), f = path.join(d, "pm.json");
+  try {
+    const m = mk(f), p = m.createProject({ tenantId: "T", name: "P" }).project, a = m.propose(p.id, { tenantId: "T", actor: "EXECUTION-1", title: "a", decision: "a" }).id; m.adopt(p.id, a, { tenantId: "T", actor: "OWNER" });
+    const b = m.propose(p.id, { tenantId: "T", actor: "EXECUTION-2", title: "b", decision: "b" }).id; m.adopt(p.id, b, { tenantId: "T", actor: "OWNER" });
+    const raw = JSON.parse(fs.readFileSync(f, "utf8")); raw.log.pop(); fs.writeFileSync(f, JSON.stringify(raw));          // drop the OWNER adopt of b
+    const r = mk(f); assert.equal(r.verify().reason, "HEAD_ANCHOR_MISMATCH");
+    for (const w of [() => r.propose(p.id, { tenantId: "T", actor: "OWNER", title: "c", decision: "c" }), () => r.adopt(p.id, b, { tenantId: "T", actor: "OWNER" }), () => r.revoke(p.id, a, { tenantId: "T", actor: "OWNER" }), () => r.supersede(p.id, a, b, { tenantId: "T", actor: "OWNER" })]) assert.equal(w().reason, "CHAIN_BROKEN");
+    assert.equal(r.verify().ok, false, "still broken: nothing re-anchored it"); assert.equal(mk(f).contextFor(p.id, { tenantId: "T" }).reason, "CHAIN_BROKEN");
+    { const g2 = path.join(d, "mid.json"), mm = mk(g2), pp = mm.createProject({ tenantId: "T", name: "M" }).project; mm.propose(pp.id, { tenantId: "T", actor: "OWNER", title: "t1", decision: "d1" }); mm.propose(pp.id, { tenantId: "T", actor: "OWNER", title: "t2", decision: "d2" });
+      const rr = JSON.parse(fs.readFileSync(g2, "utf8")); rr.log[0].decision = "EDITED"; fs.writeFileSync(g2, JSON.stringify(rr)); assert.equal(mk(g2).propose(pp.id, { tenantId: "T", actor: "OWNER", title: "t3", decision: "d3" }).reason, "CHAIN_BROKEN", "an edited middle entry (anchor intact) also blocks writes"); }
+    // normal operation is unaffected, and an anchor changed behind a running instance's back is noticed on the next write
+    const g = path.join(d, "ok.json"), ok = mk(g), q = ok.createProject({ tenantId: "T", name: "Q" }).project; assert.equal(ok.propose(q.id, { tenantId: "T", actor: "OWNER", title: "x", decision: "x" }).status, "PROPOSED");
+    fs.writeFileSync(g + ".head", JSON.stringify({ seq: 0, hash: "" })); assert.equal(ok.propose(q.id, { tenantId: "T", actor: "OWNER", title: "y", decision: "y" }).reason, "CHAIN_BROKEN");
+  } finally { rm(d); }
+});

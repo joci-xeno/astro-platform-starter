@@ -9,7 +9,7 @@ export function redactSecrets(v, extra = s => s) {
   if (v === null || v === undefined) return v;
   if (typeof v === "string") return f(v);
   if (Array.isArray(v)) return v.map(x => redactSecrets(x, extra));
-  if (typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, (/secret|password|token|apikey|api_key|private/i.test(k) && typeof x === "string") || ((SECRET_KEY.test(k) || STRICT_SECRET_KEY.test(k)) && x !== null && x !== undefined) ? "[REDACTED]" : redactSecrets(x, extra)]));
+  if (typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k0, x]) => [f(k0), (/^(?:pass|pw|pwd|passwd)$/i.test(k0) && (typeof x === "string" || typeof x === "number")) || (/secret|password|token|apikey|api_key|private/i.test(k0) && typeof x === "string") || ((SECRET_KEY.test(k0) || STRICT_SECRET_KEY.test(k0)) && x !== null && x !== undefined) ? "[REDACTED]" : redactSecrets(x, extra)]));
   return v;
 }
 export const FIELDS = Object.freeze(["jobId", "taskId", "agentId", "team", "model", "tool", "connector", "workflow", "decision", "reason", "approval", "inputRef", "outputRef", "costUsd", "durationMs", "result", "verification", "error", "retry", "recovery", "evidenceRef", "kind"]);

@@ -146,3 +146,28 @@ test("verification fixes: NAME=value credentials and secret tags are refused (al
     assert.ok(w.m.recall({ query: "one" }, OWNER).results.length >= 1, "nothing was deleted");
   } finally { w.done?.(); }
 });
+
+test("round-3 fixes: credentials in ref/source/consent fields, a free-text verification and a non-hash mediaSha256 are all refused", () => {
+  const w = world();
+  try {
+    w.m.observe({ text: "baseline note so the store file exists" }, OWNER);
+    for (const bad of [{ ref: { note: "password=hunter2hunter2" } }, { source: { type: "OWNER", ref: "token: abcd1234efgh" } }, { consent: { granted: true, by: "OWNER", purpose: "token: abcd1234efgh" } }]) assert.throws(() => w.m.observe({ text: "note one", ...bad }, OWNER), /SECRET_NOT_STORED/, JSON.stringify(bad));
+    assert.throws(() => w.m.observe({ text: "n", verification: "api_key=hunter2hunter2" }, OWNER), /VERIFICATION_INVALID/);
+    assert.throws(() => w.m.observe({ text: "n", mediaSha256: "password=hunter2hunter2" }, OWNER), /MEDIA_HASH_INVALID/);
+    assert.ok(!fs.readFileSync(path.join(w.d, "mem.json"), "utf8").includes("hunter2") , "nothing was written");
+    assert.ok(w.m.observe({ text: "fine", ref: { type: "doc", id: "d1" }, mediaSha256: "a".repeat(64) }, OWNER).id);
+  } finally { w.done?.(); }
+});
+
+test("round-3 fixes: a negative recall limit returns nothing; forgetWhere matches tags case-insensitively; an unreadable retention date counts as expired", () => {
+  const w = world();
+  try {
+    const a = w.m.observe({ text: "alpha beta gamma", tags: ["Keep"] }, OWNER); for (let i = 0; i < 6; i++) w.m.observe({ text: "alpha filler " + i }, OWNER);
+    assert.equal(w.m.recall({ query: "alpha", limit: -3 }, OWNER).results.length, 0); assert.equal(w.m.recall({ query: "alpha", limit: "x" }, OWNER).results.length, 7); assert.equal(w.m.recall({ query: "alpha", limit: 2.9 }, OWNER).results.length, 2);
+    const f = path.join(w.d, "mem.json"), j = JSON.parse(fs.readFileSync(f, "utf8")); j.items[a.id].retentionUntil = "not a date"; fs.writeFileSync(f, JSON.stringify(j));
+    assert.ok(!w.m.recall({ query: "alpha" }, OWNER).results.some(r => r.id === a.id), "unreadable retention = expired, not kept forever");
+    const b = w.m.observe({ text: "delta epsilon", tags: ["Keep"] }, OWNER);
+    assert.equal(w.m.forgetWhere({ tag: "KEEP" }, OWNER).deleted, 2, "both items tagged Keep are matched by KEEP");
+    assert.equal(w.m.recall({ query: "delta" }, OWNER).results.length, 0); void b;
+  } finally { w.done?.(); }
+});

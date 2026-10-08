@@ -75,7 +75,7 @@ export function createChainTail(file, { keep = 2000 } = {}) {
         for (const line of lines) { if (!line) continue; let e; try { e = JSON.parse(line); } catch { reset(); throw new Error("LOG_CORRUPT"); } if (Number.isSafeInteger(e?.seq)) entries.push(line.length > 65536 ? { seq: e.seq, event: typeof e.event === "string" ? e.event.slice(0, 80) : "EVENT", oversize: true } : e); }   // an entry is kept in memory at a bounded size
         if (entries.length > keep) entries = entries.slice(-keep);
       }
-      sig = s2; return entries;
+      sig = offset >= st.size ? s2 : ""; return entries;   // a partially-read large log is not 'seen': the next read continues
     }
   };
 }

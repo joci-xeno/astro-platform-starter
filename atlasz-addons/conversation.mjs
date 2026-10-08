@@ -62,16 +62,19 @@ export function createConversationStore({ file = null, now = () => new Date().to
     if (!c.turns.length || c.turns.at(-1).role !== "user") return { ok: false, reason: "LAST_TURN_MUST_BE_USER" };
     const ctx = context(id, { tenantId, maxTokens, reserveOutput: Math.min(500, Math.floor(maxTokens / 4)) }); if (!ctx.ok) return ctx;
     const prompt = ctx.items.map(i => (i.role === "system" ? "[SYSTEM] " : "") + i.text).join("\n\n");
+    if (c.turns.length >= LIMITS.maxTurns) return { ok: false, reason: "TOO_MANY_TURNS", turnAdded: false };      // refused BEFORE any provider call: no spend for an answer that cannot be stored
     if (inflight.has(id)) return { ok: false, reason: "COMPLETION_ALREADY_RUNNING" };      // one provider call per conversation at a time: no double spend, no interleaved turns
     inflight.add(id); let r;
     try { r = await gateway.complete({ capability, prompt, budgetUsd }); } catch { return { ok: false, reason: "GATEWAY_ERROR", turnAdded: false }; } finally { inflight.delete(id); }
     if (!r || typeof r !== "object") return { ok: false, reason: "GATEWAY_ERROR", turnAdded: false };
     if (!r.ok || r.output == null) { return { ok: false, reason: r.reason ?? (r.quarantined ? "OUTPUT_QUARANTINED" : "NO_OUTPUT"), turnAdded: false, quarantined: Boolean(r.quarantined) }; }
     const mid = modelOk(r.providerId ?? null) && r.providerId ? r.providerId : "unknown";
-    const t = typeof r.output === "string" ? addTurn(id, { tenantId, role: "assistant", text: r.output, modelId: mid === "unknown" ? c.model : mid }) : { ok: false, reason: "OUTPUT_NOT_TEXT" };
-    const u = usage.record({ conversationId: id, modelId: mid, promptTokens: ctx.tokens, completionTokens: estimateTokens(typeof r.output === "string" ? r.output : ""), source: Number.isFinite(r.costUsd) && r.costUsd >= 0 ? "PROVIDER" : "ESTIMATE", costUsd: Number.isFinite(r.costUsd) && r.costUsd >= 0 ? r.costUsd : null, budgetUsd }); persist();      // spend is recorded even when the answer cannot be stored
+    let out = r.output, truncated = false; if (typeof out === "string" && out.length > LIMITS.maxTextChars) { out = out.slice(0, LIMITS.maxTextChars - 14) + " [truncated]"; truncated = true; }   // a long answer that was paid for is kept (shortened), not thrown away
+    const t = typeof r.output === "string" ? addTurn(id, { tenantId, role: "assistant", text: out, modelId: mid === "unknown" ? c.model : mid }) : { ok: false, reason: "OUTPUT_NOT_TEXT" };
+    const ru = r.usage, reported = ru && typeof ru === "object" && [ru.promptTokens, ru.completionTokens].every(v => Number.isInteger(v) && v >= 0 && v <= 1e9);   // provider-reported token counts win; otherwise the numbers are local estimates and say so
+    const u = usage.record({ conversationId: id, modelId: mid, tokensEstimated: !reported, promptTokens: reported ? ru.promptTokens : ctx.tokens, completionTokens: reported ? ru.completionTokens : estimateTokens(typeof r.output === "string" ? r.output : ""), source: Number.isFinite(r.costUsd) && r.costUsd >= 0 ? "PROVIDER" : "ESTIMATE", costUsd: Number.isFinite(r.costUsd) && r.costUsd >= 0 ? r.costUsd : null, budgetUsd }); persist();      // spend is recorded even when the answer cannot be stored
     if (!t.ok) return { ok: false, reason: t.reason, turnAdded: false, usageRecorded: u.ok };
-    return { ok: true, turn: t.turn, providerId: mid, untrusted: true, droppedTurns: ctx.droppedIds.length, usageRecorded: u.ok };
+    return { ok: true, turn: t.turn, providerId: mid, untrusted: true, ...(truncated ? { truncated: true } : {}), droppedTurns: ctx.droppedIds.length, usageRecorded: u.ok };
   }
   const get = (id, { tenantId } = {}) => { const c = find(id, tenantId); return c ? { ok: true, conversation: { ...pub(c), systemPrompt: c.systemPrompt, switchLog: clone(c.switches), turns: clone(c.turns) } } : { ok: false, reason: "NOT_FOUND" }; };
   const list = ({ tenantId } = {}) => Object.values(d.conversations).filter(c => c.tenantId === tenantId).map(pub);

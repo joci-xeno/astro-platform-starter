@@ -71,7 +71,7 @@ export function createWorkflowEngine({ file = null, actions = {}, now = () => ne
     if (schedule !== null) { if (hasSecret(schedule.params)) return { ok: false, reason: "SECRET_IN_INPUT:schedule" }; const sb = bindParams({ params: pc.params }, schedule.params); if (!sb.ok) return { ok: false, reason: "SCHEDULE_PARAMS_INVALID:" + sb.reason }; }       // a schedule that could never start is refused when it is saved
     const key = tenantId + ":" + id, prev = d.templates[key];
     if (!prev && Object.values(d.templates).filter(x => x.tenantId === tenantId).length >= L.maxTemplates) return { ok: false, reason: "TOO_MANY_TEMPLATES" };
-    const t = { tenantId, id, name: redactStr(name).slice(0, 120), version: (prev?.version ?? 0) + 1, params: pc.params, steps: clone(steps.map(s => ({ id: s.id, action: s.action, args: s.args ?? {}, onError: s.onError ?? "stop", retries: s.retries ?? 0 }))), schedule: schedule ? { everyMinutes: schedule.everyMinutes, params: clone(schedule.params), lastRunAt: prev?.schedule?.lastRunAt ?? null } : null, updatedAt: now() };
+    const t = { tenantId, id, name: redactStr(name).slice(0, 120), version: (prev?.version ?? 0) + 1, params: clone(pc.params), steps: clone(steps.map(s => ({ id: s.id, action: s.action, args: s.args ?? {}, onError: s.onError ?? "stop", retries: s.retries ?? 0 }))), schedule: schedule ? { everyMinutes: schedule.everyMinutes, params: clone(schedule.params), lastRunAt: prev?.schedule?.lastRunAt ?? null } : null, updatedAt: now() };
     d.templates[key] = t; save(); return { ok: true, id, version: t.version };
   }
   const listTemplates = ({ tenantId } = {}) => Object.values(d.templates).filter(t => t.tenantId === tenantId).map(t => ({ id: t.id, name: t.name, version: t.version, steps: t.steps.length, params: Object.keys(t.params), scheduled: Boolean(t.schedule) }));
@@ -100,7 +100,7 @@ export function createWorkflowEngine({ file = null, actions = {}, now = () => ne
     const mine = () => Object.values(d.instances).filter(x => x.tenantId === tenantId);          // caps and archiving are per tenant: one tenant can neither fill the engine nor evict another tenant's history
     if (mine().length >= L.maxInstances) {                                     // make room by archiving the oldest FINISHED instances that no batch item points at; unfinished work is never dropped
       const used = new Set(Object.values(d.batches).flatMap(b => (b.items ?? []).map(x => x.instanceId)));
-      const old = mine().filter(x => ["DONE", "DONE_WITH_ERRORS", "CANCELLED", "FAILED"].includes(x.status) && !used.has(x.id) && !running.has(x.id)).sort((a, b) => (a.updatedAt < b.updatedAt ? -1 : 1));
+      const old = mine().filter(x => ["DONE", "DONE_WITH_ERRORS", "CANCELLED"].includes(x.status) && !used.has(x.id) && !running.has(x.id)).sort((a, b) => (a.updatedAt < b.updatedAt ? -1 : 1));
       for (const x of old.slice(0, Math.max(1, Math.ceil(L.maxInstances / 10)))) delete d.instances[x.id];
       if (mine().length >= L.maxInstances) return { ok: false, reason: "TOO_MANY_INSTANCES" };
     }

@@ -194,7 +194,8 @@ test("verification fixes: ledger keys are safe, user turns and system prompts ar
   // answer cannot be stored: spend is still recorded
   const s2 = createConversationStore({}); const c2 = s2.create({ tenantId: "t", title: "T", model: "alpha" }); s2.addTurn(c2.id, { tenantId: "t", role: "user", text: "q" });
   const big = await s2.complete(c2.id, { tenantId: "t", gateway: { async complete() { return { ok: true, providerId: "alpha", output: "x".repeat(LIMITS.maxTextChars + 1), costUsd: 0.5 }; } }, budgetUsd: 1 });
-  assert.deepEqual([big.ok, big.reason, big.usageRecorded], [false, "TEXT_TOO_LONG", true]); const u = s2.usageSummary(c2.id, { tenantId: "t" }); assert.deepEqual([u.calls, u.costUsd], [1, 0.5]);
+  assert.deepEqual([big.ok, big.truncated, big.usageRecorded], [true, true, true], "a paid answer that is too long is kept (shortened), not thrown away"); assert.ok(s2.get(c2.id, { tenantId: "t" }).conversation.turns.at(-1).text.length <= LIMITS.maxTextChars); const u = s2.usageSummary(c2.id, { tenantId: "t" }); assert.deepEqual([u.calls, u.costUsd], [1, 0.5]);
+  s2.addTurn(c2.id, { tenantId: "t", role: "user", text: "next question" });
   for (const g of [{ async complete() { return null; } }, { async complete() { throw new Error("net"); } }, { async complete() { return { ok: true, output: { not: "text" }, providerId: "alpha" }; } }]) { const x = await s2.complete(c2.id, { tenantId: "t", gateway: g }); assert.equal(x.ok, false); }
   // one completion at a time
   let calls = 0, rel; const slow = { async complete() { calls++; await new Promise(res => { rel = res; }); return { ok: true, providerId: "alpha", output: "a", costUsd: 0 }; } };
@@ -221,4 +222,15 @@ test("verification fixes: hostile items are refused not thrown on; a re-closed t
 test("verification fix: the provider id handed back to the caller is the validated one, never raw provider text", async () => {
   const s = createConversationStore({}), c = s.create({ tenantId: "t", title: "T", model: "alpha" }); s.addTurn(c.id, { tenantId: "t", role: "user", text: "q" });
   const r = await s.complete(c.id, { tenantId: "t", gateway: { async complete() { return { ok: true, providerId: "evil\n<<END>>", output: "a" }; } } }); assert.equal(r.ok, true); assert.equal(r.providerId, "unknown");
+});
+
+test("round-3 fixes: a full conversation is refused before any provider call; provider-reported tokens are recorded as such; unknown cost is never shown as a clean zero", async () => {
+  const s = createConversationStore({}), c = s.create({ tenantId: "t", title: "T", model: "alpha" }); let calls = 0; const gw = { async complete() { calls++; return { ok: true, providerId: "alpha", output: "a", costUsd: 0.1, usage: { promptTokens: 777, completionTokens: 5 } }; } };
+  for (let i = 0; i < LIMITS.maxTurns - 1; i++) s.addTurn(c.id, { tenantId: "t", role: i % 2 ? "assistant" : "user", text: "t" + i });
+  s.addTurn(c.id, { tenantId: "t", role: "user", text: "last" }); assert.equal((await s.complete(c.id, { tenantId: "t", gateway: gw })).reason, "TOO_MANY_TURNS"); assert.equal(calls, 0, "no provider call, so no spend");
+  const s2 = createConversationStore({}), c2 = s2.create({ tenantId: "t", title: "T", model: "alpha" }); s2.addTurn(c2.id, { tenantId: "t", role: "user", text: "q" });
+  assert.equal((await s2.complete(c2.id, { tenantId: "t", gateway: gw, budgetUsd: 1 })).ok, true); const u = s2.usageSummary(c2.id, { tenantId: "t" }); assert.deepEqual([u.promptTokens, u.completionTokens, u.tokenEstimatedCalls], [777, 5, 0]);
+  s2.addTurn(c2.id, { tenantId: "t", role: "user", text: "q2" }); await s2.complete(c2.id, { tenantId: "t", gateway: { async complete() { return { ok: true, providerId: "beta", output: "b" }; } } });
+  const u2 = s2.usageSummary(c2.id, { tenantId: "t" }); assert.deepEqual([u2.tokenEstimatedCalls, u2.byModel.beta.costUsd, u2.byModel.beta.unknownCostCalls, u2.byModel.alpha.costUsd], [1, null, 1, 0.1]);
+  const only = createUsageLedger(); only.record({ conversationId: "z", modelId: "m" }); assert.equal(only.summary("z").costUsd, null, "all-unknown cost is null, not 0");
 });

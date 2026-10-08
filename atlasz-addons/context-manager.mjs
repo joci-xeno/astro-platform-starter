@@ -48,7 +48,7 @@ export function packContext({ pinned = [], turns = [], maxTokens, reserveOutput 
 export function createUsageLedger({ now = () => new Date().toISOString() } = {}) {
   const rows = [], MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9._:\/@+-]{0,79}$/;
   const num = v => Number.isFinite(v) && v >= 0;
-  function record({ conversationId, modelId = "unknown", promptTokens = 0, completionTokens = 0, source = "ESTIMATE", costUsd = null, budgetUsd = 0 } = {}) {
+  function record({ conversationId, modelId = "unknown", promptTokens = 0, completionTokens = 0, source = "ESTIMATE", costUsd = null, budgetUsd = 0, tokensEstimated = true } = {}) {
     if (!conversationId || typeof conversationId !== "string") return { ok: false, reason: "CONVERSATION_REQUIRED" };
     if (typeof modelId !== "string" || !MODEL_ID.test(modelId)) modelId = "unknown";                       // free text never becomes a ledger key
     if (!["ESTIMATE", "PROVIDER"].includes(source)) return { ok: false, reason: "SOURCE_INVALID" };
@@ -56,19 +56,19 @@ export function createUsageLedger({ now = () => new Date().toISOString() } = {})
     if (![promptTokens, completionTokens, costUsd, budgetUsd].every(num) || [promptTokens, completionTokens].some(v => v > 1e9) || costUsd > 1e7 || budgetUsd > 1e7) return { ok: false, reason: "NUMBERS_INVALID" };   // absurd magnitudes cannot overflow the sums to Infinity
     if (source === "ESTIMATE" && costUsd > 0) return { ok: false, reason: "COST_ONLY_FROM_PROVIDER_REPORT" };
     const unapprovedSpend = costUsd > budgetUsd;                               // flagged, never hidden
-    const row = { at: now(), conversationId, modelId, promptTokens, completionTokens, source, costUsd, costKnown, unapprovedSpend }; rows.push(row); return { ok: true, row };
+    const row = { at: now(), conversationId, modelId, promptTokens, completionTokens, source, costUsd, costKnown, tokensEstimated: tokensEstimated !== false, unapprovedSpend }; rows.push(row); return { ok: true, row };
   }
   function summary(conversationId) {
     const r = rows.filter(x => x.conversationId === conversationId), sum = k => r.reduce((a, x) => a + x[k], 0);
-    const byModel = Object.create(null); for (const x of r) { const m = byModel[x.modelId] ??= { calls: 0, promptTokens: 0, completionTokens: 0, costUsd: 0 }; m.calls++; m.promptTokens += x.promptTokens; m.completionTokens += x.completionTokens; m.costUsd += x.costUsd; }
-    return { conversationId, calls: r.length, promptTokens: sum("promptTokens"), completionTokens: sum("completionTokens"), totalTokens: sum("promptTokens") + sum("completionTokens"), costUsd: sum("costUsd"), unknownCostCalls: r.filter(x => x.costKnown !== true).length, costNote: "costUsd is the sum of REPORTED costs only; calls with unknown cost are counted in unknownCostCalls",
-      estimatedCalls: r.filter(x => x.source === "ESTIMATE").length, providerReportedCalls: r.filter(x => x.source === "PROVIDER").length, unapprovedSpendCalls: r.filter(x => x.unapprovedSpend).length, byModel: Object.fromEntries(Object.entries(byModel)), tokenNote: TOKEN_NOTE };
+    const byModel = Object.create(null); for (const x of r) { const m = byModel[x.modelId] ??= { calls: 0, promptTokens: 0, completionTokens: 0, costUsd: 0, unknownCostCalls: 0 }; m.calls++; if (x.costKnown !== true) m.unknownCostCalls++; m.promptTokens += x.promptTokens; m.completionTokens += x.completionTokens; m.costUsd += x.costUsd; }
+    return { conversationId, calls: r.length, promptTokens: sum("promptTokens"), completionTokens: sum("completionTokens"), totalTokens: sum("promptTokens") + sum("completionTokens"), costUsd: r.length && r.every(x => x.costKnown !== true) ? null : sum("costUsd"), unknownCostCalls: r.filter(x => x.costKnown !== true).length, costNote: "costUsd is the sum of REPORTED costs only; calls with unknown cost are counted in unknownCostCalls",
+      estimatedCalls: r.filter(x => x.source === "ESTIMATE").length, providerReportedCalls: r.filter(x => x.source === "PROVIDER").length, unapprovedSpendCalls: r.filter(x => x.unapprovedSpend).length, byModel: Object.fromEntries(Object.entries(byModel).map(([k, m]) => [k, m.unknownCostCalls === m.calls ? { ...m, costUsd: null } : m])), tokenEstimatedCalls: r.filter(x => x.tokensEstimated !== false).length, tokenNote: TOKEN_NOTE };
   }
   return { record, summary, rows: () => rows.map(x => ({ ...x })), load: list => {                                                                    // persisted rows are validated; anything malformed is skipped, never summed
     rows.length = 0; const n = v => Number.isFinite(v) && v >= 0;
     for (const x of Array.isArray(list) ? list : []) {
       if (!x || typeof x !== "object" || typeof x.conversationId !== "string" || !["ESTIMATE", "PROVIDER"].includes(x.source) || ![x.promptTokens, x.completionTokens, x.costUsd].every(n) || (x.source === "ESTIMATE" && x.costUsd > 0)) continue;
-      rows.push({ at: typeof x.at === "string" ? x.at : "", conversationId: x.conversationId, modelId: typeof x.modelId === "string" && MODEL_ID.test(x.modelId) ? x.modelId : "unknown", promptTokens: x.promptTokens, completionTokens: x.completionTokens, source: x.source, costUsd: x.costUsd, costKnown: x.costKnown === true, unapprovedSpend: x.unapprovedSpend === true });
+      rows.push({ at: typeof x.at === "string" ? x.at : "", conversationId: x.conversationId, modelId: typeof x.modelId === "string" && MODEL_ID.test(x.modelId) ? x.modelId : "unknown", promptTokens: x.promptTokens, completionTokens: x.completionTokens, source: x.source, costUsd: x.costUsd, costKnown: x.costKnown === true, tokensEstimated: x.tokensEstimated !== false, unapprovedSpend: x.unapprovedSpend === true });
     }
   } };
 }

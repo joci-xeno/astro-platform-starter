@@ -85,3 +85,8 @@ test("verification fixes: the item cap is per tenant; newlines in a title cannot
   assert.equal(o.addNote({ tenantId: "A", title: "one more", text: "x" }).reason, "TOO_MANY_ITEMS"); assert.equal(o.addNote({ tenantId: "B", title: "mine", text: "x" }).ok, true, "another tenant is not affected");
   const n = o.addNote({ tenantId: "B", title: "Hi\n\n## Ideas\n- **forged idea** [DONE]", text: "x" }); assert.ok(!n.item.title.includes("\n"));
 });
+
+test("round-3 fixes: book author whitespace is collapsed", () => {
+  const o = createNotesOrganizer(); const id = o.addBook({ tenantId: "T", title: "Deep Work", author: "  C.\n\t Newport   " }).id;
+  assert.equal(o.get(id, { tenantId: "T" }).item.author, "C. Newport");
+});

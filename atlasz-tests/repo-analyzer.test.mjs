@@ -181,3 +181,21 @@ test("verification fix: credential-shaped file names and package fields are reda
     const a = analyzeRepo(r.root); assert.equal(a.ok, true); assert.ok(!JSON.stringify(a).includes("AAAAAAAAAAAAAAAAAAAA"), "no credential-shaped text anywhere in the result"); assert.ok(a.review.findings.length > 0); assert.ok(a.review.untested.some(u => u.includes("[redacted]")), "the untested list names the file, redacted");
   } finally { r.done(); }
 });
+
+test("round-3 fixes: a stop during a run kills the running test file; licences/lockfiles are read; svg/map are not silently inert; .vue/.mts/.html get JS rules; rb/go/php are counted as not fully reviewed", { skip: !ISOLATED && "host cannot isolate network" }, async () => {
+  const r = mkRepo({ "tests/hang.test.mjs": "setInterval(() => {}, 1000);\n" });
+  try {
+    fs.rmSync(path.join(r.root, "tests/pay.test.mjs"));
+    const subject = "demo#" + analyzeRepo(r.root).hash; let stop = false; const t0 = Date.now();
+    setTimeout(() => { stop = true; }, 600);
+    const res = await runRepoTests({ name: "demo", root: r.root, ownerAuth: auth, ownerApproval: ap("REPO_TEST_RUN", subject), isStopped: () => stop, timeoutMs: 20000 });
+    assert.equal(res.reason, "OWNER_STOP_OR_SAFE_MODE_ACTIVE"); assert.ok(Date.now() - t0 < 10000, "killed on stop, not on the 20 s timeout");
+  } finally { r.done(); }
+  const x = mkRepo({ "LICENSE": "token = " + SK + "\n", "package-lock.json": "{\"x\":\"" + SK + "\"}", "logo.svg": "<svg/>", "src/a.vue": "<script>eval(x)</script>", "src/b.mts": "eval(x)", "src/c.rb": "puts 1", "src/d.go": "package main" });
+  try {
+    const a = analyzeRepo(x.root); const files = a.review.findings.map(f => f.file);
+    assert.ok(files.includes("LICENSE") && files.includes("package-lock.json"), "a secret in a licence/lockfile is seen: " + JSON.stringify(files));
+    assert.ok(files.includes("src/a.vue") && files.includes("src/b.mts"), "JS rules apply to .vue/.mts: " + JSON.stringify(files));
+    assert.ok(a.notReviewed.unsupported >= 3, "svg + rb + go counted: " + a.notReviewed.unsupported);
+  } finally { x.done(); }
+});

@@ -57,7 +57,7 @@ export function createSkillRegistry({ file = null, actions = {}, isStopped = () 
     const e = engine(), r = e.saveTemplate({ tenantId: T, id: "check", name: "check", params: def.params, steps: def.steps });
     return r.ok ? { ok: true } : { ok: false, reason: "TEMPLATE_" + r.reason };
   }
-  const vis = (s, v) => ({ id: v.id, version: v.version, status: v.status, hash: v.hash, gate: v.gate ? { passed: v.gate.passed, ranAt: v.gate.ranAt, results: v.gate.results } : null });
+  const vis = (s, v) => ({ id: v.id, version: v.version, status: v.status, hash: v.hash, gate: v.gate ? { passed: v.gate.passed, ranAt: v.gate.ranAt, results: clone(v.gate.results) } : null });
 
   function submit({ tenantId, id, name, description = "", params, steps, permissions, tests, submittedBy = "OWNER" } = {}) {
     if (!tenantId || typeof tenantId !== "string") return { ok: false, reason: "TENANT_REQUIRED" };
@@ -69,7 +69,7 @@ export function createSkillRegistry({ file = null, actions = {}, isStopped = () 
     const c = checkDefinition({ params, steps, permissions }); if (!c.ok) return c;
     if (looksSecret({ name, description, params, steps, permissions, tests })) return { ok: false, reason: "SECRET_IN_INPUT" };   // the whole submission, tests and descriptions included, is stored and shown back
     let s = rec(tenantId, id);
-    if (!s) { if (Object.keys(d.skills).length >= LIMITS.maxSkills) return { ok: false, reason: "TOO_MANY_SKILLS" }; s = d.skills[key(tenantId, id)] = { tenantId, id, name: name.trim(), description, versions: [], active: null, createdAt: now() }; }
+    if (!s) { if (Object.values(d.skills).filter(x => x.tenantId === tenantId).length >= LIMITS.maxSkills) return { ok: false, reason: "TOO_MANY_SKILLS" }; s = d.skills[key(tenantId, id)] = { tenantId, id, name: name.trim(), description, versions: [], active: null, createdAt: now() }; }
     if (s.versions.length >= LIMITS.maxVersions) return { ok: false, reason: "TOO_MANY_VERSIONS" };
     const def = clone({ params: params ?? {}, steps, permissions, tests }), hash = hashOf(def);
     if (s.versions.some(v => v.hash === hash)) return { ok: false, reason: "IDENTICAL_VERSION_EXISTS" };
@@ -79,6 +79,7 @@ export function createSkillRegistry({ file = null, actions = {}, isStopped = () 
 
   /** Store a gate result. The ACTIVE version keeps its ACTIVE status on a pass; a failing re-run of the active version switches the skill off (fail closed) rather than leaving a failed version running. */
   function record(s, v, passed, gate) {
+    if (v.status === "REVOKED") return;                                                    // a gate that finished after the owner revoked the version changes nothing
     v.gate = gate;
     if (s.active === v.version) { if (passed) v.history.push({ at: now(), status: "ACTIVE", by: "GATE", note: "REGATE_PASSED" }); else { v.status = "TEST_FAILED"; s.active = null; v.history.push({ at: now(), status: "TEST_FAILED", by: "GATE", note: "DEACTIVATED_REGATE_FAILED" }); } }
     else { v.status = passed ? "TESTED" : "TEST_FAILED"; v.history.push({ at: now(), status: v.status, by: "GATE" }); }

@@ -72,6 +72,7 @@ export function createPreferences({ file = null, now = () => Date.now() } = {}) 
     if (key === "learning.confirmFirst") return { ok: false, reason: "NOT_PROPOSABLE" };
     if (typeof reason !== "string" || reason.length > LIMITS.maxReason) return { ok: false, reason: "REASON_INVALID" };
     const t = T(tenantId), t0 = now(); t.proposals = t.proposals.filter(p => p.status !== "PENDING" || t0 - p.createdAtMs <= LIMITS.proposalTtlMs || (p.status = "EXPIRED", true));
+    { const done = t.proposals.filter(p => p.status !== "PENDING"); if (done.length > 200) { const drop = new Set(done.slice(0, done.length - 200)); t.proposals = t.proposals.filter(p => !drop.has(p)); } }   // resolved proposals are history, kept bounded
     const same = t.proposals.find(p => p.status === "PENDING" && p.key === key && JSON.stringify(p.value) === JSON.stringify(v.value)); if (same) return { ok: true, id: same.id, duplicate: true };
     const cur = get(tenantId, key).value; if (JSON.stringify(cur) === JSON.stringify(v.value)) return { ok: false, reason: "ALREADY_SET" };
     if (t.proposals.filter(p => p.status === "PENDING").length >= LIMITS.maxProposals) return { ok: false, reason: "TOO_MANY_PENDING_PROPOSALS" };

@@ -27,6 +27,13 @@ export function createProjectMemory({ file = null, now = () => new Date().toISOS
   const headFile = file ? file + ".head" : null;
   const writeHead = () => { if (!headFile) return; try { fs.writeFileSync(headFile, JSON.stringify({ seq: d.log.length, hash: head() }), { mode: 0o600 }); } catch { /* the log itself is already saved */ } };
   const readHead = () => { if (!headFile || !fs.existsSync(headFile)) return null; try { const h = JSON.parse(fs.readFileSync(headFile, "utf8")); return Number.isInteger(h?.seq) && typeof h?.hash === "string" ? h : { seq: -1, hash: "" }; } catch { return { seq: -1, hash: "" }; } };
+  /** Writers re-verify the whole chain once (then only the anchor file on each write; the in-memory log is changed by append() alone). */
+  let chainChecked = false;
+  function writeGate() {
+    if (!chainChecked) { const v = verify(); if (!v.ok) return v; chainChecked = true; }
+    if (headFile && d.log.length) { const h = readHead(); if (!h || h.seq !== d.log.length || h.hash !== head()) { chainChecked = false; return { ok: false, brokenAt: d.log.length, reason: "HEAD_ANCHOR_MISMATCH" }; } }
+    return { ok: true };
+  }
   function append(entry) {                                            // the only writer of the log
     const e = { seq: d.log.length + 1, at: now(), ...entry, prev: head() }; e.hash = sha(JSON.stringify({ ...e, hash: undefined })); d.log.push(e); store.save(); writeHead(); return e;
   }
@@ -51,6 +58,7 @@ export function createProjectMemory({ file = null, now = () => new Date().toISOS
   }
   const listProjects = ({ tenantId } = {}) => Object.values(d.projects).filter(p => p.tenantId === tenantId).map(pubProject);
   function propose(projectId, { tenantId, actor, title, decision, rationale = "", session = "", evidence = [] } = {}) {
+    { const v = writeGate(); if (!v.ok) return { ok: false, reason: "CHAIN_BROKEN", brokenAt: v.brokenAt }; }   // a damaged history is never extended: the next write would otherwise re-anchor (launder) the damage
     const p = proj(projectId, tenantId); if (!p) return { ok: false, reason: "NOT_FOUND" };
     if (!actorValid(actor)) return { ok: false, reason: "ACTOR_INVALID" };
     if (typeof title !== "string" || !title.trim() || typeof decision !== "string" || !decision.trim()) return { ok: false, reason: "TITLE_AND_DECISION_REQUIRED" };
@@ -61,6 +69,7 @@ export function createProjectMemory({ file = null, now = () => new Date().toISOS
   }
   const cur = (projectId, decisionId) => decisionsOf(projectId).find(x => x.id === decisionId);
   function adopt(projectId, decisionId, { tenantId, actor } = {}) {
+    { const v = writeGate(); if (!v.ok) return { ok: false, reason: "CHAIN_BROKEN", brokenAt: v.brokenAt }; }   // a damaged history is never extended: the next write would otherwise re-anchor (launder) the damage
     if (!proj(projectId, tenantId)) return { ok: false, reason: "NOT_FOUND" };
     if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_ADOPT" };
     const x = cur(projectId, decisionId); if (!x) return { ok: false, reason: "DECISION_NOT_FOUND" };
@@ -68,6 +77,7 @@ export function createProjectMemory({ file = null, now = () => new Date().toISOS
     append({ type: "ADOPT", projectId, decisionId, actor }); return { ok: true, status: "ADOPTED" };
   }
   function supersede(projectId, oldId, newId, { tenantId, actor } = {}) {
+    { const v = writeGate(); if (!v.ok) return { ok: false, reason: "CHAIN_BROKEN", brokenAt: v.brokenAt }; }   // a damaged history is never extended: the next write would otherwise re-anchor (launder) the damage
     if (!proj(projectId, tenantId)) return { ok: false, reason: "NOT_FOUND" };
     if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_SUPERSEDE" };
     const o = cur(projectId, oldId), n = cur(projectId, newId); if (!o || !n) return { ok: false, reason: "DECISION_NOT_FOUND" };
@@ -76,6 +86,7 @@ export function createProjectMemory({ file = null, now = () => new Date().toISOS
     append({ type: "SUPERSEDE", projectId, decisionId: oldId, byDecisionId: newId, actor }); return { ok: true };
   }
   function revoke(projectId, decisionId, { tenantId, actor, reason = "" } = {}) {
+    { const v = writeGate(); if (!v.ok) return { ok: false, reason: "CHAIN_BROKEN", brokenAt: v.brokenAt }; }   // a damaged history is never extended: the next write would otherwise re-anchor (launder) the damage
     if (!proj(projectId, tenantId)) return { ok: false, reason: "NOT_FOUND" };
     if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_REVOKE" };
     const x = cur(projectId, decisionId); if (!x) return { ok: false, reason: "DECISION_NOT_FOUND" };

@@ -37,7 +37,7 @@ export function createObservationMemory({ file = null, security = null, blackBox
   const need = w => { if (!w?.tenantId) throw new Error("TENANT_REQUIRED"); return who(w); };
   const isOwner = w => who(w).role === "OWNER" && !who(w).forAgent;
   const mine = (id, w) => { const i = own(S.items, id); return i && i.tenantId === w.tenantId ? i : null; };
-  const expired = i => Date.parse(i.retentionUntil) <= Date.parse(now());
+  const expired = i => !(Date.parse(i.retentionUntil) > Date.parse(now()));      // an unreadable retention date means expired, never 'kept forever'
   const addDays = (iso, d) => new Date(Date.parse(iso) + d * 86400000).toISOString();
   const by = w => (w.forAgent ? "AGENT" + (w.actorId ? ":" + w.actorId : "") : "OWNER");
   const pub = (i, w, extra = {}) => ({ id: i.id, kind: i.kind, modality: i.modality, scope: i.scope, classification: i.classification, text: i.text, tags: i.tags, source: i.source, ref: i.ref, createdAt: i.createdAt, version: i.version, correctedAt: i.correctedAt ?? null, retentionUntil: i.retentionUntil,
@@ -54,11 +54,15 @@ export function createObservationMemory({ file = null, security = null, blackBox
     let screening = "NOT_SCREENED"; if (security) { const a = security.assess({ kind: "EXTERNAL_INSTRUCTION", agentId: null, source: "observation:" + kind, text }); screening = a.decision; if (a.allowed === false && w.forAgent) throw new Error("BLOCKED_BY_SECURITY"); if (a.allowed === false) screening = "BLOCK_OWNER_OVERRIDE_STORED_OWNER_ONLY"; }
     const rawTags = Array.isArray(o.tags) ? o.tags.slice(0, LIMITS.tags).map(t => String(t).slice(0, 80)) : [], tags = rawTags.map(t => t.toLowerCase().slice(0, 40));
     if (rawTags.some(looksSecret) || containsSecret(JSON.stringify(o.source?.ref ?? "")) || containsSecret(JSON.stringify(o.ref ?? ""))) throw new Error("SECRET_NOT_STORED");
+    const verification = o.verification ?? "UNVERIFIED"; if (!["UNVERIFIED", "VERIFIED_AT_CAPTURE", "UNVERIFIED_AFTER_CORRECTION"].includes(verification)) throw new Error("VERIFICATION_INVALID");
+    const mediaSha = o.mediaSha256 ?? null; if (mediaSha !== null && !(typeof mediaSha === "string" && /^[0-9a-f]{64}$/i.test(mediaSha))) throw new Error("MEDIA_HASH_INVALID");
+    const extra = { source: o.source?.type, ref: o.source?.ref, oref: o.ref, consent: o.consent && { by: o.consent.by, purpose: o.consent.purpose } };   // every stored free-form value is screened, not just the text
+    if (looksSecret(JSON.stringify(extra) ?? "")) throw new Error("SECRET_NOT_STORED");
     const days = Math.min(Number(o.retentionDays) || LIMITS.defaultRetention[cls], LIMITS.maxRetentionDays); if (!(days > 0)) throw new Error("RETENTION_INVALID");
     if (Object.values(S.items).filter(x => x.tenantId === w.tenantId).length >= maxRecords) throw new Error("MEMORY_FULL");
     const id = "ob-" + (++S.seq) + "-" + crypto.randomBytes(3).toString("hex"), t = now();
     const i = { id, tenantId: w.tenantId, kind, modality, scope, classification: cls, text, textSha256: sha(text), tags, source: { type: w.forAgent ? "AGENT" : (o.source?.type ?? "OWNER"), actor: w.actorId ?? null, ref: o.source?.ref ?? null }, ref: o.ref ?? null,
-      consent: o.consent ? { granted: o.consent.granted === true, by: o.consent.by ?? null, purpose: o.consent.purpose ?? null, at: t } : { granted: false, by: null, purpose: null, at: null }, createdAt: t, retentionUntil: addDays(t, days), version: 1, history: [], screening, verification: o.verification ?? "UNVERIFIED", mediaSha256: o.mediaSha256 ?? null };
+      consent: o.consent ? { granted: o.consent.granted === true, by: o.consent.by ?? null, purpose: o.consent.purpose ?? null, at: t } : { granted: false, by: null, purpose: null, at: null }, createdAt: t, retentionUntil: addDays(t, days), version: 1, history: [], screening, verification, mediaSha256: mediaSha };
     S.items[id] = i; event("OBSERVED", by(w), { id, tenantId: w.tenantId, kind, modality, classification: cls }); store.save(); return pub(i, w);
   }
   /** A media-fabric analysis becomes a text observation: metadata only, hash reference, no raw media. Consent is required. GPS/location presence raises the class. */
@@ -86,7 +90,7 @@ export function createObservationMemory({ file = null, security = null, blackBox
       const s = q.length ? score(i, q) : 0; if (q.length && s <= 0) continue; out.push({ i, s });
     }
     out.sort((a, b) => b.s - a.s || b.i.createdAt.localeCompare(a.i.createdAt));
-    return { method: "KEYWORD_NOT_SEMANTIC", results: out.slice(0, Math.min(limit, 50)).map(({ i, s }) => pub(i, w, { score: Number(s.toFixed(3)) })), note: "Observations are recalled as recorded, with provenance. Nothing here is a verified fact unless its verification says so, and RESEARCH_FINDING entries are VERIFIED_AT_CAPTURE only." };
+    return { method: "KEYWORD_NOT_SEMANTIC", results: out.slice(0, Math.max(0, Math.min(Number.isFinite(Number(limit)) ? Math.floor(Number(limit)) : 10, 50))).map(({ i, s }) => pub(i, w, { score: Number(s.toFixed(3)) })), note: "Observations are recalled as recorded, with provenance. Nothing here is a verified fact unless its verification says so, and RESEARCH_FINDING entries are VERIFIED_AT_CAPTURE only." };
   }
   const canTouch = (i, w) => isOwner(w) || (w.forAgent && i.source.type === "AGENT");        // agents may only touch records agents created; the owner may touch any
   /** New version with the corrected text. Owner may correct any record; an agent only agent-created records. The previous text is kept in owner-only history. */
@@ -109,7 +113,7 @@ export function createObservationMemory({ file = null, security = null, blackBox
     if (![modality, kind, scope, sourceType, olderThanDays, tag].some(v => v != null)) throw new Error("FILTER_REQUIRED");
     if (olderThanDays != null && !(typeof olderThanDays === "number" && Number.isFinite(olderThanDays) && olderThanDays >= 0)) throw new Error("OLDER_THAN_DAYS_INVALID");
     const cutoff = olderThanDays != null ? Date.parse(now()) - olderThanDays * 86400000 : null; let n = 0;
-    for (const i of Object.values(S.items)) { if (i.tenantId !== w.tenantId) continue; if ((modality && i.modality !== modality) || (kind && i.kind !== kind) || (scope && i.scope !== scope) || (sourceType && i.source.type !== sourceType) || (tag && !i.tags.includes(tag)) || (cutoff != null && Date.parse(i.createdAt) > cutoff)) continue; S.tombstones[i.id] = { id: i.id, tenantId: i.tenantId, deletedAt: now(), by: "OWNER", reason: "BULK", kind: i.kind, modality: i.modality }; delete S.items[i.id]; n++; }
+    for (const i of Object.values(S.items)) { if (i.tenantId !== w.tenantId) continue; if ((modality && i.modality !== modality) || (kind && i.kind !== kind) || (scope && i.scope !== scope) || (sourceType && i.source.type !== sourceType) || (tag && !i.tags.includes(String(tag).toLowerCase())) || (cutoff != null && Date.parse(i.createdAt) > cutoff)) continue; S.tombstones[i.id] = { id: i.id, tenantId: i.tenantId, deletedAt: now(), by: "OWNER", reason: "BULK", kind: i.kind, modality: i.modality }; delete S.items[i.id]; n++; }
     event("BULK_DELETED", "OWNER", { tenantId: w.tenantId, count: n }); store.save(); return { deleted: n };
   }
   /** Owner-only: delete EVERYTHING for the tenant. Requires typing the tenant id as confirmation. */

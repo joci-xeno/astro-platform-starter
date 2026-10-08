@@ -226,3 +226,21 @@ test("verification fixes: secrets in any submitted field are refused; a new vers
   const r2 = mk({ actions: acts() }); r2.submit(good({ tests: [good().tests[0], { name: "never refused", negative: true, params: { text: "x" }, expect: { refused: "PARAMETER_REQUIRED" } }] }));
   assert.equal((await r2.runGate(T, "shout", 1)).passed, false);
 });
+
+test("round-3 fixes: the skill cap is per tenant; a gate result handed out cannot alter the stored one; a gate finishing after revoke changes nothing", async () => {
+  const r = mk({ actions: acts() });
+  for (let i = 0; i < LIMITS.maxSkills; i++) assert.equal(r.submit(good({ id: "s" + i })).ok, true);
+  assert.equal(r.submit(good({ id: "extra" })).reason, "TOO_MANY_SKILLS");
+  assert.equal(r.submit(good({ tenantId: "OTHER", id: "extra" })).ok, true, "another tenant is not locked out by a full one");
+  const r2 = mk({ actions: acts() }); r2.submit(good()); await r2.runGate(T, "shout", 1);
+  const g = r2.get(T, "shout").skill.versions[0].gate; g.results.push("forged"); g.passed = false;
+  assert.equal(r2.get(T, "shout").skill.versions[0].gate.passed, true); assert.equal(r2.get(T, "shout").skill.versions[0].gate.results.includes("forged"), false);
+  // revoke while a re-gate is running
+  let release, slow = false; const wait = new Promise(res => { release = res; });
+  const r3 = mk({ actions: { ...acts(), upper: { ...acts().upper, run: async a => { if (slow) await wait; return { text: String(a.text).toUpperCase(), n: String(a.text).length }; } } } });
+  r3.submit(good()); await r3.runGate(T, "shout", 1); assert.equal(r3.activate(T, "shout", 1, { actor: "OWNER" }).ok, true);
+  slow = true; const p = r3.runGate(T, "shout", 1); await new Promise(res => setTimeout(res, 20));
+  assert.equal(r3.deactivate(T, "shout", { actor: "OWNER" }).ok, true); const h = r3.get(T, "shout").skill.versions[0].history.length;
+  release(); await p;
+  const v = r3.get(T, "shout").skill.versions[0]; assert.equal(v.status, "REVOKED"); assert.equal(v.history.length, h, "the late gate result is not recorded");
+});

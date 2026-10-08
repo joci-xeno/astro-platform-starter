@@ -21,13 +21,15 @@ export const RELATIONS = Object.freeze(["SUPPORTS", "REFUTES"]);
 export const STATUSES = Object.freeze(["VERIFIED", "UNSUPPORTED", "ASSUMPTION", "OUTDATED", "CONFLICTED", "REFUTED", "REJECTED", "UNVERIFIABLE"]);
 export const LIMITS = Object.freeze({ questionChars: 500, claimChars: 1000, noteChars: 1000, topicChars: 120, valueChars: 200, evidencePerFinding: 50, minCoverage: 0.5, freshnessDays: 30 });
 import { scrub, containsSecret } from "./secret-patterns.mjs";
+const looksSecret = v => { const t = String(v ?? ""); return containsSecret(t) || scrub(t, "[r]") !== t; };
 const sha = s => crypto.createHash("sha256").update(s).digest("hex");
 const norm = s => String(s ?? "").toLowerCase().replace(/\s+/g, " ").trim();
 
 export function createResearchLedger({ file = null, knowledge, security = null, blackBox = null, now = () => new Date().toISOString(), freshnessDays = LIMITS.freshnessDays } = {}) {
   if (!knowledge || typeof knowledge.verifyCitation !== "function") throw new Error("KNOWLEDGE_PROJECTS_REQUIRED");
   const store = createStore({ file, init: () => ({ questions: {}, findings: {}, contradictions: {}, events: [], seq: 0 }) }), S = store.data;   // unreadable file => STORE_UNREADABLE, never replaced
-  const reload = () => { if (!file) return; let d; try { d = JSON.parse(fs.readFileSync(file, "utf8")); } catch (e) { if (e.code === "ENOENT") return; throw new Error("STORE_UNREADABLE:" + file.split(/[\\/]/).pop()); } for (const k of ["questions", "findings", "contradictions"]) S[k] = d[k] ?? {}; S.events = d.events ?? []; S.seq = d.seq ?? 0; };
+  const reload = () => { if (!file) return; let d; try { d = JSON.parse(fs.readFileSync(file, "utf8")); } catch (e) { if (e.code === "ENOENT") return; throw new Error("STORE_UNREADABLE:" + file.split(/[\\/]/).pop()); } if (!d || typeof d !== "object" || Array.isArray(d) || ["questions", "findings", "contradictions"].some(k => d[k] !== undefined && (typeof d[k] !== "object" || d[k] === null || Array.isArray(d[k]))) || (d.events !== undefined && !Array.isArray(d.events))) throw new Error("STORE_UNREADABLE:" + file.split(/[\\/]/).pop());   // a wrong-shaped file is refused, never overwritten
+    for (const k of ["questions", "findings", "contradictions"]) S[k] = d[k] ?? {}; S.events = d.events ?? []; S.seq = d.seq ?? 0; };
   const log = (kind, d) => { try { blackBox?.record({ kind, ...d }); } catch { /* audit must not change behaviour */ } };
   const id = p => p + "-" + (++S.seq) + "-" + crypto.randomBytes(3).toString("hex");
   /** Append-only, hash-chained event log: every write is recorded with who/what/when; verifyChain() detects edits, deletions and reordering. */
@@ -50,7 +52,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   const finding = (fid, w) => { const f = S.findings[fid]; if (!f || f.tenantId !== w?.tenantId) throw new Error("UNKNOWN_FINDING"); question(f.questionId, w); return f; };
   function vet(text, max, field, by) {
     const t = String(text ?? "").trim(); if (!t) throw new Error(field + "_REQUIRED"); if (t.length > max) throw new Error(field + "_TOO_LONG");
-    if (containsSecret(t)) throw new Error(field + "_CONTAINS_SECRET");
+    if (looksSecret(t)) throw new Error(field + "_CONTAINS_SECRET");
     let sc = { decision: "NOT_SCREENED" }; if (security) { const a = security.assess({ kind: "EXTERNAL_INSTRUCTION", agentId: null, source: "research:" + field, text: t }); sc = { decision: a.decision }; if (a.allowed === false && by !== "OWNER") throw new Error(field + "_BLOCKED_BY_SECURITY"); }
     return { text: t, screening: sc.decision };
   }
@@ -69,6 +71,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   function addFinding(qid, { claim, kind = "CLAIM", topic = null, value = null, by } = {}, w) {
     reload(); const q = question(qid, w), b = byOf(w, by); if (!FINDING_KINDS.includes(kind)) throw new Error("KIND_INVALID");
     const c = vet(claim, LIMITS.claimChars, "CLAIM", b); if ((topic == null) !== (value == null)) throw new Error("TOPIC_AND_VALUE_TOGETHER");
+    if (topic != null && (looksSecret(topic) || looksSecret(value))) throw new Error("TOPIC_OR_VALUE_CONTAINS_SECRET");
     if (topic != null && (String(topic).length > LIMITS.topicChars || String(value).length > LIMITS.valueChars)) throw new Error("TOPIC_OR_VALUE_TOO_LONG");
     const f = { id: id("rf"), tenantId: w.tenantId, questionId: q.id, claim: c.text, kind, topic: topic == null ? null : norm(topic), value: value == null ? null : norm(value), screening: c.screening, createdBy: b, createdAt: now(), evidence: [] };
     S.findings[f.id] = f; event("FINDING_ADDED", b, { id: f.id, questionId: q.id, kind, claimSha: sha(f.claim) }); store.save(); return structuredClone(f);
