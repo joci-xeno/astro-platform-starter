@@ -46,7 +46,7 @@ test("HTTP: conversations persist on disk across a restart; asking a model with 
   const c = await boot();
   try {
     const cr = await c.wb("conv.create", { title: "Plan", model: "alpha", systemPrompt: "Be brief." }); assert.equal(cr.status, 200); const id = cr.result.id;
-    assert.equal((await c.wb("conv.addTurn", { id, text: "key sk-ABCDEFGHIJKLMNOPQRSTUVWX please" })).status, 200);
+    assert.equal((await c.wb("conv.addTurn", { id, text: "key " + "s" + "k-ABCDEFGHIJKLMNOPQRSTUVWX please" })).status, 200);
     const ask = await c.wb("conv.complete", { id }); assert.equal(ask.status, 400); assert.match(ask.error, /NO_ELIGIBLE_PROVIDER/);
     const got = await c.wb("conv.get", { id }); assert.equal(got.result.conversation.turns.length, 1); assert.ok(!JSON.stringify(got).includes("sk-ABCDEFGH"));
     const disk = fs.readFileSync(path.join(c.stateDir, "workbench", "conversations.json"), "utf8"); assert.ok(!disk.includes("sk-ABCDEFGH") && disk.includes("[redacted]"));

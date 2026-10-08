@@ -7,7 +7,7 @@ Generated from `docs/audit/roadmap.json` and `docs/audit/open_items_detail.csv`.
 | Milestone | Name | Depends on | Open reqs | Partial | Missing | Ext. blocked | Owner decision | Gated by |
 |---|---|---|---|---|---|---|---|---|
 | M1 | Safety & reliability baseline | — | 79 | 62 | 17 | 0 | 0 | none |
-| M2 | Agent runtime integration (30 agents, Brain, tools) | M1 | 145 | 128 | 16 | 0 | 1 | model provider only for non-mock reasoning (EXTERNAL) |
+| M2 | Agent runtime integration (30 agents, Brain, tools) | M1 | 145 | 129 | 15 | 0 | 1 | model provider only for non-mock reasoning (EXTERNAL) |
 | M3 | Knowledge, memory and documents | M2 | 64 | 31 | 33 | 0 | 0 | OCR/embeddings providers (EXTERNAL) |
 | M4 | Money & business workflow (no real money) | M2, M3 | 42 | 32 | 9 | 1 | 0 | bank/email/payment providers and owner decisions (EXTERNAL / OWNER) |
 | M5 | Models, multimodal and live voice providers | M2 | 48 | 23 | 16 | 9 | 0 | ALL providers EXTERNAL; spending needs owner approval |

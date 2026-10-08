@@ -118,5 +118,7 @@ export function createToolRegistry({ chain, blackBox = null, now = () => new Dat
     if (t.output) { const o = validate(t.output, out); if (!o.ok) return done("OUTPUT_INVALID", { errors: o.errors }); }
     return done("OK", { result: out });
   }
-  return { register, describe, invoke, has: n => tools.has(n), stats: () => ({ ...stats, tools: tools.size }) };
+  /** Governance view of one tool (no handler, no schema): lets a broker verify that a policy entry still matches what is really registered. */
+  function inspect(name) { const t = tools.get(name); return t ? { name: t.name, operation: t.operation, spendUsd: t.spendUsd, timeoutMs: t.timeoutMs, version: t.version } : null; }
+  return { register, describe, inspect, invoke, has: n => tools.has(n), stats: () => ({ ...stats, tools: tools.size }) };
 }

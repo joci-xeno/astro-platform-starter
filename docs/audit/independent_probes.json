@@ -157,6 +157,36 @@
    "claim": "Plugin cannot gain write access by editing its manifest after the owner enabled it",
    "ok": true,
    "note": "{\"ok\":true,\"result\":{\"w\":\"DENIED\"}}"
+  },
+  {
+   "id": "P27",
+   "claim": "M2: forged agent ids (a 31st agent, odd spellings) are refused and no tool handler runs",
+   "ok": true,
+   "note": "DENIED,DENIED,DENIED,DENIED,DENIED,DENIED,DENIED"
+  },
+  {
+   "id": "P28",
+   "claim": "M2: owner decisions D3/D4/D5/D6 hold for every agent (process-only sandbox, pcc.*, voice, model.complete, money.panel, inbox.summary denied; no handler reached)",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "id": "P29",
+   "claim": "M2: a caller-supplied owner approval or role is ignored by the broker (valid approval for the exact args does not unlock a denied tool)",
+   "ok": true,
+   "note": "DENIED TOOL_NOT_ALLOWED_FOR_ROLE"
+  },
+  {
+   "id": "P30",
+   "claim": "M2: rate limits - the 11th call of one agent within a minute and the 6th concurrent call are refused",
+   "ok": true,
+   "note": "RATE_LIMITED AGENT_PER_MINUTE"
+  },
+  {
+   "id": "P31",
+   "claim": "M2: Safe Mode stops all agent tool calls, reads included",
+   "ok": true,
+   "note": "DENIED OWNER_STOP_OR_SAFE_MODE_ACTIVE"
   }
  ]
 }

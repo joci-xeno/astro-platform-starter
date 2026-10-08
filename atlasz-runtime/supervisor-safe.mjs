@@ -32,6 +32,8 @@ import { createRuntimeHandler } from "./runtime-http.mjs";
 import { createVoiceSession } from "../atlasz-addons/voice-session.mjs";
 import { createVoiceConversation, registerVoiceTools } from "../atlasz-addons/voice-conversation.mjs";
 import { registerWorkbenchTools } from "../atlasz-addons/workbench.mjs";
+import { createAgentToolBroker } from "../atlasz-addons/agent-tool-broker.mjs";
+import { approvalActionName } from "../atlasz-addons/owner-control/owner-authority.mjs";
 import { createObservationMemory, registerObservationTools, registerResearchCapture } from "../atlasz-addons/observation-memory.mjs";
 import { createToolRegistry } from "../atlasz-addons/typed-tools.mjs";
 import { createInboxPipeline } from "../atlasz-addons/business/inbox-pipeline.mjs";
@@ -112,7 +114,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
   // Execution pool: the 25 EXECUTION agents are the orchestrator's executors; the screening work itself is unchanged (screeningExecutor). Verification evidence comes from internalRecord (independent of the executor).
   const execIds = state.agents.filter(a => a.role === "EXECUTION").map(a => a.id);
   const brain = createBrainSystem({ dir: path.join(dataDir, "brain"), ownerAuth, roster: state.agents.map(a => ({ id: a.id, team: a.role })), safeMode, chain: chainProxy, redact: t => vault.redact(t),
-    executors: Object.fromEntries(execIds.map(id => [id, args => screeningExecutor(id, args)])), lookups: { internalRecord: claim => internalRecord(claim) },
+    executors: Object.fromEntries(execIds.map(id => [id, args => screeningWithTools(id, args)])), lookups: { internalRecord: claim => internalRecord(claim) },
     dispatchOptions: { maxAttempts: 3, backoff: { baseMs: retryBaseMs, maxMs: Math.max(retryBaseMs, 60000) } } });
   // Multi-layer owner control (V7.3 Owner Control): every dispatch of the fixed 30 agents is routed through the chain (owner authority, kill switch, safe mode, security, firewall, black box).
   fs.mkdirSync(path.join(dataDir, "brain"), { recursive: true }); fs.mkdirSync(path.join(dataDir, "ledger"), { recursive: true });
@@ -182,6 +184,11 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
   const voice = createVoiceConversation({ session: createVoiceSession({ transcriptDir: null }), file: path.join(dataDir, "memory", "voice-conversations.json"), security: brain.security, blackBox: brain.blackBox, now,
     gate: () => { const e = emergencyGate({ external: false }); if (!e.allowed) return e; return safeMode.gate({ write: true }); } });
   registerVoiceTools(tools, voice);
+  // M2 (owner decisions D1-D10, 2026-10-07): the ONLY path from the 30 agents to a tool. Deny by default; limits and approvals enforced in code; sandbox-only.
+  const agentToolSignals = [];
+  const agentTools = createAgentToolBroker({ tools, blackBox: brain.blackBox, approvalRequests, approvalAction: approvalActionName, approvalSubject: (op, p, spend) => ownerControl.chain.subjectFor(op, p, spend), now: () => Date.now(),
+    isStopped: () => emergencyStatus().mode !== "RUNNING" || safeMode.status().mode !== "NORMAL",
+    onSignal: sig => { agentToolSignals.push({ at: now(), ...sig }); if (agentToolSignals.length > 100) agentToolSignals.shift(); try { event("agent_tool_bypass_suspected", { agentId: sig.agentId, jobId: sig.jobId }); } catch { /* the Black Box already holds JOB_SUSPENDED */ } } });
   registerWorkbenchTools(tools);                                               // pure computation tools; NOT granted to agents until the owner approves the M2 permission table
   const scheduler = createScheduler({ file: path.join(dataDir, "scheduler", "schedules.json"), tools, now, blackBox: brain.blackBox,
     gate: o => { const e = emergencyGate(o); if (!e.allowed) return e; return safeMode.gate({ ...o, write: true }); } });
@@ -257,6 +264,19 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
   // ---- 25-agent execution pool, routed through the governed Brain dispatch (Joci-approved SANDBOX change) ----
   // queue job > durable dispatch job (idempotent) > plan > capability graph assignment > orchestrator (governance chain gate, execute, INDEPENDENT verification, black box)
   const agentById = id => state.agents.find(a => a.id === id);
+  /** Governed dispatch hook (M2): after the unchanged screening, an optional task.toolPlan [{tool,args}] runs through the broker as THIS agent. Default: none, behaviour unchanged. Only statuses are kept. */
+  async function screeningWithTools(agentId, args) {
+    const out = await screeningExecutor(agentId, args), plan = args?.task?.toolPlan;
+    if (!Array.isArray(plan) || !plan.length) return out;
+    const jobId = "dispatch:" + String(args.task.candidateId ?? "task").slice(0, 60), calls = [];
+    for (const step of plan.slice(0, 20)) {
+      const r = await agentTools.call({ agentId, jobId, tool: step?.tool, args: step?.args ?? {} });
+      calls.push({ tool: r.tool, status: r.status, ...(r.reason ? { reason: r.reason } : {}), ...(r.requestId ? { requestId: r.requestId } : {}) });
+      if (r.reason === "OWNER_STOP_OR_SAFE_MODE_ACTIVE" || r.reason === "JOB_SUSPENDED") break;
+    }
+    agentTools.endJob(jobId);
+    return { ...out, toolCalls: calls };
+  }
   /** The screening work itself (unchanged logic). Runs only when the orchestrator has passed every control layer for the assigned agent. */
   async function screeningExecutor(agentId, { task }) {
     const agent = agentById(agentId), candidate = state.candidates.find(c => c.id === task.candidateId);
@@ -343,7 +363,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
     const candidate = state.candidates.find(c => c.id === job.id);
     if (!candidate || !["NEW", "PROCESSING"].includes(candidate.status)) { queue.ack(job.id); return; }   // already handled before a crash between save and ack
     if (!brain.dispatch) { queue.nack(job.id, { error: "DISPATCH_UNAVAILABLE_FAIL_CLOSED" }); update(agent, "BLOCKED", "Governed dispatch unavailable", "DISPATCH_UNAVAILABLE"); return; }
-    brain.dispatch.submit({ id: candidate.id, kind: "SCREENING", payload: { task: { candidateId: candidate.id } }, correlationId: candidate.correlationId });   // durable + idempotent
+    brain.dispatch.submit({ id: candidate.id, kind: "SCREENING", payload: { task: { candidateId: candidate.id, ...(Array.isArray(candidate.toolPlan) && candidate.toolPlan.length ? { toolPlan: candidate.toolPlan.slice(0, 20) } : {}) } }, correlationId: candidate.correlationId });   // durable + idempotent
     const res = await runGoverned(agent, candidate.id, job);
     state.lastSystemRun = now();
     save();
@@ -393,6 +413,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
       persistence: { savedLocally: true, durableVolume: persistent },
       agents: state.agents, blockers, sourceErrors: state.sourceErrors, emergency: emergencyStatus(), safeMode: safeMode.status(), pendingApprovals: approvalRequests.pending().length, queue: queue.stats(), watchdog: watchdog.status(),
       selfCheck: { level: selfCheck.level, problems: selfCheck.checks.filter(c => c.status !== "OK").map(c => ({ id: c.id, status: c.status, detail: c.detail })) },
+      agentTools: { ...agentTools.stats(), status: "SANDBOX_ENFORCED_NOT_LIVE", signals: agentToolSignals.length, note: "Agents may call only tools allowed by the owner-approved table (deny by default); limits and approvals enforced in code." },
       vault: vault.status(), internalAddons: addonSnapshot(),
       brain: brainSafe(() => brain.summary()) ?? { state: "ERROR" }, models: brainSafe(() => modelGateway.summary()) ?? { state: "ERROR" }, voice: brainSafe(() => { const x = voice.summary({}); return { conversations: x.conversations, open: x.open, live: x.voice.live, providerMode: x.providerMode, blocker: x.voice.blocker, canApprove: false }; }) ?? { state: "ERROR" }, observations: brainSafe(() => { const x = observations.summary({ tenantId: KP_TENANT, role: "OWNER" }); return { total: x.total, expired: x.expired, deleted: x.deleted, rawMediaStored: false, chain: x.chain, method: x.method }; }) ?? { state: "ERROR" }, modality: brainSafe(() => { const m = modality.summary(); return { builtIn: m.builtIn.length, externalSlotsNotLive: m.external, note: m.note }; }) ?? { state: "ERROR" }, sandbox: brainSafe(() => { const x = sandbox.summary(); return { level: x.level, languages: x.languages, runs: x.runs, audit: x.audit, label: x.label }; }) ?? { state: "ERROR" }, research: brainSafe(() => research.summary({ tenantId: KP_TENANT, role: "OWNER" })) ?? { state: "ERROR" }, knowledge: brainSafe(() => ({ projects: knowledge.list({ tenantId: KP_TENANT }).length, documents: documents.summary().total, method: "KEYWORD_BM25_NOT_SEMANTIC" })) ?? { state: "ERROR" }, scheduler: brainSafe(() => scheduler.summary()) ?? { state: "ERROR" }, pcc: brainSafe(() => pcc.summary()) ?? { state: "ERROR" }, moneyEngine: brainSafe(() => moneyEngine.panel()) ?? { state: "ERROR" }, behavior: brainSafe(() => brain.behavior.summary()) ?? { state: "ERROR" }, inbox: brainSafe(() => ({ ...inbox.counts(), pipeline: inboxPipeline.summary() })) ?? { state: "ERROR" }, ownerControl: brainSafe(() => ownerControl.status()) ?? { state: "ERROR" }, ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
     };
@@ -423,7 +444,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
     schedule(() => brainSafe(() => brain.behavior.scan()), 60000);          // behaviour anomaly scan over the tamper-evident Black Box (detect + recommend only)
   }
   function stop() { stopping = true; watchdog.stop(); for (const t of timers) clearTimeout(t); save(); }
-  return { tools, modelGateway, knowledge, research, sandbox, modality, observations, voice, documents, pcc, scheduler, inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
+  return { tools, agentTools, agentToolSignals, modelGateway, knowledge, research, sandbox, modality, observations, voice, documents, pcc, scheduler, inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
 }
 
 if (process.env.ATLASZ_TEST_MODE !== "1") {

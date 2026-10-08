@@ -14,8 +14,8 @@ Branch `atlasz-v73-integration`. Audit only: no product code was changed in Task
 | Registry rows | Before Task 3 | After Task 3 | Change |
 |---|---|---|---|
 | EXISTS_AND_WORKING | 211 | 192 | -19 |
-| PARTIAL | 478 | 502 | +24 |
-| MISSING | 194 | 197 | +3 |
+| PARTIAL | 478 | 503 | +25 |
+| MISSING | 194 | 196 | +2 |
 | STRUCTURAL_ONLY | 36 | 36 | +0 |
 | EXISTS_NEEDS_TEST | 17 | 17 | +0 |
 | EXTERNAL_BLOCKER | 35 | 36 | +1 |
@@ -51,7 +51,7 @@ The three documents measure different things and overlap. Rule used: **a require
 | PROCESS_OR_AUDIT_TASK | 46 | 35 | no (S42/S43/S44/S50 working-method and audit-task items) |
 | IMPLEMENTATION_RECORD | 31 | 23 | no (ATLASZ-PKG84: records of work already done; the requirement they implement is counted elsewhere) |
 
-- **974 rows = 930 items + 53 section roll-ups.** The registry figures quoted at the start of Task 3 (478 PARTIAL / 194 MISSING; now 501 / 194 after the 23 downgrades) include roll-ups: at item level it is 478 PARTIAL (+28 STRUCTURAL_ONLY, +10 EXISTS_NEEDS_TEST, which this audit also reports as PARTIAL) and 183 MISSING.
+- **974 rows = 930 items + 53 section roll-ups.** The registry figures quoted at the start of Task 3 (478 PARTIAL / 194 MISSING; now 501 / 194 after the 23 downgrades) include roll-ups: at item level it is 479 PARTIAL (+28 STRUCTURAL_ONLY, +10 EXISTS_NEEDS_TEST, which this audit also reports as PARTIAL) and 182 MISSING.
 - **Unique outstanding requirements: 675** (588 product + 87 supplementary, not implemented). The remaining open registry rows are 63 roll-ups/labels/process tasks/implementation records.
 - **Gap register total 823 = 738 registry item gaps + 82 open capabilities + 3 import-scan orphans (+ 0 other scans).** Every REGISTRY gap links to exactly one registry item; each CAPABILITY gap links to the registry items it depends on (`depends_on`). 76 of the 82 open capabilities link to registry items, so most capability gaps are *views of the same work*, not additional work; only G01, GE07, A01, A07, A13, P18 have no registry link and are independent.
 - Therefore the honest size of the remaining work is **~681 requirements** (not 823 gaps and not 974); the 823-gap figure double counts capability views and non-product rows. Dangling capability→registry links: 0.
@@ -60,9 +60,9 @@ Final classification of all 930 items (registry status mapped to the five classe
 
 | Class | Items |
 |---|---|
-| PARTIAL | 516 |
+| PARTIAL | 517 |
 | IMPLEMENTED | 192 |
-| MISSING | 183 |
+| MISSING | 182 |
 | EXTERNALLY_BLOCKED | 36 |
 | AWAITING_OWNER_APPROVAL | 3 |
 
@@ -78,7 +78,7 @@ Started with **211** EXISTS_AND_WORKING registry rows (all items).
 
 Remaining flags on retained items (reviewed, none changes status): TESTS_DO_NOT_EXERCISE_MODULE×6, NO_MODULE_FILE×12, LOCATION_FILE_NOT_FOUND×2, NO_TEST_LISTED×4, LISTED_TEST_MISSING×1, MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW×1. These are meta items (tests/registry/audit-task rows with no code module), a `*.test.mjs` glob mistaken for a missing file (ATLASZ-CR-003), or heuristic misses where the test drives a real process (S14-001, S35-008).
 
-**Independent probes (20):** 26/26 pass.
+**Independent probes (20):** 31/31 pass.
 
 | Probe | Claim | Result |
 |---|---|---|
@@ -108,6 +108,11 @@ Remaining flags on retained items (reviewed, none changes status): TESTS_DO_NOT_
 | P24 | No production source uses Math.random() | PASS |
 | P25 | Agents cannot enable/rollback/restore via the chain: RESTORE-class operations fail closed without owner approval | PASS |
 | P26 | Plugin cannot gain write access by editing its manifest after the owner enabled it | PASS |
+| P27 | M2: forged agent ids (a 31st agent, odd spellings) are refused and no tool handler runs | PASS |
+| P28 | M2: owner decisions D3/D4/D5/D6 hold for every agent (process-only sandbox, pcc.*, voice, model.complete, money.panel, inbox.summary denied; no handler reached) | PASS |
+| P29 | M2: a caller-supplied owner approval or role is ignored by the broker (valid approval for the exact args does not unlock a denied tool) | PASS |
+| P30 | M2: rate limits - the 11th call of one agent within a minute and the 6th concurrent call are refused | PASS |
+| P31 | M2: Safe Mode stops all agent tool calls, reads included | PASS |
 
 **Live boot of runtime + Control Center:** 30 agents (SEARCH 5, EXECUTION 25); 31 typed tools registered; 60 Control Center routes (30 GET, 30 POST): every GET returns 200 with a token and is refused without one, every POST is refused without/with a wrong token, a foreign Host header gets 403. 
 

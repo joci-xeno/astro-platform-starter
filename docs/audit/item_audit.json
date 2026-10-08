@@ -33044,7 +33044,7 @@
   ],
   "tests_via_facade": [],
   "reach": "RUNTIME",
-  "invocation": "NOT_INVOKED",
+  "invocation": "INVOKED_BY_PRODUCTION_CODE",
   "verification_level": "L3_CONNECTED_AND_TESTED",
   "flags": []
  },
@@ -33095,31 +33095,41 @@
   "section": "TASK3_AUDIT",
   "title": "The 30 agents' governed dispatch must be able to select and invoke typed tools (kp/research/sandbox/obs/media/model) through the control chain",
   "priority": "P0",
-  "registry_status": "MISSING",
+  "registry_status": "PARTIAL",
   "strategy": "BUILD",
-  "blocker": "A non-mock model provider is needed for autonomous tool choice (EXTERNAL); deterministic job kinds can be built mock-first",
-  "evidence": "Audit scan: the only production caller of tools.invoke is the scheduler; agents run SCREENING jobs only; G06/GE08/P14 downgraded",
-  "implementation_location": "atlasz-runtime/supervisor-safe.mjs (runGoverned/execute); atlasz-addons/brain/governed-dispatch.mjs",
+  "blocker": "Autonomous tool choice needs a non-mock model provider (EXTERNAL, D5: none selected); owner has not yet reviewed D11 (effort.choose/chunk.plan/analyst.analyze stay DENY)",
+  "evidence": "M2 (owner decisions D1-D10, 2026-10-07): single broker path, deny-by-default per-role table validated per tool against the registry, D2 limits in code, approval requests via the existing owner queue, kill switch/Safe Mode checked before every call, Black Box entry per call; dispatch hook task.toolPl",
+  "implementation_location": "atlasz-addons/agent-tool-broker.mjs; atlasz-addons/agent-tool-policy.mjs; atlasz-runtime/supervisor-safe.mjs (agentTools, screeningWithTools)",
   "loc_files": [
-   "atlasz-addons/brain/governed-dispatch.mjs",
+   "atlasz-addons/agent-tool-broker.mjs",
+   "atlasz-addons/agent-tool-policy.mjs",
    "atlasz-runtime/supervisor-safe.mjs"
   ],
   "loc_missing": [],
-  "tests_listed": [],
+  "tests_listed": [
+   "agent-tool-broker.test.mjs",
+   "agent-tools-hosted.test.mjs",
+   "agent-tool-policy-vs-proposal.test.mjs"
+  ],
   "tests_missing": [],
-  "tests_failing": [],
+  "tests_failing": [
+   "agent-tool-broker.test.mjs",
+   "agent-tools-hosted.test.mjs",
+   "agent-tool-policy-vs-proposal.test.mjs"
+  ],
   "tests_passing": [],
   "tests_naming_module": [],
   "tests_via_facade": [],
   "reach": "RUNTIME",
-  "invocation": "INVOKED_BY_PRODUCTION_CODE",
+  "invocation": "NOT_INVOKED",
   "verification_level": "L1_CODE_EXISTS",
   "flags": [],
   "work_categories": [
-   "CODE",
+   "CODE_COMPLETION",
    "EXTERNAL_DEPENDENCY",
    "SECURITY_REVIEW",
-   "TESTS"
+   "TESTS",
+   "UI"
   ]
  },
  {

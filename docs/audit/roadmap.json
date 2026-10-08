@@ -22,8 +22,8 @@
   "acceptance": "An end-to-end job (SANDBOX) is planned by the Brain, executed by a named agent via at least 3 typed tools, judged by the independent QA, logged to the Black Box and visible in the Control Center; the 30-agent roster is unchanged; each hub-bag module is invoked by a workflow or removed; no duplicate implementation remains for qualify/approval-gateway/deal-state.",
   "gates": "model provider only for non-mock reasoning (EXTERNAL)",
   "open_requirements": {
-   "PARTIAL": 128,
-   "MISSING": 16,
+   "PARTIAL": 129,
+   "MISSING": 15,
    "IMPLEMENTED": 17,
    "AWAITING_OWNER_APPROVAL": 1
   }

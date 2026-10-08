@@ -23,8 +23,8 @@
    "IMPORT_SCAN": 3
   },
   "by_reality": {
-   "SANDBOX_TESTED_PARTIAL": 478,
-   "NOT_BUILT": 193,
+   "SANDBOX_TESTED_PARTIAL": 479,
+   "NOT_BUILT": 192,
    "EXTERNAL": 58,
    "STRUCTURE_ONLY": 56,
    "MODULE_NOT_CONNECTED": 24,
@@ -66,8 +66,8 @@
    "LIVE_VOICE": 2
   },
   "by_status": {
-   "PARTIAL": 528,
-   "MISSING": 193,
+   "PARTIAL": 529,
+   "MISSING": 192,
    "EXTERNAL_BLOCKER": 58,
    "STRUCTURAL_ONLY": 28,
    "EXISTS_NEEDS_TEST": 10,
@@ -78,8 +78,8 @@
   "registry_items": 930,
   "registry_gaps": 738,
   "capabilities_with_gaps": 82,
-  "modules_total": 148,
-  "modules_reachable_from_entrypoints": 145,
+  "modules_total": 158,
+  "modules_reachable_from_entrypoints": 155,
   "orphan_modules": [
    "atlasz-addons/digital-twin.mjs",
    "atlasz-addons/evidence-record.mjs",
@@ -97,7 +97,7 @@
   ],
   "todo_markers": 0,
   "panels": {
-   "CONNECTED": 43
+   "CONNECTED": 44
   },
   "live_verified_items": 0,
   "note": "LIVE_VERIFIED is intentionally zero: no live provider, payment, delivery or Windows-run evidence exists in this workspace."
@@ -140,6 +140,14 @@
    "apis": [
     "/api/sandbox",
     "/api/sandbox/run"
+   ],
+   "status": "CONNECTED"
+  },
+  {
+   "panel": "workbench",
+   "apis": [
+    "/api/workbench",
+    "/api/workbench/action"
    ],
    "status": "CONNECTED"
   },
@@ -10723,12 +10731,12 @@
    "source": "REGISTRY",
    "requirement_id": "ATLASZ-T3-003",
    "title": "The 30 agents' governed dispatch must be able to select and invoke typed tools (kp/research/sandbox/obs/media/model) through the control chain",
-   "status": "MISSING",
-   "reality": "NOT_BUILT",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "P0",
-   "modules": "atlasz-runtime/supervisor-safe.mjs (runGoverned/execute); atlasz-addons/brain/governed-dispatch.mjs",
-   "tests": "",
-   "blocker": "A non-mock model provider is needed for autonomous tool choice (EXTERNAL); deterministic job kinds can be built mock-first",
+   "modules": "atlasz-addons/agent-tool-broker.mjs; atlasz-addons/agent-tool-policy.mjs; atlasz-runtime/supervisor-safe.mjs (agentTools, screeningWithTools)",
+   "tests": "['atlasz-tests/agent-tool-broker.test.mjs', 'atlasz-tests/agent-tools-hosted.test.mjs', 'atlasz-tests/agent-tool-policy-vs-proposal.test.mjs', 'docs/audit/indep",
+   "blocker": "Autonomous tool choice needs a non-mock model provider (EXTERNAL, D5: none selected); owner has not yet reviewed D11 (effort.choose/chunk.plan/analyst.analyze stay DENY)",
    "workstream": "TYPED_TOOLS_MODEL_ROUTER",
    "depends_on": ""
   },
