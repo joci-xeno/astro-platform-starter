@@ -155,7 +155,7 @@
   {
    "id": "P26",
    "claim": "Plugin cannot gain write access by editing its manifest after the owner enabled it",
-   "ok": false,
+   "ok": true,
    "note": "{\"ok\":false,\"reason\":\"CODE_CHANGED_SINCE_ENABLE\"}"
   },
   {
