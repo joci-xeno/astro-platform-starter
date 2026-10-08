@@ -1,0 +1,9 @@
+{
+ "command": "npm test --prefix atlasz-runtime",
+ "tests": 527,
+ "pass_": 527,
+ "fail": 0,
+ "cancelled": 0,
+ "skipped": 0,
+ "recorded": "2026-10-07 after final docs regeneration; also 527/527 under --experimental-test-coverage and 527/527 across 81 files run one by one"
+}

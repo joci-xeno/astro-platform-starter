@@ -1,0 +1,242 @@
+{
+ "/api/status": {
+  "core": "status",
+  "test_files": 20
+ },
+ "/api/opportunities": {
+  "core": "opportunities",
+  "test_files": 0
+ },
+ "/api/approvals": {
+  "core": "approvals",
+  "test_files": 3
+ },
+ "/api/backups": {
+  "core": "backups",
+  "test_files": 1
+ },
+ "/api/finance": {
+  "core": "finance",
+  "test_files": 1
+ },
+ "/api/documents": {
+  "core": "documents",
+  "test_files": 1
+ },
+ "/api/knowledge": {
+  "core": "knowledge",
+  "test_files": 2
+ },
+ "/api/research": {
+  "core": "research",
+  "test_files": 1
+ },
+ "/api/sandbox": {
+  "core": "sandbox",
+  "test_files": 1
+ },
+ "/api/media": {
+  "core": "media",
+  "test_files": 1
+ },
+ "/api/observations": {
+  "core": "observations",
+  "test_files": 2
+ },
+ "/api/brain": {
+  "core": "brain",
+  "test_files": 2
+ },
+ "/api/money-engine": {
+  "core": "moneyEngine",
+  "test_files": 1
+ },
+ "/api/money-jobs": {
+  "core": "moneyJobs",
+  "test_files": 1
+ },
+ "/api/money-agents": {
+  "core": "moneyAgents",
+  "test_files": 1
+ },
+ "/api/money-recurring": {
+  "core": "moneyRecurring",
+  "test_files": 0
+ },
+ "/api/crm-inbox": {
+  "core": "crmInbox",
+  "test_files": 1
+ },
+ "/api/owner-safety": {
+  "core": "ownerSafety",
+  "test_files": 1
+ },
+ "/api/inbox": {
+  "core": "inbox",
+  "test_files": 1
+ },
+ "/api/voice": {
+  "core": "voice",
+  "test_files": 2
+ },
+ "/api/connectors": {
+  "core": "connectors",
+  "test_files": 1
+ },
+ "/api/techwatch": {
+  "core": "techWatch",
+  "test_files": 1
+ },
+ "/api/evidence": {
+  "core": "evidence",
+  "test_files": 1
+ },
+ "/api/brief": {
+  "core": "brief",
+  "test_files": 2
+ },
+ "/api/pcc": {
+  "core": "pcc",
+  "test_files": 1
+ },
+ "/api/prefs": {
+  "core": "setPrefs",
+  "test_files": 1
+ },
+ "/api/plugins": {
+  "core": "plugins",
+  "test_files": 1
+ },
+ "/api/theme": {
+  "core": "theme",
+  "test_files": 1
+ },
+ "/api/doctor": {
+  "core": "doctor",
+  "test_files": 1
+ },
+ "/api/updates": {
+  "core": "updates",
+  "test_files": 1
+ },
+ "/api/owner-key": {
+  "core": "provisionOwnerKey",
+  "test_files": 6
+ },
+ "/api/approvals/decide": {
+  "core": "decideApproval",
+  "test_files": 1
+ },
+ "/api/emergency": {
+  "core": "setEmergency",
+  "test_files": 1
+ },
+ "/api/safe-mode/exit": {
+  "core": "exitSafeMode",
+  "test_files": 1
+ },
+ "/api/brain/command": {
+  "core": "brainCommand",
+  "test_files": 1
+ },
+ "/api/owner-safety/action": {
+  "core": "ownerSafetyAction",
+  "test_files": 1
+ },
+ "/api/runtime/start": {
+  "core": "startRuntime",
+  "test_files": 1
+ },
+ "/api/runtime/stop": {
+  "core": "stopRuntime",
+  "test_files": 1
+ },
+ "/api/backup": {
+  "core": "backupNow",
+  "test_files": 0
+ },
+ "/api/backup/drill": {
+  "core": "drill",
+  "test_files": 1
+ },
+ "/api/backup/mark-lkg": {
+  "core": "markLastKnownGood",
+  "test_files": 1
+ },
+ "/api/restore/lkg": {
+  "core": "restoreLastKnownGood",
+  "test_files": 1
+ },
+ "/api/restore/backup": {
+  "core": "restoreFromBackup",
+  "test_files": 1
+ },
+ "/api/updates/check": {
+  "core": "updateActions.check",
+  "test_files": 3
+ },
+ "/api/updates/test": {
+  "core": "updateActions.test",
+  "test_files": 81
+ },
+ "/api/updates/install": {
+  "core": "updateActions.install",
+  "test_files": 1
+ },
+ "/api/chat": {
+  "core": "chat",
+  "test_files": 1
+ },
+ "/api/pcc/action": {
+  "core": "pccAction",
+  "test_files": 1
+ },
+ "/api/knowledge/action": {
+  "core": "knowledgeAction",
+  "test_files": 2
+ },
+ "/api/research/action": {
+  "core": "researchAction",
+  "test_files": 1
+ },
+ "/api/sandbox/run": {
+  "core": "sandboxRun",
+  "test_files": 1
+ },
+ "/api/voice/action": {
+  "core": "voiceAction",
+  "test_files": 1
+ },
+ "/api/observations/action": {
+  "core": "observationsAction",
+  "test_files": 2
+ },
+ "/api/plugins/enable": {
+  "core": "pluginActions.enable",
+  "test_files": 2
+ },
+ "/api/plugins/disable": {
+  "core": "pluginActions.disable",
+  "test_files": 1
+ },
+ "/api/plugins/theme": {
+  "core": "pluginActions.setTheme",
+  "test_files": 2
+ },
+ "/api/plugins/reset": {
+  "core": "pluginActions.resetQuarantine",
+  "test_files": 1
+ },
+ "/api/updates/rollback": {
+  "core": "updateActions.rollback",
+  "test_files": 2
+ },
+ "/api/updates/auto": {
+  "core": "updateActions.setAuto",
+  "test_files": 0
+ },
+ "/api/updates/unfreeze": {
+  "core": "updateActions.unfreeze",
+  "test_files": 1
+ }
+}

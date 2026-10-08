@@ -1,0 +1,269 @@
+{
+ "lines": 98.75957286161147,
+ "branches": 84.50597995905613,
+ "files": 151,
+ "lowest": [
+  [
+   "atlasz-addons/negotiation-engine.mjs",
+   30.434782608695652
+  ],
+  [
+   "atlasz-addons/tracing-evals.mjs",
+   60.714285714285715
+  ],
+  [
+   "atlasz-addons/enterprise-knowledge-agentic-rag.mjs",
+   77.77777777777777
+  ],
+  [
+   "atlasz-control-center/server.mjs",
+   83.13253012048193
+  ],
+  [
+   "atlasz-addons/tool-fabric.mjs",
+   89.36170212765957
+  ],
+  [
+   "atlasz-addons/personal-command-center.mjs",
+   93.25842696629213
+  ],
+  [
+   "atlasz-addons/money-pipeline-controller.mjs",
+   93.50649350649351
+  ],
+  [
+   "atlasz-addons/owner-control/financial-firewall.mjs",
+   93.84615384615384
+  ],
+  [
+   "atlasz-addons/local-update-adapters.mjs",
+   94.16058394160584
+  ],
+  [
+   "atlasz-addons/backup-recovery.mjs",
+   94.73684210526316
+  ],
+  [
+   "atlasz-addons/modality-fabric.mjs",
+   96.05911330049261
+  ],
+  [
+   "atlasz-addons/tax-accounting-engine.mjs",
+   96.7032967032967
+  ],
+  [
+   "atlasz-addons/business/qa-factory.mjs",
+   96.7741935483871
+  ],
+  [
+   "atlasz-addons/business/judge.mjs",
+   98.0
+  ],
+  [
+   "atlasz-control-center/core.mjs",
+   98.03921568627452
+  ],
+  [
+   "atlasz-addons/brain/verifier.mjs",
+   98.52941176470588
+  ],
+  [
+   "atlasz-addons/scheduler.mjs",
+   99.08256880733946
+  ],
+  [
+   "atlasz-addons/doc-extractors.mjs",
+   99.14529914529915
+  ],
+  [
+   "atlasz-addons/voice-conversation.mjs",
+   99.38271604938272
+  ],
+  [
+   "atlasz-addons/update-center.mjs",
+   99.48586118251929
+  ],
+  [
+   "atlasz-addons/agent-factory.mjs",
+   100.0
+  ],
+  [
+   "atlasz-addons/approval-command-gateway.mjs",
+   100.0
+  ],
+  [
+   "atlasz-addons/approval-requests.mjs",
+   100.0
+  ],
+  [
+   "atlasz-addons/audit-chain.mjs",
+   100.0
+  ],
+  [
+   "atlasz-addons/brain/behavior-monitor.mjs",
+   100.0
+  ]
+ ],
+ "by_file": {
+  "atlasz-addons/agent-factory.mjs": 100.0,
+  "atlasz-addons/agent-portfolio-manager.mjs": 100.0,
+  "atlasz-addons/anti-collusion-guard.mjs": 100.0,
+  "atlasz-addons/approval-command-gateway.mjs": 100.0,
+  "atlasz-addons/approval-requests.mjs": 100.0,
+  "atlasz-addons/audit-chain.mjs": 100.0,
+  "atlasz-addons/backup-recovery.mjs": 94.7,
+  "atlasz-addons/brain/behavior-monitor.mjs": 100.0,
+  "atlasz-addons/brain/black-box.mjs": 100.0,
+  "atlasz-addons/brain/brain-health.mjs": 100.0,
+  "atlasz-addons/brain/brain-system.mjs": 100.0,
+  "atlasz-addons/brain/business-factory.mjs": 100.0,
+  "atlasz-addons/brain/capability-graph.mjs": 100.0,
+  "atlasz-addons/brain/central-brain.mjs": 100.0,
+  "atlasz-addons/brain/disaster-recovery.mjs": 100.0,
+  "atlasz-addons/brain/evidence-sources.mjs": 100.0,
+  "atlasz-addons/brain/governance.mjs": 100.0,
+  "atlasz-addons/brain/governed-dispatch.mjs": 100.0,
+  "atlasz-addons/brain/knowledge-brain.mjs": 100.0,
+  "atlasz-addons/brain/memory-fabric.mjs": 100.0,
+  "atlasz-addons/brain/model-intelligence.mjs": 100.0,
+  "atlasz-addons/brain/opportunity-intelligence.mjs": 100.0,
+  "atlasz-addons/brain/orchestrator.mjs": 100.0,
+  "atlasz-addons/brain/owner-command.mjs": 100.0,
+  "atlasz-addons/brain/planning-brain.mjs": 100.0,
+  "atlasz-addons/brain/search-pipeline.mjs": 100.0,
+  "atlasz-addons/brain/security-brain.mjs": 100.0,
+  "atlasz-addons/brain/simulation-lab.mjs": 100.0,
+  "atlasz-addons/brain/verifier.mjs": 98.5,
+  "atlasz-addons/budget-consumption-governor.mjs": 100.0,
+  "atlasz-addons/business-memory.mjs": 100.0,
+  "atlasz-addons/business/artifact-registry.mjs": 100.0,
+  "atlasz-addons/business/communication-center.mjs": 100.0,
+  "atlasz-addons/business/crm.mjs": 100.0,
+  "atlasz-addons/business/deal-pipeline.mjs": 100.0,
+  "atlasz-addons/business/delivery-service.mjs": 100.0,
+  "atlasz-addons/business/entity-graph.mjs": 100.0,
+  "atlasz-addons/business/finance-intelligence.mjs": 100.0,
+  "atlasz-addons/business/inbox-pipeline.mjs": 100.0,
+  "atlasz-addons/business/invoice-service.mjs": 100.0,
+  "atlasz-addons/business/job-system.mjs": 100.0,
+  "atlasz-addons/business/judge.mjs": 98.0,
+  "atlasz-addons/business/money-engine.mjs": 100.0,
+  "atlasz-addons/business/payment-verification.mjs": 100.0,
+  "atlasz-addons/business/qa-factory.mjs": 96.8,
+  "atlasz-addons/business/recurring-billing.mjs": 100.0,
+  "atlasz-addons/business/store.mjs": 100.0,
+  "atlasz-addons/buyer-decision-maker-finder.mjs": 100.0,
+  "atlasz-addons/capability-registry.mjs": 100.0,
+  "atlasz-addons/checkpoint-engine.mjs": 100.0,
+  "atlasz-addons/client-dna-engine.mjs": 100.0,
+  "atlasz-addons/code-sandbox.mjs": 100.0,
+  "atlasz-addons/completion-registry.mjs": 100.0,
+  "atlasz-addons/computer-use-fabric.mjs": 100.0,
+  "atlasz-addons/connector-catalog.mjs": 100.0,
+  "atlasz-addons/cost-model-router.mjs": 100.0,
+  "atlasz-addons/dead-letter-queue.mjs": 100.0,
+  "atlasz-addons/deal-state.mjs": 100.0,
+  "atlasz-addons/delivery-engine.mjs": 100.0,
+  "atlasz-addons/digital-twin.mjs": 100.0,
+  "atlasz-addons/doc-extractors.mjs": 99.1,
+  "atlasz-addons/document-center.mjs": 100.0,
+  "atlasz-addons/durable-queue.mjs": 100.0,
+  "atlasz-addons/emergency-stop.mjs": 100.0,
+  "atlasz-addons/enterprise-control-plane.mjs": 100.0,
+  "atlasz-addons/enterprise-knowledge-agentic-rag.mjs": 77.8,
+  "atlasz-addons/event-bus.mjs": 100.0,
+  "atlasz-addons/evidence-record.mjs": 100.0,
+  "atlasz-addons/execution-factory.mjs": 100.0,
+  "atlasz-addons/executor-toolbox-registry.mjs": 100.0,
+  "atlasz-addons/experience-learning-engine.mjs": 100.0,
+  "atlasz-addons/financial-ledger.mjs": 100.0,
+  "atlasz-addons/follow-up-engine.mjs": 100.0,
+  "atlasz-addons/general-intelligence-extensions.mjs": 100.0,
+  "atlasz-addons/guardrail-engine.mjs": 100.0,
+  "atlasz-addons/human-core.mjs": 100.0,
+  "atlasz-addons/internal-integration-hub.mjs": 100.0,
+  "atlasz-addons/invoice-engine.mjs": 100.0,
+  "atlasz-addons/knowledge-projects.mjs": 100.0,
+  "atlasz-addons/local-update-adapters.mjs": 94.2,
+  "atlasz-addons/market-intelligence-engine.mjs": 100.0,
+  "atlasz-addons/master-brief.mjs": 100.0,
+  "atlasz-addons/master-planner-orchestrator.mjs": 100.0,
+  "atlasz-addons/mobile-api.mjs": 100.0,
+  "atlasz-addons/modality-fabric.mjs": 96.1,
+  "atlasz-addons/model-gateway.mjs": 100.0,
+  "atlasz-addons/money-pipeline-controller.mjs": 93.5,
+  "atlasz-addons/money-supervisor.mjs": 100.0,
+  "atlasz-addons/multi-model-brain.mjs": 100.0,
+  "atlasz-addons/negotiation-engine.mjs": 30.4,
+  "atlasz-addons/observability-black-box.mjs": 100.0,
+  "atlasz-addons/observation-memory.mjs": 100.0,
+  "atlasz-addons/opportunity-qualification-engine.mjs": 100.0,
+  "atlasz-addons/outcome-compiler.mjs": 100.0,
+  "atlasz-addons/owner-auth.mjs": 100.0,
+  "atlasz-addons/owner-control/agent-governor.mjs": 100.0,
+  "atlasz-addons/owner-control/approval-gateway.mjs": 100.0,
+  "atlasz-addons/owner-control/claim-distinctions.mjs": 100.0,
+  "atlasz-addons/owner-control/control-chain.mjs": 100.0,
+  "atlasz-addons/owner-control/financial-firewall.mjs": 93.8,
+  "atlasz-addons/owner-control/money-state-guard.mjs": 100.0,
+  "atlasz-addons/owner-control/owner-authority.mjs": 100.0,
+  "atlasz-addons/owner-control/owner-control-system.mjs": 100.0,
+  "atlasz-addons/owner-control/recovery-points.mjs": 100.0,
+  "atlasz-addons/owner-control/recovery-source-map.mjs": 100.0,
+  "atlasz-addons/owner-control/safe-mode-scope.mjs": 100.0,
+  "atlasz-addons/owner-control/system-doctor.mjs": 100.0,
+  "atlasz-addons/owner-keystore.mjs": 100.0,
+  "atlasz-addons/payment-confirmation-adapter.mjs": 100.0,
+  "atlasz-addons/personal-command-center.mjs": 93.3,
+  "atlasz-addons/plugin-manager.mjs": 100.0,
+  "atlasz-addons/priority-queue-rate-limit-governor.mjs": 100.0,
+  "atlasz-addons/probe-evidence.mjs": 100.0,
+  "atlasz-addons/profit-accounting-engine.mjs": 100.0,
+  "atlasz-addons/profit-ledger.mjs": 100.0,
+  "atlasz-addons/progress-ledger.mjs": 100.0,
+  "atlasz-addons/proposal-quote-engine.mjs": 100.0,
+  "atlasz-addons/provider-resilience.mjs": 100.0,
+  "atlasz-addons/qa-reviewer.mjs": 100.0,
+  "atlasz-addons/recovery.mjs": 100.0,
+  "atlasz-addons/regression-eval-suite.mjs": 100.0,
+  "atlasz-addons/research-ledger.mjs": 100.0,
+  "atlasz-addons/safe-mode.mjs": 100.0,
+  "atlasz-addons/scheduler.mjs": 99.1,
+  "atlasz-addons/secret-vault.mjs": 100.0,
+  "atlasz-addons/self-healing-loop.mjs": 92.9,
+  "atlasz-addons/shared-project-registry.mjs": 100.0,
+  "atlasz-addons/skill-factory.mjs": 100.0,
+  "atlasz-addons/stall-replanner.mjs": 100.0,
+  "atlasz-addons/startup-self-check.mjs": 100.0,
+  "atlasz-addons/task-ledger.mjs": 100.0,
+  "atlasz-addons/tax-accounting-engine.mjs": 96.7,
+  "atlasz-addons/team-lead-workflows.mjs": 100.0,
+  "atlasz-addons/tech-watch.mjs": 100.0,
+  "atlasz-addons/tenant-isolation.mjs": 100.0,
+  "atlasz-addons/tool-bridge.mjs": 100.0,
+  "atlasz-addons/tool-fabric.mjs": 89.4,
+  "atlasz-addons/tracing-evals.mjs": 60.7,
+  "atlasz-addons/typed-tools.mjs": 100.0,
+  "atlasz-addons/unified-entity-graph.mjs": 100.0,
+  "atlasz-addons/universal-connector-layer.mjs": 100.0,
+  "atlasz-addons/universal-inbox.mjs": 100.0,
+  "atlasz-addons/update-center.mjs": 99.5,
+  "atlasz-addons/voice-conversation.mjs": 99.4,
+  "atlasz-addons/voice-interface.mjs": 100.0,
+  "atlasz-addons/voice-session.mjs": 100.0,
+  "atlasz-addons/watchdog.mjs": 100.0,
+  "atlasz-control-center/brain-views.mjs": 100.0,
+  "atlasz-control-center/core.mjs": 98.0,
+  "atlasz-control-center/money-views.mjs": 100.0,
+  "atlasz-control-center/server.mjs": 83.1
+ },
+ "not_loaded_by_any_test": [
+  "atlasz-control-center/public/app.js",
+  "atlasz-runtime/agent-child.js",
+  "atlasz-runtime/owner-cli.mjs",
+  "atlasz-runtime/supervisor-safe.mjs",
+  "atlasz-runtime/supervisor.js",
+  "atlasz-runtime/worker.js"
+ ],
+ "caveat": "Line coverage counts executed lines (including those executed in child processes), not asserted behaviour. Modules no test imports are absent from the report."
+}

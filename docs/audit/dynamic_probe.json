@@ -1,0 +1,559 @@
+{
+ "runtime": {
+  "agents": 30,
+  "teams": {
+   "SEARCH": 5,
+   "EXECUTION": 25
+  },
+  "tools": [
+   {
+    "name": "atlasz.queue",
+    "operation": "READ_STATUS"
+   },
+   {
+    "name": "money.panel",
+    "operation": "READ_STATUS"
+   },
+   {
+    "name": "inbox.summary",
+    "operation": "READ_STATUS"
+   },
+   {
+    "name": "model.complete",
+    "operation": "EXTERNAL_READ"
+   },
+   {
+    "name": "pcc.agenda",
+    "operation": "READ_STATUS"
+   },
+   {
+    "name": "pcc.add",
+    "operation": "INTERNAL_COMPUTE"
+   },
+   {
+    "name": "pcc.complete",
+    "operation": "INTERNAL_COMPUTE"
+   },
+   {
+    "name": "pcc.summary",
+    "operation": "READ_STATUS"
+   },
+   {
+    "name": "media.inspect_document",
+    "operation": "READ_STATUS"
+   },
+   {
+    "name": "media.status",
+    "operation": "READ_STATUS"
+   },
+   {
+    "name": "kp.list",
+    "operation": "READ_STATUS"
+   },
+   {
+    "name": "kp.search",
+    "operation": "READ_STATUS"
+   },
+   {
+    "name": "kp.answer",
+    "operation": "READ_STATUS"
+   },
+   {
+    "name": "kp.verify",
+    "operation": "READ_STATUS"
+   },
+   {
+    "name": "research.open_question",
+    "operation": "INTERNAL_COMPUTE"
+   },
+   {
+    "name": "research.add_source",
+    "operation": "INTERNAL_COMPUTE"
+   },
+   {
+    "name": "research.add_finding",
+    "operation": "INTERNAL_COMPUTE"
+   },
+   {
+    "name": "research.attach_evidence",
+    "operation": "INTERNAL_COMPUTE"
+   },
+   {
+    "name": "research.declare_contradiction",
+    "operation": "INTERNAL_COMPUTE"
+   },
+   {
+    "name": "research.report",
+    "operation": "READ_STATUS"
+   },
+   {
+    "name": "research.unresolved",
+    "operation": "READ_STATUS"
+   },
+   {
+    "name": "sandbox.run",
+    "operation": "INTERNAL_COMPUTE"
+   },
+   {
+    "name": "sandbox.run_process_only",
+    "operation": "HIGH_RISK_CHANGE"
+   },
+   {
+    "name": "sandbox.status",
+    "operation": "READ_STATUS"
+   },
+   {
+    "name": "obs.observe",
+    "operation": "INTERNAL_COMPUTE"
+   },
+   {
+    "name": "obs.recall",
+    "operation": "READ_STATUS"
+   },
+   {
+    "name": "obs.correct",
+    "operation": "INTERNAL_COMPUTE"
+   },
+   {
+    "name": "obs.forget",
+    "operation": "INTERNAL_COMPUTE"
+   },
+   {
+    "name": "obs.summary",
+    "operation": "READ_STATUS"
+   },
+   {
+    "name": "obs.capture_research",
+    "operation": "INTERNAL_COMPUTE"
+   },
+   {
+    "name": "voice.status",
+    "operation": "READ_STATUS"
+   }
+  ]
+ },
+ "routes": {
+  "/api/approvals": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 178,
+   "reportsError": false
+  },
+  "/api/approvals/decide": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/backup": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/backup/drill": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/backup/mark-lkg": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/backups": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 23,
+   "reportsError": false
+  },
+  "/api/brain": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 2732,
+   "reportsError": false
+  },
+  "/api/brain/command": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/brief": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 599,
+   "reportsError": false
+  },
+  "/api/chat": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/connectors": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 1157,
+   "reportsError": false
+  },
+  "/api/crm-inbox": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 228,
+   "reportsError": false
+  },
+  "/api/doctor": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 1418,
+   "reportsError": false
+  },
+  "/api/documents": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 178,
+   "reportsError": false
+  },
+  "/api/emergency": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/evidence": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 314,
+   "reportsError": false
+  },
+  "/api/finance": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 607,
+   "reportsError": false
+  },
+  "/api/inbox": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 450,
+   "reportsError": false
+  },
+  "/api/knowledge": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 72,
+   "reportsError": false
+  },
+  "/api/knowledge/action": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/media": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 1459,
+   "reportsError": false
+  },
+  "/api/money-agents": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 50,
+   "reportsError": false
+  },
+  "/api/money-engine": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 203,
+   "reportsError": false
+  },
+  "/api/money-jobs": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 36,
+   "reportsError": false
+  },
+  "/api/money-recurring": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 61,
+   "reportsError": false
+  },
+  "/api/observations": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 228,
+   "reportsError": false
+  },
+  "/api/observations/action": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/opportunities": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 22,
+   "reportsError": false
+  },
+  "/api/owner-key": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/owner-safety": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 1099,
+   "reportsError": false
+  },
+  "/api/owner-safety/action": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/pcc": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 528,
+   "reportsError": false
+  },
+  "/api/pcc/action": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/plugins": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 140,
+   "reportsError": false
+  },
+  "/api/plugins/disable": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/plugins/enable": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/plugins/reset": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/plugins/theme": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/prefs": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 91,
+   "reportsError": false
+  },
+  "/api/research": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 213,
+   "reportsError": false
+  },
+  "/api/research/action": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/restore/backup": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/restore/lkg": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/runtime/start": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/runtime/stop": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/safe-mode/exit": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/sandbox": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 529,
+   "reportsError": false
+  },
+  "/api/sandbox/run": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/status": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 1121,
+   "reportsError": false
+  },
+  "/api/techwatch": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 255,
+   "reportsError": false
+  },
+  "/api/theme": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 26,
+   "reportsError": false
+  },
+  "/api/updates": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 560,
+   "reportsError": false
+  },
+  "/api/updates/auto": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/updates/check": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/updates/install": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/updates/rollback": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/updates/test": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/updates/unfreeze": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  },
+  "/api/voice": {
+   "method": "GET",
+   "noToken": 401,
+   "wrongToken": 401,
+   "withToken": 200,
+   "json": true,
+   "bytes": 826,
+   "reportsError": false
+  },
+  "/api/voice/action": {
+   "method": "POST",
+   "noToken": 401,
+   "wrongToken": 401
+  }
+ },
+ "hostRebinding": 403,
+ "indexHtml": 200
+}

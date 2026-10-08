@@ -1,0 +1,149 @@
+{
+ "registry_rows": 983,
+ "by_level": {
+  "section": 53,
+  "item": 930
+ },
+ "by_kind": {
+  "SECTION_ROLLUP": 53,
+  "PRODUCT_REQUIREMENT": 711,
+  "STATUS_LABEL": 5,
+  "PROCESS_OR_AUDIT_TASK": 46,
+  "SUPPLEMENTARY_REQUIREMENT": 137,
+  "IMPLEMENTATION_RECORD": 31
+ },
+ "items_by_class": {
+  "PARTIAL": 515,
+  "IMPLEMENTED": 188,
+  "MISSING": 188,
+  "EXTERNALLY_BLOCKED": 36,
+  "AWAITING_OWNER_APPROVAL": 3
+ },
+ "by_kind_class": {
+  "PRODUCT_REQUIREMENT|PARTIAL": 377,
+  "PRODUCT_REQUIREMENT|IMPLEMENTED": 123,
+  "PRODUCT_REQUIREMENT|MISSING": 177,
+  "PRODUCT_REQUIREMENT|EXTERNALLY_BLOCKED": 33,
+  "PRODUCT_REQUIREMENT|AWAITING_OWNER_APPROVAL": 1,
+  "STATUS_LABEL|PARTIAL": 5,
+  "PROCESS_OR_AUDIT_TASK|IMPLEMENTED": 11,
+  "PROCESS_OR_AUDIT_TASK|PARTIAL": 35,
+  "SUPPLEMENTARY_REQUIREMENT|PARTIAL": 75,
+  "SUPPLEMENTARY_REQUIREMENT|IMPLEMENTED": 46,
+  "SUPPLEMENTARY_REQUIREMENT|AWAITING_OWNER_APPROVAL": 2,
+  "SUPPLEMENTARY_REQUIREMENT|EXTERNALLY_BLOCKED": 3,
+  "SUPPLEMENTARY_REQUIREMENT|MISSING": 11,
+  "IMPLEMENTATION_RECORD|IMPLEMENTED": 8,
+  "IMPLEMENTATION_RECORD|PARTIAL": 23
+ },
+ "registry_status_all": {
+  "EXISTS_NEEDS_TEST": 17,
+  "PARTIAL": 501,
+  "EXISTS_AND_WORKING": 188,
+  "STRUCTURAL_ONLY": 36,
+  "MISSING": 202,
+  "EXTERNAL_BLOCKER": 36,
+  "BLOCKED_AWAITING_JOCI_APPROVAL": 3
+ },
+ "registry_status_items": {
+  "PARTIAL": 477,
+  "EXISTS_AND_WORKING": 188,
+  "STRUCTURAL_ONLY": 28,
+  "MISSING": 188,
+  "EXTERNAL_BLOCKER": 36,
+  "EXISTS_NEEDS_TEST": 10,
+  "BLOCKED_AWAITING_JOCI_APPROVAL": 3
+ },
+ "open_items": 742,
+ "open_items_by_kind": {
+  "PRODUCT_REQUIREMENT": 588,
+  "STATUS_LABEL": 5,
+  "PROCESS_OR_AUDIT_TASK": 35,
+  "SUPPLEMENTARY_REQUIREMENT": 91,
+  "IMPLEMENTATION_RECORD": 23
+ },
+ "unique_open_requirements": 679,
+ "capability": {
+  "MISSING": 10,
+  "PARTIAL": 50,
+  "EXTERNAL_BLOCKER": 22,
+  "VERIFIED_WORKING": 3
+ },
+ "capability_open": 82,
+ "capability_open_linked_to_registry": 76,
+ "capability_open_without_link": [
+  "G01",
+  "GE07",
+  "A01",
+  "A07",
+  "A13",
+  "P18"
+ ],
+ "capability_dangling_links": [],
+ "gap_register_total": 827,
+ "gap_register_by_source": {
+  "REGISTRY": 742,
+  "CAPABILITY_85": 82,
+  "IMPORT_SCAN": 3
+ },
+ "gap_register_formula": "742 registry item gaps + 82 open capabilities + 3 import-scan orphans (+ 0 other scans)",
+ "milestone_counts": {
+  "M1": {
+   "PARTIAL": 61,
+   "IMPLEMENTED": 60,
+   "MISSING": 20
+  },
+  "M2": {
+   "PARTIAL": 128,
+   "MISSING": 16,
+   "IMPLEMENTED": 17,
+   "AWAITING_OWNER_APPROVAL": 1
+  },
+  "M7": {
+   "PARTIAL": 27,
+   "IMPLEMENTED": 2,
+   "MISSING": 17
+  },
+  "M5": {
+   "PARTIAL": 23,
+   "EXTERNALLY_BLOCKED": 9,
+   "MISSING": 16
+  },
+  "M3": {
+   "PARTIAL": 31,
+   "MISSING": 33,
+   "IMPLEMENTED": 2
+  },
+  "M4": {
+   "PARTIAL": 32,
+   "MISSING": 9,
+   "IMPLEMENTED": 11,
+   "EXTERNALLY_BLOCKED": 1
+  },
+  "M10": {
+   "PARTIAL": 33,
+   "IMPLEMENTED": 36,
+   "EXTERNALLY_BLOCKED": 7,
+   "MISSING": 8
+  },
+  "M6": {
+   "PARTIAL": 23,
+   "MISSING": 25,
+   "IMPLEMENTED": 3,
+   "EXTERNALLY_BLOCKED": 11
+  },
+  "M8": {
+   "EXTERNALLY_BLOCKED": 8,
+   "PARTIAL": 60,
+   "IMPLEMENTED": 36,
+   "MISSING": 18,
+   "AWAITING_OWNER_APPROVAL": 2
+  },
+  "M9": {
+   "MISSING": 26,
+   "PARTIAL": 34,
+   "IMPLEMENTED": 2
+  }
+ },
+ "unassigned": []
+}

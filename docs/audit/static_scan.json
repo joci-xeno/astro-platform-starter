@@ -1,0 +1,5186 @@
+{
+ "graph": {
+  "atlasz-addons/outcome-compiler.mjs": [
+   "atlasz-addons/owner-auth.mjs"
+  ],
+  "atlasz-addons/qa-reviewer.mjs": [],
+  "atlasz-addons/observation-memory.mjs": [
+   "atlasz-addons/business/store.mjs",
+   "atlasz-addons/knowledge-projects.mjs"
+  ],
+  "atlasz-addons/business-memory.mjs": [],
+  "atlasz-addons/shared-project-registry.mjs": [],
+  "atlasz-addons/universal-inbox.mjs": [
+   "atlasz-addons/audit-chain.mjs",
+   "atlasz-addons/emergency-stop.mjs",
+   "atlasz-addons/probe-evidence.mjs"
+  ],
+  "atlasz-addons/opportunity-qualification-engine.mjs": [],
+  "atlasz-addons/modality-fabric.mjs": [
+   "atlasz-addons/doc-extractors.mjs"
+  ],
+  "atlasz-addons/cost-model-router.mjs": [],
+  "atlasz-addons/computer-use-fabric.mjs": [
+   "atlasz-addons/emergency-stop.mjs",
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-addons/probe-evidence.mjs"
+  ],
+  "atlasz-addons/self-healing-loop.mjs": [
+   "atlasz-addons/recovery.mjs"
+  ],
+  "atlasz-addons/budget-consumption-governor.mjs": [],
+  "atlasz-addons/doc-extractors.mjs": [],
+  "atlasz-addons/tool-bridge.mjs": [
+   "atlasz-addons/probe-evidence.mjs"
+  ],
+  "atlasz-addons/provider-resilience.mjs": [
+   "atlasz-addons/emergency-stop.mjs"
+  ],
+  "atlasz-addons/stall-replanner.mjs": [],
+  "atlasz-addons/completion-registry.mjs": [],
+  "atlasz-addons/task-ledger.mjs": [],
+  "atlasz-addons/tracing-evals.mjs": [],
+  "atlasz-addons/checkpoint-engine.mjs": [],
+  "atlasz-addons/market-intelligence-engine.mjs": [],
+  "atlasz-addons/buyer-decision-maker-finder.mjs": [],
+  "atlasz-addons/profit-accounting-engine.mjs": [],
+  "atlasz-addons/event-bus.mjs": [],
+  "atlasz-addons/client-dna-engine.mjs": [],
+  "atlasz-addons/executor-toolbox-registry.mjs": [
+   "atlasz-addons/probe-evidence.mjs"
+  ],
+  "atlasz-addons/delivery-engine.mjs": [
+   "atlasz-addons/owner-auth.mjs"
+  ],
+  "atlasz-addons/probe-evidence.mjs": [],
+  "atlasz-addons/typed-tools.mjs": [],
+  "atlasz-addons/voice-interface.mjs": [
+   "atlasz-addons/probe-evidence.mjs"
+  ],
+  "atlasz-addons/digital-twin.mjs": [],
+  "atlasz-addons/regression-eval-suite.mjs": [],
+  "atlasz-addons/owner-auth.mjs": [
+   "atlasz-addons/audit-chain.mjs"
+  ],
+  "atlasz-addons/master-brief.mjs": [
+   "atlasz-addons/human-core.mjs"
+  ],
+  "atlasz-addons/watchdog.mjs": [],
+  "atlasz-addons/enterprise-knowledge-agentic-rag.mjs": [],
+  "atlasz-addons/follow-up-engine.mjs": [],
+  "atlasz-addons/money-supervisor.mjs": [],
+  "atlasz-addons/voice-session.mjs": [
+   "atlasz-addons/probe-evidence.mjs"
+  ],
+  "atlasz-addons/negotiation-engine.mjs": [
+   "atlasz-addons/owner-auth.mjs"
+  ],
+  "atlasz-addons/agent-portfolio-manager.mjs": [],
+  "atlasz-addons/audit-chain.mjs": [],
+  "atlasz-addons/emergency-stop.mjs": [
+   "atlasz-addons/audit-chain.mjs",
+   "atlasz-addons/owner-auth.mjs"
+  ],
+  "atlasz-addons/guardrail-engine.mjs": [
+   "atlasz-addons/owner-auth.mjs"
+  ],
+  "atlasz-addons/approval-command-gateway.mjs": [],
+  "atlasz-addons/tax-accounting-engine.mjs": [
+   "atlasz-addons/owner-auth.mjs"
+  ],
+  "atlasz-addons/general-intelligence-extensions.mjs": [],
+  "atlasz-addons/payment-confirmation-adapter.mjs": [],
+  "atlasz-addons/tenant-isolation.mjs": [],
+  "atlasz-addons/research-ledger.mjs": [
+   "atlasz-addons/business/store.mjs",
+   "atlasz-addons/knowledge-projects.mjs"
+  ],
+  "atlasz-addons/update-center.mjs": [
+   "atlasz-addons/audit-chain.mjs",
+   "atlasz-addons/backup-recovery.mjs",
+   "atlasz-addons/owner-auth.mjs"
+  ],
+  "atlasz-addons/profit-ledger.mjs": [],
+  "atlasz-addons/anti-collusion-guard.mjs": [],
+  "atlasz-addons/document-center.mjs": [
+   "atlasz-addons/doc-extractors.mjs"
+  ],
+  "atlasz-addons/multi-model-brain.mjs": [
+   "atlasz-addons/emergency-stop.mjs",
+   "atlasz-addons/probe-evidence.mjs"
+  ],
+  "atlasz-addons/proposal-quote-engine.mjs": [
+   "atlasz-addons/owner-auth.mjs"
+  ],
+  "atlasz-addons/startup-self-check.mjs": [
+   "atlasz-addons/audit-chain.mjs",
+   "atlasz-addons/durable-queue.mjs"
+  ],
+  "atlasz-addons/master-planner-orchestrator.mjs": [],
+  "atlasz-addons/observability-black-box.mjs": [],
+  "atlasz-addons/personal-command-center.mjs": [
+   "atlasz-addons/business/store.mjs"
+  ],
+  "atlasz-addons/knowledge-projects.mjs": [
+   "atlasz-addons/business/store.mjs"
+  ],
+  "atlasz-addons/universal-connector-layer.mjs": [
+   "atlasz-addons/probe-evidence.mjs"
+  ],
+  "atlasz-addons/code-sandbox.mjs": [],
+  "atlasz-addons/mobile-api.mjs": [
+   "atlasz-addons/audit-chain.mjs"
+  ],
+  "atlasz-addons/evidence-record.mjs": [],
+  "atlasz-addons/deal-state.mjs": [
+   "atlasz-addons/owner-auth.mjs"
+  ],
+  "atlasz-addons/backup-recovery.mjs": [
+   "atlasz-addons/audit-chain.mjs",
+   "atlasz-addons/owner-auth.mjs"
+  ],
+  "atlasz-addons/progress-ledger.mjs": [],
+  "atlasz-addons/human-core.mjs": [],
+  "atlasz-addons/voice-conversation.mjs": [
+   "atlasz-addons/business/store.mjs",
+   "atlasz-addons/probe-evidence.mjs"
+  ],
+  "atlasz-addons/connector-catalog.mjs": [
+   "atlasz-addons/emergency-stop.mjs"
+  ],
+  "atlasz-addons/plugin-manager.mjs": [
+   "atlasz-addons/audit-chain.mjs",
+   "atlasz-addons/update-center.mjs"
+  ],
+  "atlasz-addons/priority-queue-rate-limit-governor.mjs": [],
+  "atlasz-addons/capability-registry.mjs": [],
+  "atlasz-addons/tool-fabric.mjs": [
+   "atlasz-addons/probe-evidence.mjs"
+  ],
+  "atlasz-addons/experience-learning-engine.mjs": [
+   "atlasz-addons/owner-auth.mjs"
+  ],
+  "atlasz-addons/recovery.mjs": [],
+  "atlasz-addons/safe-mode.mjs": [
+   "atlasz-addons/audit-chain.mjs",
+   "atlasz-addons/owner-auth.mjs"
+  ],
+  "atlasz-addons/execution-factory.mjs": [
+   "atlasz-addons/owner-auth.mjs"
+  ],
+  "atlasz-addons/dead-letter-queue.mjs": [],
+  "atlasz-addons/approval-requests.mjs": [],
+  "atlasz-addons/invoice-engine.mjs": [
+   "atlasz-addons/owner-auth.mjs"
+  ],
+  "atlasz-addons/durable-queue.mjs": [],
+  "atlasz-addons/model-gateway.mjs": [],
+  "atlasz-addons/local-update-adapters.mjs": [
+   "atlasz-addons/update-center.mjs"
+  ],
+  "atlasz-addons/unified-entity-graph.mjs": [],
+  "atlasz-addons/owner-keystore.mjs": [
+   "atlasz-addons/owner-auth.mjs"
+  ],
+  "atlasz-addons/secret-vault.mjs": [
+   "atlasz-addons/audit-chain.mjs",
+   "atlasz-addons/owner-auth.mjs"
+  ],
+  "atlasz-addons/financial-ledger.mjs": [
+   "atlasz-addons/audit-chain.mjs"
+  ],
+  "atlasz-addons/enterprise-control-plane.mjs": [
+   "atlasz-addons/emergency-stop.mjs",
+   "atlasz-addons/owner-auth.mjs"
+  ],
+  "atlasz-addons/scheduler.mjs": [
+   "atlasz-addons/business/store.mjs",
+   "atlasz-addons/typed-tools.mjs"
+  ],
+  "atlasz-addons/internal-integration-hub.mjs": [
+   "atlasz-addons/agent-factory.mjs",
+   "atlasz-addons/agent-portfolio-manager.mjs",
+   "atlasz-addons/anti-collusion-guard.mjs",
+   "atlasz-addons/approval-command-gateway.mjs",
+   "atlasz-addons/budget-consumption-governor.mjs",
+   "atlasz-addons/business-memory.mjs",
+   "atlasz-addons/buyer-decision-maker-finder.mjs",
+   "atlasz-addons/capability-registry.mjs",
+   "atlasz-addons/checkpoint-engine.mjs",
+   "atlasz-addons/client-dna-engine.mjs",
+   "atlasz-addons/completion-registry.mjs",
+   "atlasz-addons/computer-use-fabric.mjs",
+   "atlasz-addons/cost-model-router.mjs",
+   "atlasz-addons/dead-letter-queue.mjs",
+   "atlasz-addons/deal-state.mjs",
+   "atlasz-addons/delivery-engine.mjs",
+   "atlasz-addons/emergency-stop.mjs",
+   "atlasz-addons/enterprise-control-plane.mjs",
+   "atlasz-addons/enterprise-knowledge-agentic-rag.mjs",
+   "atlasz-addons/event-bus.mjs",
+   "atlasz-addons/execution-factory.mjs",
+   "atlasz-addons/executor-toolbox-registry.mjs",
+   "atlasz-addons/experience-learning-engine.mjs",
+   "atlasz-addons/follow-up-engine.mjs",
+   "atlasz-addons/general-intelligence-extensions.mjs",
+   "atlasz-addons/guardrail-engine.mjs",
+   "atlasz-addons/invoice-engine.mjs",
+   "atlasz-addons/market-intelligence-engine.mjs",
+   "atlasz-addons/master-planner-orchestrator.mjs",
+   "atlasz-addons/money-pipeline-controller.mjs",
+   "atlasz-addons/money-supervisor.mjs",
+   "atlasz-addons/multi-model-brain.mjs",
+   "atlasz-addons/negotiation-engine.mjs",
+   "atlasz-addons/observability-black-box.mjs",
+   "atlasz-addons/opportunity-qualification-engine.mjs",
+   "atlasz-addons/outcome-compiler.mjs",
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-addons/payment-confirmation-adapter.mjs",
+   "atlasz-addons/priority-queue-rate-limit-governor.mjs",
+   "atlasz-addons/profit-accounting-engine.mjs",
+   "atlasz-addons/profit-ledger.mjs",
+   "atlasz-addons/progress-ledger.mjs",
+   "atlasz-addons/proposal-quote-engine.mjs",
+   "atlasz-addons/qa-reviewer.mjs",
+   "atlasz-addons/recovery.mjs",
+   "atlasz-addons/regression-eval-suite.mjs",
+   "atlasz-addons/self-healing-loop.mjs",
+   "atlasz-addons/shared-project-registry.mjs",
+   "atlasz-addons/skill-factory.mjs",
+   "atlasz-addons/stall-replanner.mjs",
+   "atlasz-addons/task-ledger.mjs",
+   "atlasz-addons/tax-accounting-engine.mjs",
+   "atlasz-addons/team-lead-workflows.mjs",
+   "atlasz-addons/tool-bridge.mjs",
+   "atlasz-addons/tool-fabric.mjs",
+   "atlasz-addons/tracing-evals.mjs",
+   "atlasz-addons/unified-entity-graph.mjs",
+   "atlasz-addons/universal-connector-layer.mjs",
+   "atlasz-addons/voice-interface.mjs"
+  ],
+  "atlasz-addons/money-pipeline-controller.mjs": [
+   "atlasz-addons/owner-auth.mjs"
+  ],
+  "atlasz-addons/skill-factory.mjs": [],
+  "atlasz-addons/tech-watch.mjs": [],
+  "atlasz-addons/team-lead-workflows.mjs": [],
+  "atlasz-addons/agent-factory.mjs": [
+   "atlasz-addons/owner-auth.mjs"
+  ],
+  "atlasz-addons/business/crm.mjs": [
+   "atlasz-addons/business/store.mjs"
+  ],
+  "atlasz-addons/business/payment-verification.mjs": [
+   "atlasz-addons/business/store.mjs"
+  ],
+  "atlasz-addons/business/store.mjs": [],
+  "atlasz-addons/business/communication-center.mjs": [
+   "atlasz-addons/business/store.mjs"
+  ],
+  "atlasz-addons/business/qa-factory.mjs": [],
+  "atlasz-addons/business/artifact-registry.mjs": [
+   "atlasz-addons/business/store.mjs"
+  ],
+  "atlasz-addons/business/deal-pipeline.mjs": [
+   "atlasz-addons/business/store.mjs"
+  ],
+  "atlasz-addons/business/money-engine.mjs": [
+   "atlasz-addons/brain/evidence-sources.mjs",
+   "atlasz-addons/brain/search-pipeline.mjs",
+   "atlasz-addons/business/artifact-registry.mjs",
+   "atlasz-addons/business/communication-center.mjs",
+   "atlasz-addons/business/crm.mjs",
+   "atlasz-addons/business/deal-pipeline.mjs",
+   "atlasz-addons/business/delivery-service.mjs",
+   "atlasz-addons/business/finance-intelligence.mjs",
+   "atlasz-addons/business/inbox-pipeline.mjs",
+   "atlasz-addons/business/invoice-service.mjs",
+   "atlasz-addons/business/job-system.mjs",
+   "atlasz-addons/business/judge.mjs",
+   "atlasz-addons/business/payment-verification.mjs",
+   "atlasz-addons/business/qa-factory.mjs",
+   "atlasz-addons/business/recurring-billing.mjs",
+   "atlasz-addons/financial-ledger.mjs"
+  ],
+  "atlasz-addons/business/job-system.mjs": [
+   "atlasz-addons/business/store.mjs"
+  ],
+  "atlasz-addons/business/entity-graph.mjs": [
+   "atlasz-addons/business/store.mjs"
+  ],
+  "atlasz-addons/business/judge.mjs": [],
+  "atlasz-addons/business/delivery-service.mjs": [
+   "atlasz-addons/business/store.mjs"
+  ],
+  "atlasz-addons/business/finance-intelligence.mjs": [
+   "atlasz-addons/business/store.mjs"
+  ],
+  "atlasz-addons/business/inbox-pipeline.mjs": [
+   "atlasz-addons/business/store.mjs"
+  ],
+  "atlasz-addons/business/invoice-service.mjs": [
+   "atlasz-addons/business/store.mjs"
+  ],
+  "atlasz-addons/business/recurring-billing.mjs": [
+   "atlasz-addons/business/store.mjs"
+  ],
+  "atlasz-addons/owner-control/approval-gateway.mjs": [
+   "atlasz-addons/owner-control/owner-authority.mjs"
+  ],
+  "atlasz-addons/owner-control/system-doctor.mjs": [],
+  "atlasz-addons/owner-control/money-state-guard.mjs": [
+   "atlasz-addons/money-pipeline-controller.mjs"
+  ],
+  "atlasz-addons/owner-control/owner-authority.mjs": [],
+  "atlasz-addons/owner-control/claim-distinctions.mjs": [],
+  "atlasz-addons/owner-control/recovery-points.mjs": [
+   "atlasz-addons/backup-recovery.mjs"
+  ],
+  "atlasz-addons/owner-control/financial-firewall.mjs": [
+   "atlasz-addons/owner-control/owner-authority.mjs"
+  ],
+  "atlasz-addons/owner-control/safe-mode-scope.mjs": [],
+  "atlasz-addons/owner-control/owner-control-system.mjs": [
+   "atlasz-addons/owner-control/agent-governor.mjs",
+   "atlasz-addons/owner-control/approval-gateway.mjs",
+   "atlasz-addons/owner-control/claim-distinctions.mjs",
+   "atlasz-addons/owner-control/control-chain.mjs",
+   "atlasz-addons/owner-control/financial-firewall.mjs",
+   "atlasz-addons/owner-control/money-state-guard.mjs",
+   "atlasz-addons/owner-control/owner-authority.mjs",
+   "atlasz-addons/owner-control/recovery-points.mjs",
+   "atlasz-addons/owner-control/safe-mode-scope.mjs",
+   "atlasz-addons/owner-control/system-doctor.mjs"
+  ],
+  "atlasz-addons/owner-control/control-chain.mjs": [
+   "atlasz-addons/owner-control/owner-authority.mjs"
+  ],
+  "atlasz-addons/owner-control/agent-governor.mjs": [
+   "atlasz-addons/brain/orchestrator.mjs"
+  ],
+  "atlasz-addons/owner-control/recovery-source-map.mjs": [
+   "atlasz-addons/owner-control/recovery-points.mjs"
+  ],
+  "atlasz-addons/brain/security-brain.mjs": [
+   "atlasz-addons/brain/black-box.mjs"
+  ],
+  "atlasz-addons/brain/evidence-sources.mjs": [
+   "atlasz-addons/brain/verifier.mjs"
+  ],
+  "atlasz-addons/brain/search-pipeline.mjs": [
+   "atlasz-addons/brain/opportunity-intelligence.mjs"
+  ],
+  "atlasz-addons/brain/memory-fabric.mjs": [],
+  "atlasz-addons/brain/governed-dispatch.mjs": [],
+  "atlasz-addons/brain/opportunity-intelligence.mjs": [],
+  "atlasz-addons/brain/owner-command.mjs": [
+   "atlasz-addons/audit-chain.mjs",
+   "atlasz-addons/brain/black-box.mjs"
+  ],
+  "atlasz-addons/brain/simulation-lab.mjs": [
+   "atlasz-addons/money-pipeline-controller.mjs"
+  ],
+  "atlasz-addons/brain/capability-graph.mjs": [],
+  "atlasz-addons/brain/knowledge-brain.mjs": [],
+  "atlasz-addons/brain/brain-system.mjs": [
+   "atlasz-addons/brain/behavior-monitor.mjs",
+   "atlasz-addons/brain/black-box.mjs",
+   "atlasz-addons/brain/brain-health.mjs",
+   "atlasz-addons/brain/business-factory.mjs",
+   "atlasz-addons/brain/capability-graph.mjs",
+   "atlasz-addons/brain/central-brain.mjs",
+   "atlasz-addons/brain/disaster-recovery.mjs",
+   "atlasz-addons/brain/governance.mjs",
+   "atlasz-addons/brain/governed-dispatch.mjs",
+   "atlasz-addons/brain/knowledge-brain.mjs",
+   "atlasz-addons/brain/memory-fabric.mjs",
+   "atlasz-addons/brain/model-intelligence.mjs",
+   "atlasz-addons/brain/opportunity-intelligence.mjs",
+   "atlasz-addons/brain/orchestrator.mjs",
+   "atlasz-addons/brain/owner-command.mjs",
+   "atlasz-addons/brain/planning-brain.mjs",
+   "atlasz-addons/brain/security-brain.mjs",
+   "atlasz-addons/brain/simulation-lab.mjs",
+   "atlasz-addons/brain/verifier.mjs",
+   "atlasz-addons/business-memory.mjs",
+   "atlasz-addons/business/entity-graph.mjs",
+   "atlasz-addons/emergency-stop.mjs",
+   "atlasz-addons/experience-learning-engine.mjs"
+  ],
+  "atlasz-addons/brain/orchestrator.mjs": [],
+  "atlasz-addons/brain/planning-brain.mjs": [],
+  "atlasz-addons/brain/central-brain.mjs": [],
+  "atlasz-addons/brain/brain-health.mjs": [],
+  "atlasz-addons/brain/black-box.mjs": [
+   "atlasz-addons/audit-chain.mjs"
+  ],
+  "atlasz-addons/brain/disaster-recovery.mjs": [],
+  "atlasz-addons/brain/business-factory.mjs": [],
+  "atlasz-addons/brain/model-intelligence.mjs": [],
+  "atlasz-addons/brain/behavior-monitor.mjs": [
+   "atlasz-addons/business/store.mjs"
+  ],
+  "atlasz-addons/brain/governance.mjs": [
+   "atlasz-addons/audit-chain.mjs",
+   "atlasz-addons/emergency-stop.mjs"
+  ],
+  "atlasz-addons/brain/verifier.mjs": [],
+  "atlasz-runtime/supervisor.js": [],
+  "atlasz-runtime/worker.js": [],
+  "atlasz-runtime/owner-cli.mjs": [
+   "atlasz-addons/emergency-stop.mjs",
+   "atlasz-addons/owner-auth.mjs"
+  ],
+  "atlasz-runtime/supervisor-safe.mjs": [
+   "atlasz-addons/approval-requests.mjs",
+   "atlasz-addons/brain/brain-system.mjs",
+   "atlasz-addons/brain/evidence-sources.mjs",
+   "atlasz-addons/brain/search-pipeline.mjs",
+   "atlasz-addons/business/inbox-pipeline.mjs",
+   "atlasz-addons/business/money-engine.mjs",
+   "atlasz-addons/code-sandbox.mjs",
+   "atlasz-addons/document-center.mjs",
+   "atlasz-addons/durable-queue.mjs",
+   "atlasz-addons/emergency-stop.mjs",
+   "atlasz-addons/financial-ledger.mjs",
+   "atlasz-addons/internal-integration-hub.mjs",
+   "atlasz-addons/knowledge-projects.mjs",
+   "atlasz-addons/modality-fabric.mjs",
+   "atlasz-addons/model-gateway.mjs",
+   "atlasz-addons/observation-memory.mjs",
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-addons/owner-control/owner-control-system.mjs",
+   "atlasz-addons/owner-control/recovery-source-map.mjs",
+   "atlasz-addons/personal-command-center.mjs",
+   "atlasz-addons/provider-resilience.mjs",
+   "atlasz-addons/research-ledger.mjs",
+   "atlasz-addons/safe-mode.mjs",
+   "atlasz-addons/scheduler.mjs",
+   "atlasz-addons/secret-vault.mjs",
+   "atlasz-addons/startup-self-check.mjs",
+   "atlasz-addons/typed-tools.mjs",
+   "atlasz-addons/universal-inbox.mjs",
+   "atlasz-addons/voice-conversation.mjs",
+   "atlasz-addons/voice-session.mjs",
+   "atlasz-addons/watchdog.mjs"
+  ],
+  "atlasz-runtime/agent-child.js": [],
+  "atlasz-control-center/money-views.mjs": [],
+  "atlasz-control-center/core.mjs": [
+   "atlasz-addons/approval-requests.mjs",
+   "atlasz-addons/audit-chain.mjs",
+   "atlasz-addons/backup-recovery.mjs",
+   "atlasz-addons/brain/owner-command.mjs",
+   "atlasz-addons/code-sandbox.mjs",
+   "atlasz-addons/connector-catalog.mjs",
+   "atlasz-addons/document-center.mjs",
+   "atlasz-addons/emergency-stop.mjs",
+   "atlasz-addons/financial-ledger.mjs",
+   "atlasz-addons/human-core.mjs",
+   "atlasz-addons/knowledge-projects.mjs",
+   "atlasz-addons/local-update-adapters.mjs",
+   "atlasz-addons/master-brief.mjs",
+   "atlasz-addons/mobile-api.mjs",
+   "atlasz-addons/modality-fabric.mjs",
+   "atlasz-addons/observation-memory.mjs",
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-addons/owner-control/approval-gateway.mjs",
+   "atlasz-addons/owner-control/system-doctor.mjs",
+   "atlasz-addons/owner-keystore.mjs",
+   "atlasz-addons/personal-command-center.mjs",
+   "atlasz-addons/plugin-manager.mjs",
+   "atlasz-addons/research-ledger.mjs",
+   "atlasz-addons/safe-mode.mjs",
+   "atlasz-addons/secret-vault.mjs",
+   "atlasz-addons/startup-self-check.mjs",
+   "atlasz-addons/tech-watch.mjs",
+   "atlasz-addons/universal-inbox.mjs",
+   "atlasz-addons/update-center.mjs",
+   "atlasz-addons/voice-conversation.mjs",
+   "atlasz-addons/voice-session.mjs",
+   "atlasz-control-center/brain-views.mjs",
+   "atlasz-control-center/money-views.mjs"
+  ],
+  "atlasz-control-center/brain-views.mjs": [
+   "atlasz-addons/audit-chain.mjs",
+   "atlasz-addons/brain/disaster-recovery.mjs",
+   "atlasz-addons/brain/opportunity-intelligence.mjs",
+   "atlasz-addons/brain/orchestrator.mjs",
+   "atlasz-addons/brain/owner-command.mjs"
+  ],
+  "atlasz-control-center/server.mjs": [
+   "atlasz-control-center/core.mjs"
+  ],
+  "atlasz-control-center/public/app.js": [],
+  "atlasz-control-center/scripts/stage-win.mjs": [],
+  "atlasz-control-center/electron/main.mjs": [
+   "atlasz-control-center/server.mjs"
+  ],
+  "scripts/gh-annotate-test-failures.mjs": [],
+  "scripts/make-evidence.mjs": [
+   "atlasz-addons/evidence-record.mjs"
+  ],
+  "scripts/make-sanitized-dist.mjs": [],
+  "netlify/edge-functions/rewrite.js": [],
+  "atlasz-tests/media-fixtures.mjs": [],
+  "atlasz-tests/helpers.mjs": [],
+  "atlasz-tests/owner-control-rig.mjs": [
+   "atlasz-addons/brain/black-box.mjs",
+   "atlasz-addons/brain/security-brain.mjs",
+   "atlasz-addons/brain/verifier.mjs",
+   "atlasz-addons/emergency-stop.mjs",
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-addons/owner-control/owner-authority.mjs",
+   "atlasz-addons/owner-control/owner-control-system.mjs",
+   "atlasz-addons/safe-mode.mjs",
+   "atlasz-tests/helpers.mjs"
+  ]
+ },
+ "tgraph": {
+  "agent-factory-governor.test.mjs": [
+   "atlasz-addons/agent-factory.mjs",
+   "atlasz-addons/owner-control/owner-control-system.mjs",
+   "atlasz-addons/owner-control/recovery-source-map.mjs",
+   "atlasz-addons/update-center.mjs",
+   "atlasz-runtime/supervisor-safe.mjs",
+   "atlasz-tests/helpers.mjs",
+   "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "approval-requests.test.mjs": [
+   "atlasz-addons/approval-requests.mjs",
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-addons/owner-keystore.mjs",
+   "atlasz-control-center/core.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "backup-recovery.test.mjs": [
+   "atlasz-addons/backup-recovery.mjs",
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "behavior-monitor.test.mjs": [
+   "atlasz-addons/brain/behavior-monitor.mjs",
+   "atlasz-addons/brain/black-box.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "brain-core.test.mjs": [
+   "atlasz-addons/brain/black-box.mjs",
+   "atlasz-addons/brain/capability-graph.mjs",
+   "atlasz-addons/brain/governance.mjs",
+   "atlasz-addons/brain/planning-brain.mjs",
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "brain-intelligence.test.mjs": [
+   "atlasz-addons/brain/black-box.mjs",
+   "atlasz-addons/brain/brain-health.mjs",
+   "atlasz-addons/brain/business-factory.mjs",
+   "atlasz-addons/brain/capability-graph.mjs",
+   "atlasz-addons/brain/disaster-recovery.mjs",
+   "atlasz-addons/brain/governance.mjs",
+   "atlasz-addons/brain/knowledge-brain.mjs",
+   "atlasz-addons/brain/opportunity-intelligence.mjs",
+   "atlasz-addons/brain/owner-command.mjs",
+   "atlasz-addons/brain/planning-brain.mjs",
+   "atlasz-addons/brain/verifier.mjs",
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "brain-orchestration.test.mjs": [
+   "atlasz-addons/brain/black-box.mjs",
+   "atlasz-addons/brain/capability-graph.mjs",
+   "atlasz-addons/brain/governance.mjs",
+   "atlasz-addons/brain/orchestrator.mjs",
+   "atlasz-addons/brain/planning-brain.mjs",
+   "atlasz-addons/brain/security-brain.mjs",
+   "atlasz-addons/brain/verifier.mjs",
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "brain-runtime-wiring.test.mjs": [
+   "atlasz-runtime/supervisor-safe.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "brain-systems.test.mjs": [
+   "atlasz-addons/brain/black-box.mjs",
+   "atlasz-addons/brain/capability-graph.mjs",
+   "atlasz-addons/brain/central-brain.mjs",
+   "atlasz-addons/brain/governance.mjs",
+   "atlasz-addons/brain/model-intelligence.mjs",
+   "atlasz-addons/brain/orchestrator.mjs",
+   "atlasz-addons/brain/planning-brain.mjs",
+   "atlasz-addons/brain/security-brain.mjs",
+   "atlasz-addons/brain/simulation-lab.mjs",
+   "atlasz-addons/brain/verifier.mjs",
+   "atlasz-addons/emergency-stop.mjs",
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "business-engines.test.mjs": [
+   "atlasz-addons/brain/security-brain.mjs",
+   "atlasz-addons/business/artifact-registry.mjs",
+   "atlasz-addons/business/communication-center.mjs",
+   "atlasz-addons/business/deal-pipeline.mjs",
+   "atlasz-addons/business/delivery-service.mjs",
+   "atlasz-addons/business/finance-intelligence.mjs",
+   "atlasz-addons/business/invoice-service.mjs",
+   "atlasz-addons/business/job-system.mjs",
+   "atlasz-addons/business/judge.mjs",
+   "atlasz-addons/business/payment-verification.mjs",
+   "atlasz-addons/business/qa-factory.mjs",
+   "atlasz-addons/financial-ledger.mjs",
+   "atlasz-tests/helpers.mjs",
+   "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "canonical-queue-safety.test.mjs": [
+   "atlasz-runtime/supervisor-safe.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "canonical-runtime.test.mjs": [
+   "atlasz-runtime/supervisor-safe.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "code-sandbox-hosted.test.mjs": [
+   "atlasz-addons/code-sandbox.mjs",
+   "atlasz-addons/typed-tools.mjs",
+   "atlasz-control-center/server.mjs",
+   "atlasz-runtime/supervisor-safe.mjs",
+   "atlasz-tests/helpers.mjs",
+   "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "code-sandbox.test.mjs": [
+   "atlasz-addons/code-sandbox.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "connector-catalog.test.mjs": [
+   "atlasz-addons/connector-catalog.mjs",
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-addons/secret-vault.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "contract-core-engine.test.mjs": [
+   "atlasz-addons/agent-portfolio-manager.mjs",
+   "atlasz-addons/anti-collusion-guard.mjs",
+   "atlasz-addons/capability-registry.mjs",
+   "atlasz-addons/checkpoint-engine.mjs",
+   "atlasz-addons/cost-model-router.mjs",
+   "atlasz-addons/dead-letter-queue.mjs",
+   "atlasz-addons/event-bus.mjs",
+   "atlasz-addons/executor-toolbox-registry.mjs",
+   "atlasz-addons/guardrail-engine.mjs",
+   "atlasz-addons/master-planner-orchestrator.mjs",
+   "atlasz-addons/multi-model-brain.mjs",
+   "atlasz-addons/progress-ledger.mjs",
+   "atlasz-addons/recovery.mjs",
+   "atlasz-addons/regression-eval-suite.mjs",
+   "atlasz-addons/stall-replanner.mjs",
+   "atlasz-addons/task-ledger.mjs",
+   "atlasz-addons/tracing-evals.mjs"
+  ],
+  "contract-existing-modules.test.mjs": [
+   "atlasz-addons/budget-consumption-governor.mjs",
+   "atlasz-addons/completion-registry.mjs",
+   "atlasz-addons/enterprise-knowledge-agentic-rag.mjs",
+   "atlasz-addons/master-planner-orchestrator.mjs",
+   "atlasz-addons/money-pipeline-controller.mjs",
+   "atlasz-addons/observability-black-box.mjs",
+   "atlasz-addons/payment-confirmation-adapter.mjs",
+   "atlasz-addons/priority-queue-rate-limit-governor.mjs",
+   "atlasz-addons/profit-ledger.mjs",
+   "atlasz-addons/qa-reviewer.mjs",
+   "atlasz-addons/self-healing-loop.mjs"
+  ],
+  "contract-factories.test.mjs": [
+   "atlasz-addons/agent-factory.mjs",
+   "atlasz-addons/execution-factory.mjs",
+   "atlasz-addons/general-intelligence-extensions.mjs",
+   "atlasz-addons/market-intelligence-engine.mjs",
+   "atlasz-addons/outcome-compiler.mjs",
+   "atlasz-addons/skill-factory.mjs",
+   "atlasz-addons/team-lead-workflows.mjs"
+  ],
+  "contract-memory-control.test.mjs": [
+   "atlasz-addons/business-memory.mjs",
+   "atlasz-addons/enterprise-control-plane.mjs",
+   "atlasz-addons/experience-learning-engine.mjs",
+   "atlasz-addons/shared-project-registry.mjs",
+   "atlasz-addons/unified-entity-graph.mjs"
+  ],
+  "contract-money-tax.test.mjs": [
+   "atlasz-addons/buyer-decision-maker-finder.mjs",
+   "atlasz-addons/client-dna-engine.mjs",
+   "atlasz-addons/deal-state.mjs",
+   "atlasz-addons/delivery-engine.mjs",
+   "atlasz-addons/follow-up-engine.mjs",
+   "atlasz-addons/invoice-engine.mjs",
+   "atlasz-addons/opportunity-qualification-engine.mjs",
+   "atlasz-addons/profit-accounting-engine.mjs",
+   "atlasz-addons/tax-accounting-engine.mjs"
+  ],
+  "control-center-brain.test.mjs": [
+   "atlasz-addons/brain/brain-system.mjs",
+   "atlasz-addons/brain/security-brain.mjs",
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-control-center/core.mjs",
+   "atlasz-control-center/server.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "control-center-finance.test.mjs": [
+   "atlasz-addons/financial-ledger.mjs",
+   "atlasz-control-center/core.mjs",
+   "atlasz-runtime/supervisor-safe.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "control-center-home.test.mjs": [
+   "atlasz-addons/approval-requests.mjs",
+   "atlasz-control-center/core.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "control-center-money-views.test.mjs": [
+   "atlasz-control-center/core.mjs",
+   "atlasz-control-center/money-views.mjs",
+   "atlasz-control-center/server.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "control-center-ownersafety.test.mjs": [
+   "atlasz-control-center/core.mjs",
+   "atlasz-control-center/server.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "control-center-plugins.test.mjs": [
+   "atlasz-control-center/core.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "control-center-systems.test.mjs": [
+   "atlasz-addons/document-center.mjs",
+   "atlasz-addons/universal-inbox.mjs",
+   "atlasz-control-center/core.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "control-center.test.mjs": [
+   "atlasz-addons/local-update-adapters.mjs",
+   "atlasz-addons/owner-keystore.mjs",
+   "atlasz-addons/safe-mode.mjs",
+   "atlasz-control-center/core.mjs",
+   "atlasz-control-center/server.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "crm.test.mjs": [
+   "atlasz-addons/business/crm.mjs",
+   "atlasz-addons/business/entity-graph.mjs"
+  ],
+  "digital-twin.test.mjs": [
+   "atlasz-addons/digital-twin.mjs",
+   "atlasz-addons/owner-auth.mjs"
+  ],
+  "doc-extractors.test.mjs": [
+   "atlasz-addons/doc-extractors.mjs"
+  ],
+  "document-center.test.mjs": [
+   "atlasz-addons/document-center.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "document-intelligence.test.mjs": [
+   "atlasz-addons/brain/security-brain.mjs",
+   "atlasz-addons/business/entity-graph.mjs",
+   "atlasz-addons/document-center.mjs",
+   "atlasz-tests/helpers.mjs",
+   "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "durable-queue.test.mjs": [
+   "atlasz-addons/durable-queue.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "emergency-stop.test.mjs": [
+   "atlasz-addons/emergency-stop.mjs",
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "entity-graph.test.mjs": [
+   "atlasz-addons/business/entity-graph.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "evidence-record.test.mjs": [
+   "atlasz-addons/evidence-record.mjs"
+  ],
+  "evidence-sources.test.mjs": [
+   "atlasz-addons/brain/evidence-sources.mjs",
+   "atlasz-addons/brain/verifier.mjs",
+   "atlasz-addons/financial-ledger.mjs",
+   "atlasz-runtime/supervisor-safe.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "financial-ledger.test.mjs": [
+   "atlasz-addons/financial-ledger.mjs"
+  ],
+  "gap-register-modules.test.mjs": [
+   "atlasz-addons/audit-chain.mjs",
+   "atlasz-addons/money-supervisor.mjs",
+   "atlasz-addons/owner-control/claim-distinctions.mjs",
+   "atlasz-addons/owner-control/safe-mode-scope.mjs",
+   "atlasz-addons/proposal-quote-engine.mjs",
+   "atlasz-addons/tool-bridge.mjs",
+   "atlasz-tests/helpers.mjs",
+   "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "gated-modules.test.mjs": [
+   "atlasz-addons/approval-command-gateway.mjs",
+   "atlasz-addons/computer-use-fabric.mjs",
+   "atlasz-addons/deal-state.mjs",
+   "atlasz-addons/delivery-engine.mjs",
+   "atlasz-addons/enterprise-control-plane.mjs",
+   "atlasz-addons/guardrail-engine.mjs",
+   "atlasz-addons/invoice-engine.mjs",
+   "atlasz-addons/money-pipeline-controller.mjs",
+   "atlasz-addons/negotiation-engine.mjs",
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-addons/tax-accounting-engine.mjs"
+  ],
+  "governed-dispatch.test.mjs": [
+   "atlasz-addons/brain/brain-system.mjs",
+   "atlasz-addons/brain/governed-dispatch.mjs",
+   "atlasz-addons/brain/search-pipeline.mjs",
+   "atlasz-tests/helpers.mjs",
+   "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "human-core.test.mjs": [
+   "atlasz-addons/human-core.mjs",
+   "atlasz-addons/master-brief.mjs"
+  ],
+  "inbox-pipeline.test.mjs": [
+   "atlasz-addons/brain/security-brain.mjs",
+   "atlasz-addons/business/entity-graph.mjs",
+   "atlasz-addons/business/inbox-pipeline.mjs",
+   "atlasz-addons/universal-inbox.mjs",
+   "atlasz-tests/helpers.mjs",
+   "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "knowledge-projects-hosted.test.mjs": [
+   "atlasz-control-center/server.mjs",
+   "atlasz-runtime/supervisor-safe.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "knowledge-projects.test.mjs": [
+   "atlasz-addons/document-center.mjs",
+   "atlasz-addons/knowledge-projects.mjs",
+   "atlasz-tests/helpers.mjs",
+   "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "local-update-adapters.test.mjs": [
+   "atlasz-addons/backup-recovery.mjs",
+   "atlasz-addons/local-update-adapters.mjs",
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-addons/update-center.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "memory-fabric.test.mjs": [
+   "atlasz-addons/brain/brain-system.mjs",
+   "atlasz-addons/brain/knowledge-brain.mjs",
+   "atlasz-addons/brain/memory-fabric.mjs",
+   "atlasz-addons/brain/simulation-lab.mjs",
+   "atlasz-addons/business-memory.mjs",
+   "atlasz-addons/experience-learning-engine.mjs",
+   "atlasz-addons/unified-entity-graph.mjs",
+   "atlasz-tests/helpers.mjs",
+   "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "mobile-api.test.mjs": [
+   "atlasz-addons/approval-requests.mjs",
+   "atlasz-addons/mobile-api.mjs",
+   "atlasz-addons/owner-keystore.mjs",
+   "atlasz-control-center/core.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "modality-fabric-hosted.test.mjs": [
+   "atlasz-addons/document-center.mjs",
+   "atlasz-addons/modality-fabric.mjs",
+   "atlasz-control-center/server.mjs",
+   "atlasz-runtime/supervisor-safe.mjs",
+   "atlasz-tests/helpers.mjs",
+   "atlasz-tests/media-fixtures.mjs"
+  ],
+  "modality-fabric.test.mjs": [
+   "atlasz-addons/modality-fabric.mjs",
+   "atlasz-tests/helpers.mjs",
+   "atlasz-tests/media-fixtures.mjs",
+   "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "model-gateway.test.mjs": [
+   "atlasz-addons/brain/capability-graph.mjs",
+   "atlasz-addons/brain/model-intelligence.mjs",
+   "atlasz-addons/model-gateway.mjs",
+   "atlasz-addons/provider-resilience.mjs",
+   "atlasz-tests/helpers.mjs",
+   "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "money-engine-hosted.test.mjs": [
+   "atlasz-control-center/money-views.mjs",
+   "atlasz-runtime/supervisor-safe.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "money-engine-sandbox.test.mjs": [
+   "atlasz-addons/brain/brain-system.mjs",
+   "atlasz-addons/business/money-engine.mjs",
+   "atlasz-addons/financial-ledger.mjs",
+   "atlasz-control-center/money-views.mjs",
+   "atlasz-runtime/supervisor-safe.mjs",
+   "atlasz-tests/helpers.mjs",
+   "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "observation-memory-hosted.test.mjs": [
+   "atlasz-addons/document-center.mjs",
+   "atlasz-addons/modality-fabric.mjs",
+   "atlasz-control-center/server.mjs",
+   "atlasz-runtime/supervisor-safe.mjs",
+   "atlasz-tests/helpers.mjs",
+   "atlasz-tests/media-fixtures.mjs"
+  ],
+  "observation-memory.test.mjs": [
+   "atlasz-addons/modality-fabric.mjs",
+   "atlasz-addons/observation-memory.mjs",
+   "atlasz-tests/helpers.mjs",
+   "atlasz-tests/media-fixtures.mjs",
+   "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "owner-auth.test.mjs": [
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "owner-control-bypass.test.mjs": [
+   "atlasz-addons/brain/brain-system.mjs",
+   "atlasz-addons/brain/governance.mjs",
+   "atlasz-addons/brain/simulation-lab.mjs",
+   "atlasz-addons/money-pipeline-controller.mjs",
+   "atlasz-addons/owner-control/control-chain.mjs",
+   "atlasz-addons/owner-control/owner-authority.mjs",
+   "atlasz-addons/update-center.mjs",
+   "atlasz-tests/helpers.mjs",
+   "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "owner-control-core.test.mjs": [
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-addons/owner-control/approval-gateway.mjs",
+   "atlasz-addons/owner-control/control-chain.mjs",
+   "atlasz-addons/owner-control/owner-authority.mjs",
+   "atlasz-tests/helpers.mjs",
+   "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "owner-control-extra.test.mjs": [
+   "atlasz-addons/owner-control/system-doctor.mjs",
+   "atlasz-tests/helpers.mjs",
+   "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "personal-command-center.test.mjs": [
+   "atlasz-addons/master-brief.mjs",
+   "atlasz-addons/personal-command-center.mjs",
+   "atlasz-addons/scheduler.mjs",
+   "atlasz-addons/typed-tools.mjs",
+   "atlasz-control-center/server.mjs",
+   "atlasz-tests/helpers.mjs",
+   "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "plugin-manager.test.mjs": [
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-addons/plugin-manager.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "policy-guards.test.mjs": [],
+  "probe-evidence.test.mjs": [
+   "atlasz-addons/computer-use-fabric.mjs",
+   "atlasz-addons/executor-toolbox-registry.mjs",
+   "atlasz-addons/multi-model-brain.mjs",
+   "atlasz-addons/probe-evidence.mjs",
+   "atlasz-addons/tool-fabric.mjs",
+   "atlasz-addons/universal-connector-layer.mjs",
+   "atlasz-addons/voice-interface.mjs"
+  ],
+  "provider-resilience.test.mjs": [
+   "atlasz-addons/financial-ledger.mjs",
+   "atlasz-addons/provider-resilience.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "recurring-billing.test.mjs": [
+   "atlasz-addons/business/invoice-service.mjs",
+   "atlasz-addons/business/payment-verification.mjs",
+   "atlasz-addons/business/recurring-billing.mjs",
+   "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "registry-integrity.test.mjs": [],
+  "regression-repairs.test.mjs": [
+   "atlasz-addons/enterprise-control-plane.mjs",
+   "atlasz-addons/internal-integration-hub.mjs",
+   "atlasz-addons/shared-project-registry.mjs"
+  ],
+  "research-ledger-hosted.test.mjs": [
+   "atlasz-control-center/server.mjs",
+   "atlasz-runtime/supervisor-safe.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "research-ledger.test.mjs": [
+   "atlasz-addons/document-center.mjs",
+   "atlasz-addons/knowledge-projects.mjs",
+   "atlasz-addons/research-ledger.mjs",
+   "atlasz-tests/helpers.mjs",
+   "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "safety-modules.test.mjs": [
+   "atlasz-addons/durable-queue.mjs",
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-addons/safe-mode.mjs",
+   "atlasz-addons/secret-vault.mjs",
+   "atlasz-addons/startup-self-check.mjs",
+   "atlasz-addons/watchdog.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "scheduler.test.mjs": [
+   "atlasz-addons/scheduler.mjs",
+   "atlasz-addons/typed-tools.mjs",
+   "atlasz-tests/helpers.mjs",
+   "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "stop-enforcement.test.mjs": [
+   "atlasz-addons/approval-command-gateway.mjs",
+   "atlasz-addons/computer-use-fabric.mjs",
+   "atlasz-addons/guardrail-engine.mjs",
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-addons/probe-evidence.mjs",
+   "atlasz-addons/safe-mode.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "tech-watch.test.mjs": [
+   "atlasz-addons/tech-watch.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "tenant-isolation.test.mjs": [
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-addons/tenant-isolation.mjs",
+   "atlasz-tests/helpers.mjs",
+   "scripts/make-sanitized-dist.mjs"
+  ],
+  "typed-tools.test.mjs": [
+   "atlasz-addons/typed-tools.mjs",
+   "atlasz-tests/helpers.mjs",
+   "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "universal-inbox.test.mjs": [
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-addons/universal-inbox.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "update-center.test.mjs": [
+   "atlasz-addons/backup-recovery.mjs",
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-addons/update-center.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "voice-conversation-hosted.test.mjs": [
+   "atlasz-addons/voice-conversation.mjs",
+   "atlasz-addons/voice-session.mjs",
+   "atlasz-control-center/server.mjs",
+   "atlasz-runtime/supervisor-safe.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "voice-conversation.test.mjs": [
+   "atlasz-addons/typed-tools.mjs",
+   "atlasz-addons/voice-conversation.mjs",
+   "atlasz-addons/voice-session.mjs",
+   "atlasz-tests/helpers.mjs",
+   "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "voice-session.test.mjs": [
+   "atlasz-addons/voice-session.mjs",
+   "atlasz-tests/helpers.mjs"
+  ]
+ },
+ "files": 163,
+ "tests": 81,
+ "modules": [
+  {
+   "file": "atlasz-addons/outcome-compiler.mjs",
+   "loc": 5,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-factories.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/qa-reviewer.mjs",
+   "loc": 8,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-existing-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/observation-memory.mjs",
+   "loc": 146,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "observation-memory.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business-memory.mjs",
+   "loc": 6,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/brain-system.mjs",
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-memory-control.test.mjs",
+    "memory-fabric.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/shared-project-registry.mjs",
+   "loc": 8,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-memory-control.test.mjs",
+    "regression-repairs.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_VIA_HUB_HOOKS",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/universal-inbox.mjs",
+   "loc": 67,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "control-center-systems.test.mjs",
+    "inbox-pipeline.test.mjs",
+    "universal-inbox.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/opportunity-qualification-engine.mjs",
+   "loc": 18,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-money-tax.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/modality-fabric.mjs",
+   "loc": 204,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "modality-fabric-hosted.test.mjs",
+    "modality-fabric.test.mjs",
+    "observation-memory-hosted.test.mjs",
+    "observation-memory.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/cost-model-router.mjs",
+   "loc": 8,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-core-engine.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/computer-use-fabric.mjs",
+   "loc": 40,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "gated-modules.test.mjs",
+    "probe-evidence.test.mjs",
+    "stop-enforcement.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_VIA_HUB_HOOKS",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/self-healing-loop.mjs",
+   "loc": 15,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-existing-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/budget-consumption-governor.mjs",
+   "loc": 5,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-existing-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_VIA_HUB_HOOKS",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/doc-extractors.mjs",
+   "loc": 118,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/document-center.mjs",
+    "atlasz-addons/modality-fabric.mjs"
+   ],
+   "tests": [
+    "doc-extractors.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/document-center.mjs",
+    "atlasz-addons/modality-fabric.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/tool-bridge.mjs",
+   "loc": 16,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "gap-register-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_VIA_HUB_HOOKS",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/provider-resilience.mjs",
+   "loc": 80,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "model-gateway.test.mjs",
+    "provider-resilience.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/stall-replanner.mjs",
+   "loc": 7,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-core-engine.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/completion-registry.mjs",
+   "loc": 134,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-existing-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_VIA_HUB_HOOKS",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/task-ledger.mjs",
+   "loc": 7,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-core-engine.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/tracing-evals.mjs",
+   "loc": 29,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-core-engine.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/checkpoint-engine.mjs",
+   "loc": 7,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-core-engine.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/market-intelligence-engine.mjs",
+   "loc": 9,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-factories.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/buyer-decision-maker-finder.mjs",
+   "loc": 11,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-money-tax.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/profit-accounting-engine.mjs",
+   "loc": 10,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-money-tax.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/event-bus.mjs",
+   "loc": 5,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-core-engine.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_VIA_HUB_HOOKS",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/client-dna-engine.mjs",
+   "loc": 5,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-money-tax.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/executor-toolbox-registry.mjs",
+   "loc": 12,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-core-engine.test.mjs",
+    "probe-evidence.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_VIA_HUB_HOOKS",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/delivery-engine.mjs",
+   "loc": 10,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-money-tax.test.mjs",
+    "gated-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/probe-evidence.mjs",
+   "loc": 8,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/computer-use-fabric.mjs",
+    "atlasz-addons/executor-toolbox-registry.mjs",
+    "atlasz-addons/multi-model-brain.mjs",
+    "atlasz-addons/tool-bridge.mjs",
+    "atlasz-addons/tool-fabric.mjs",
+    "atlasz-addons/universal-connector-layer.mjs"
+   ],
+   "tests": [
+    "probe-evidence.test.mjs",
+    "stop-enforcement.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/computer-use-fabric.mjs",
+    "atlasz-addons/executor-toolbox-registry.mjs",
+    "atlasz-addons/multi-model-brain.mjs",
+    "atlasz-addons/tool-bridge.mjs",
+    "atlasz-addons/tool-fabric.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/typed-tools.mjs",
+   "loc": 123,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/scheduler.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "code-sandbox-hosted.test.mjs",
+    "personal-command-center.test.mjs",
+    "scheduler.test.mjs",
+    "typed-tools.test.mjs",
+    "voice-conversation.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/scheduler.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/voice-interface.mjs",
+   "loc": 23,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "probe-evidence.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_VIA_HUB_HOOKS",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/digital-twin.mjs",
+   "loc": 66,
+   "runtime": false,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [],
+   "tests": [
+    "digital-twin.test.mjs"
+   ],
+   "reach": "TEST_ONLY",
+   "invocation": "n/a",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/regression-eval-suite.mjs",
+   "loc": 7,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-core-engine.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/owner-auth.mjs",
+   "loc": 125,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/agent-factory.mjs",
+    "atlasz-addons/backup-recovery.mjs",
+    "atlasz-addons/computer-use-fabric.mjs",
+    "atlasz-addons/deal-state.mjs",
+    "atlasz-addons/delivery-engine.mjs",
+    "atlasz-addons/emergency-stop.mjs"
+   ],
+   "tests": [
+    "approval-requests.test.mjs",
+    "backup-recovery.test.mjs",
+    "brain-core.test.mjs",
+    "brain-intelligence.test.mjs",
+    "brain-orchestration.test.mjs",
+    "brain-systems.test.mjs",
+    "connector-catalog.test.mjs",
+    "control-center-brain.test.mjs",
+    "digital-twin.test.mjs",
+    "emergency-stop.test.mjs",
+    "gated-modules.test.mjs",
+    "local-update-adapters.test.mjs",
+    "owner-auth.test.mjs",
+    "owner-control-core.test.mjs",
+    "plugin-manager.test.mjs",
+    "safety-modules.test.mjs",
+    "stop-enforcement.test.mjs",
+    "tenant-isolation.test.mjs",
+    "universal-inbox.test.mjs",
+    "update-center.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/agent-factory.mjs",
+    "atlasz-addons/backup-recovery.mjs",
+    "atlasz-addons/computer-use-fabric.mjs",
+    "atlasz-addons/deal-state.mjs",
+    "atlasz-addons/delivery-engine.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/master-brief.mjs",
+   "loc": 88,
+   "runtime": false,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/core.mjs"
+   ],
+   "tests": [
+    "human-core.test.mjs",
+    "personal-command-center.test.mjs"
+   ],
+   "reach": "CONTROL_CENTER",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/core.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/watchdog.mjs",
+   "loc": 48,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "safety-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/enterprise-knowledge-agentic-rag.mjs",
+   "loc": 28,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-existing-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/follow-up-engine.mjs",
+   "loc": 15,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-money-tax.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/money-supervisor.mjs",
+   "loc": 18,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "gap-register-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_VIA_HUB_HOOKS",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/voice-session.mjs",
+   "loc": 51,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "voice-conversation-hosted.test.mjs",
+    "voice-conversation.test.mjs",
+    "voice-session.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/negotiation-engine.mjs",
+   "loc": 24,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "gated-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/agent-portfolio-manager.mjs",
+   "loc": 5,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-core-engine.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_VIA_HUB_HOOKS",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/audit-chain.mjs",
+   "loc": 79,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/backup-recovery.mjs",
+    "atlasz-addons/brain/black-box.mjs",
+    "atlasz-addons/brain/governance.mjs",
+    "atlasz-addons/brain/owner-command.mjs",
+    "atlasz-addons/emergency-stop.mjs",
+    "atlasz-addons/financial-ledger.mjs"
+   ],
+   "tests": [
+    "gap-register-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/backup-recovery.mjs",
+    "atlasz-addons/brain/black-box.mjs",
+    "atlasz-addons/brain/governance.mjs",
+    "atlasz-addons/brain/owner-command.mjs",
+    "atlasz-addons/emergency-stop.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/emergency-stop.mjs",
+   "loc": 103,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/brain-system.mjs",
+    "atlasz-addons/brain/governance.mjs",
+    "atlasz-addons/computer-use-fabric.mjs",
+    "atlasz-addons/connector-catalog.mjs",
+    "atlasz-addons/enterprise-control-plane.mjs",
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "brain-systems.test.mjs",
+    "emergency-stop.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/brain-system.mjs",
+    "atlasz-addons/brain/governance.mjs",
+    "atlasz-addons/computer-use-fabric.mjs",
+    "atlasz-addons/connector-catalog.mjs",
+    "atlasz-addons/enterprise-control-plane.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/guardrail-engine.mjs",
+   "loc": 10,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-core-engine.test.mjs",
+    "gated-modules.test.mjs",
+    "stop-enforcement.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/approval-command-gateway.mjs",
+   "loc": 48,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "gated-modules.test.mjs",
+    "stop-enforcement.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_VIA_HUB_HOOKS",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/tax-accounting-engine.mjs",
+   "loc": 92,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-money-tax.test.mjs",
+    "gated-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/general-intelligence-extensions.mjs",
+   "loc": 56,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-factories.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_VIA_HUB_HOOKS",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/payment-confirmation-adapter.mjs",
+   "loc": 12,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-existing-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/tenant-isolation.mjs",
+   "loc": 61,
+   "runtime": false,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [],
+   "tests": [
+    "tenant-isolation.test.mjs"
+   ],
+   "reach": "TEST_ONLY",
+   "invocation": "n/a",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/research-ledger.mjs",
+   "loc": 149,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "research-ledger.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/update-center.mjs",
+   "loc": 390,
+   "runtime": false,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/local-update-adapters.mjs",
+    "atlasz-addons/plugin-manager.mjs",
+    "atlasz-control-center/core.mjs"
+   ],
+   "tests": [
+    "agent-factory-governor.test.mjs",
+    "local-update-adapters.test.mjs",
+    "owner-control-bypass.test.mjs",
+    "update-center.test.mjs"
+   ],
+   "reach": "CONTROL_CENTER",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/local-update-adapters.mjs",
+    "atlasz-addons/plugin-manager.mjs",
+    "atlasz-control-center/core.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/profit-ledger.mjs",
+   "loc": 14,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-existing-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/anti-collusion-guard.mjs",
+   "loc": 10,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-core-engine.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/document-center.mjs",
+   "loc": 97,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "control-center-systems.test.mjs",
+    "document-center.test.mjs",
+    "document-intelligence.test.mjs",
+    "knowledge-projects.test.mjs",
+    "modality-fabric-hosted.test.mjs",
+    "observation-memory-hosted.test.mjs",
+    "research-ledger.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/multi-model-brain.mjs",
+   "loc": 19,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-core-engine.test.mjs",
+    "probe-evidence.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_VIA_HUB_HOOKS",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/proposal-quote-engine.mjs",
+   "loc": 21,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "gap-register-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/startup-self-check.mjs",
+   "loc": 62,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "safety-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/master-planner-orchestrator.mjs",
+   "loc": 23,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-core-engine.test.mjs",
+    "contract-existing-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/observability-black-box.mjs",
+   "loc": 11,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-existing-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_VIA_HUB_HOOKS",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/personal-command-center.mjs",
+   "loc": 90,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "personal-command-center.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/knowledge-projects.mjs",
+   "loc": 133,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/observation-memory.mjs",
+    "atlasz-addons/research-ledger.mjs",
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "knowledge-projects.test.mjs",
+    "research-ledger.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/observation-memory.mjs",
+    "atlasz-addons/research-ledger.mjs",
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/universal-connector-layer.mjs",
+   "loc": 6,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "probe-evidence.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_VIA_HUB_HOOKS",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/code-sandbox.mjs",
+   "loc": 178,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "code-sandbox-hosted.test.mjs",
+    "code-sandbox.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/mobile-api.mjs",
+   "loc": 51,
+   "runtime": false,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/core.mjs"
+   ],
+   "tests": [
+    "mobile-api.test.mjs"
+   ],
+   "reach": "CONTROL_CENTER",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/core.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/evidence-record.mjs",
+   "loc": 23,
+   "runtime": false,
+   "control_center": false,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "scripts/make-evidence.mjs"
+   ],
+   "tests": [
+    "evidence-record.test.mjs"
+   ],
+   "reach": "CLI",
+   "invocation": "NOT_INVOKED",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/deal-state.mjs",
+   "loc": 20,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-money-tax.test.mjs",
+    "gated-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/backup-recovery.mjs",
+   "loc": 153,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/owner-control/recovery-points.mjs",
+    "atlasz-addons/update-center.mjs",
+    "atlasz-control-center/core.mjs"
+   ],
+   "tests": [
+    "backup-recovery.test.mjs",
+    "local-update-adapters.test.mjs",
+    "update-center.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/owner-control/recovery-points.mjs",
+    "atlasz-addons/update-center.mjs",
+    "atlasz-control-center/core.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/progress-ledger.mjs",
+   "loc": 5,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-core-engine.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/human-core.mjs",
+   "loc": 87,
+   "runtime": false,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/master-brief.mjs",
+    "atlasz-control-center/core.mjs"
+   ],
+   "tests": [
+    "human-core.test.mjs"
+   ],
+   "reach": "CONTROL_CENTER",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/master-brief.mjs",
+    "atlasz-control-center/core.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/voice-conversation.mjs",
+   "loc": 163,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "voice-conversation-hosted.test.mjs",
+    "voice-conversation.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/connector-catalog.mjs",
+   "loc": 78,
+   "runtime": false,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/core.mjs"
+   ],
+   "tests": [
+    "connector-catalog.test.mjs"
+   ],
+   "reach": "CONTROL_CENTER",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/core.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/plugin-manager.mjs",
+   "loc": 128,
+   "runtime": false,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/core.mjs"
+   ],
+   "tests": [
+    "plugin-manager.test.mjs"
+   ],
+   "reach": "CONTROL_CENTER",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/core.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/priority-queue-rate-limit-governor.mjs",
+   "loc": 6,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-existing-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_VIA_HUB_HOOKS",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/capability-registry.mjs",
+   "loc": 7,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-core-engine.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_VIA_HUB_HOOKS",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/tool-fabric.mjs",
+   "loc": 48,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "probe-evidence.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_VIA_HUB_HOOKS",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/experience-learning-engine.mjs",
+   "loc": 6,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/brain-system.mjs",
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-memory-control.test.mjs",
+    "memory-fabric.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/recovery.mjs",
+   "loc": 6,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs",
+    "atlasz-addons/self-healing-loop.mjs"
+   ],
+   "tests": [
+    "contract-core-engine.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/self-healing-loop.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/safe-mode.mjs",
+   "loc": 76,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs",
+    "atlasz-tests/owner-control-rig.mjs"
+   ],
+   "tests": [
+    "control-center.test.mjs",
+    "safety-modules.test.mjs",
+    "stop-enforcement.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/execution-factory.mjs",
+   "loc": 34,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-factories.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/dead-letter-queue.mjs",
+   "loc": 5,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-core-engine.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/approval-requests.mjs",
+   "loc": 69,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "approval-requests.test.mjs",
+    "control-center-home.test.mjs",
+    "mobile-api.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/invoice-engine.mjs",
+   "loc": 12,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-money-tax.test.mjs",
+    "gated-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/durable-queue.mjs",
+   "loc": 120,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/startup-self-check.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "durable-queue.test.mjs",
+    "safety-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/startup-self-check.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/model-gateway.mjs",
+   "loc": 49,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "model-gateway.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/local-update-adapters.mjs",
+   "loc": 138,
+   "runtime": false,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/core.mjs"
+   ],
+   "tests": [
+    "control-center.test.mjs",
+    "local-update-adapters.test.mjs"
+   ],
+   "reach": "CONTROL_CENTER",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/core.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/unified-entity-graph.mjs",
+   "loc": 5,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-memory-control.test.mjs",
+    "memory-fabric.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_VIA_HUB_HOOKS",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/owner-keystore.mjs",
+   "loc": 40,
+   "runtime": false,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/core.mjs"
+   ],
+   "tests": [
+    "approval-requests.test.mjs",
+    "control-center.test.mjs",
+    "mobile-api.test.mjs"
+   ],
+   "reach": "CONTROL_CENTER",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/core.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/secret-vault.mjs",
+   "loc": 100,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "connector-catalog.test.mjs",
+    "safety-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/financial-ledger.mjs",
+   "loc": 58,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/business/money-engine.mjs",
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "business-engines.test.mjs",
+    "control-center-finance.test.mjs",
+    "evidence-sources.test.mjs",
+    "financial-ledger.test.mjs",
+    "money-engine-sandbox.test.mjs",
+    "provider-resilience.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/business/money-engine.mjs",
+    "atlasz-control-center/core.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/enterprise-control-plane.mjs",
+   "loc": 8,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-memory-control.test.mjs",
+    "gated-modules.test.mjs",
+    "regression-repairs.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_VIA_HUB_HOOKS",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/scheduler.mjs",
+   "loc": 110,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "personal-command-center.test.mjs",
+    "scheduler.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/internal-integration-hub.mjs",
+   "loc": 140,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "regression-repairs.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/money-pipeline-controller.mjs",
+   "loc": 78,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/simulation-lab.mjs",
+    "atlasz-addons/internal-integration-hub.mjs",
+    "atlasz-addons/owner-control/money-state-guard.mjs"
+   ],
+   "tests": [
+    "contract-existing-modules.test.mjs",
+    "gated-modules.test.mjs",
+    "owner-control-bypass.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/simulation-lab.mjs",
+    "atlasz-addons/owner-control/money-state-guard.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/skill-factory.mjs",
+   "loc": 7,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-factories.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_VIA_HUB_HOOKS",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/tech-watch.mjs",
+   "loc": 59,
+   "runtime": false,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/core.mjs"
+   ],
+   "tests": [
+    "tech-watch.test.mjs"
+   ],
+   "reach": "CONTROL_CENTER",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/core.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/team-lead-workflows.mjs",
+   "loc": 4,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "contract-factories.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/agent-factory.mjs",
+   "loc": 39,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/internal-integration-hub.mjs"
+   ],
+   "tests": [
+    "agent-factory-governor.test.mjs",
+    "contract-factories.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "HUB_ADAPTER_BAG_ONLY",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/business/crm.mjs",
+   "loc": 68,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ],
+   "tests": [
+    "crm.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/payment-verification.mjs",
+   "loc": 60,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ],
+   "tests": [
+    "business-engines.test.mjs",
+    "recurring-billing.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/store.mjs",
+   "loc": 24,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/behavior-monitor.mjs",
+    "atlasz-addons/business/artifact-registry.mjs",
+    "atlasz-addons/business/communication-center.mjs",
+    "atlasz-addons/business/crm.mjs",
+    "atlasz-addons/business/deal-pipeline.mjs",
+    "atlasz-addons/business/delivery-service.mjs"
+   ],
+   "tests": [],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/behavior-monitor.mjs",
+    "atlasz-addons/business/artifact-registry.mjs",
+    "atlasz-addons/business/communication-center.mjs",
+    "atlasz-addons/business/crm.mjs",
+    "atlasz-addons/business/deal-pipeline.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/communication-center.mjs",
+   "loc": 67,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ],
+   "tests": [
+    "business-engines.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/qa-factory.mjs",
+   "loc": 125,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ],
+   "tests": [
+    "business-engines.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/artifact-registry.mjs",
+   "loc": 66,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ],
+   "tests": [
+    "business-engines.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/deal-pipeline.mjs",
+   "loc": 80,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ],
+   "tests": [
+    "business-engines.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/money-engine.mjs",
+   "loc": 184,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "money-engine-sandbox.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/job-system.mjs",
+   "loc": 106,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ],
+   "tests": [
+    "business-engines.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/entity-graph.mjs",
+   "loc": 102,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ],
+   "tests": [
+    "crm.test.mjs",
+    "document-intelligence.test.mjs",
+    "entity-graph.test.mjs",
+    "inbox-pipeline.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/judge.mjs",
+   "loc": 51,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ],
+   "tests": [
+    "business-engines.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/delivery-service.mjs",
+   "loc": 50,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ],
+   "tests": [
+    "business-engines.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/finance-intelligence.mjs",
+   "loc": 53,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ],
+   "tests": [
+    "business-engines.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/inbox-pipeline.mjs",
+   "loc": 97,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/business/money-engine.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "inbox-pipeline.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/invoice-service.mjs",
+   "loc": 68,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ],
+   "tests": [
+    "business-engines.test.mjs",
+    "recurring-billing.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/recurring-billing.mjs",
+   "loc": 106,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ],
+   "tests": [
+    "recurring-billing.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/business/money-engine.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/approval-gateway.mjs",
+   "loc": 77,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/owner-control/owner-control-system.mjs",
+    "atlasz-control-center/core.mjs"
+   ],
+   "tests": [
+    "owner-control-core.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/owner-control/owner-control-system.mjs",
+    "atlasz-control-center/core.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/system-doctor.mjs",
+   "loc": 26,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/owner-control/owner-control-system.mjs",
+    "atlasz-control-center/core.mjs"
+   ],
+   "tests": [
+    "owner-control-extra.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/owner-control/owner-control-system.mjs",
+    "atlasz-control-center/core.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/money-state-guard.mjs",
+   "loc": 56,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/owner-control/owner-control-system.mjs"
+   ],
+   "tests": [],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/owner-control/owner-control-system.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/owner-authority.mjs",
+   "loc": 85,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/owner-control/approval-gateway.mjs",
+    "atlasz-addons/owner-control/control-chain.mjs",
+    "atlasz-addons/owner-control/financial-firewall.mjs",
+    "atlasz-addons/owner-control/owner-control-system.mjs",
+    "atlasz-tests/owner-control-rig.mjs"
+   ],
+   "tests": [
+    "owner-control-bypass.test.mjs",
+    "owner-control-core.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/owner-control/approval-gateway.mjs",
+    "atlasz-addons/owner-control/control-chain.mjs",
+    "atlasz-addons/owner-control/financial-firewall.mjs",
+    "atlasz-addons/owner-control/owner-control-system.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/claim-distinctions.mjs",
+   "loc": 25,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/owner-control/owner-control-system.mjs"
+   ],
+   "tests": [
+    "gap-register-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/owner-control/owner-control-system.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/recovery-points.mjs",
+   "loc": 102,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/owner-control/owner-control-system.mjs",
+    "atlasz-addons/owner-control/recovery-source-map.mjs"
+   ],
+   "tests": [],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/owner-control/owner-control-system.mjs",
+    "atlasz-addons/owner-control/recovery-source-map.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/financial-firewall.mjs",
+   "loc": 66,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/owner-control/owner-control-system.mjs"
+   ],
+   "tests": [],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/owner-control/owner-control-system.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/safe-mode-scope.mjs",
+   "loc": 27,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/owner-control/owner-control-system.mjs"
+   ],
+   "tests": [
+    "gap-register-modules.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/owner-control/owner-control-system.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/owner-control-system.mjs",
+   "loc": 54,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-runtime/supervisor-safe.mjs",
+    "atlasz-tests/owner-control-rig.mjs"
+   ],
+   "tests": [
+    "agent-factory-governor.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/control-chain.mjs",
+   "loc": 121,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/owner-control/owner-control-system.mjs"
+   ],
+   "tests": [
+    "owner-control-bypass.test.mjs",
+    "owner-control-core.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/owner-control/owner-control-system.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/agent-governor.mjs",
+   "loc": 72,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/owner-control/owner-control-system.mjs"
+   ],
+   "tests": [],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/owner-control/owner-control-system.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/recovery-source-map.mjs",
+   "loc": 50,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "agent-factory-governor.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/security-brain.mjs",
+   "loc": 57,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/brain-system.mjs",
+    "atlasz-tests/owner-control-rig.mjs"
+   ],
+   "tests": [
+    "brain-orchestration.test.mjs",
+    "brain-systems.test.mjs",
+    "business-engines.test.mjs",
+    "control-center-brain.test.mjs",
+    "document-intelligence.test.mjs",
+    "inbox-pipeline.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/evidence-sources.mjs",
+   "loc": 114,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/business/money-engine.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "evidence-sources.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/business/money-engine.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/search-pipeline.mjs",
+   "loc": 105,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/business/money-engine.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "governed-dispatch.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/business/money-engine.mjs",
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/memory-fabric.mjs",
+   "loc": 70,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ],
+   "tests": [
+    "memory-fabric.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/governed-dispatch.mjs",
+   "loc": 115,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ],
+   "tests": [
+    "governed-dispatch.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/opportunity-intelligence.mjs",
+   "loc": 60,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/brain-system.mjs",
+    "atlasz-addons/brain/search-pipeline.mjs",
+    "atlasz-control-center/brain-views.mjs"
+   ],
+   "tests": [
+    "brain-intelligence.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/brain-system.mjs",
+    "atlasz-addons/brain/search-pipeline.mjs",
+    "atlasz-control-center/brain-views.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/owner-command.mjs",
+   "loc": 49,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/brain-system.mjs",
+    "atlasz-control-center/brain-views.mjs",
+    "atlasz-control-center/core.mjs"
+   ],
+   "tests": [
+    "brain-intelligence.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/brain-system.mjs",
+    "atlasz-control-center/brain-views.mjs",
+    "atlasz-control-center/core.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/simulation-lab.mjs",
+   "loc": 73,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ],
+   "tests": [
+    "brain-systems.test.mjs",
+    "memory-fabric.test.mjs",
+    "owner-control-bypass.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/capability-graph.mjs",
+   "loc": 71,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ],
+   "tests": [
+    "brain-core.test.mjs",
+    "brain-intelligence.test.mjs",
+    "brain-orchestration.test.mjs",
+    "brain-systems.test.mjs",
+    "model-gateway.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/knowledge-brain.mjs",
+   "loc": 65,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ],
+   "tests": [
+    "brain-intelligence.test.mjs",
+    "memory-fabric.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/brain-system.mjs",
+   "loc": 57,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "control-center-brain.test.mjs",
+    "governed-dispatch.test.mjs",
+    "memory-fabric.test.mjs",
+    "money-engine-sandbox.test.mjs",
+    "owner-control-bypass.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/orchestrator.mjs",
+   "loc": 90,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/brain-system.mjs",
+    "atlasz-addons/owner-control/agent-governor.mjs",
+    "atlasz-control-center/brain-views.mjs"
+   ],
+   "tests": [
+    "brain-orchestration.test.mjs",
+    "brain-systems.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/brain-system.mjs",
+    "atlasz-addons/owner-control/agent-governor.mjs",
+    "atlasz-control-center/brain-views.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/planning-brain.mjs",
+   "loc": 104,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ],
+   "tests": [
+    "brain-core.test.mjs",
+    "brain-intelligence.test.mjs",
+    "brain-orchestration.test.mjs",
+    "brain-systems.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/central-brain.mjs",
+   "loc": 48,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ],
+   "tests": [
+    "brain-systems.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/brain-health.mjs",
+   "loc": 21,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ],
+   "tests": [
+    "brain-intelligence.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/black-box.mjs",
+   "loc": 37,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/brain-system.mjs",
+    "atlasz-addons/brain/owner-command.mjs",
+    "atlasz-addons/brain/security-brain.mjs",
+    "atlasz-tests/owner-control-rig.mjs"
+   ],
+   "tests": [
+    "behavior-monitor.test.mjs",
+    "brain-core.test.mjs",
+    "brain-intelligence.test.mjs",
+    "brain-orchestration.test.mjs",
+    "brain-systems.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/brain-system.mjs",
+    "atlasz-addons/brain/owner-command.mjs",
+    "atlasz-addons/brain/security-brain.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/disaster-recovery.mjs",
+   "loc": 50,
+   "runtime": true,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/brain-system.mjs",
+    "atlasz-control-center/brain-views.mjs"
+   ],
+   "tests": [
+    "brain-intelligence.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/brain-system.mjs",
+    "atlasz-control-center/brain-views.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/business-factory.mjs",
+   "loc": 52,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ],
+   "tests": [
+    "brain-intelligence.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/model-intelligence.mjs",
+   "loc": 52,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ],
+   "tests": [
+    "brain-systems.test.mjs",
+    "model-gateway.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/behavior-monitor.mjs",
+   "loc": 67,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ],
+   "tests": [
+    "behavior-monitor.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/governance.mjs",
+   "loc": 47,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ],
+   "tests": [
+    "brain-core.test.mjs",
+    "brain-intelligence.test.mjs",
+    "brain-orchestration.test.mjs",
+    "brain-systems.test.mjs",
+    "owner-control-bypass.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/brain-system.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/verifier.mjs",
+   "loc": 69,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/brain/brain-system.mjs",
+    "atlasz-addons/brain/evidence-sources.mjs",
+    "atlasz-tests/owner-control-rig.mjs"
+   ],
+   "tests": [
+    "brain-intelligence.test.mjs",
+    "brain-orchestration.test.mjs",
+    "brain-systems.test.mjs",
+    "evidence-sources.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/brain/brain-system.mjs",
+    "atlasz-addons/brain/evidence-sources.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-runtime/supervisor.js",
+   "loc": 88,
+   "runtime": false,
+   "control_center": false,
+   "cli": false,
+   "legacy": true,
+   "imported_by": [],
+   "tests": [],
+   "reach": "LEGACY_ONLY",
+   "invocation": "n/a",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-runtime/worker.js",
+   "loc": 226,
+   "runtime": false,
+   "control_center": false,
+   "cli": false,
+   "legacy": true,
+   "imported_by": [],
+   "tests": [],
+   "reach": "LEGACY_ONLY",
+   "invocation": "n/a",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-runtime/owner-cli.mjs",
+   "loc": 39,
+   "runtime": false,
+   "control_center": false,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [],
+   "tests": [],
+   "reach": "CLI",
+   "invocation": "NOT_INVOKED",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-runtime/supervisor-safe.mjs",
+   "loc": 447,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [],
+   "tests": [
+    "agent-factory-governor.test.mjs",
+    "brain-runtime-wiring.test.mjs",
+    "canonical-queue-safety.test.mjs",
+    "canonical-runtime.test.mjs",
+    "code-sandbox-hosted.test.mjs",
+    "control-center-finance.test.mjs",
+    "evidence-sources.test.mjs",
+    "knowledge-projects-hosted.test.mjs",
+    "modality-fabric-hosted.test.mjs",
+    "money-engine-hosted.test.mjs",
+    "money-engine-sandbox.test.mjs",
+    "observation-memory-hosted.test.mjs",
+    "research-ledger-hosted.test.mjs",
+    "voice-conversation-hosted.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "NOT_INVOKED",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-runtime/agent-child.js",
+   "loc": 287,
+   "runtime": false,
+   "control_center": false,
+   "cli": false,
+   "legacy": true,
+   "imported_by": [],
+   "tests": [],
+   "reach": "LEGACY_ONLY",
+   "invocation": "n/a",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-control-center/money-views.mjs",
+   "loc": 71,
+   "runtime": false,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/core.mjs"
+   ],
+   "tests": [
+    "control-center-money-views.test.mjs",
+    "money-engine-hosted.test.mjs",
+    "money-engine-sandbox.test.mjs"
+   ],
+   "reach": "CONTROL_CENTER",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/core.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-control-center/core.mjs",
+   "loc": 460,
+   "runtime": false,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/server.mjs"
+   ],
+   "tests": [
+    "approval-requests.test.mjs",
+    "control-center-brain.test.mjs",
+    "control-center-finance.test.mjs",
+    "control-center-home.test.mjs",
+    "control-center-money-views.test.mjs",
+    "control-center-ownersafety.test.mjs",
+    "control-center-plugins.test.mjs",
+    "control-center-systems.test.mjs",
+    "control-center.test.mjs",
+    "mobile-api.test.mjs"
+   ],
+   "reach": "CONTROL_CENTER",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/server.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-control-center/brain-views.mjs",
+   "loc": 51,
+   "runtime": false,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/core.mjs"
+   ],
+   "tests": [],
+   "reach": "CONTROL_CENTER",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/core.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-control-center/server.mjs",
+   "loc": 84,
+   "runtime": false,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-control-center/electron/main.mjs"
+   ],
+   "tests": [
+    "code-sandbox-hosted.test.mjs",
+    "control-center-brain.test.mjs",
+    "control-center-money-views.test.mjs",
+    "control-center-ownersafety.test.mjs",
+    "control-center.test.mjs",
+    "knowledge-projects-hosted.test.mjs",
+    "modality-fabric-hosted.test.mjs",
+    "observation-memory-hosted.test.mjs",
+    "personal-command-center.test.mjs",
+    "research-ledger-hosted.test.mjs",
+    "voice-conversation-hosted.test.mjs"
+   ],
+   "reach": "CONTROL_CENTER",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-control-center/electron/main.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-control-center/public/app.js",
+   "loc": 377,
+   "runtime": false,
+   "control_center": true,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [],
+   "tests": [],
+   "reach": "CONTROL_CENTER",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-control-center/scripts/stage-win.mjs",
+   "loc": 28,
+   "runtime": false,
+   "control_center": false,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [],
+   "tests": [],
+   "reach": "CLI",
+   "invocation": "NOT_INVOKED",
+   "invoked_by": []
+  },
+  {
+   "file": "atlasz-control-center/electron/main.mjs",
+   "loc": 26,
+   "runtime": false,
+   "control_center": false,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [],
+   "tests": [],
+   "reach": "CLI",
+   "invocation": "NOT_INVOKED",
+   "invoked_by": []
+  }
+ ],
+ "reach_counts": {
+  "RUNTIME": 136,
+  "CONTROL_CENTER": 44,
+  "CLI_AND_SCRIPTS": 51,
+  "LEGACY_START": 3
+ },
+ "tools": {
+  "obs.observe": {
+   "file": "atlasz-addons/observation-memory.mjs",
+   "operation": "INTERNAL_COMPUTE",
+   "tests": [
+    "money-engine-hosted.test.mjs",
+    "observation-memory-hosted.test.mjs"
+   ],
+   "registered_in_runtime": true
+  },
+  "obs.recall": {
+   "file": "atlasz-addons/observation-memory.mjs",
+   "operation": "READ_STATUS",
+   "tests": [
+    "money-engine-hosted.test.mjs",
+    "observation-memory-hosted.test.mjs"
+   ],
+   "registered_in_runtime": true
+  },
+  "obs.correct": {
+   "file": "atlasz-addons/observation-memory.mjs",
+   "operation": "INTERNAL_COMPUTE",
+   "tests": [
+    "money-engine-hosted.test.mjs",
+    "observation-memory-hosted.test.mjs"
+   ],
+   "registered_in_runtime": true
+  },
+  "obs.forget": {
+   "file": "atlasz-addons/observation-memory.mjs",
+   "operation": "INTERNAL_COMPUTE",
+   "tests": [
+    "money-engine-hosted.test.mjs",
+    "observation-memory-hosted.test.mjs"
+   ],
+   "registered_in_runtime": true
+  },
+  "obs.summary": {
+   "file": "atlasz-addons/observation-memory.mjs",
+   "operation": "READ_STATUS",
+   "tests": [
+    "money-engine-hosted.test.mjs",
+    "observation-memory-hosted.test.mjs"
+   ],
+   "registered_in_runtime": true
+  },
+  "obs.capture_research": {
+   "file": "atlasz-addons/observation-memory.mjs",
+   "operation": "INTERNAL_COMPUTE",
+   "tests": [
+    "money-engine-hosted.test.mjs",
+    "observation-memory-hosted.test.mjs"
+   ],
+   "registered_in_runtime": true
+  },
+  "media.inspect_document": {
+   "file": "atlasz-addons/modality-fabric.mjs",
+   "operation": "READ_STATUS",
+   "tests": [
+    "modality-fabric-hosted.test.mjs",
+    "money-engine-hosted.test.mjs"
+   ],
+   "registered_in_runtime": true
+  },
+  "media.status": {
+   "file": "atlasz-addons/modality-fabric.mjs",
+   "operation": "READ_STATUS",
+   "tests": [
+    "modality-fabric-hosted.test.mjs",
+    "money-engine-hosted.test.mjs"
+   ],
+   "registered_in_runtime": true
+  },
+  "pcc.agenda": {
+   "file": "atlasz-addons/personal-command-center.mjs",
+   "operation": "READ_STATUS",
+   "tests": [
+    "money-engine-hosted.test.mjs",
+    "personal-command-center.test.mjs"
+   ],
+   "registered_in_runtime": true
+  },
+  "pcc.add": {
+   "file": "atlasz-addons/personal-command-center.mjs",
+   "operation": "INTERNAL_COMPUTE",
+   "tests": [
+    "money-engine-hosted.test.mjs",
+    "personal-command-center.test.mjs"
+   ],
+   "registered_in_runtime": true
+  },
+  "pcc.complete": {
+   "file": "atlasz-addons/personal-command-center.mjs",
+   "operation": "INTERNAL_COMPUTE",
+   "tests": [
+    "money-engine-hosted.test.mjs",
+    "personal-command-center.test.mjs"
+   ],
+   "registered_in_runtime": true
+  },
+  "pcc.summary": {
+   "file": "atlasz-addons/personal-command-center.mjs",
+   "operation": "READ_STATUS",
+   "tests": [
+    "money-engine-hosted.test.mjs",
+    "personal-command-center.test.mjs"
+   ],
+   "registered_in_runtime": true
+  },
+  "sandbox.run": {
+   "file": "atlasz-addons/code-sandbox.mjs",
+   "operation": "INTERNAL_COMPUTE",
+   "tests": [
+    "code-sandbox-hosted.test.mjs",
+    "money-engine-hosted.test.mjs"
+   ],
+   "registered_in_runtime": true
+  },
+  "sandbox.run_process_only": {
+   "file": "atlasz-addons/code-sandbox.mjs",
+   "operation": "HIGH_RISK_CHANGE",
+   "tests": [
+    "code-sandbox-hosted.test.mjs",
+    "money-engine-hosted.test.mjs"
+   ],
+   "registered_in_runtime": true
+  },
+  "sandbox.status": {
+   "file": "atlasz-addons/code-sandbox.mjs",
+   "operation": "READ_STATUS",
+   "tests": [
+    "code-sandbox-hosted.test.mjs",
+    "money-engine-hosted.test.mjs"
+   ],
+   "registered_in_runtime": true
+  },
+  "voice.status": {
+   "file": "atlasz-addons/voice-conversation.mjs",
+   "operation": "READ_STATUS",
+   "tests": [
+    "money-engine-hosted.test.mjs",
+    "voice-conversation-hosted.test.mjs",
+    "voice-conversation.test.mjs"
+   ],
+   "registered_in_runtime": true
+  },
+  "atlasz.queue": {
+   "file": "atlasz-runtime/supervisor-safe.mjs",
+   "operation": "READ_STATUS",
+   "tests": [
+    "money-engine-hosted.test.mjs"
+   ],
+   "registered_in_runtime": true
+  },
+  "money.panel": {
+   "file": "atlasz-runtime/supervisor-safe.mjs",
+   "operation": "READ_STATUS",
+   "tests": [
+    "money-engine-hosted.test.mjs"
+   ],
+   "registered_in_runtime": true
+  },
+  "inbox.summary": {
+   "file": "atlasz-runtime/supervisor-safe.mjs",
+   "operation": "READ_STATUS",
+   "tests": [
+    "money-engine-hosted.test.mjs"
+   ],
+   "registered_in_runtime": true
+  },
+  "model.complete": {
+   "file": "atlasz-runtime/supervisor-safe.mjs",
+   "operation": "EXTERNAL_READ",
+   "tests": [
+    "money-engine-hosted.test.mjs"
+   ],
+   "registered_in_runtime": true
+  },
+  "kp.list": {
+   "file": "atlasz-runtime/supervisor-safe.mjs",
+   "operation": "READ_STATUS",
+   "tests": [
+    "knowledge-projects-hosted.test.mjs",
+    "money-engine-hosted.test.mjs"
+   ],
+   "registered_in_runtime": true
+  },
+  "kp.search": {
+   "file": "atlasz-runtime/supervisor-safe.mjs",
+   "operation": "READ_STATUS",
+   "tests": [
+    "knowledge-projects-hosted.test.mjs",
+    "money-engine-hosted.test.mjs"
+   ],
+   "registered_in_runtime": true
+  },
+  "kp.answer": {
+   "file": "atlasz-runtime/supervisor-safe.mjs",
+   "operation": "READ_STATUS",
+   "tests": [
+    "knowledge-projects-hosted.test.mjs",
+    "money-engine-hosted.test.mjs"
+   ],
+   "registered_in_runtime": true
+  },
+  "kp.verify": {
+   "file": "atlasz-runtime/supervisor-safe.mjs",
+   "operation": "READ_STATUS",
+   "tests": [
+    "knowledge-projects-hosted.test.mjs",
+    "money-engine-hosted.test.mjs"
+   ],
+   "registered_in_runtime": true
+  }
+ },
+ "routes": {
+  "/api/approvals": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/approvals/decide": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/backup": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/backup/drill": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/backup/mark-lkg": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/backups": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/brain": {
+   "used_by_ui": true,
+   "in_tests": true
+  },
+  "/api/brain/command": {
+   "used_by_ui": true,
+   "in_tests": true
+  },
+  "/api/brief": {
+   "used_by_ui": true,
+   "in_tests": true
+  },
+  "/api/chat": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/connectors": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/crm-inbox": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/doctor": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/documents": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/emergency": {
+   "used_by_ui": true,
+   "in_tests": true
+  },
+  "/api/evidence": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/finance": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/inbox": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/knowledge": {
+   "used_by_ui": true,
+   "in_tests": true
+  },
+  "/api/knowledge/action": {
+   "used_by_ui": true,
+   "in_tests": true
+  },
+  "/api/media": {
+   "used_by_ui": true,
+   "in_tests": true
+  },
+  "/api/money-agents": {
+   "used_by_ui": true,
+   "in_tests": true
+  },
+  "/api/money-engine": {
+   "used_by_ui": true,
+   "in_tests": true
+  },
+  "/api/money-jobs": {
+   "used_by_ui": true,
+   "in_tests": true
+  },
+  "/api/money-recurring": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/observations": {
+   "used_by_ui": true,
+   "in_tests": true
+  },
+  "/api/observations/action": {
+   "used_by_ui": true,
+   "in_tests": true
+  },
+  "/api/opportunities": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/owner-key": {
+   "used_by_ui": true,
+   "in_tests": true
+  },
+  "/api/owner-safety": {
+   "used_by_ui": true,
+   "in_tests": true
+  },
+  "/api/owner-safety/action": {
+   "used_by_ui": true,
+   "in_tests": true
+  },
+  "/api/pcc": {
+   "used_by_ui": true,
+   "in_tests": true
+  },
+  "/api/pcc/action": {
+   "used_by_ui": true,
+   "in_tests": true
+  },
+  "/api/plugins": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/plugins/disable": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/plugins/enable": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/plugins/reset": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/plugins/theme": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/prefs": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/research": {
+   "used_by_ui": true,
+   "in_tests": true
+  },
+  "/api/research/action": {
+   "used_by_ui": true,
+   "in_tests": true
+  },
+  "/api/restore/backup": {
+   "used_by_ui": false,
+   "in_tests": false
+  },
+  "/api/restore/lkg": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/runtime/start": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/runtime/stop": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/safe-mode/exit": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/sandbox": {
+   "used_by_ui": true,
+   "in_tests": true
+  },
+  "/api/sandbox/run": {
+   "used_by_ui": true,
+   "in_tests": true
+  },
+  "/api/status": {
+   "used_by_ui": true,
+   "in_tests": true
+  },
+  "/api/techwatch": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/theme": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/updates": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/updates/auto": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/updates/check": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/updates/install": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/updates/rollback": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/updates/test": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/updates/unfreeze": {
+   "used_by_ui": true,
+   "in_tests": false
+  },
+  "/api/voice": {
+   "used_by_ui": true,
+   "in_tests": true
+  },
+  "/api/voice/action": {
+   "used_by_ui": true,
+   "in_tests": true
+  }
+ },
+ "views": [
+  "agents",
+  "approvals",
+  "backup",
+  "brain_command",
+  "connectors",
+  "crm_inbox",
+  "doctor",
+  "documents",
+  "errors",
+  "evidence",
+  "finance",
+  "home",
+  "inbox",
+  "jobs",
+  "knowledge",
+  "media",
+  "money",
+  "observations",
+  "overview",
+  "owner",
+  "owner_safety",
+  "pcc",
+  "plugins",
+  "providers",
+  "research",
+  "sandbox",
+  "techwatch",
+  "updates",
+  "voice"
+ ],
+ "nav": [
+  "home",
+  "pcc",
+  "observations",
+  "media",
+  "sandbox",
+  "research",
+  "knowledge",
+  "owner_safety",
+  "overview",
+  "plugins",
+  "finance",
+  "evidence",
+  "agents",
+  "jobs",
+  "money",
+  "crm_inbox",
+  "approvals",
+  "providers",
+  "errors",
+  "owner",
+  "backup",
+  "doctor",
+  "updates",
+  "voice",
+  "documents",
+  "inbox",
+  "connectors",
+  "techwatch",
+  "brain_status",
+  "brain_orchestrator",
+  "brain_planning",
+  "brain_capabilities",
+  "brain_knowledge",
+  "brain_simulation",
+  "brain_verification",
+  "brain_security",
+  "brain_opportunities",
+  "brain_factory",
+  "brain_blackbox",
+  "brain_recovery",
+  "brain_behavior",
+  "brain_health",
+  "brain_command"
+ ],
+ "api_used": [
+  "/api/approvals",
+  "/api/approvals/decide",
+  "/api/backup",
+  "/api/backup/drill",
+  "/api/backup/mark-lkg",
+  "/api/backups",
+  "/api/brain",
+  "/api/brain/command",
+  "/api/brief",
+  "/api/chat",
+  "/api/connectors",
+  "/api/crm-inbox",
+  "/api/doctor",
+  "/api/documents",
+  "/api/emergency",
+  "/api/evidence",
+  "/api/finance",
+  "/api/inbox",
+  "/api/knowledge",
+  "/api/knowledge/action",
+  "/api/media",
+  "/api/money-agents",
+  "/api/money-engine",
+  "/api/money-jobs",
+  "/api/money-recurring",
+  "/api/observations",
+  "/api/observations/action",
+  "/api/opportunities",
+  "/api/owner-key",
+  "/api/owner-safety",
+  "/api/owner-safety/action",
+  "/api/pcc",
+  "/api/pcc/action",
+  "/api/plugins",
+  "/api/plugins/disable",
+  "/api/plugins/enable",
+  "/api/plugins/reset",
+  "/api/plugins/theme",
+  "/api/prefs",
+  "/api/research",
+  "/api/research/action",
+  "/api/restore/lkg",
+  "/api/runtime/start",
+  "/api/runtime/stop",
+  "/api/safe-mode/exit",
+  "/api/sandbox",
+  "/api/sandbox/run",
+  "/api/status",
+  "/api/techwatch",
+  "/api/theme",
+  "/api/updates",
+  "/api/updates/auto",
+  "/api/updates/check",
+  "/api/updates/install",
+  "/api/updates/rollback",
+  "/api/updates/test",
+  "/api/updates/unfreeze",
+  "/api/voice",
+  "/api/voice/action"
+ ],
+ "ui_core_exports": [
+  "LKG_CRITERIA",
+  "activeTheme",
+  "agents",
+  "all",
+  "approvals",
+  "backupNow",
+  "backups",
+  "brain",
+  "brainCommand",
+  "brainViews",
+  "brief",
+  "chat",
+  "connectors",
+  "crmInbox",
+  "decideApproval",
+  "doctor",
+  "documents",
+  "drill",
+  "evidence",
+  "exitSafeMode",
+  "finance",
+  "handle",
+  "inbox",
+  "jobs",
+  "knowledge",
+  "knowledgeAction",
+  "list",
+  "markLastKnownGood",
+  "media",
+  "mobile",
+  "money",
+  "moneyAgents",
+  "moneyEngine",
+  "moneyJobs",
+  "moneyRecurring",
+  "moneyViews",
+  "observations",
+  "observationsAction",
+  "opportunities",
+  "ownerSafety",
+  "ownerSafetyAction",
+  "pcc",
+  "pccAction",
+  "pluginActions",
+  "plugins",
+  "prefs",
+  "provisionOwnerKey",
+  "recurring",
+  "req",
+  "research",
+  "researchAction",
+  "restoreFromBackup",
+  "restoreLastKnownGood",
+  "sandbox",
+  "sandboxRun",
+  "setEmergency",
+  "setPrefs",
+  "startRuntime",
+  "status",
+  "stopRuntime",
+  "techWatch",
+  "theme",
+  "updateActions",
+  "updates",
+  "voice",
+  "voiceAction"
+ ],
+ "duplicate_exports": {
+  "KINDS": [
+   "atlasz-addons/observation-memory.mjs",
+   "atlasz-addons/knowledge-projects.mjs",
+   "atlasz-addons/scheduler.mjs",
+   "atlasz-addons/business/inbox-pipeline.mjs",
+   "atlasz-addons/brain/knowledge-brain.mjs"
+  ],
+  "CLASSES": [
+   "atlasz-addons/observation-memory.mjs",
+   "atlasz-addons/personal-command-center.mjs"
+  ],
+  "SCOPES": [
+   "atlasz-addons/observation-memory.mjs",
+   "atlasz-addons/brain/memory-fabric.mjs"
+  ],
+  "LIMITS": [
+   "atlasz-addons/observation-memory.mjs",
+   "atlasz-addons/modality-fabric.mjs",
+   "atlasz-addons/doc-extractors.mjs",
+   "atlasz-addons/typed-tools.mjs",
+   "atlasz-addons/research-ledger.mjs",
+   "atlasz-addons/knowledge-projects.mjs",
+   "atlasz-addons/code-sandbox.mjs",
+   "atlasz-addons/voice-conversation.mjs"
+  ],
+  "STATUSES": [
+   "atlasz-addons/universal-inbox.mjs",
+   "atlasz-addons/research-ledger.mjs"
+  ],
+  "ENVIRONMENTS": [
+   "atlasz-addons/digital-twin.mjs",
+   "atlasz-addons/business/store.mjs",
+   "atlasz-addons/brain/simulation-lab.mjs"
+  ],
+  "createApprovalGateway": [
+   "atlasz-addons/approval-command-gateway.mjs",
+   "atlasz-addons/owner-control/approval-gateway.mjs"
+  ],
+  "RELATIONS": [
+   "atlasz-addons/research-ledger.mjs",
+   "atlasz-addons/business/entity-graph.mjs"
+  ],
+  "VERSION": [
+   "atlasz-addons/priority-queue-rate-limit-governor.mjs",
+   "atlasz-runtime/supervisor-safe.mjs"
+  ],
+  "VERDICTS": [
+   "atlasz-addons/owner-control/control-chain.mjs",
+   "atlasz-addons/brain/verifier.mjs"
+  ]
+ },
+ "factories_multiple": {
+  "createApprovalGateway": [
+   "atlasz-addons/approval-command-gateway.mjs",
+   "atlasz-addons/owner-control/approval-gateway.mjs"
+  ]
+ },
+ "near_duplicate_names": [
+  [
+   "atlasz-addons/observation-memory.mjs",
+   "atlasz-addons/brain/memory-fabric.mjs",
+   [
+    "memory"
+   ]
+  ],
+  [
+   "atlasz-addons/business-memory.mjs",
+   "atlasz-addons/brain/memory-fabric.mjs",
+   [
+    "memory"
+   ]
+  ],
+  [
+   "atlasz-addons/tool-bridge.mjs",
+   "atlasz-addons/tool-fabric.mjs",
+   [
+    "tool"
+   ]
+  ],
+  [
+   "atlasz-addons/delivery-engine.mjs",
+   "atlasz-addons/business/delivery-service.mjs",
+   [
+    "delivery"
+   ]
+  ],
+  [
+   "atlasz-addons/enterprise-knowledge-agentic-rag.mjs",
+   "atlasz-addons/brain/knowledge-brain.mjs",
+   [
+    "knowledge"
+   ]
+  ],
+  [
+   "atlasz-addons/money-supervisor.mjs",
+   "atlasz-addons/business/money-engine.mjs",
+   [
+    "money"
+   ]
+  ],
+  [
+   "atlasz-addons/approval-command-gateway.mjs",
+   "atlasz-addons/owner-control/approval-gateway.mjs",
+   [
+    "approval",
+    "gateway"
+   ]
+  ],
+  [
+   "atlasz-addons/update-center.mjs",
+   "atlasz-addons/local-update-adapters.mjs",
+   [
+    "update"
+   ]
+  ],
+  [
+   "atlasz-addons/master-planner-orchestrator.mjs",
+   "atlasz-addons/brain/orchestrator.mjs",
+   [
+    "orchestrator"
+   ]
+  ],
+  [
+   "atlasz-addons/observability-black-box.mjs",
+   "atlasz-addons/brain/black-box.mjs",
+   [
+    "black",
+    "box"
+   ]
+  ],
+  [
+   "atlasz-addons/knowledge-projects.mjs",
+   "atlasz-addons/brain/knowledge-brain.mjs",
+   [
+    "knowledge"
+   ]
+  ],
+  [
+   "atlasz-addons/backup-recovery.mjs",
+   "atlasz-addons/recovery.mjs",
+   [
+    "recovery"
+   ]
+  ],
+  [
+   "atlasz-addons/recovery.mjs",
+   "atlasz-addons/owner-control/recovery-points.mjs",
+   [
+    "recovery"
+   ]
+  ],
+  [
+   "atlasz-addons/recovery.mjs",
+   "atlasz-addons/owner-control/recovery-source-map.mjs",
+   [
+    "recovery"
+   ]
+  ],
+  [
+   "atlasz-addons/recovery.mjs",
+   "atlasz-addons/brain/disaster-recovery.mjs",
+   [
+    "recovery"
+   ]
+  ],
+  [
+   "atlasz-addons/safe-mode.mjs",
+   "atlasz-addons/owner-control/safe-mode-scope.mjs",
+   [
+    "mode",
+    "safe"
+   ]
+  ],
+  [
+   "atlasz-addons/invoice-engine.mjs",
+   "atlasz-addons/business/invoice-service.mjs",
+   [
+    "invoice"
+   ]
+  ],
+  [
+   "atlasz-addons/unified-entity-graph.mjs",
+   "atlasz-addons/business/entity-graph.mjs",
+   [
+    "entity",
+    "graph"
+   ]
+  ],
+  [
+   "atlasz-addons/money-pipeline-controller.mjs",
+   "atlasz-addons/business/money-engine.mjs",
+   [
+    "money"
+   ]
+  ],
+  [
+   "atlasz-addons/business/money-engine.mjs",
+   "atlasz-addons/owner-control/money-state-guard.mjs",
+   [
+    "money"
+   ]
+  ]
+ ],
+ "security": [
+  {
+   "kind": "WEAK_RANDOM_FOR_ID_OR_TOKEN",
+   "file": "atlasz-addons/tracing-evals.mjs",
+   "line": 6,
+   "severity": "REVIEW",
+   "note": "const id=traceId||createHash(\"sha256\").update(at+Math.random()).digest(\"hex\").slice(0,16);"
+  },
+  {
+   "kind": "WEAK_RANDOM_FOR_ID_OR_TOKEN",
+   "file": "atlasz-addons/enterprise-knowledge-agentic-rag.mjs",
+   "line": 3,
+   "severity": "REVIEW",
+   "note": "const uid=()=>globalThis.crypto?.randomUUID?.()||(\"knowledge-\"+Date.now()+\"-\"+Math.random().toString(16).slice(2));"
+  },
+  {
+   "kind": "CHILD_PROCESS",
+   "file": "atlasz-addons/plugin-manager.mjs",
+   "line": 8,
+   "severity": "REVIEW",
+   "note": "import { spawn } from \"node:child_process\";"
+  },
+  {
+   "kind": "CHILD_PROCESS",
+   "file": "atlasz-addons/local-update-adapters.mjs",
+   "line": 9,
+   "severity": "REVIEW",
+   "note": "import { spawnSync } from \"node:child_process\";"
+  },
+  {
+   "kind": "WEAK_RANDOM_FOR_ID_OR_TOKEN",
+   "file": "atlasz-addons/agent-factory.mjs",
+   "line": 4,
+   "severity": "REVIEW",
+   "note": "const uid=()=>globalThis.crypto?.randomUUID?.()||(\"agent-\"+Date.now()+\"-\"+Math.random().toString(16).slice(2));"
+  },
+  {
+   "kind": "BIND_ALL_INTERFACES",
+   "file": "atlasz-runtime/supervisor-safe.mjs",
+   "line": 444,
+   "severity": "REVIEW",
+   "note": "server.listen(Number(process.env.PORT || 8080), \"0.0.0.0\", () => runtime.start());"
+  },
+  {
+   "kind": "CHILD_PROCESS",
+   "file": "atlasz-control-center/core.mjs",
+   "line": 6,
+   "severity": "REVIEW",
+   "note": "import { spawn } from \"node:child_process\";"
+  },
+  {
+   "kind": "CHILD_PROCESS",
+   "file": "atlasz-control-center/server.mjs",
+   "line": 8,
+   "severity": "REVIEW",
+   "note": "import { spawn } from \"node:child_process\";"
+  },
+  {
+   "kind": "CHILD_PROCESS",
+   "file": "scripts/make-evidence.mjs",
+   "line": 3,
+   "severity": "REVIEW",
+   "note": "import { spawnSync, execFileSync } from \"node:child_process\";"
+  }
+ ]
+}

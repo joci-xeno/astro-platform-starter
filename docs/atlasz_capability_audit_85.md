@@ -1,6 +1,6 @@
 # ATLASZ V7.3 — 85-capability audit
 
-Statuses: MISSING 10, PARTIAL 47, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 6, total 85
+Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total 85
 
 ## M01 — Universal AI Browser Sidebar — **MISSING**
 - Registry links (candidates): V73-S19-001, V73-S19-002, V73-S19-003, V73-S19-004, V73-S19-005, V73-S19-006
@@ -123,7 +123,7 @@ Statuses: MISSING 10, PARTIAL 47, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 6, total
 - Tests required: profile cannot exceed grants, scope isolation, no agent-count change
 
 ## M13 — Interactive Artifacts and Prototypes — **PARTIAL**
-- Registry links (candidates): V73-S06-011, ATLASZ-BR-027, ATLASZ-PKG84-004, ATLASZ-PKG84-007, ATLASZ-PKG84-012
+- Registry links (candidates): V73-S06-011, ATLASZ-BR-027, ATLASZ-PKG84-004, ATLASZ-PKG84-007, ATLASZ-PKG84-012, ATLASZ-T3-001
 - Modules: business/artifact-registry.mjs; atlasz-control-center (own UI)
 - Evidence: business-engines.test (content-addressed artifacts, CREATED!=VERIFIED!=DELIVERED)
 - Missing: Chart/diagram/app preview generation and rendering
@@ -234,8 +234,8 @@ Statuses: MISSING 10, PARTIAL 47, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 6, total
 
 ## C11 — Permission-Aware Knowledge Search — **VERIFIED_WORKING**
 - Registry links (candidates): V73-S02-003, V73-S06-007, V73-S07-001, V73-S07-002, V73-S07-003, V73-S07-004
-- Modules: document-center.mjs; tenant-isolation.mjs; enterprise-knowledge-agentic-rag.mjs
-- Evidence: document-intelligence.test (tenant+role gate on list/search/get/versions, forAgent read, 4 mutation checks); tenant-isolation.test
+- Modules: document-center.mjs; knowledge-projects.mjs; observation-memory.mjs (tenant-isolation.mjs is NOT wired by design and enterprise-knowledge-agentic-rag.mjs is an in-memory demo - neither counts as evidence)
+- Evidence: document-intelligence.test (tenant+role gate on list/search/get/versions, forAgent read, 4 mutation checks); tenant-isolation.test TASK3: re-verified by independent probe P12 (cross-tenant recall = 0; agents never see CONFIDENTIAL).
 - Missing: None for document scope; other knowledge stores covered by tenant-isolation
 - Integration gaps / blockers: Enterprise RAG is in-memory demo (separate item G07/GE09)
 - Security: Role/tenant enforced at every read; SECRET hidden
@@ -312,12 +312,12 @@ Statuses: MISSING 10, PARTIAL 47, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 6, total
 - Plan: Shared with M06
 - Tests required: see M06
 
-## G06 — Function Calling — **VERIFIED_WORKING**
+## G06 — Function Calling — **PARTIAL**
 - Registry links (candidates): V73-S02-001, V73-S03-007, V73-S03-013, V73-S09-016, V73-S09-017, V73-S09-018
 - Modules: capability-registry.mjs; executor-toolbox-registry.mjs; tool-bridge.mjs
-- Evidence: typed-tools.test (5 tests, 7 mutation checks caught: input/output validation, chain gate, additionalProperties, type check, schema keyword allowlist, timeout); money-engine-hosted.test (hosted built-ins through the control chain). No live model calls these yet (no provider) - the schema/permission layer itself is verified.
-- Missing: Live model attachment (EXTERNAL); more built-in tools
-- Integration gaps / blockers: No validator
+- Evidence: typed-tools.test (5 tests, 7 mutation checks caught: input/output validation, chain gate, additionalProperties, type check, schema keyword allowlist, timeout); money-engine-hosted.test (hosted built-ins through the control chain). No live model calls these yet (no provider) - the schema/permission layer itself is verified. TASK3 audit: the schema/permission layer is sandbox-verified, but nothing in the 30-agent execution path invokes typed tools (only the scheduler and tests do) and no model is attached, so 'working' is not supported.
+- Missing: Live model attachment (EXTERNAL); more built-in tools; A runtime path in which an agent/model selects and invokes typed tools
+- Integration gaps / blockers: Registered tools are reachable only through tools.invoke by the scheduler and tests; the agents' governed dispatch handles SCREENING jobs only
 - Security: Every call classified by owner-authority
 - Plan: Build typed tool registry with strict schema validation (shared with GE08/P14)
 - Tests required: reject extra/missing/typed-wrong args, output validation, permission class, unknown tool refused
@@ -462,12 +462,12 @@ Statuses: MISSING 10, PARTIAL 47, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 6, total
 - Plan: Shared with M06/M07
 - Tests required: see M07
 
-## GE08 — Structured Tool Invocation — **VERIFIED_WORKING**
+## GE08 — Structured Tool Invocation — **PARTIAL**
 - Registry links (candidates): V73-S02-001, V73-S03-007, V73-S03-013, V73-S09-016, V73-S09-017, V73-S09-018
 - Modules: see G06
-- Evidence: typed-tools.test (5 tests, 7 mutation checks caught: input/output validation, chain gate, additionalProperties, type check, schema keyword allowlist, timeout); money-engine-hosted.test (hosted built-ins through the control chain)
-- Missing: Live model attachment (EXTERNAL)
-- Integration gaps / blockers: see G06
+- Evidence: typed-tools.test (5 tests, 7 mutation checks caught: input/output validation, chain gate, additionalProperties, type check, schema keyword allowlist, timeout); money-engine-hosted.test (hosted built-ins through the control chain) TASK3 audit: the schema/permission layer is sandbox-verified, but nothing in the 30-agent execution path invokes typed tools (only the scheduler and tests do) and no model is attached, so 'working' is not supported.
+- Missing: Live model attachment (EXTERNAL); A runtime path in which an agent/model selects and invokes typed tools
+- Integration gaps / blockers: Registered tools are reachable only through tools.invoke by the scheduler and tests; the agents' governed dispatch handles SCREENING jobs only
 - Security: see G06
 - Plan: Shared with G06
 - Tests required: see G06
@@ -782,12 +782,12 @@ Statuses: MISSING 10, PARTIAL 47, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 6, total
 - Plan: Comparison over fetched snapshots (injected fetcher) with structured differences
 - Tests required: diff correctness, injection screened
 
-## P14 — Strict Structured Output Engine — **VERIFIED_WORKING**
+## P14 — Strict Structured Output Engine — **PARTIAL**
 - Registry links (candidates): V73-S24-005, V73-S34-001, V73-S43-006, V73-S51-011, ATLASZ-OSC-014, ATLASZ-OSC-015
 - Modules: business/qa-factory.mjs (QA only)
-- Evidence: typed-tools.test (5 tests, 7 mutation checks caught: input/output validation, chain gate, additionalProperties, type check, schema keyword allowlist, timeout); money-engine-hosted.test (hosted built-ins through the control chain); parseStructured rejects non-JSON, extra fields and out-of-enum values without repair
-- Missing: Domain schemas for every module output (incremental)
-- Integration gaps / blockers: none
+- Evidence: typed-tools.test (5 tests, 7 mutation checks caught: input/output validation, chain gate, additionalProperties, type check, schema keyword allowlist, timeout); money-engine-hosted.test (hosted built-ins through the control chain); parseStructured rejects non-JSON, extra fields and out-of-enum values without repair TASK3 audit: the schema/permission layer is sandbox-verified, but nothing in the 30-agent execution path invokes typed tools (only the scheduler and tests do) and no model is attached, so 'working' is not supported.
+- Missing: Domain schemas for every module output (incremental); A runtime path in which an agent/model selects and invokes typed tools
+- Integration gaps / blockers: Registered tools are reachable only through tools.invoke by the scheduler and tests; the agents' governed dispatch handles SCREENING jobs only
 - Security: Reject invalid, never coerce silently
 - Plan: Shared schema validator (see G06)
 - Tests required: accept/reject matrix, no coercion

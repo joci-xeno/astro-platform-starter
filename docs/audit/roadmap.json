@@ -1,0 +1,169 @@
+[
+ {
+  "id": "M1",
+  "name": "Safety & reliability baseline",
+  "depends_on": [],
+  "scope": "Fix the unauthenticated runtime dashboard, close recovery/reliability/audit gaps, remove status-language gaps. Everything later depends on this.",
+  "acceptance": "Runtime HTTP server serves only a minimal /health without a token; all other routes need the owner token or are removed; negative tests prove it. Backup/restore/LKG drills pass on a clean data dir; audit chains verify; every reliability item has a test that fails when the guard is removed (mutation).",
+  "gates": "none",
+  "open_requirements": {
+   "PARTIAL": 61,
+   "IMPLEMENTED": 60,
+   "MISSING": 20
+  }
+ },
+ {
+  "id": "M2",
+  "name": "Agent runtime integration (30 agents, Brain, tools)",
+  "depends_on": [
+   "M1"
+  ],
+  "scope": "Make the governed dispatch able to run typed tools (kp/research/sandbox/obs/media/model) for the 30 agents through the Security Brain and control chain; connect or retire the 32 hub-bag-only modules and the duplicates; complete orchestrator, judge/QA/guardrails, digital twin, watchdog, queue items.",
+  "acceptance": "An end-to-end job (SANDBOX) is planned by the Brain, executed by a named agent via at least 3 typed tools, judged by the independent QA, logged to the Black Box and visible in the Control Center; the 30-agent roster is unchanged; each hub-bag module is invoked by a workflow or removed; no duplicate implementation remains for qualify/approval-gateway/deal-state.",
+  "gates": "model provider only for non-mock reasoning (EXTERNAL)",
+  "open_requirements": {
+   "PARTIAL": 128,
+   "MISSING": 16,
+   "IMPLEMENTED": 17,
+   "AWAITING_OWNER_APPROVAL": 1
+  }
+ },
+ {
+  "id": "M3",
+  "name": "Knowledge, memory and documents",
+  "depends_on": [
+   "M2"
+  ],
+  "scope": "Finish Document Center, Document Intelligence, memory/learning and knowledge items on top of Knowledge Projects, Research Ledger and Observation Memory.",
+  "acceptance": "Every ingest format has an extractor test with hostile samples; permission-aware search covered by cross-tenant tests; memory/learning items have retention, correction and deletion tests; OCR remains an external slot.",
+  "gates": "OCR/embeddings providers (EXTERNAL)",
+  "open_requirements": {
+   "PARTIAL": 31,
+   "MISSING": 33,
+   "IMPLEMENTED": 2
+  }
+ },
+ {
+  "id": "M4",
+  "name": "Money & business workflow (no real money)",
+  "depends_on": [
+   "M2",
+   "M3"
+  ],
+  "scope": "Wire deal, proposal, delivery, invoice, profit, tax/accounting, inbox and follow-up modules into one SANDBOX workflow with evidence gates; keep SENT/PAID/DELIVERED distinct.",
+  "acceptance": "A SANDBOX deal runs lead>proposal>delivery>invoice>payment-claim with owner approvals and independent verification; no state can advance without typed evidence; unknown revenue is never zero; Control Center money panels read the persisted state; LIVE adapters stay absent.",
+  "gates": "bank/email/payment providers and owner decisions (EXTERNAL / OWNER)",
+  "open_requirements": {
+   "PARTIAL": 32,
+   "MISSING": 9,
+   "IMPLEMENTED": 11,
+   "EXTERNALLY_BLOCKED": 1
+  }
+ },
+ {
+  "id": "M5",
+  "name": "Models, multimodal and live voice providers",
+  "depends_on": [
+   "M2"
+  ],
+  "scope": "Provider-backed model routing, STT/TTS/OCR/vision slots, multimodal generation. Mock-first; live only after owner-approved provider + own probe.",
+  "acceptance": "Each slot has a probe that can only pass against a real endpoint; mocks are labelled; cost estimate + approval flow exists; with no provider every slot reports NOT_CONNECTED.",
+  "gates": "ALL providers EXTERNAL; spending needs owner approval",
+  "open_requirements": {
+   "PARTIAL": 23,
+   "EXTERNALLY_BLOCKED": 9,
+   "MISSING": 16
+  }
+ },
+ {
+  "id": "M6",
+  "name": "Tools, connectors, computer use and office/web automation",
+  "depends_on": [
+   "M2",
+   "M1"
+  ],
+  "scope": "Tool fabric completion, connector catalogue, governed computer-use and browser, office automation, web operations, location intelligence.",
+  "acceptance": "Every tool has a typed schema, owner-authority class and a negative test; computer-use actions are AUTO/ASK/FORBIDDEN-enforced in a sandbox; connectors report NOT_CONNECTED until a probe passes.",
+  "gates": "browser host, credentials (EXTERNAL)",
+  "open_requirements": {
+   "PARTIAL": 23,
+   "MISSING": 25,
+   "IMPLEMENTED": 3,
+   "EXTERNALLY_BLOCKED": 11
+  }
+ },
+ {
+  "id": "M7",
+  "name": "Personal ATLASZ, Human Core, modes and mobile",
+  "depends_on": [
+   "M2",
+   "M3"
+  ],
+  "scope": "Personal layer, emotional/human impact items, operating modes, mobile control.",
+  "acceptance": "Each mode changes behaviour only through the control chain; human-impact verdicts shown on approval cards; mobile control is read/approve-only behind strong auth.",
+  "gates": "mobile client (EXTERNAL)",
+  "open_requirements": {
+   "PARTIAL": 27,
+   "IMPLEMENTED": 2,
+   "MISSING": 17
+  }
+ },
+ {
+  "id": "M8",
+  "name": "Windows desktop / Control Center completion",
+  "depends_on": [
+   "M1"
+  ],
+  "scope": "Complete the Control Center panels, plugins/skins, update centre and the desktop shell acceptance items. Windows evidence needs a Windows host and an approved installer build.",
+  "acceptance": "Every panel has a route test and a UI smoke; plugin permission tests pass; installer evidence recorded from a real Windows run (owner-approved build).",
+  "gates": "Windows machine, installer build approval, code signing (EXTERNAL/OWNER)",
+  "open_requirements": {
+   "EXTERNALLY_BLOCKED": 8,
+   "PARTIAL": 60,
+   "IMPLEMENTED": 36,
+   "MISSING": 18,
+   "AWAITING_OWNER_APPROVAL": 2
+  }
+ },
+ {
+  "id": "M9",
+  "name": "Intelligence, performance and software/automation factories",
+  "depends_on": [
+   "M2",
+   "M3",
+   "M6"
+  ],
+  "scope": "Market/opportunity intelligence, performance engine, technology watch, software factory.",
+  "acceptance": "Intelligence outputs carry source+retrievedAt and an ASSUMPTION/VERIFIED label; performance metrics come from measured data only; factories produce artifacts only inside the sandbox.",
+  "gates": "web/search providers (EXTERNAL)",
+  "open_requirements": {
+   "MISSING": 26,
+   "PARTIAL": 34,
+   "IMPLEMENTED": 2
+  }
+ },
+ {
+  "id": "M10",
+  "name": "Process, registry, acceptance and commercial track",
+  "depends_on": [
+   "M1",
+   "M2",
+   "M3",
+   "M4",
+   "M5",
+   "M6",
+   "M7",
+   "M8",
+   "M9"
+  ],
+  "scope": "Close process/acceptance items last: registry fields, audit-task items, acceptance criteria, prohibitions, commercial plan.",
+  "acceptance": "Registry integrity tests green; every acceptance criterion maps to evidence; commercial/licensing stays OWNER_DECISION until Joci authorises.",
+  "gates": "owner decisions",
+  "open_requirements": {
+   "PARTIAL": 33,
+   "IMPLEMENTED": 36,
+   "EXTERNALLY_BLOCKED": 7,
+   "MISSING": 8
+  }
+ }
+]

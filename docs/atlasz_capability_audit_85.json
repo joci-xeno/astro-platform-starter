@@ -79,9 +79,9 @@
  },
  "summary": {
   "MISSING": 10,
-  "PARTIAL": 47,
+  "PARTIAL": 50,
   "EXTERNAL_BLOCKER": 22,
-  "VERIFIED_WORKING": 6,
+  "VERIFIED_WORKING": 3,
   "total": 85
  },
  "capabilities": [
@@ -371,7 +371,8 @@
     "ATLASZ-BR-027",
     "ATLASZ-PKG84-004",
     "ATLASZ-PKG84-007",
-    "ATLASZ-PKG84-012"
+    "ATLASZ-PKG84-012",
+    "ATLASZ-T3-001"
    ],
    "modules": "business/artifact-registry.mjs; atlasz-control-center (own UI)",
    "status": "PARTIAL",
@@ -624,9 +625,9 @@
     "V73-S07-003",
     "V73-S07-004"
    ],
-   "modules": "document-center.mjs; tenant-isolation.mjs; enterprise-knowledge-agentic-rag.mjs",
+   "modules": "document-center.mjs; knowledge-projects.mjs; observation-memory.mjs (tenant-isolation.mjs is NOT wired by design and enterprise-knowledge-agentic-rag.mjs is an in-memory demo - neither counts as evidence)",
    "status": "VERIFIED_WORKING",
-   "evidence": "document-intelligence.test (tenant+role gate on list/search/get/versions, forAgent read, 4 mutation checks); tenant-isolation.test",
+   "evidence": "document-intelligence.test (tenant+role gate on list/search/get/versions, forAgent read, 4 mutation checks); tenant-isolation.test TASK3: re-verified by independent probe P12 (cross-tenant recall = 0; agents never see CONFIDENTIAL).",
    "missing": "None for document scope; other knowledge stores covered by tenant-isolation",
    "integration_gaps": "Enterprise RAG is in-memory demo (separate item G07/GE09)",
    "security": "Role/tenant enforced at every read; SECRET hidden",
@@ -799,14 +800,14 @@
     "V73-S09-018"
    ],
    "modules": "capability-registry.mjs; executor-toolbox-registry.mjs; tool-bridge.mjs",
-   "status": "VERIFIED_WORKING",
-   "evidence": "typed-tools.test (5 tests, 7 mutation checks caught: input/output validation, chain gate, additionalProperties, type check, schema keyword allowlist, timeout); money-engine-hosted.test (hosted built-ins through the control chain). No live model calls these yet (no provider) - the schema/permission layer itself is verified.",
-   "missing": "Live model attachment (EXTERNAL); more built-in tools",
-   "integration_gaps": "No validator",
+   "status": "PARTIAL",
+   "evidence": "typed-tools.test (5 tests, 7 mutation checks caught: input/output validation, chain gate, additionalProperties, type check, schema keyword allowlist, timeout); money-engine-hosted.test (hosted built-ins through the control chain). No live model calls these yet (no provider) - the schema/permission layer itself is verified. TASK3 audit: the schema/permission layer is sandbox-verified, but nothing in the 30-agent execution path invokes typed tools (only the scheduler and tests do) and no model is attached, so 'working' is not supported.",
+   "missing": "Live model attachment (EXTERNAL); more built-in tools; A runtime path in which an agent/model selects and invokes typed tools",
+   "integration_gaps": "Registered tools are reachable only through tools.invoke by the scheduler and tests; the agents' governed dispatch handles SCREENING jobs only",
    "security": "Every call classified by owner-authority",
    "plan": "Build typed tool registry with strict schema validation (shared with GE08/P14)",
    "tests_required": "reject extra/missing/typed-wrong args, output validation, permission class, unknown tool refused",
-   "final_status": "VERIFIED_WORKING",
+   "final_status": "PARTIAL",
    "shared_infrastructure": [
     "TYPED_TOOLS_AND_SCHEMAS"
    ]
@@ -1128,14 +1129,14 @@
     "V73-S09-018"
    ],
    "modules": "see G06",
-   "status": "VERIFIED_WORKING",
-   "evidence": "typed-tools.test (5 tests, 7 mutation checks caught: input/output validation, chain gate, additionalProperties, type check, schema keyword allowlist, timeout); money-engine-hosted.test (hosted built-ins through the control chain)",
-   "missing": "Live model attachment (EXTERNAL)",
-   "integration_gaps": "see G06",
+   "status": "PARTIAL",
+   "evidence": "typed-tools.test (5 tests, 7 mutation checks caught: input/output validation, chain gate, additionalProperties, type check, schema keyword allowlist, timeout); money-engine-hosted.test (hosted built-ins through the control chain) TASK3 audit: the schema/permission layer is sandbox-verified, but nothing in the 30-agent execution path invokes typed tools (only the scheduler and tests do) and no model is attached, so 'working' is not supported.",
+   "missing": "Live model attachment (EXTERNAL); A runtime path in which an agent/model selects and invokes typed tools",
+   "integration_gaps": "Registered tools are reachable only through tools.invoke by the scheduler and tests; the agents' governed dispatch handles SCREENING jobs only",
    "security": "see G06",
    "plan": "Shared with G06",
    "tests_required": "see G06",
-   "final_status": "VERIFIED_WORKING",
+   "final_status": "PARTIAL",
    "shared_infrastructure": [
     "TYPED_TOOLS_AND_SCHEMAS"
    ]
@@ -1849,14 +1850,14 @@
     "ATLASZ-OSC-015"
    ],
    "modules": "business/qa-factory.mjs (QA only)",
-   "status": "VERIFIED_WORKING",
-   "evidence": "typed-tools.test (5 tests, 7 mutation checks caught: input/output validation, chain gate, additionalProperties, type check, schema keyword allowlist, timeout); money-engine-hosted.test (hosted built-ins through the control chain); parseStructured rejects non-JSON, extra fields and out-of-enum values without repair",
-   "missing": "Domain schemas for every module output (incremental)",
-   "integration_gaps": "none",
+   "status": "PARTIAL",
+   "evidence": "typed-tools.test (5 tests, 7 mutation checks caught: input/output validation, chain gate, additionalProperties, type check, schema keyword allowlist, timeout); money-engine-hosted.test (hosted built-ins through the control chain); parseStructured rejects non-JSON, extra fields and out-of-enum values without repair TASK3 audit: the schema/permission layer is sandbox-verified, but nothing in the 30-agent execution path invokes typed tools (only the scheduler and tests do) and no model is attached, so 'working' is not supported.",
+   "missing": "Domain schemas for every module output (incremental); A runtime path in which an agent/model selects and invokes typed tools",
+   "integration_gaps": "Registered tools are reachable only through tools.invoke by the scheduler and tests; the agents' governed dispatch handles SCREENING jobs only",
    "security": "Reject invalid, never coerce silently",
    "plan": "Shared schema validator (see G06)",
    "tests_required": "accept/reject matrix, no coercion",
-   "final_status": "VERIFIED_WORKING",
+   "final_status": "PARTIAL",
    "shared_infrastructure": [
     "TYPED_TOOLS_AND_SCHEMAS"
    ]

@@ -1,0 +1,126 @@
+{
+ "generatedBy": "docs/audit/independent_probes.mjs",
+ "environment": "SANDBOX (no live providers, no real owner key)",
+ "results": [
+  {
+   "id": "P01",
+   "claim": "Owner approval is single-use",
+   "ok": true,
+   "note": "first=true(ALL_LAYERS_PASSED) replay=false(APPROVAL_REJECTED:REPLAY_DETECTED)"
+  },
+  {
+   "id": "P02",
+   "claim": "Owner approval is bound to the exact arguments",
+   "ok": true,
+   "note": "APPROVAL_REJECTED:SUBJECT_MISMATCH"
+  },
+  {
+   "id": "P03",
+   "claim": "A forged approval signed by another key is refused",
+   "ok": true,
+   "note": "APPROVAL_REJECTED:SIGNATURE_INVALID"
+  },
+  {
+   "id": "P04",
+   "claim": "Unknown and money operations fail closed for agents",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "id": "P05",
+   "claim": "No-spend: a positive spend is refused even for a permitted operation",
+   "ok": true,
+   "note": "NO_SPEND_DEFAULT"
+  },
+  {
+   "id": "P06",
+   "claim": "Kill switch (emergency stop) blocks agents until the owner resumes",
+   "ok": true,
+   "note": "stopped=EMERGENCY_STOP_ACTIVE:PAUSE_ALL resumed=true"
+  },
+  {
+   "id": "P07",
+   "claim": "An agent cannot resume or stop via a forged/empty approval",
+   "ok": true,
+   "note": "refused: OWNER_AUTHENTICATION_REQUIRED:APPROVAL_OBJECT_REQUIRED"
+  },
+  {
+   "id": "P08",
+   "claim": "Sandbox: Python cannot open files outside its work dir",
+   "ok": true,
+   "note": "NONZERO_EXIT level=NAMESPACE"
+  },
+  {
+   "id": "P09",
+   "claim": "Sandbox: JavaScript cannot read outside its work dir",
+   "ok": true,
+   "note": "NONZERO_EXIT"
+  },
+  {
+   "id": "P10",
+   "claim": "Sandbox: network and child processes are denied (python)",
+   "ok": true,
+   "note": "OK"
+  },
+  {
+   "id": "P11",
+   "claim": "Sandbox: secret in code is refused and never reaches the audit log",
+   "ok": true,
+   "note": "REFUSED:SECRET_IN_CODE"
+  },
+  {
+   "id": "P12",
+   "claim": "Observation memory: another tenant sees nothing; agents never see CONFIDENTIAL",
+   "ok": true,
+   "note": "otherTenant=0 agent="
+  },
+  {
+   "id": "P13",
+   "claim": "Observation memory: delete really removes the text from disk",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "id": "P14",
+   "claim": "Voice cannot approve: spoken approval yields NEEDS_STRONG_AUTH and no approval",
+   "ok": true,
+   "note": "NEEDS_STRONG_AUTH: voice identity cannot approve; use the Control Center with your key."
+  },
+  {
+   "id": "P15",
+   "claim": "Voice with no provider cannot start; mock output is labelled MOCK",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "id": "P16",
+   "claim": "Runtime topology is exactly 5 SEARCH + 25 EXECUTION with unique ids",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "id": "P17",
+   "claim": "Typed tools reject extra arguments (an agent cannot inject tenant/consent)",
+   "ok": true,
+   "note": "INVALID_ARGUMENTS/INVALID_ARGUMENTS"
+  },
+  {
+   "id": "P18",
+   "claim": "Process-only sandbox tool requires owner approval",
+   "ok": true,
+   "note": "REQUIRES_APPROVAL"
+  },
+  {
+   "id": "P19",
+   "claim": "Agents have no tool that approves, spends, sends, or speaks",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "id": "P20",
+   "claim": "Money Engine panel reports unknown revenue as unknown, not zero-verified",
+   "ok": true,
+   "note": "{\"environment\":\"LIVE\",\"deals\":{\"DISCOVERED\":0,\"SCREENED\":0,\"QUALIFIED\":0,\"FEASIBLE\":0,\"READY_FOR_OUTREACH\":0,\"OUTREACH_DRAFTED\":0,\"OUTREACH_APPROVED_IF_REQUIRED"
+  }
+ ]
+}
