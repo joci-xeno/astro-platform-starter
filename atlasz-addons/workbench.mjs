@@ -12,13 +12,19 @@ import { createProjectMemory } from "./project-memory.mjs";
 import { createNotesOrganizer } from "./notes-organizer.mjs";
 import { createWorkflowEngine } from "./workflow-engine.mjs";
 import { createSkillRegistry } from "./skill-registry.mjs";
+import { ingestPage, askPage } from "./page-ingest.mjs";
+import { createPreferences } from "./preferences.mjs";
+import { createProfiles } from "./assistant-profiles.mjs";
+import { createStudy } from "./spaced-repetition.mjs";
+import { createSuggestions, collectCandidates } from "./suggestions.mjs";
+import { reviewCode } from "./code-review.mjs";
 import { comparePages } from "./text-compare.mjs";
 import { analyzeTranscript } from "./transcript-actions.mjs";
 
 export const WB_LIMITS = Object.freeze({ csvChars: 400_000, textChars: 400_000, maxChartsReturned: 6 });
 const isObj = v => v && typeof v === "object" && !Array.isArray(v);
 
-export function createWorkbench({ conversationFile = null, memoryFile = null, notesFile = null, workflowFile = null, skillsFile = null, gateway = null, tenantId = "JOCI", now, isStopped = () => false } = {}) {
+export function createWorkbench({ conversationFile = null, memoryFile = null, notesFile = null, workflowFile = null, skillsFile = null, prefsFile = null, profilesFile = null, studyFile = null, suggestionsFile = null, suggestionExtras = () => ({}), gateway = null, tenantId = "JOCI", now, isStopped = () => false } = {}) {
   const conv = createConversationStore({ file: conversationFile, ...(now ? { now } : {}) });
   const T = { tenantId };
   const memory = createProjectMemory({ file: memoryFile, ...(now ? { now } : {}) }), notes = createNotesOrganizer({ file: notesFile, ...(now ? { now } : {}) });
@@ -34,6 +40,15 @@ export function createWorkbench({ conversationFile = null, memoryFile = null, no
   };
   const wf = createWorkflowEngine({ file: workflowFile, actions: wfActions, isStopped, ...(now ? { now } : {}) });
   const skills = createSkillRegistry({ file: skillsFile, actions: wfActions, isStopped });       // declarative skills; only pure wfActions; the console is the OWNER
+  const prefs = createPreferences({ file: prefsFile, ...(now ? { now } : {}) });                  // owner preferences; the console is the OWNER, learning only proposes
+  const profiles = createProfiles({ file: profilesFile, skillExists: id => skills.list(T.tenantId).some(k => k.id === id), ...(now ? { now } : {}) });   // configuration for the existing agents only; narrowed by the tool matrix at every use
+  const study = createStudy({ file: studyFile, ...(now ? { now } : {}) }), sug = createSuggestions({ file: suggestionsFile, prefs, ...(now ? { now } : {}) });
+  // Snapshot of what needs the owner: this workbench's own data plus whatever the host supplies (approvals, plugins). Read-only; a suggestion never acts.
+  const snapshots = () => {
+    const decisions = []; for (const pr of memory.listProjects(T).slice(0, 50)) { const r = memory.decisions(pr.id, { ...T, status: "PROPOSED" }); if (r.ok) for (const x of r.decisions.slice(0, 20)) decisions.push({ projectId: pr.id, decisionId: x.id, title: x.title }); }
+    let extra = {}; try { extra = suggestionExtras() ?? {}; } catch { extra = {}; }
+    return { ...extra, decisions, workflows: wf.listInstances({ ...T, status: null }), skills: skills.list(T.tenantId), preferences: prefs.proposals(T.tenantId, { status: "PENDING" }) };
+  };
   const OPS = {
     "conv.create": a => conv.create({ ...T, title: a.title, systemPrompt: a.systemPrompt, model: a.model ?? null }),
     "conv.list": () => ({ ok: true, conversations: conv.list(T) }),
@@ -116,6 +131,48 @@ export function createWorkbench({ conversationFile = null, memoryFile = null, no
     "skill.run": a => skills.run(T.tenantId, a.id, a.params ?? {}),
     "skill.list": () => ({ ok: true, skills: skills.list(T.tenantId) }),
     "skill.get": a => skills.get(T.tenantId, a.id),
+    // ---- page ingestion (M01 slice): supplied page content -> screened, provenance-tagged, untrusted data; extractive Q&A. Nothing is fetched or executed.
+    "page.extract": a => ingestPage({ label: a.label, content: a.content, sourceUrl: a.sourceUrl ?? null }),
+    "page.ask": a => { const p = ingestPage({ label: a.label, content: a.content, sourceUrl: a.sourceUrl ?? null }); return p.ok ? askPage(p, a.question) : p; },
+    // ---- code review (P07): rule-based, supplied files only; nothing is executed or fetched
+    "code.review": a => reviewCode({ files: a.files }),
+    // ---- preferences (A11): the console is the OWNER; proposals (also from learning) apply only when confirmed here
+    "pref.all": () => ({ ok: true, preferences: prefs.all(T.tenantId), proposals: prefs.proposals(T.tenantId, { status: "PENDING" }) }),
+    "pref.set": a => prefs.set(T.tenantId, a.key, a.value, { actor: "OWNER" }),
+    "pref.reset": a => prefs.reset(T.tenantId, a.key, { actor: "OWNER" }),
+    "pref.propose": a => prefs.propose(T.tenantId, a.key, a.value, { actor: "SYSTEM", reason: a.reason ?? "" }),
+    "pref.confirm": a => prefs.confirm(T.tenantId, a.id, { actor: "OWNER" }),
+    "pref.reject": a => prefs.rejectProposal(T.tenantId, a.id, { actor: "OWNER" }),
+    "pref.choice": a => prefs.recordChoice(T.tenantId, { kind: a.kind, subject: a.subject, actor: "OWNER" }),
+    "pref.learn": () => prefs.learn(T.tenantId),
+    "pref.history": a => ({ ok: true, history: prefs.history(T.tenantId, a.limit ?? 50) }),
+    "pref.export": () => prefs.exportAll(T.tenantId),
+    "pref.forgetAll": a => (a.confirm === "FORGET" ? prefs.forgetAll(T.tenantId, { actor: "OWNER" }) : { ok: false, reason: "CONFIRM_FORGET_REQUIRED" }),
+    // ---- suggestions (A08/P20): text pointers to things that need the owner; dismiss/acknowledge only hide them
+    "suggest.list": () => sug.offer(T.tenantId, collectCandidates(snapshots())),
+    "suggest.dismiss": a => sug.dismiss(T.tenantId, a.key, { actor: "OWNER" }),
+    "suggest.ack": a => sug.acknowledge(T.tenantId, a.key, { actor: "OWNER" }),
+    "suggest.unsnooze": a => sug.unsnooze(T.tenantId, a.key, { actor: "OWNER" }),
+    "suggest.status": () => sug.status(T.tenantId),
+    // ---- assistant profiles (M12): the console is the OWNER; a profile creates no agent and grants nothing beyond the owner's tool matrix
+    "profile.create": a => profiles.create(T.tenantId, { id: a.id, name: a.name, instructions: a.instructions, tools: a.tools, skills: a.skills, memoryScopes: a.memoryScopes, ...Object.fromEntries(Object.keys(a).filter(k => !["id", "name", "instructions", "tools", "skills", "memoryScopes", "actor"].includes(k)).map(k => [k, a[k]])), actor: "OWNER" }),
+    "profile.list": () => ({ ok: true, profiles: profiles.list(T.tenantId), grantable: { SEARCH: profiles.grantable("SEARCH"), EXECUTION: profiles.grantable("EXECUTION") } }),
+    "profile.get": a => profiles.get(T.tenantId, a.id),
+    "profile.resolve": a => profiles.resolve(T.tenantId, a.id, { role: a.role }),
+    "profile.check": a => ({ ok: true, ...profiles.check(T.tenantId, a.id, { role: a.role, tool: a.tool ?? null, scope: a.scope ?? null }) }),
+    "profile.rollback": a => profiles.rollback(T.tenantId, a.id, a.version, { actor: "OWNER" }),
+    "profile.remove": a => profiles.remove(T.tenantId, a.id, { actor: "OWNER" }),
+    // ---- study cards (P01): SM-2 scheduling, cloze cards from the owner's own text; the console is the OWNER
+    "study.add": a => study.addCard(T.tenantId, { deck: a.deck, front: a.front, back: a.back, tags: a.tags ?? [], actor: "OWNER" }),
+    "study.cloze": a => study.addCloze(T.tenantId, { deck: a.deck, text: a.text, tags: a.tags ?? [], actor: "OWNER" }),
+    "study.due": a => study.due(T.tenantId, { deck: a.deck ?? null, limit: a.limit }),
+    "study.get": a => study.get(T.tenantId, a.id),
+    "study.review": a => study.review(T.tenantId, a.id, a.grade, { actor: "OWNER" }),
+    "study.suspend": a => study.setSuspended(T.tenantId, a.id, a.value !== false, { actor: "OWNER" }),
+    "study.remove": a => study.remove(T.tenantId, a.id, { actor: "OWNER" }),
+    "study.stats": a => study.stats(T.tenantId, { deck: a.deck ?? null }),
+    "study.export": () => study.exportAll(T.tenantId),
+    "study.forgetAll": a => (a.confirm === "FORGET" ? study.forgetAll(T.tenantId, { actor: "OWNER" }) : { ok: false, reason: "CONFIRM_FORGET_REQUIRED" }),
     // ---- comparison (P13) and transcript analysis (P02): both work on text the owner supplies; nothing is fetched
     "compare.pages": a => comparePages(a.pages),
     "transcript.analyze": a => analyzeTranscript(a.transcript, { summarySentences: a.summarySentences }),

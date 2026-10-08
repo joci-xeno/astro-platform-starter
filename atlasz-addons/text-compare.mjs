@@ -17,6 +17,9 @@ export function toPlainText(input) {
 const NUM = /(?:[$€£]|\bUSD |\bEUR |\bHUF )?\d[\d.,]*\d(?:\s?(?:%|USD|EUR|HUF|Ft|\$|€|£))?|\b\d\b/g;
 const words = t => (t.toLowerCase().match(/[\p{L}\p{N}]{3,}/gu) ?? []);
 const STOP = new Set("the and for with that this from are was were have has not you your our their they them his her its into out all any can will would about more than then them also but".split(" "));
+export const redactSecrets = s => { SECRET.lastIndex = 0; return String(s).replace(SECRET, "[redacted]"); };
+export const INJECTION_PATTERNS = INJECTION;
+export { facts as pageFacts };
 function facts(text, label) {
   const lines = text.split("\n"), headings = lines.filter(l => /^#[1-6] /.test(l)).map(l => l.replace(/^#[1-6] /, "")), links = [...new Set([...text.matchAll(/\bhttps?:\/\/[^\s<>"')]+/gi)].map(m => m[0].replace(/[.,;]+$/, "")))].slice(0, 50);
   const nums = [...new Set((text.match(NUM) ?? []).map(x => x.trim()))].slice(0, 100);

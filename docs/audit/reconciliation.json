@@ -80,13 +80,14 @@
   "P18"
  ],
  "capability_dangling_links": [],
- "gap_register_total": 823,
+ "gap_register_total": 828,
  "gap_register_by_source": {
   "REGISTRY": 738,
   "CAPABILITY_85": 82,
-  "IMPORT_SCAN": 3
+  "IMPORT_SCAN": 5,
+  "TODO_SCAN": 3
  },
- "gap_register_formula": "738 registry item gaps + 82 open capabilities + 3 import-scan orphans (+ 0 other scans)",
+ "gap_register_formula": "738 registry item gaps + 82 open capabilities + 5 import-scan orphans (+ 3 other scans)",
  "milestone_counts": {
   "M1": {
    "PARTIAL": 62,

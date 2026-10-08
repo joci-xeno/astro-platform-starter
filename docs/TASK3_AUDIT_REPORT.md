@@ -33,10 +33,10 @@ Branch `atlasz-v73-integration`. Audit only: no product code was changed in Task
 |---|---|---|---|
 | REGISTRY item gaps | 710 | 738 | +28 |
 | CAPABILITY_85 gaps | 79 | 82 | +3 |
-| IMPORT_SCAN orphans | 3 | 3 | +0 |
-| **Total** | 792 | 823 | +31 |
+| IMPORT_SCAN orphans | 3 | 5 | +0 |
+| **Total** | 792 | 828 | +36 |
 
-**What the change means.** Nothing was newly built and no gap was closed in Task 3. The open-gap count rose by 31 = 23 registry items + 3 capabilities **reclassified downward** (their 'working' status was not supported: modules are tested but nothing runs them; these are over-claims, not new problems) + 9 **newly discovered** gaps registered as ATLASZ-T3-001..009 (8 MISSING, 1 EXTERNAL_BLOCKER): unauthenticated runtime dashboard, unsandboxed plugin/update child processes, agents cannot invoke tools, duplicate/hub-bag-only modules, weak-random id fallbacks, no restore UI, 4 untested routes, no schedule creation in the UI, unverified real-source discovery.
+**What the change means.** Nothing was newly built and no gap was closed in Task 3. The open-gap count rose by 36 = 23 registry items + 3 capabilities **reclassified downward** (their 'working' status was not supported: modules are tested but nothing runs them; these are over-claims, not new problems) + 9 **newly discovered** gaps registered as ATLASZ-T3-001..009 (8 MISSING, 1 EXTERNAL_BLOCKER): unauthenticated runtime dashboard, unsandboxed plugin/update child processes, agents cannot invoke tools, duplicate/hub-bag-only modules, weak-random id fallbacks, no restore UI, 4 untested routes, no schedule creation in the UI, unverified real-source discovery.
 
 ## 3. Reconciliation: requirements vs gaps (no double counting)
 
@@ -53,8 +53,8 @@ The three documents measure different things and overlap. Rule used: **a require
 
 - **974 rows = 930 items + 53 section roll-ups.** The registry figures quoted at the start of Task 3 (478 PARTIAL / 194 MISSING; now 501 / 194 after the 23 downgrades) include roll-ups: at item level it is 479 PARTIAL (+28 STRUCTURAL_ONLY, +10 EXISTS_NEEDS_TEST, which this audit also reports as PARTIAL) and 182 MISSING.
 - **Unique outstanding requirements: 675** (588 product + 87 supplementary, not implemented). The remaining open registry rows are 63 roll-ups/labels/process tasks/implementation records.
-- **Gap register total 823 = 738 registry item gaps + 82 open capabilities + 3 import-scan orphans (+ 0 other scans).** Every REGISTRY gap links to exactly one registry item; each CAPABILITY gap links to the registry items it depends on (`depends_on`). 76 of the 82 open capabilities link to registry items, so most capability gaps are *views of the same work*, not additional work; only G01, GE07, A01, A07, A13, P18 have no registry link and are independent.
-- Therefore the honest size of the remaining work is **~681 requirements** (not 823 gaps and not 974); the 823-gap figure double counts capability views and non-product rows. Dangling capability→registry links: 0.
+- **Gap register total 828 = 738 registry item gaps + 82 open capabilities + 5 import-scan orphans (+ 3 other scans).** Every REGISTRY gap links to exactly one registry item; each CAPABILITY gap links to the registry items it depends on (`depends_on`). 76 of the 82 open capabilities link to registry items, so most capability gaps are *views of the same work*, not additional work; only G01, GE07, A01, A07, A13, P18 have no registry link and are independent.
+- Therefore the honest size of the remaining work is **~681 requirements** (not 828 gaps and not 974); the 828-gap figure double counts capability views and non-product rows. Dangling capability→registry links: 0.
 
 Final classification of all 930 items (registry status mapped to the five classes requested; STRUCTURAL_ONLY and EXISTS_NEEDS_TEST are reported as PARTIAL; **no item is LIVE-verified**):
 
@@ -78,7 +78,7 @@ Started with **211** EXISTS_AND_WORKING registry rows (all items).
 
 Remaining flags on retained items (reviewed, none changes status): TESTS_DO_NOT_EXERCISE_MODULE×6, NO_MODULE_FILE×12, LOCATION_FILE_NOT_FOUND×2, NO_TEST_LISTED×4, LISTED_TEST_MISSING×1, MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW×1. These are meta items (tests/registry/audit-task rows with no code module), a `*.test.mjs` glob mistaken for a missing file (ATLASZ-CR-003), or heuristic misses where the test drives a real process (S14-001, S35-008).
 
-**Independent probes (20):** 38/38 pass.
+**Independent probes (20):** 49/49 pass.
 
 | Probe | Claim | Result |
 |---|---|---|
@@ -120,6 +120,17 @@ Remaining flags on retained items (reviewed, none changes status): TESTS_DO_NOT_
 | P36 | B1: plugin install without a matching signed owner approval installs nothing; an approval for other content (another hash) is refused | PASS |
 | P37 | B1: a package containing a symlink or a forbidden permission is rejected before any approval is considered | PASS |
 | P38 | B1: no agent id can activate a skill; only pure computation actions are usable in a skill; an untested version cannot be activated | PASS |
+| P39 | B1: an MCP server never starts without an owner approval bound to its exact folder content, and never without network isolation | PASS |
+| P40 | B1: a hostile page is flagged SUSPICIOUS and its instruction lines are never returned as answers | PASS |
+| P41 | B1: skills cannot use state-writing actions (notes/memory writers are refused at submission) | PASS |
+| P42 | B2: code review never calls code safe and never echoes a credential-shaped literal | PASS |
+| P43 | B2: repository tests do not run (no process starts) without a signed approval bound to the analysed content | PASS |
+| P44 | B2: none of the 30 agent ids can change, reset, confirm or forget a preference; learning only proposes | PASS |
+| P45 | B2: a corrupt durable knowledge file is never overwritten (configuration fails closed) | PASS |
+| P46 | B3: accessibility audit never claims full accessibility and flags a failing contrast pair and a missing alt | PASS |
+| P47 | B3: none of the 30 agent ids (nor spoofed spellings) can create, roll back or remove an assistant profile; a profile cannot grant pcc.* or model.complete | PASS |
+| P48 | B3: handoffs are roster-only, a receiver cannot accept different artifacts than were handed over, and a non-roster id cannot receive work | PASS |
+| P49 | B3: study cards - agents cannot change the schedule, and invalid grades never alter a card | PASS |
 
 **Live boot of runtime + Control Center:** 30 agents (SEARCH 5, EXECUTION 25); 31 typed tools registered; 60 Control Center routes (30 GET, 30 POST): every GET returns 200 with a token and is refused without one, every POST is refused without/with a wrong token, a foreign Host header gets 403. 
 
@@ -137,7 +148,7 @@ The 30 agents execute one job type: governed `SCREENING` (`brain.dispatch.run`).
 
 - **32 modules are imported only into `internal-integration-hub` and never invoked:** outcome-compiler.mjs, qa-reviewer.mjs, opportunity-qualification-engine.mjs, cost-model-router.mjs, self-healing-loop.mjs, stall-replanner.mjs, task-ledger.mjs, tracing-evals.mjs, checkpoint-engine.mjs, market-intelligence-engine.mjs, buyer-decision-maker-finder.mjs, profit-accounting-engine.mjs, client-dna-engine.mjs, delivery-engine.mjs, regression-eval-suite.mjs, enterprise-knowledge-agentic-rag.mjs, follow-up-engine.mjs, negotiation-engine.mjs, guardrail-engine.mjs, tax-accounting-engine.mjs, payment-confirmation-adapter.mjs, profit-ledger.mjs, anti-collusion-guard.mjs, proposal-quote-engine.mjs, master-planner-orchestrator.mjs, deal-state.mjs, progress-ledger.mjs, execution-factory.mjs, dead-letter-queue.mjs, invoice-engine.mjs, team-lead-workflows.mjs, agent-factory.mjs.
 - **Not reachable from runtime/CC/CLI:** `digital-twin.mjs` (4 'working' items downgraded), `evidence-record.mjs` (no caller), `tenant-isolation.mjs` (by design: commercial track, needs Joci's authorization); legacy `supervisor.js`, `worker.js`, `agent-child.js` (LEGACY_START only; `atlasz-competition-v1` policy confined to worker.js).
-- Orphans per import scan: 3; entry points with no in-repo caller (CLI/Electron/staging scripts): evidence-record.mjs, owner-cli.mjs, supervisor-safe.mjs, stage-win.mjs, main.mjs.
+- Orphans per import scan: 5; entry points with no in-repo caller (CLI/Electron/staging scripts): evidence-record.mjs, owner-cli.mjs, supervisor-safe.mjs, stage-win.mjs, main.mjs.
 
 ### 5.3 Duplicate implementations
 
@@ -192,7 +203,7 @@ These categories are derived from each row's own blocker/evidence text and the m
 
 ## 7. Test results and coverage limits
 
-- Full suite (`npm test --prefix atlasz-runtime`): **722 tests, 722 pass, 0 fail, 0 skipped, 0 cancelled** (see recorded note in full_suite_result.json).
+- Full suite (`npm test --prefix atlasz-runtime`): **807 tests, 807 pass, 0 fail, 0 skipped, 0 cancelled** (see recorded note in full_suite_result.json).
 - Per-file run (`docs/audit/run_tests_per_file.py`): 86 files, 568 tests, 568 pass, 0 fail, 0 skipped.
 - Line coverage (node --experimental-test-coverage, full suite, 527/527): **98.8% lines / 84.5% branches** over 151 loaded source files; lowest-covered: atlasz-addons/negotiation-engine.mjs 30%; atlasz-addons/tracing-evals.mjs 61%; atlasz-addons/enterprise-knowledge-agentic-rag.mjs 78%; atlasz-control-center/server.mjs 83%; atlasz-addons/tool-fabric.mjs 89%; atlasz-addons/personal-command-center.mjs 93%. Absent from the coverage report (not loaded, or not attributed by the collector - e.g. supervisor-safe.mjs is exercised through real-process tests): atlasz-control-center/public/app.js, atlasz-runtime/agent-child.js, atlasz-runtime/owner-cli.mjs, atlasz-runtime/supervisor-safe.mjs, atlasz-runtime/supervisor.js, atlasz-runtime/worker.js. Caveat: coverage counts executed lines, not asserted behaviour, so it supports but does not prove the 'working' claims (e.g. `negotiation-engine.mjs` is the least covered module and is hub-bag only).
 - Limits: tests run against temp dirs with fake providers, so they show logic and failure handling, not provider behaviour; Windows-only branches (env scrubbing, junctions, process limits) cannot run on this Linux host; the Electron shell and installer are untested here; timing/robustness tests use short real timeouts and can be load-sensitive; mutation testing was done per module by hand-written mutants, not for the whole code base; the registry/gap-register generators have their own tests, so some of the suite verifies tooling rather than product behaviour.

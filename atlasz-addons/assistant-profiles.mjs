@@ -1,0 +1,80 @@
+// Assistant profiles (85-capability audit M12 Custom AI Assistants): CONFIGURATION for how the existing agents are used, never new agents and never new permissions.
+//   * A profile = name, instructions text, a tool allow-list, a skill allow-list and memory scopes. It has no agent id, no budget, no credentials, no network setting.
+//   * It can only NARROW: at every use the tool list is intersected with what the owner's tool-permission matrix currently ALLOWS for the role (SEARCH / EXECUTION), so revoking
+//     a grant (or an owner decision such as D4/D5/D6) shrinks every profile at once. Tools that are APPROVAL, DENY, disabled, pcc.* or voice.* are never grantable.
+//   * Only the OWNER creates, edits, rolls back or deletes a profile. Every edit is a new hashed version; older versions are kept (bounded) and can be restored by the owner.
+//   * Instructions are plain text: secrets are redacted and instruction-injection phrases are refused. The fixed 5 SEARCH + 25 EXECUTION topology is untouched.
+import crypto from "node:crypto";
+import { createStore, clone } from "./business/store.mjs";
+import { redactSecrets, INJECTION_PATTERNS } from "./text-compare.mjs";
+import { TOOL_POLICY, ROLES, permissionFor } from "./agent-tool-policy.mjs";
+
+export const LIMITS = Object.freeze({ maxProfiles: 50, maxVersions: 10, maxInstructions: 2000, maxName: 60, maxTools: 40, maxSkills: 20, maxScopes: 20 });
+const ID = /^[a-z][a-z0-9-]{0,39}$/, TOOLNAME = /^[a-z][a-z0-9._-]{0,59}$/, SCOPE = /^[a-z][a-z0-9:._-]{0,59}$/, TENANT = /^[A-Za-z0-9._-]{1,64}$/;
+const FIELDS = new Set(["id", "name", "instructions", "tools", "skills", "memoryScopes", "actor"]);
+const hashOf = v => crypto.createHash("sha256").update(JSON.stringify(v)).digest("hex");
+const uniqSorted = a => [...new Set(a)].sort();
+
+/** Tools the owner's matrix lets this role use without approval and that are not disabled. */
+export const defaultGrantable = (role, policy = TOOL_POLICY) => Object.keys(policy).filter(t => permissionFor(role, t, policy) === "ALLOW" && !policy[t].disabled).sort();   // permissionFor() is DENY for any role that is not SEARCH/EXECUTION
+
+export function createProfiles({ file = null, grantable = defaultGrantable, skillExists = () => true, now = () => Date.now() } = {}) {
+  const store = createStore({ file, init: () => ({ tenants: {} }), mode: 0o600 }), d = store.data;
+  const T = tenantId => { if (typeof tenantId !== "string" || !TENANT.test(tenantId)) throw new Error("TENANT_INVALID"); return (d.tenants[tenantId] ??= { profiles: {} }); };
+  const peek = tenantId => (typeof tenantId === "string" && TENANT.test(tenantId) ? d.tenants[tenantId] ?? null : null);
+  const union = () => new Set(ROLES.flatMap(r => { try { return grantable(r); } catch { return []; } }));
+  const list = (arr, max, re, what) => (Array.isArray(arr) && arr.length <= max && arr.every(x => typeof x === "string" && re.test(x)) ? null : what);
+
+  function validate(inp) {
+    for (const k of Object.keys(inp ?? {})) if (!FIELDS.has(k)) return { ok: false, reason: "UNKNOWN_FIELD:" + String(k).slice(0, 40) };           // e.g. agents, budget, network, credentials
+    if (typeof inp.id !== "string" || !ID.test(inp.id)) return { ok: false, reason: "PROFILE_ID_INVALID" };
+    if (typeof inp.name !== "string" || !inp.name.trim() || inp.name.length > LIMITS.maxName) return { ok: false, reason: "NAME_INVALID" };
+    if (typeof inp.instructions !== "string" || !inp.instructions.trim() || inp.instructions.length > LIMITS.maxInstructions) return { ok: false, reason: "INSTRUCTIONS_INVALID" };
+    if (INJECTION_PATTERNS.some(p => p.test(inp.instructions)) || INJECTION_PATTERNS.some(p => p.test(inp.name))) return { ok: false, reason: "INSTRUCTIONS_LOOK_LIKE_INJECTION" };
+    const tools = inp.tools ?? [], skills = inp.skills ?? [], scopes = inp.memoryScopes ?? [];
+    let bad = list(tools, LIMITS.maxTools, TOOLNAME, "TOOLS_INVALID") ?? list(skills, LIMITS.maxSkills, ID, "SKILLS_INVALID") ?? list(scopes, LIMITS.maxScopes, SCOPE, "MEMORY_SCOPES_INVALID"); if (bad) return { ok: false, reason: bad };
+    const g = union(); for (const t of tools) if (!g.has(t)) return { ok: false, reason: "TOOL_NOT_GRANTABLE:" + t };
+    for (const s of skills) { let ok = false; try { ok = skillExists(s) === true; } catch { ok = false; } if (!ok) return { ok: false, reason: "SKILL_UNKNOWN:" + s }; }
+    return { ok: true, def: { id: inp.id, name: redactSecrets(inp.name.trim()), instructions: redactSecrets(inp.instructions.trim()), tools: uniqSorted(tools), skills: uniqSorted(skills), memoryScopes: uniqSorted(scopes) } };
+  }
+  function save(tenantId, inp, how) {
+    if (inp?.actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" };
+    const v = validate(inp); if (!v.ok) return v; const t = T(tenantId), cur = t.profiles[v.def.id];
+    if (!cur && Object.keys(t.profiles).length >= LIMITS.maxProfiles) return { ok: false, reason: "TOO_MANY_PROFILES" };
+    const hash = hashOf(v.def); if (cur && cur.versions.at(-1).hash === hash) return { ok: true, id: v.def.id, version: cur.versions.at(-1).version, unchanged: true };
+    const ver = { version: (cur?.nextVersion ?? 1), hash, definition: v.def, at: new Date(now()).toISOString(), how };
+    const p = cur ?? (t.profiles[v.def.id] = { id: v.def.id, versions: [], nextVersion: 1 });
+    p.versions.push(ver); p.nextVersion = ver.version + 1; if (p.versions.length > LIMITS.maxVersions) p.versions.splice(0, p.versions.length - LIMITS.maxVersions);
+    store.save(); return { ok: true, id: p.id, version: ver.version, hash };
+  }
+  const create = (tenantId, inp) => save(tenantId, inp, "SAVE");
+  function rollback(tenantId, id, version, { actor } = {}) {
+    if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" };
+    const p = peek(tenantId)?.profiles[id]; if (!p) return { ok: false, reason: "PROFILE_NOT_FOUND" }; const v = p.versions.find(x => x.version === version); if (!v) return { ok: false, reason: "VERSION_NOT_FOUND" };
+    if (hashOf(v.definition) !== v.hash) return { ok: false, reason: "STORED_VERSION_TAMPERED" };
+    return save(tenantId, { ...clone(v.definition), actor: "OWNER" }, "ROLLBACK_TO_" + version);   // re-validated against today's grants, stored as a NEW version
+  }
+  function remove(tenantId, id, { actor } = {}) { if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" }; const t = peek(tenantId); if (!t?.profiles[id]) return { ok: false, reason: "PROFILE_NOT_FOUND" }; delete t.profiles[id]; store.save(); return { ok: true }; }
+  const summary = p => { const v = p.versions.at(-1); return { id: p.id, name: v.definition.name, version: v.version, hash: v.hash, versions: p.versions.map(x => x.version), tools: v.definition.tools.length, skills: v.definition.skills.length, memoryScopes: v.definition.memoryScopes.length }; };
+  const listAll = tenantId => Object.values(peek(tenantId)?.profiles ?? {}).map(summary);
+  function get(tenantId, id) { const p = peek(tenantId)?.profiles[id]; if (!p) return { ok: false, reason: "PROFILE_NOT_FOUND" }; const v = p.versions.at(-1); return { ok: true, profile: { ...summary(p), definition: clone(v.definition), history: p.versions.map(x => ({ version: x.version, hash: x.hash, at: x.at, how: x.how })) } }; }
+
+  /** Effective capabilities for a role: the stored lists narrowed by today's owner grants. Revoked tools / vanished skills are reported, not silently kept. */
+  function resolve(tenantId, id, { role } = {}) {
+    if (!ROLES.includes(role)) return { ok: false, reason: "ROLE_INVALID" };
+    const p = peek(tenantId)?.profiles[id]; if (!p) return { ok: false, reason: "PROFILE_NOT_FOUND" }; const v = p.versions.at(-1);
+    if (hashOf(v.definition) !== v.hash) return { ok: false, reason: "STORED_VERSION_TAMPERED" };
+    let g = new Set(); try { g = new Set(grantable(role)); } catch { g = new Set(); }
+    const tools = v.definition.tools.filter(t => g.has(t)), skills = v.definition.skills.filter(s => { try { return skillExists(s) === true; } catch { return false; } });
+    return { ok: true, id, role, version: v.version, hash: v.hash, instructions: v.definition.instructions, tools, droppedTools: v.definition.tools.filter(t => !g.has(t)), skills, droppedSkills: v.definition.skills.filter(s => !skills.includes(s)), memoryScopes: [...v.definition.memoryScopes],
+      note: "A profile is configuration for the existing agents. It creates no agent and grants nothing beyond the owner's tool matrix." };
+  }
+  /** Would this profile, used by this role, be allowed to touch `tool` / read memory `scope`? Deny by default. */
+  function check(tenantId, id, { role, tool = null, scope = null } = {}) {
+    const r = resolve(tenantId, id, { role }); if (!r.ok) return { allowed: false, reason: r.reason };
+    if (tool !== null) return r.tools.includes(tool) ? { allowed: true } : { allowed: false, reason: "TOOL_NOT_IN_PROFILE_OR_NOT_GRANTED" };
+    if (scope !== null) return r.memoryScopes.includes(scope) ? { allowed: true } : { allowed: false, reason: "SCOPE_NOT_IN_PROFILE" };
+    return { allowed: false, reason: "NOTHING_TO_CHECK" };
+  }
+  return { create, rollback, remove, list: listAll, get, resolve, check, grantable: role => { try { return [...grantable(role)]; } catch { return []; } }, limits: LIMITS };
+}

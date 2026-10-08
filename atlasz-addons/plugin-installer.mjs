@@ -45,6 +45,13 @@ function hashFiles(files) {
   return h.digest("hex");
 }
 
+/** Content hash of a directory tree (same rules as a plugin package: no symlinks, hidden files or oversize trees). Shared with the MCP client so both bind approvals to exact bytes. */
+export function packageHash(dir) {
+  let st; try { st = fs.lstatSync(dir); } catch { return { ok: false, problems: ["NOT_FOUND"] }; }
+  if (!st.isDirectory()) return { ok: false, problems: ["MUST_BE_A_REAL_DIRECTORY"] };
+  const w = walk(dir); return w.ok ? { ok: true, hash: hashFiles(w.files), files: w.files.map(f => f.rel) } : w;
+}
+
 export function createPluginInstaller({ pluginRoot, stateDir, ownerAuth, atlaszVersion = "7.3.0", isStopped = () => false, pluginManager = null, now = () => new Date().toISOString() } = {}) {
   if (!pluginRoot || !stateDir || !ownerAuth) throw new Error("PLUGIN_ROOT_STATE_DIR_AND_OWNER_AUTH_REQUIRED");
   fs.mkdirSync(pluginRoot, { recursive: true }); fs.mkdirSync(stateDir, { recursive: true });

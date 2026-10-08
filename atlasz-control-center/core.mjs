@@ -17,7 +17,9 @@ import { readAuditFile, verifyChain } from "../atlasz-addons/audit-chain.mjs";
 import { createFinancialLedger } from "../atlasz-addons/financial-ledger.mjs";
 import { createLocalUpdateAdapters, SELFTEST } from "../atlasz-addons/local-update-adapters.mjs";
 import { createPluginManager } from "../atlasz-addons/plugin-manager.mjs";
-import { createPluginInstaller } from "../atlasz-addons/plugin-installer.mjs";
+import { createPluginInstaller, packageHash } from "../atlasz-addons/plugin-installer.mjs";
+import { createMcpClient } from "../atlasz-addons/mcp-client.mjs";
+import { analyzeRepo, runRepoTests } from "../atlasz-addons/repo-analyzer.mjs";
 import { createPersonalCommandCenter } from "../atlasz-addons/personal-command-center.mjs";
 import { buildDailyBrief, answerQuery, DEFAULT_PREFS, briefDue, markBriefShown } from "../atlasz-addons/master-brief.mjs";
 import { assessImpact } from "../atlasz-addons/human-core.mjs";
@@ -357,7 +359,7 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   // "complete" honestly answers NO_ELIGIBLE_PROVIDER; nothing is fabricated, nothing is spent, and every call is gated by the kill switch.
   const wbGateway = () => createModelGateway({ resilience: createProviderResilience({ gate: x => emergency().gate(x), clock: () => Date.now(), timeoutMs: 15000 }), models: createModelIntelligence({ graph: createCapabilityGraph(), clockMs: () => Date.now() }) });
   let wbCache = null;                                   // ONE workbench per Control Center: workflow run-guards and batch state must be shared across requests
-  const wbInst = () => (wbCache ??= createWorkbench({ conversationFile: path.join(stateDir, "workbench", "conversations.json"), memoryFile: path.join(stateDir, "workbench", "project-memory.json"), notesFile: path.join(stateDir, "workbench", "notes.json"), workflowFile: path.join(stateDir, "workbench", "workflows.json"), skillsFile: path.join(stateDir, "workbench", "skills.json"),
+  const wbInst = () => (wbCache ??= createWorkbench({ conversationFile: path.join(stateDir, "workbench", "conversations.json"), memoryFile: path.join(stateDir, "workbench", "project-memory.json"), notesFile: path.join(stateDir, "workbench", "notes.json"), workflowFile: path.join(stateDir, "workbench", "workflows.json"), skillsFile: path.join(stateDir, "workbench", "skills.json"), prefsFile: path.join(stateDir, "workbench", "preferences.json"), profilesFile: path.join(stateDir, "workbench", "profiles.json"), studyFile: path.join(stateDir, "workbench", "study.json"), suggestionsFile: path.join(stateDir, "workbench", "suggestions.json"), suggestionExtras: () => ({ approvals: [...approvalStore().pending().map(x => ({ id: x.id, action: x.operation ?? x.action })), ...createApprovalGateway({ dir: path.join(stateDir, "owner-control", "approvals"), ownerAuth: ownerAuth() }).pending().map(x => ({ id: x.id, action: x.operation }))], plugins: plugins().list().plugins }),
     gateway: wbGateway(), tenantId: KP_T, isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL" }));
   async function workbench() {
     try { const w = wbInst(), g = wbGateway(); return { state: "CONNECTED", ops: w.ops, conversations: (await w.run("conv.list")).conversations, providers: g.summary(), note: "No model provider is attached: asking a model returns NO_ELIGIBLE_PROVIDER. Analysis, rendering, chunking and policy tools run locally and spend nothing." }; }
@@ -397,6 +399,36 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
     const base = plugins().list(), ins = installer(); let names = [];
     try { names = fs.readdirSync(pluginInbox, { withFileTypes: true }).filter(e => e.isDirectory() && ins.nameOk(e.name)).map(e => e.name).slice(0, 50); } catch { /* no inbox yet */ }
     return { ...base, inbox: names.map(name => { const r = ins.inspectPackage(path.join(pluginInbox, name)); return r.ok ? { name, ok: true, id: r.manifest.id, version: r.manifest.version, kind: r.manifest.kind, permissions: r.manifest.permissions, files: r.fileCount, hash: r.hash } : { name, ok: false, problems: r.problems.slice(0, 5) }; }), installed: base.plugins.map(x => ({ id: x.id, ...installer().versions(x.id) })) };
+  };
+  // MCP servers (C06 slice): folders under <configDir>/mcp-servers/<id>/ with mcp-server.json {entry, description}. Starting a server and every tool call need the owner's passphrase (approval bound to content hash / exact arguments).
+  let mcpCache = null; const mcpRejected = new Map();
+  const mcpInst = () => (mcpCache ??= createMcpClient({ stateDir: path.join(stateDir, "mcp"), ownerAuth: ownerAuth(), isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL" }));
+  const mcpRoot = path.join(configDir, "mcp-servers");
+  function mcpScan() {
+    const c = mcpInst(); let names = []; try { names = fs.readdirSync(mcpRoot, { withFileTypes: true }).filter(e => e.isDirectory() && /^[a-z][a-z0-9-]{1,39}$/.test(e.name)).map(e => e.name).slice(0, 40); } catch { /* no folder yet */ }
+    for (const name of names) {
+      if (c.list().some(x => x.id === name)) continue;
+      let cfg; try { const f = path.join(mcpRoot, name, "mcp-server.json"); if (fs.statSync(f).size > 4096) throw new Error("big"); cfg = JSON.parse(fs.readFileSync(f, "utf8")); } catch { mcpRejected.set(name, ["MCP_SERVER_JSON_MISSING_OR_INVALID"]); continue; }
+      const r = c.register({ id: name, dir: path.join(mcpRoot, name), entry: cfg?.entry, description: cfg?.description ?? "" }); if (r.ok) mcpRejected.delete(name); else mcpRejected.set(name, [r.reason, ...(r.problems ?? [])]);
+    }
+    return c;
+  }
+  const mcp = () => { const c = mcpScan(); return { servers: c.list(), rejected: [...mcpRejected].map(([name, problems]) => ({ name, problems })), note: "Local MCP stdio servers only. Starting one runs foreign code (read-only folder, no network, no child processes) and needs your passphrase; every tool call needs a fresh approval for the exact arguments. Results are untrusted data." }; };
+  const mcpActions = {
+    start: ({ id, passphrase }) => act(async () => { const c = mcpScan(), dir = path.join(mcpRoot, String(id)), h = packageHash(dir); if (!h.ok) return { ok: false, reason: "DIR_REJECTED" }; return c.start(String(id), { ownerApproval: passphrase ? sign(passphrase, "MCP_SERVER_START", String(id) + "#" + h.hash) : null }); }),
+    call: ({ id, tool, args = {}, passphrase }) => act(async () => { const c = mcpScan(); return c.callTool(String(id), String(tool), args, { ownerApproval: passphrase ? sign(passphrase, "MCP_TOOL_CALL", c.callSubject(String(id), String(tool), args)) : null }); }),
+    stop: ({ id }) => act(() => mcpScan().stop(String(id)))
+  };
+  // ---- repositories (C01 slice): folders under <configDir>/repos/<name>; analysis is read-only, test runs need the owner's signed approval bound to the analysed content
+  const repoRoot = path.join(configDir, "repos"), REPO_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
+  const repos = () => { let names = []; try { names = fs.readdirSync(repoRoot, { withFileTypes: true }).filter(e => e.isDirectory() && REPO_NAME.test(e.name)).map(e => e.name).slice(0, 50); } catch { /* none yet */ } return { repos: names, note: "Put a repository folder under the ATLASZ config 'repos' folder. Analysis only reads; running its tests needs your passphrase and happens in a read-only, no-network, no-child-process sandbox. It cannot edit, install, push or open pull requests." }; };
+  const repoActions = {
+    analyze: ({ name }) => act(() => { if (typeof name !== "string" || !REPO_NAME.test(name)) return { ok: false, reason: "REPO_NAME_INVALID" }; return analyzeRepo(path.join(repoRoot, name)); }),
+    test: ({ name, passphrase }) => act(async () => {
+      if (typeof name !== "string" || !REPO_NAME.test(name)) return { ok: false, reason: "REPO_NAME_INVALID" };
+      const root = path.join(repoRoot, name), a = analyzeRepo(root); if (!a.ok) return a;
+      return runRepoTests({ name, root, ownerAuth: ownerAuth(), ownerApproval: passphrase ? sign(passphrase, "REPO_TEST_RUN", name + "#" + a.hash) : null, isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL" });
+    })
   };
   const pluginActions = {
     install: ({ name, passphrase }) => act(() => { const { ins, dir } = inboxPkg(name), p = ins.inspectPackage(dir); if (!p.ok) return { ok: false, reason: "PACKAGE_REJECTED", problems: p.problems.slice(0, 10) }; return ins.install(dir, { ownerApproval: passphrase ? sign(passphrase, "PLUGIN_INSTALL", p.subject) : null }); }),
@@ -496,6 +528,6 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   };
 
   const moneyViews = createMoneyViews({ stateDir });
-  return { pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, workbench, workbenchAction, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => pluginView(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, workbench, workbenchAction, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => pluginView(), mcp, mcpActions, repos, repoActions, theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }

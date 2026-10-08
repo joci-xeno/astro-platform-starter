@@ -1,0 +1,69 @@
+// Static code review (85-capability audit P07 Code Review Assistant). Pure, deterministic, rule-based: no model, no execution, no network, nothing is fetched or run.
+// Input is a list of files the caller supplies ({path, content}); output is findings with rule id, severity, file, line and a REDACTED snippet, plus test-presence facts.
+// Honest limits: regex heuristics (no AST, no data-flow). They find common mistakes; they do not prove code safe. The verdict therefore never says "safe":
+//   BLOCK = at least one HIGH finding, REVIEW = MEDIUM/LOW findings, NO_FINDINGS_BY_THESE_RULES otherwise. File content is untrusted: instruction-like text inside it is reported, never followed.
+import { redactSecrets, INJECTION_PATTERNS } from "./text-compare.mjs";
+
+export const LIMITS = Object.freeze({ maxFiles: 200, maxFileChars: 200000, maxTotalChars: 2000000, maxFindings: 500, maxPathChars: 200, maxSnippet: 160, maxLineChars: 2000 });
+const SEV = Object.freeze({ HIGH: 3, MEDIUM: 2, LOW: 1, INFO: 0 });
+const SOURCE_EXT = /\.(mjs|cjs|js|jsx|ts|tsx|py|sh|bash|rb|go|java|php|cs)$/i, TEST_PATH = /(^|\/)(tests?|__tests__|spec)(\/|$)|\.(test|spec)\.[a-z]+$|(^|\/)test_[^/]+\.py$|_test\.(go|py)$/i;
+const JS = /\.(mjs|cjs|js|jsx|ts|tsx)$/i, PY = /\.py$/i, SH = /\.(sh|bash)$/i;
+// rule: [id, severity, languages regex|null, line regex, message]
+const RULES = [
+  ["SECRET_LITERAL", "HIGH", null, /-----BEGIN [A-Z ]*PRIVATE KEY-----|\bsk-[A-Za-z0-9_-]{20,}|\bAKIA[0-9A-Z]{16}\b|\bghp_[A-Za-z0-9]{30,}|\bxox[baprs]-[A-Za-z0-9-]{10,}/, "A credential-shaped literal is committed in source."],
+  ["SECRET_ASSIGNMENT", "HIGH", null, /\b(?:password|passwd|secret|api[_-]?key|token|private[_-]?key)\b\s*[:=]\s*["'`][^"'`\s]{8,}["'`]/i, "A secret-named variable is assigned a literal value."],
+  ["DYNAMIC_EVAL", "HIGH", JS, /\beval\s*\(|\bnew Function\s*\(|\bsetTimeout\s*\(\s*["'`]/, "Dynamic code evaluation: input becoming code."],
+  ["SHELL_INJECTION", "HIGH", JS, /\b(?:exec|execSync)\s*\(\s*(?:`[^`]*\$\{|[^)]*["']\s*\+|[a-zA-Z_$][\w$]*\s*[,)])/, "Shell command built from a variable or concatenation (use execFile with an argument array)."],
+  ["SHELL_INJECTION", "HIGH", PY, /\bos\.system\s*\(|\bsubprocess\.[a-z_]+\([^)]*shell\s*=\s*True|\beval\s*\(|\bexec\s*\(/, "Shell/dynamic execution in Python."],
+  ["SHELL_INJECTION", "MEDIUM", SH, /\beval\b|\bsh\s+-c\b.*\$|\bcurl\b[^|]*\|\s*(?:sudo\s+)?(?:ba)?sh\b/, "Dynamic evaluation or pipe-to-shell."],
+  ["SQL_INJECTION", "HIGH", null, /["'`]\s*(?:SELECT|INSERT|UPDATE|DELETE)\b[^"'`]*["'`]\s*\+|`\s*(?:SELECT|INSERT|UPDATE|DELETE)\b[^`]*\$\{|\b(?:SELECT|INSERT|UPDATE|DELETE)\b[^"']*["']\s*%\s*\(?|(?:execute|query)\(\s*f["']/i, "SQL text built from variables (use parameterised queries)."],
+  ["TLS_VERIFY_DISABLED", "HIGH", null, /rejectUnauthorized\s*:\s*false|NODE_TLS_REJECT_UNAUTHORIZED\s*=\s*["']?0|verify\s*=\s*False|CURLOPT_SSL_VERIFYPEER\s*,\s*(?:false|0)|--insecure\b/, "TLS certificate verification is disabled."],
+  ["WEAK_HASH", "MEDIUM", null, /createHash\(\s*["'](?:md5|sha1)["']|hashlib\.(?:md5|sha1)\(|\bmd5\s*\(/i, "MD5/SHA-1 are not collision resistant; do not use for security."],
+  ["INSECURE_RANDOM", "MEDIUM", JS, /\bMath\.random\s*\(/, "Math.random is not cryptographically secure (use crypto.randomBytes / randomUUID for ids and tokens)."],
+  ["INSECURE_RANDOM", "MEDIUM", PY, /\brandom\.(?:random|randint|choice|randrange)\s*\(/, "Python random is not cryptographically secure (use secrets)."],
+  ["XSS_INNERHTML", "MEDIUM", JS, /\.(?:innerHTML|outerHTML)\s*=\s*(?!\s*["'`][^"'`$]*["'`]\s*;?\s*$)|\bdocument\.write\s*\(|dangerouslySetInnerHTML/, "HTML assigned from a non-literal: XSS risk."],
+  ["PATH_TRAVERSAL", "MEDIUM", JS, /\b(?:readFile|readFileSync|createReadStream|writeFile|writeFileSync|unlink|rm|rmSync)\s*\([^)]*\b(?:req|request|params|query|body|input)\b/, "A file path appears to come from request data (validate and confine it)."],
+  ["UNSAFE_DESERIALISATION", "HIGH", PY, /\bpickle\.loads?\(|\byaml\.load\((?![^)]*Loader\s*=\s*(?:yaml\.)?SafeLoader)/, "Unsafe deserialisation of untrusted data."],
+  ["EMPTY_CATCH", "LOW", JS, /catch\s*(?:\([^)]*\))?\s*\{\s*\}/, "Errors are swallowed silently."],
+  ["DEBUG_LEFTOVER", "LOW", JS, /\bdebugger\s*;|console\.log\([^)]*(?:password|secret|token|apikey)/i, "Debug statement that may leak data."],
+  ["TODO_SECURITY", "LOW", null, /\b(?:TODO|FIXME|HACK|XXX)\b[^\n]*\b(?:security|auth|password|encrypt|validate|sanitize)/i, "Open security-related TODO."],
+];
+const cleanPath = p => typeof p === "string" && p.length > 0 && p.length <= LIMITS.maxPathChars && !p.startsWith("/") && !/(^|\/)\.\.(\/|$)/.test(p) && !/[\0\\]/.test(p) && !/^[A-Za-z]:/.test(p);
+
+/** @returns {{ok:true, verdict, counts, findings, tests, files, notes}|{ok:false, reason}} */
+export function reviewCode(input) {
+  const files = input?.files;
+  if (!Array.isArray(files) || !files.length) return { ok: false, reason: "FILES_REQUIRED" };
+  if (files.length > LIMITS.maxFiles) return { ok: false, reason: "TOO_MANY_FILES" };
+  let total = 0; const seen = new Set();
+  for (const f of files) {
+    if (!f || !cleanPath(f.path)) return { ok: false, reason: "PATH_INVALID" };
+    if (typeof f.content !== "string") return { ok: false, reason: "CONTENT_REQUIRED:" + f.path };
+    if (f.content.length > LIMITS.maxFileChars) return { ok: false, reason: "FILE_TOO_LARGE:" + f.path };
+    if (seen.has(f.path)) return { ok: false, reason: "DUPLICATE_PATH:" + f.path }; seen.add(f.path);
+    total += f.content.length;
+  }
+  if (total > LIMITS.maxTotalChars) return { ok: false, reason: "TOTAL_TOO_LARGE" };
+  const findings = []; let truncated = false;
+  const add = f => { if (findings.length >= LIMITS.maxFindings) { truncated = true; return; } findings.push(f); };
+  for (const f of files) {
+    const lines = f.content.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      const raw = lines[i]; if (raw.length > LIMITS.maxLineChars) { add({ rule: "LINE_TOO_LONG", severity: "INFO", file: f.path, line: i + 1, message: "Line skipped (over " + LIMITS.maxLineChars + " chars): minified or generated?", snippet: "" }); continue; }
+      for (const [rule, severity, lang, re, message] of RULES) {
+        if (lang && !lang.test(f.path)) continue;                         // rules with the same id have mutually exclusive language filters, so one line yields at most one finding per rule
+        if (re.test(raw)) { add({ rule, severity, file: f.path, line: i + 1, message, snippet: redactSecrets(raw.trim()).slice(0, LIMITS.maxSnippet) }); }
+      }
+      if (INJECTION_PATTERNS.some(p => p.test(raw))) add({ rule: "INSTRUCTION_IN_CONTENT", severity: "INFO", file: f.path, line: i + 1, message: "The file contains text that tries to instruct a reader/model. Reported only; never followed.", snippet: redactSecrets(raw.trim()).slice(0, LIMITS.maxSnippet) });
+    }
+  }
+  findings.sort((a, b) => SEV[b.severity] - SEV[a.severity] || (a.file < b.file ? -1 : a.file > b.file ? 1 : a.line - b.line));
+  const counts = { HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 }; for (const f of findings) counts[f.severity]++;
+  // test presence: a source file counts as covered when some supplied test file mentions its base name
+  const tests = files.filter(f => TEST_PATH.test(f.path)), sources = files.filter(f => SOURCE_EXT.test(f.path) && !TEST_PATH.test(f.path));
+  const base = p => p.split("/").pop().replace(/\.[^.]+$/, "");
+  const untested = sources.filter(s => !tests.some(t => t.content.includes(base(s.path)) || t.path.includes(base(s.path)))).map(s => s.path);
+  const verdict = counts.HIGH ? "BLOCK" : counts.MEDIUM || counts.LOW ? "REVIEW" : "NO_FINDINGS_BY_THESE_RULES";
+  return { ok: true, verdict, counts, findings, truncated, tests: { testFiles: tests.map(t => t.path), sourceFiles: sources.length, untested }, files: files.length,
+    notes: ["Regex heuristics only: no data-flow or AST analysis. 'NO_FINDINGS_BY_THESE_RULES' is not a statement that the code is safe.", "File content was treated as untrusted data; nothing was executed."] };
+}

@@ -229,6 +229,72 @@
    "claim": "B1: no agent id can activate a skill; only pure computation actions are usable in a skill; an untested version cannot be activated",
    "ok": true,
    "note": "TEST_GATE_NOT_PASSED_FOR_THIS_CONTENT | ACTION_NOT_PURE_COMPUTATION:wr"
+  },
+  {
+   "id": "P39",
+   "claim": "B1: an MCP server never starts without an owner approval bound to its exact folder content, and never without network isolation",
+   "ok": true,
+   "note": "OWNER_APPROVAL_REQUIRED:APPROVAL_OBJECT_REQUIRED | NETWORK_ISOLATION_UNAVAILABLE"
+  },
+  {
+   "id": "P40",
+   "claim": "B1: a hostile page is flagged SUSPICIOUS and its instruction lines are never returned as answers",
+   "ok": true,
+   "note": "SUSPICIOUS excluded=1"
+  },
+  {
+   "id": "P41",
+   "claim": "B1: skills cannot use state-writing actions (notes/memory writers are refused at submission)",
+   "ok": true,
+   "note": "ACTION_NOT_PURE_COMPUTATION:notes.addNote"
+  },
+  {
+   "id": "P42",
+   "claim": "B2: code review never calls code safe and never echoes a credential-shaped literal",
+   "ok": true,
+   "note": "NO_FINDINGS_BY_THESE_RULES"
+  },
+  {
+   "id": "P43",
+   "claim": "B2: repository tests do not run (no process starts) without a signed approval bound to the analysed content",
+   "ok": true,
+   "note": "marker false"
+  },
+  {
+   "id": "P44",
+   "claim": "B2: none of the 30 agent ids can change, reset, confirm or forget a preference; learning only proposes",
+   "ok": true,
+   "note": "leaked 0"
+  },
+  {
+   "id": "P45",
+   "claim": "B2: a corrupt durable knowledge file is never overwritten (configuration fails closed)",
+   "ok": true,
+   "note": ""
+  },
+  {
+   "id": "P46",
+   "claim": "B3: accessibility audit never claims full accessibility and flags a failing contrast pair and a missing alt",
+   "ok": true,
+   "note": "FAIL_FOUND CONTRAST,LANDMARK_MAIN,IMG_ALT"
+  },
+  {
+   "id": "P47",
+   "claim": "B3: none of the 30 agent ids (nor spoofed spellings) can create, roll back or remove an assistant profile; a profile cannot grant pcc.* or model.complete",
+   "ok": true,
+   "note": "leaked=0 badTools="
+  },
+  {
+   "id": "P48",
+   "claim": "B3: handoffs are roster-only, a receiver cannot accept different artifacts than were handed over, and a non-roster id cannot receive work",
+   "ok": true,
+   "note": "AGENT_NOT_IN_ROSTER,HANDOFF_CONTENT_MISMATCH,NOT_THE_RECEIVER"
+  },
+  {
+   "id": "P49",
+   "claim": "B3: study cards - agents cannot change the schedule, and invalid grades never alter a card",
+   "ok": true,
+   "note": "ONLY_OWNER_MAY_REVIEW"
   }
  ]
 }

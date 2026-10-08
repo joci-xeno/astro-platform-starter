@@ -1,0 +1,97 @@
+// Governed repository analysis + sandboxed test run (85-capability audit C01 Coding-agent workspace; the governed-read and sandboxed-run slice).
+// What this is: a READ-ONLY look at a folder tree the caller points at (the Control Center only offers folders under <config>/repos/<name>), plus an optional run of its Node test files
+// inside the restricted launcher. What it is NOT: it never edits the repo, never installs dependencies, never runs a package manager or shell, never reaches the network, and does not push or open
+// pull requests (edits to a real repository remain owner-approved work outside this module; that part of C01 is NOT implemented).
+//   * Walk rules: lstat everywhere, symlinks and special files are skipped (reported), .git/node_modules/hidden dirs are skipped, hard caps on files/bytes/depth.
+//   * Review: the same deterministic rules as code-review.mjs on the source files (secrets are redacted in every output).
+//   * Test run: each test file is executed as its own Node process under `--permission` (read-only repo, scratch dir for writes, NO child processes, NO network namespace-or-refuse).
+//     Needs the OWNER's signed approval for REPO_TEST_RUN bound to "<name>#<content hash of the analysed files>"; a changed file needs a new approval. Results are untrusted text, size-capped and redacted.
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
+import { restrictedNodeCommand } from "./restricted-node.mjs";
+import { reviewCode } from "./code-review.mjs";
+import { redactSecrets } from "./text-compare.mjs";
+
+export const LIMITS = Object.freeze({ maxFiles: 3000, maxDepth: 10, maxFileBytes: 1048576, maxTotalBytes: 30 * 1048576, reviewFiles: 200, reviewFileChars: 200000, maxTestFiles: 20, testTimeoutMs: 20000, outputChars: 4000, maxScripts: 20 });
+const SKIP_DIRS = new Set(["node_modules", ".git", ".hg", ".svn", "dist", "build", "coverage", "__pycache__", ".venv", "venv"]);
+const LANG = { ".mjs": "JavaScript", ".cjs": "JavaScript", ".js": "JavaScript", ".jsx": "JavaScript", ".ts": "TypeScript", ".tsx": "TypeScript", ".py": "Python", ".sh": "Shell", ".bash": "Shell", ".rb": "Ruby", ".go": "Go", ".java": "Java", ".php": "PHP", ".cs": "C#", ".json": "JSON", ".md": "Markdown", ".html": "HTML", ".css": "CSS", ".yml": "YAML", ".yaml": "YAML" };
+const SOURCE = /\.(mjs|cjs|js|jsx|ts|tsx|py|sh|bash|rb|go|java|php|cs)$/i, TEST_FILE = /(^|\/)(tests?|__tests__|spec)\/.*\.(mjs|cjs|js)$|\.(test|spec)\.(mjs|cjs|js)$/i;
+const NAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
+
+/** Walk a repo folder. Returns {ok, files:[{rel, abs, size}], skipped:{...}} or {ok:false, reason}. */
+export function walkRepo(root) {
+  let st; try { st = fs.lstatSync(root); } catch { return { ok: false, reason: "REPO_NOT_FOUND" }; }
+  if (!st.isDirectory()) return { ok: false, reason: "REPO_MUST_BE_A_REAL_DIRECTORY" };
+  const files = [], skipped = { symlinks: 0, special: 0, oversize: 0, dirs: 0, hidden: 0 }; let total = 0, capped = false;
+  const visit = (d, depth) => {
+    if (depth > LIMITS.maxDepth) { capped = true; return; }
+    let ents; try { ents = fs.readdirSync(d, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1)); } catch { return; }
+    for (const e of ents) {
+      if (capped) return;
+      const abs = path.join(d, e.name), rel = path.relative(root, abs).split(path.sep).join("/"); let s; try { s = fs.lstatSync(abs); } catch { continue; }
+      if (s.isSymbolicLink()) { skipped.symlinks++; continue; }
+      if (s.isDirectory()) { if (SKIP_DIRS.has(e.name)) { skipped.dirs++; continue; } if (e.name.startsWith(".")) { skipped.hidden++; continue; } visit(abs, depth + 1); continue; }
+      if (!s.isFile()) { skipped.special++; continue; }
+      if (e.name.startsWith(".") && e.name !== ".gitignore") { skipped.hidden++; continue; }
+      if (s.size > LIMITS.maxFileBytes) { skipped.oversize++; continue; }
+      if (files.length >= LIMITS.maxFiles || total + s.size > LIMITS.maxTotalBytes) { capped = true; return; }
+      total += s.size; files.push({ rel, abs, size: s.size });
+    }
+  };
+  visit(root, 0);
+  return { ok: true, files, skipped, bytes: total, capped };
+}
+const contentHash = files => { const h = createHash("sha256"); for (const f of files) h.update(f.rel + "\0" + createHash("sha256").update(fs.readFileSync(f.abs)).digest("hex") + "\n"); return h.digest("hex"); };
+const isText = buf => !buf.subarray(0, 4096).includes(0);
+
+/** Read-only analysis: inventory, languages, tests, package scripts and a static review of the source files. */
+export function analyzeRepo(root) {
+  const w = walkRepo(root); if (!w.ok) return w;
+  const langs = {}, tests = []; let lines = 0;
+  const review = [];
+  for (const f of w.files) {
+    const ext = path.extname(f.rel).toLowerCase(), lang = LANG[ext]; if (lang) langs[lang] = (langs[lang] ?? 0) + 1;
+    if (TEST_FILE.test(f.rel)) tests.push(f.rel);
+    if (SOURCE.test(f.rel) && review.length < LIMITS.reviewFiles && f.size <= LIMITS.reviewFileChars) { const b = fs.readFileSync(f.abs); if (isText(b)) { const c = b.toString("utf8"); lines += c.split("\n").length; review.push({ path: f.rel, content: c }); } }
+  }
+  let pkg = null; const pj = w.files.find(f => f.rel === "package.json");
+  if (pj) { try { const j = JSON.parse(fs.readFileSync(pj.abs, "utf8")); pkg = { name: typeof j.name === "string" ? j.name.slice(0, 100) : null, version: typeof j.version === "string" ? j.version.slice(0, 40) : null, scripts: Object.fromEntries(Object.entries(j.scripts ?? {}).slice(0, LIMITS.maxScripts).map(([k, v]) => [k.slice(0, 40), redactSecrets(String(v)).slice(0, 200)])), dependencies: Object.keys(j.dependencies ?? {}).length, devDependencies: Object.keys(j.devDependencies ?? {}).length }; } catch { pkg = { error: "PACKAGE_JSON_UNREADABLE" }; } }
+  const rv = review.length ? reviewCode({ files: review }) : { ok: true, verdict: "NO_FINDINGS_BY_THESE_RULES", counts: { HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 }, findings: [], truncated: false, tests: { testFiles: [], sourceFiles: 0, untested: [] }, notes: [] };
+  return { ok: true, untrusted: true, files: w.files.length, bytes: w.bytes, capped: w.capped, skipped: w.skipped, languages: langs, sourceLinesReviewed: lines, testFiles: tests, package: pkg,
+    hash: contentHash(w.files), review: { verdict: rv.verdict, counts: rv.counts, findings: rv.findings.slice(0, 100), untested: rv.tests.untested.slice(0, 100), truncated: rv.truncated, notes: rv.notes },
+    note: "Read-only analysis of files as found. Nothing was executed, installed or modified. Repository content is untrusted data." };
+}
+
+/** Run each Node test file in the restricted launcher. Owner approval bound to the analysed content hash. */
+export async function runRepoTests({ name, root, ownerAuth, ownerApproval = null, isStopped = () => false, nodeBin = process.execPath, caps = null, timeoutMs = LIMITS.testTimeoutMs, scratchRoot = os.tmpdir() } = {}) {
+  if (typeof name !== "string" || !NAME.test(name)) return { ok: false, reason: "REPO_NAME_INVALID" };
+  if (!ownerAuth) return { ok: false, reason: "OWNER_AUTH_REQUIRED" };
+  let stopped = true; try { stopped = Boolean(isStopped()); } catch { /* fail closed */ }
+  if (stopped) return { ok: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" };
+  const a = analyzeRepo(root); if (!a.ok) return a;
+  const v = ownerAuth.verifyApproval(ownerApproval, { action: "REPO_TEST_RUN", subject: name + "#" + a.hash });
+  if (!v.allowed) return { ok: false, reason: "OWNER_APPROVAL_REQUIRED:" + v.reason, subject: name + "#" + a.hash };
+  const targets = a.testFiles.slice(0, LIMITS.maxTestFiles); if (!targets.length) return { ok: true, ran: 0, results: [], note: "No Node test files found (tests/ folder, *.test.mjs/js, *.spec.mjs/js)." };
+  const results = []; let level = null;
+  for (const rel of targets) {
+    const scratch = fs.mkdtempSync(path.join(scratchRoot, "repo-test-"));
+    const rc = restrictedNodeCommand({ nodeBin, script: path.join(root, rel), readDirs: [root, scratch], writeDirs: [scratch], allowNetwork: false, requireNoNetwork: true, caps, env: { TMPDIR: scratch, ATLASZ_REPO_TEST: "1" } });
+    if (!rc.ok) { fs.rmSync(scratch, { recursive: true, force: true }); return { ok: false, reason: rc.reason, results }; }       // fail closed: never run unrestricted
+    level = rc.level;
+    results.push(await new Promise(resolve => {
+      let out = "", done = false; const t0 = Date.now();
+      const fin = r => { if (done) return; done = true; clearTimeout(timer); fs.rmSync(scratch, { recursive: true, force: true }); resolve({ file: rel, durationMs: Date.now() - t0, ...r }); };
+      let child; try { child = spawn(rc.cmd, rc.args, { cwd: root, env: rc.env, stdio: ["ignore", "pipe", "pipe"], windowsHide: true }); } catch { return fin({ status: "ERROR", exitCode: null, output: "SPAWN_FAILED" }); }
+      const timer = setTimeout(() => { try { child.kill("SIGKILL"); } catch { /* gone */ } fin({ status: "TIMEOUT", exitCode: null, output: redactSecrets(out).slice(-LIMITS.outputChars) }); }, timeoutMs);
+      const take = d => { if (out.length < LIMITS.outputChars * 4) out += d; };
+      child.stdout.on("data", take); child.stderr.on("data", take);
+      child.on("error", () => fin({ status: "ERROR", exitCode: null, output: "PROCESS_ERROR" }));
+      child.on("close", code => fin({ status: code === 0 ? "PASSED" : "FAILED", exitCode: code, output: redactSecrets(out).slice(-LIMITS.outputChars) }));
+    }));
+  }
+  const failed = results.filter(r => r.status !== "PASSED").length;
+  return { ok: true, untrusted: true, ran: results.length, passed: results.length - failed, failed, results, isolation: level, note: "Each file ran alone in a read-only, no-network, no-child-process sandbox. A pass means the file exited 0 here, not that the repo is correct." };
+}

@@ -2,10 +2,10 @@
 import fs from "node:fs";
 import path from "node:path";
 
-export function createStore({ file = null, init = () => ({}) } = {}) {
+export function createStore({ file = null, init = () => ({}), mode = null } = {}) {
   let data = init();
   if (file && fs.existsSync(file)) { try { data = JSON.parse(fs.readFileSync(file, "utf8")); } catch { throw new Error("STORE_UNREADABLE:" + path.basename(file)); } }
-  const save = () => { if (!file) return; fs.mkdirSync(path.dirname(file), { recursive: true }); const t = file + ".tmp"; fs.writeFileSync(t, JSON.stringify(data)); fs.renameSync(t, file); };
+  const save = () => { if (!file) return; fs.mkdirSync(path.dirname(file), { recursive: true }); const t = file + ".tmp"; fs.writeFileSync(t, JSON.stringify(data), mode ? { mode } : undefined); fs.renameSync(t, file); };
   return { get data() { return data; }, save };
 }
 

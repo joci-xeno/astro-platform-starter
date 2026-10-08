@@ -1,30 +1,30 @@
 # ATLASZ V7.3 — Unified Master Gap Register
 
-Total gaps: **823** (registry 738, 85-capability 82, scans 3).
+Total gaps: **828** (registry 738, 85-capability 82, scans 8).
 
 LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence exists in this workspace.
 
 ## By reality
 - SANDBOX_TESTED_PARTIAL: 479
-- NOT_BUILT: 192
+- NOT_BUILT: 195
 - EXTERNAL: 58
 - STRUCTURE_ONLY: 56
-- MODULE_NOT_CONNECTED: 24
+- MODULE_NOT_CONNECTED: 26
 - UNTESTED: 10
 - OWNER_DECISION: 4
 
 ## By workstream
 - KNOWLEDGE_RESEARCH: 163
 - TYPED_TOOLS_MODEL_ROUTER: 92
-- SECURITY_OWNER: 65
-- MULTIMODAL_VOICE: 59
+- SECURITY_OWNER: 67
+- MULTIMODAL_VOICE: 60
 - PERSONAL_HUMAN_CORE: 54
 - MONEY_BUSINESS: 50
 - WINDOWS_CONTROL_CENTER: 49
-- AGENT_ORCHESTRATION: 43
+- AGENT_ORCHESTRATION: 44
 - RECOVERY_BACKUP: 37
+- CODE_SANDBOX_ENGINEERING: 27
 - SCHEDULER_PCC: 26
-- CODE_SANDBOX_ENGINEERING: 26
 - OBSERVABILITY_DOCTOR: 23
 - SECTION_S31: 17
 - UNASSIGNED: 15
@@ -48,9 +48,11 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - LIVE_VOICE: 2
 
 ## Reachability
-- Modules in atlasz-addons: 165; reachable from entry points: 162
+- Modules in atlasz-addons: 175; reachable from entry points: 170
+- ORPHAN: atlasz-addons/a11y-audit.mjs
 - ORPHAN: atlasz-addons/digital-twin.mjs
 - ORPHAN: atlasz-addons/evidence-record.mjs
+- ORPHAN: atlasz-addons/handoff-ledger.mjs
 - ORPHAN: atlasz-addons/tenant-isolation.mjs
 
 ## Modules without a test reference
