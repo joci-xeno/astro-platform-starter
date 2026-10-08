@@ -74,12 +74,12 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 
 ## M08 — Deep Research — **PARTIAL**
 - Registry links (candidates): V73-S03-011, V73-S07-005, V73-S07-016, V73-S09-005, V73-S09-006, V73-S09-015
-- Modules: brain/verifier.mjs; brain/evidence-sources.mjs; market-intelligence-engine.mjs; enterprise-knowledge-agentic-rag.mjs
-- Evidence: evidence-sources.test, brain verifier tests
-- Missing: Multi-source collection, citation tracking, evidence comparison, uncertainty report
-- Integration gaps / blockers: No live web provider; no citation ledger
+- Modules: research-ledger.mjs; knowledge-projects.mjs; brain/verifier.mjs; brain/evidence-sources.mjs; market-intelligence-engine.mjs; enterprise-knowledge-agentic-rag.mjs
+- Evidence: research-ledger.test (9) + research-ledger-hosted.test (2), 28 mutation checks; evidence-sources.test, brain verifier tests
+- Missing: Live multi-source collection (no web provider); semantic comparison of sources
+- Integration gaps / blockers: No live web provider: sources must be supplied as already-retrieved text; comparison is quote-coverage/keyword based, not semantic
 - Security: Fetched pages are untrusted; claims need provenance
-- Plan: Research ledger: source records (url/hash/retrieved_at), claims linked to sources, agreement/conflict/uncertainty; fetcher is injected (provider blocked)
+- Plan: BUILT: durable ledger of questions/findings/citations/contradictions/unresolved, status recomputed from live sources (VERIFIED/UNSUPPORTED/ASSUMPTION/OUTDATED/CONFLICTED/REFUTED/UNVERIFIABLE), hash-chained audit, kp.* + research.* typed tools, Control Center view. Live fetcher still blocked (provider)
 - Tests required: claim-source linkage, conflict flagging, stale-source detection, no uncited claim marked VERIFIED
 
 ## M09 — Video Intelligence — **EXTERNAL_BLOCKER**
@@ -206,10 +206,10 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 - Registry links (candidates): V73-S09-005, V73-S09-006, V73-S09-015, V73-S31-005, V73-S32-006, V73-S38-004
 - Modules: see M08
 - Evidence: see M08
-- Missing: see M08
+- Missing: Live collection and semantic synthesis (provider)
 - Integration gaps / blockers: see M08
 - Security: see M08
-- Plan: Shared with M08 (research ledger)
+- Plan: Ledger BUILT (see M08); live research needs a provider
 - Tests required: see M08
 
 ## C09 — Interactive Artifact Generation — **PARTIAL**
@@ -279,7 +279,7 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 - Missing: Fresh retrieval and stale-claim detection
 - Integration gaps / blockers: Web search runs through the agent's own tooling, not an ATLASZ runtime connector
 - Security: Fetched content untrusted
-- Plan: Research ledger with injected fetcher (see M08); freshness check uses retrieved_at
+- Plan: Ledger intake exists (research.add_source takes already-retrieved text with URL + retrievedAt; freshness/age-out is computed); the live fetcher itself is still an external provider
 - Tests required: No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.
 
 ## G03 — Multi-Agent Analysis — **PARTIAL**
@@ -423,14 +423,14 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 - Tests required: No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.
 
 ## GE04 — Grounded Search — **PARTIAL**
-- Registry links (candidates): ATLASZ-PKG84-026
-- Modules: see M08
-- Evidence: see M08
-- Missing: Citation verification, freshness
-- Integration gaps / blockers: see M08
-- Security: see M08
-- Plan: Shared with M08
-- Tests required: see M08
+- Registry links (candidates): ATLASZ-PKG84-026, ATLASZ-PKG84-027
+- Modules: research-ledger.mjs; knowledge-projects.mjs
+- Evidence: research-ledger.test (9) + research-ledger-hosted.test (2), 28 mutation checks
+- Missing: Grounding of live web search results (provider)
+- Integration gaps / blockers: Grounded over supplied sources only
+- Security: Fetched/added text is untrusted and screened
+- Plan: Citation re-verification and freshness (30-day age-out, superseded-version detection) BUILT; live search remains blocked
+- Tests required: (done for supplied sources) + live provider evidence
 
 ## GE05 — Productivity Suite Integration — **EXTERNAL_BLOCKER**
 - Registry links (candidates): V73-S02-001, V73-S02-002, V73-S12-006, V73-S18-010, V73-S18-014, V73-S20-001

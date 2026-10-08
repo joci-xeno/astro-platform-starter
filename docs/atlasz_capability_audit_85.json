@@ -254,13 +254,13 @@
     "V73-S09-006",
     "V73-S09-015"
    ],
-   "modules": "brain/verifier.mjs; brain/evidence-sources.mjs; market-intelligence-engine.mjs; enterprise-knowledge-agentic-rag.mjs",
+   "modules": "research-ledger.mjs; knowledge-projects.mjs; brain/verifier.mjs; brain/evidence-sources.mjs; market-intelligence-engine.mjs; enterprise-knowledge-agentic-rag.mjs",
    "status": "PARTIAL",
-   "evidence": "evidence-sources.test, brain verifier tests",
-   "missing": "Multi-source collection, citation tracking, evidence comparison, uncertainty report",
-   "integration_gaps": "No live web provider; no citation ledger",
+   "evidence": "research-ledger.test (9) + research-ledger-hosted.test (2), 28 mutation checks; evidence-sources.test, brain verifier tests",
+   "missing": "Live multi-source collection (no web provider); semantic comparison of sources",
+   "integration_gaps": "No live web provider: sources must be supplied as already-retrieved text; comparison is quote-coverage/keyword based, not semantic",
    "security": "Fetched pages are untrusted; claims need provenance",
-   "plan": "Research ledger: source records (url/hash/retrieved_at), claims linked to sources, agreement/conflict/uncertainty; fetcher is injected (provider blocked)",
+   "plan": "BUILT: durable ledger of questions/findings/citations/contradictions/unresolved, status recomputed from live sources (VERIFIED/UNSUPPORTED/ASSUMPTION/OUTDATED/CONFLICTED/REFUTED/UNVERIFIABLE), hash-chained audit, kp.* + research.* typed tools, Control Center view. Live fetcher still blocked (provider)",
    "tests_required": "claim-source linkage, conflict flagging, stale-source detection, no uncited claim marked VERIFIED",
    "final_status": "PARTIAL",
    "shared_infrastructure": [
@@ -554,10 +554,10 @@
    "modules": "see M08",
    "status": "PARTIAL",
    "evidence": "see M08",
-   "missing": "see M08",
+   "missing": "Live collection and semantic synthesis (provider)",
    "integration_gaps": "see M08",
    "security": "see M08",
-   "plan": "Shared with M08 (research ledger)",
+   "plan": "Ledger BUILT (see M08); live research needs a provider",
    "tests_required": "see M08",
    "final_status": "PARTIAL",
    "shared_infrastructure": [
@@ -708,7 +708,7 @@
    "missing": "Fresh retrieval and stale-claim detection",
    "integration_gaps": "Web search runs through the agent's own tooling, not an ATLASZ runtime connector",
    "security": "Fetched content untrusted",
-   "plan": "Research ledger with injected fetcher (see M08); freshness check uses retrieved_at",
+   "plan": "Ledger intake exists (research.add_source takes already-retrieved text with URL + retrievedAt; freshness/age-out is computed); the live fetcher itself is still an external provider",
    "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
    "final_status": "EXTERNAL_BLOCKER",
    "shared_infrastructure": [
@@ -1027,16 +1027,17 @@
    "id": "GE04",
    "description": "Grounded Search",
    "registry_links": [
-    "ATLASZ-PKG84-026"
+    "ATLASZ-PKG84-026",
+    "ATLASZ-PKG84-027"
    ],
-   "modules": "see M08",
+   "modules": "research-ledger.mjs; knowledge-projects.mjs",
    "status": "PARTIAL",
-   "evidence": "see M08",
-   "missing": "Citation verification, freshness",
-   "integration_gaps": "see M08",
-   "security": "see M08",
-   "plan": "Shared with M08",
-   "tests_required": "see M08",
+   "evidence": "research-ledger.test (9) + research-ledger-hosted.test (2), 28 mutation checks",
+   "missing": "Grounding of live web search results (provider)",
+   "integration_gaps": "Grounded over supplied sources only",
+   "security": "Fetched/added text is untrusted and screened",
+   "plan": "Citation re-verification and freshness (30-day age-out, superseded-version detection) BUILT; live search remains blocked",
+   "tests_required": "(done for supplied sources) + live provider evidence",
    "final_status": "PARTIAL",
    "shared_infrastructure": [
     "RESEARCH_LEDGER"

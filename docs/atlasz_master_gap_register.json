@@ -16,14 +16,14 @@
   ]
  },
  "summary": {
-  "total_gaps": 787,
+  "total_gaps": 788,
   "by_source": {
-   "REGISTRY": 705,
+   "REGISTRY": 706,
    "CAPABILITY_85": 79,
    "IMPORT_SCAN": 3
   },
   "by_reality": {
-   "SANDBOX_TESTED_PARTIAL": 437,
+   "SANDBOX_TESTED_PARTIAL": 438,
    "NOT_BUILT": 198,
    "EXTERNAL": 58,
    "STRUCTURE_ONLY": 56,
@@ -33,7 +33,7 @@
   },
   "by_workstream": {
    "KNOWLEDGE_RESEARCH": 158,
-   "TYPED_TOOLS_MODEL_ROUTER": 86,
+   "TYPED_TOOLS_MODEL_ROUTER": 87,
    "SECURITY_OWNER": 65,
    "MULTIMODAL_VOICE": 58,
    "PERSONAL_HUMAN_CORE": 53,
@@ -65,7 +65,7 @@
    "SECTION_S16": 1
   },
   "by_status": {
-   "PARTIAL": 487,
+   "PARTIAL": 488,
    "MISSING": 198,
    "EXTERNAL_BLOCKER": 58,
    "STRUCTURAL_ONLY": 28,
@@ -74,11 +74,11 @@
    "DISCONNECTED": 2,
    "DISCONNECTED_BY_DESIGN": 1
   },
-  "registry_items": 916,
-  "registry_gaps": 705,
+  "registry_items": 917,
+  "registry_gaps": 706,
   "capabilities_with_gaps": 79,
-  "modules_total": 142,
-  "modules_reachable_from_entrypoints": 139,
+  "modules_total": 143,
+  "modules_reachable_from_entrypoints": 140,
   "orphan_modules": [
    "atlasz-addons/digital-twin.mjs",
    "atlasz-addons/evidence-record.mjs",
@@ -96,7 +96,7 @@
   ],
   "todo_markers": 0,
   "panels": {
-   "CONNECTED": 39
+   "CONNECTED": 40
   },
   "live_verified_items": 0,
   "note": "LIVE_VERIFIED is intentionally zero: no live provider, payment, delivery or Windows-run evidence exists in this workspace."
@@ -116,6 +116,14 @@
    "apis": [
     "/api/pcc",
     "/api/pcc/action"
+   ],
+   "status": "CONNECTED"
+  },
+  {
+   "panel": "research",
+   "apis": [
+    "/api/research",
+    "/api/research/action"
    ],
    "status": "CONNECTED"
   },
@@ -10280,6 +10288,20 @@
    "depends_on": ""
   },
   {
+   "gap_id": "GAP-ATLASZ-PKG84-027",
+   "source": "REGISTRY",
+   "requirement_id": "ATLASZ-PKG84-027",
+   "title": "Research Ledger: durable, hash-chained record of research questions, findings, evidence, contradictions and unresolved questions built ON Knowledge Projects/Document Center (no dup",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P1",
+   "modules": "atlasz-addons/research-ledger.mjs; atlasz-addons/knowledge-projects.mjs; atlasz-runtime/supervisor-safe.mjs; atlasz-control-center/core.mjs; atlasz-control-center/server.mjs; atlasz-control-center/pub",
+   "tests": "['atlasz-tests/research-ledger.test.mjs', 'atlasz-tests/research-ledger-hosted.test.mjs']",
+   "blocker": "No live web/search provider, so sources must be supplied as retrieved text; support check is claim-term coverage of the quote (keyword), not semantic entailment; no notification of owner on new confli",
+   "workstream": "TYPED_TOOLS_MODEL_ROUTER",
+   "depends_on": ""
+  },
+  {
    "gap_id": "GAP-CAP-M01",
    "source": "CAPABILITY_85",
    "requirement_id": "M01",
@@ -10385,9 +10407,9 @@
    "status": "PARTIAL",
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
-   "modules": "brain/verifier.mjs; brain/evidence-sources.mjs; market-intelligence-engine.mjs; enterprise-knowledge-agentic-rag.mjs",
-   "tests": "evidence-sources.test, brain verifier tests",
-   "blocker": "No live web provider; no citation ledger",
+   "modules": "research-ledger.mjs; knowledge-projects.mjs; brain/verifier.mjs; brain/evidence-sources.mjs; market-intelligence-engine.mjs; enterprise-knowledge-agentic-rag.mjs",
+   "tests": "research-ledger.test (9) + research-ledger-hosted.test (2), 28 mutation checks; evidence-sources.test, brain verifier tests",
+   "blocker": "No live web provider: sources must be supplied as already-retrieved text; comparison is quote-coverage/keyword based, not semantic",
    "workstream": "KNOWLEDGE_RESEARCH",
    "depends_on": "V73-S03-011;V73-S07-005;V73-S07-016;V73-S09-005;V73-S09-006;V73-S09-015"
   },
@@ -10819,11 +10841,11 @@
    "status": "PARTIAL",
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
-   "modules": "see M08",
-   "tests": "see M08",
-   "blocker": "see M08",
+   "modules": "research-ledger.mjs; knowledge-projects.mjs",
+   "tests": "research-ledger.test (9) + research-ledger-hosted.test (2), 28 mutation checks",
+   "blocker": "Grounded over supplied sources only",
    "workstream": "KNOWLEDGE_RESEARCH",
-   "depends_on": "ATLASZ-PKG84-026"
+   "depends_on": "ATLASZ-PKG84-026;ATLASZ-PKG84-027"
   },
   {
    "gap_id": "GAP-CAP-GE05",

@@ -95,7 +95,7 @@
     52
    ]
   },
-  "item_verified_count": 916
+  "item_verified_count": 917
  },
  "requirements": [
   {
@@ -23004,6 +23004,33 @@
    "test_status": "TESTED_SANDBOX",
    "classification": "SANDBOX",
    "next_action": "Research ledger (M08/C08/G02) next; tags and a typed decision log on top of project notes"
+  },
+  {
+   "id": "ATLASZ-PKG84-027",
+   "title": "Research Ledger: durable, hash-chained record of research questions, findings, evidence, contradictions and unresolved questions built ON Knowledge Projects/Document Center (no duplicate source store). Finding status is recomputed from re-verified citations on every read (VERIFIED / UNSUPPORTED / ASSUMPTION / OUTDATED / CONFLICTED / REFUTED / REJECTED / UNVERIFIABLE); evidence must verify now and cover the claim terms; superseded versions and snapshots older than 30 days age out; same-topic/different-value, declared and supporting-vs-refuting conflicts block VERIFIED until the OWNER resolves them; agent-authored claims never self-verify; claims built on sources a role cannot read are redacted for that role; secrets/injection in claims rejected; hosted as research.* typed tools (agent role) and a Control Center Research Ledger view",
+   "level": "item",
+   "section": 77,
+   "description": "Research Ledger: durable, hash-chained record of research questions, findings, evidence, contradictions and unresolved questions built ON Knowledge Projects/Document Center (no duplicate source store). Finding status is recomputed from re-verified citations on every read (VERIFIED / UNSUPPORTED / ASSUMPTION / OUTDATED / CONFLICTED / REFUTED / REJECTED / UNVERIFIABLE); evidence must verify now and cover the claim terms; superseded versions and snapshots older than 30 days age out; same-topic/different-value, declared and supporting-vs-refuting conflicts block VERIFIED until the OWNER resolves them; agent-authored claims never self-verify; claims built on sources a role cannot read are redacted for that role; secrets/injection in claims rejected; hosted as research.* typed tools (agent role) and a Control Center Research Ledger view",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/research-ledger.mjs; atlasz-addons/knowledge-projects.mjs; atlasz-runtime/supervisor-safe.mjs; atlasz-control-center/core.mjs; atlasz-control-center/server.mjs; atlasz-control-center/public/app.js",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/research-ledger.test.mjs",
+    "atlasz-tests/research-ledger-hosted.test.mjs"
+   ],
+   "evidence": [
+    "9+2 tests; 28 mutation checks caught (one equivalent defensive mutant: finding-level tenant check is duplicated by the question-level check)"
+   ],
+   "blocker": "No live web/search provider, so sources must be supplied as retrieved text; support check is claim-term coverage of the quote (keyword), not semantic entailment; no notification of owner on new conflicts",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Task 2 of this workstream is not started; connect a fetcher only after owner-approved provider path exists"
   }
  ]
 }

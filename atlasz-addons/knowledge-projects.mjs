@@ -31,7 +31,7 @@ export function createKnowledgeProjects({ file = null, documents, security = nul
   const log = (kind, d) => { try { blackBox?.record({ kind, ...d }); } catch { /* audit must not change behaviour */ } };
   const proj = (id, tenantId) => { const p = S.projects[id]; return p && p.tenantId === tenantId ? p : null; };
   const roleOk = (p, role) => role === "OWNER" || (p.allowedRoles ?? ["OWNER"]).includes(role);
-  const pubMember = m => ({ id: m.id, kind: m.kind, title: m.title, ref: m.ref ?? null, addedAt: m.addedAt, screening: m.screening?.decision ?? null, classification: m.classification ?? null });
+  const pubMember = m => ({ id: m.id, kind: m.kind, title: m.title, ref: m.ref ?? null, url: m.url ?? null, retrievedAt: m.retrievedAt ?? null, addedAt: m.addedAt, screening: m.screening?.decision ?? null, classification: m.classification ?? null });
 
   function create({ tenantId, name, description = "", allowedRoles = ["OWNER"] } = {}) {
     if (!tenantId) throw new Error("TENANT_REQUIRED"); if (!String(name ?? "").trim()) throw new Error("NAME_REQUIRED");

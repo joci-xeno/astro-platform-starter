@@ -20,6 +20,7 @@ import { buildDailyBrief, answerQuery, DEFAULT_PREFS, briefDue, markBriefShown }
 import { assessImpact } from "../atlasz-addons/human-core.mjs";
 import { createMobileApi } from "../atlasz-addons/mobile-api.mjs";
 import { createApprovalRequests } from "../atlasz-addons/approval-requests.mjs";
+import { createResearchLedger } from "../atlasz-addons/research-ledger.mjs";
 import { createKnowledgeProjects } from "../atlasz-addons/knowledge-projects.mjs";
 import { createDocumentCenter } from "../atlasz-addons/document-center.mjs";
 import { createUniversalInbox } from "../atlasz-addons/universal-inbox.mjs";
@@ -295,6 +296,22 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
       default: throw new Error("UNKNOWN_KP_OP");
     }
   }
+  // Research Ledger (owner view): same files as the runtime. Resolving a contradiction is OWNER-only and available only here.
+  const rlInst = () => createResearchLedger({ file: path.join(stateDir, "research", "ledger.json"), knowledge: kpInst() }), RW = { tenantId: KP_T, role: "OWNER" };
+  const research = () => { try { const r = rlInst(), qs = r.list(RW).map(q => r.report(q.id, RW)); return { state: "CONNECTED", summary: r.summary(RW), projects: kpInst().list({ tenantId: KP_T }), questions: qs, events: r.events(RW, { limit: 30 }) }; } catch (e) { return { state: "UNREADABLE", error: String(e.message) }; } };
+  function researchAction({ op, ...a } = {}) {
+    const r = rlInst();
+    switch (op) {
+      case "openQuestion": return r.openQuestion({ projectId: a.projectId, text: a.text }, RW);
+      case "addSource": return r.addSource(a.projectId, a, RW);
+      case "addFinding": return r.addFinding(a.questionId, a, RW);
+      case "attachEvidence": return r.attachEvidence(a.findingId, { citation: a.citation, relation: a.relation }, RW);
+      case "declareContradiction": return r.declareContradiction(a.a, a.b, { note: a.note }, RW);
+      case "resolveContradiction": return r.resolveContradiction(a.id, { winner: a.winner ?? null, note: a.note }, RW);
+      case "report": return r.report(a.questionId, RW);
+      default: throw new Error("UNKNOWN_RESEARCH_OP");
+    }
+  }
   const inboxMod = () => createUniversalInbox({ dir: path.join(stateDir, "inbox"), ownerAuth: ownerAuth() });
   const inbox = () => { const i = inboxMod(); return { counts: i.counts(), chain: i.verify(), items: i.list().slice(0, 100), note: "Drafts are never sent from here. Sending needs a proven connector, an open kill switch and your signed approval." }; };
   const voice = () => { const v = createVoiceSession({}); const st = v.status(); return { ...st, note: st.live ? null : "BLOCKED: no tested speech-to-text and text-to-speech provider is attached, so voice is not live. Voice can never approve anything." }; };
@@ -393,6 +410,6 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   };
 
   const moneyViews = createMoneyViews({ stateDir });
-  return { pcc, pccAction, knowledge, knowledgeAction, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { pcc, pccAction, knowledge, knowledgeAction, research, researchAction, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }
