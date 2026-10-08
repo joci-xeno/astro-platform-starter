@@ -53,7 +53,7 @@ const views = {
         h("button", { class: "btn", onclick: async () => { const r = await ask({ title: "Signature phrase", fields: [{ name: "signaturePhrase", label: "Phrase", value: b.prefs.signaturePhrase }], ok: "Save" }); if (r) act("Save phrase", "/api/prefs", { signaturePhrase: r.signaturePhrase }); } }, "Change phrase")), note("The phrase is only a friendly signature - never a credential.")];
   },
   async plugins() {
-    const p = await api("/api/plugins"), mcpv = await api("/api/mcp"), repov = await api("/api/repos");
+    const p = await api("/api/plugins"), mcpv = await api("/api/mcp"), repov = await api("/api/repos"), protov = await api("/api/prototypes");
     const PASS2 = PASS;
     return [h("h2", {}, "Plugins / Extensions / Themes"), note(p.note),
       table(["Name", "Kind", "Version", "Permissions", "Status", "Actions"], p.plugins.map(x => [x.name + " (" + x.id + ")", x.kind, x.version, x.permissions.join(", ") || "none", pill(x.status) , 
@@ -80,6 +80,13 @@ const views = {
         h("button", { class: "btn", onclick: () => act("Analyse " + name, "/api/repos/analyze", { name }, r => { window.__repoResult = { name, kind: "analysis", r: r.result?.result ?? r.result ?? r }; }) }, "Analyse"),
         h("button", { class: "btn primary", onclick: async () => { const r = await ask({ title: "Run tests of " + name, text: "Each test file runs alone in a read-only, no-network, no-child-process sandbox. Approval is bound to the exact analysed content.", fields: [PASS2], ok: "Run (signs this content)" }); if (r) act("Run tests", "/api/repos/test", { name, passphrase: r.passphrase }, x => { window.__repoResult = { name, kind: "tests", r: x.result?.result ?? x.result ?? x }; }); } }, "Run tests"))])) : note("No repository folders found in the config 'repos' folder."),
       window.__repoResult ? [h("h3", {}, "Last " + window.__repoResult.kind + ": " + window.__repoResult.name), h("pre", { class: "code" }, JSON.stringify(window.__repoResult.r, null, 2).slice(0, 6000))] : null,
+      h("h2", {}, "Prototype builder (sandbox templates with generated tests)"), note(protov.note ?? protov.reason ?? "", protov.state === "CONNECTED" ? "info" : "warn"),
+      protov.state === "CONNECTED" ? [h("div", { class: "row" },
+        h("button", { class: "btn primary", onclick: async () => { const r = await ask({ title: "New prototype", text: "Templates: " + protov.templates.map(t => t.id).join(", ") + ". Parameters are JSON, e.g. {\"ops\":[\"slugify\"]} or {\"routes\":[{\"path\":\"/\",\"body\":\"hi\"}]}. Nothing is written until you press Generate.", fields: [{ name: "template", label: "Template", value: "text-transform" }, { name: "name", label: "Folder name (a-z, 0-9, -)" }, { name: "idea", label: "Idea (one line)" }, { name: "params", label: "Parameters (JSON)", value: "{}" }], ok: "Preview" }); if (!r) return; let params; try { params = JSON.parse(r.params || "{}"); } catch { return note("Parameters are not valid JSON.", "bad"); } const spec = { template: r.template, name: r.name, idea: r.idea, params };
+          act("Preview prototype", "/api/prototypes/action", { op: "preview", args: spec }, async x => { const pv = x.result?.result ?? x.result ?? x; window.__protoResult = { kind: "preview", r: pv }; if (pv.ok) { const g = await ask({ title: "Generate " + spec.name + "?", text: "Files: " + pv.files.map(f => f.path).join(", "), ok: "Generate" }); if (g) act("Generate prototype", "/api/prototypes/action", { op: "generate", args: spec }); } }); } }, "New prototype…")),
+      protov.prototypes.length ? table(["Prototype", "Template", "Status", "Actions"], protov.prototypes.map(x => [x.name, x.template, pill(x.status), h("div", { class: "row", style: "margin:0" },
+        h("button", { class: "btn primary", onclick: async () => { const r = await ask({ title: "Run generated tests of " + x.name, text: "Runs in a read-only, no-network, no-child-process sandbox. Approval is bound to the exact content; a pass is not a production-readiness claim.", fields: [PASS2], ok: "Run (signs this content)" }); if (r) act("Run prototype tests", "/api/prototypes/action", { op: "test", args: { name: x.name, passphrase: r.passphrase } }, y => { window.__protoResult = { kind: "tests", name: x.name, r: y.result?.result ?? y.result ?? y }; }); } }, "Run tests"))])) : note("No prototypes yet."),
+      window.__protoResult ? [h("h3", {}, "Last " + window.__protoResult.kind), h("pre", { class: "code" }, JSON.stringify(window.__protoResult.r, null, 2).slice(0, 6000))] : null] : null,
       p.rejected.length ? [h("h2", {}, "Rejected packages"), table(["Folder", "Problems"], p.rejected.map(x => [x.dir.split(/[\\/]/).slice(-1)[0], x.problems.join(", ")]))] : null];
   },
   async finance() {
@@ -95,8 +102,9 @@ const views = {
       h("h2", {}, "Per job"), table(["Job", "Verified received", "Cost", "Net"], jobs.map(([k, v]) => [k, usd(v.verifiedReceivedUsd), usd(v.costUsd), usd(v.verifiedNetProfitUsd)]))];
   },
   async evidence() {
-    const e = await api("/api/evidence");
-    return [h("h2", {}, "Evidence / audit logs"), note(e.note), h("h2", {}, "Hash-chained logs"),
+    const e = await api("/api/evidence"); const liveList = h("ul", { class: "code", style: "max-height:16rem;overflow:auto;list-style:none;padding:.5rem;margin:0", "aria-live": "off" }), liveStatus = h("p", { class: "muted", role: "status" }, "Live: connecting...");
+    startLive(liveList, liveStatus);
+    return [h("h2", {}, "Live tool and progress feed"), note("Read-only stream of the Black Box (secrets redacted). It cannot change anything."), liveStatus, liveList, h("h2", {}, "Evidence / audit logs"), note(e.note), h("h2", {}, "Hash-chained logs"),
       table(["Log", "Present", "Intact", "Entries", "Head"], e.logs.map(l => [l.log, l.present ? "yes" : "no", l.present ? pill(l.ok ? "OK" : "FAIL") : "—", String(l.entries ?? ""), (l.head ?? "").slice(0, 16)])),
       h("h2", {}, "Evidence records"), e.records.length ? table(["File", "Environment", "Result", "When"], e.records.map(r => [r.file, r.environment ?? "?", r.result ?? "?", r.timestamp ?? ""])) : note("No evidence records found in the configured evidence directory.")];
   },
@@ -474,8 +482,32 @@ views.observations = async () => {
     h("h3", {}, "Recent audit events (content-free)"), table(["#", "At", "Type", "By"], x.events.map(e => [e.n, e.at, e.type, e.by]))];
 };
 const NAMES = { home: "Home", pcc: "Tasks / Reminders", observations: "Observation Memory", media: "Multimodal", sandbox: "Code Sandbox", workbench: "Workbench", projects: "Projects & Workflows", research: "Research Ledger", knowledge: "Knowledge Projects", owner_safety: "OWNER SAFETY / CONTROL", overview: "Overview", plugins: "Plugins / Themes", finance: "Revenue / Costs / Profit", evidence: "Evidence / Audit", agents: "Agents (5+25)", jobs: "Jobs / Opportunities", money: "Money Engine", crm_inbox: "CRM / Graph / Inbox", approvals: "Approvals", providers: "Model / Tool health", errors: "Errors & Blockers", owner: "Owner Controls", backup: "Backup / Restore / LKG", doctor: "System Doctor", updates: "Update Center", voice: "Voice", documents: "Documents", inbox: "Inbox", connectors: "Connectors", techwatch: "Tech Watch", brain_status: "Brain · Status", brain_orchestrator: "Brain · Orchestrator", brain_planning: "Brain · Planning", brain_capabilities: "Brain · Capability Graph", brain_knowledge: "Brain · Knowledge", brain_simulation: "Brain · Simulation", brain_verification: "Brain · Verification", brain_security: "Brain · Security", brain_opportunities: "Brain · Opportunities", brain_factory: "Brain · Business Factory", brain_blackbox: "Brain · Black Box", brain_recovery: "Brain · Recovery", brain_behavior: "Brain · Behavior Anomalies", brain_health: "Brain · Health", brain_command: "Owner Command" };
+// G12 live feed: fetch-based SSE reader (EventSource cannot send the token header). Read-only; stops when the view changes.
+let liveAbort = null;
+function stopLive() { try { liveAbort?.abort(); } catch {} liveAbort = null; }
+function startLive(list, status) {
+  stopLive(); const ctl = new AbortController(); liveAbort = ctl; let n = 0;
+  (async () => {
+    try {
+      const res = await fetch("/api/stream", { headers: { "x-atlasz-token": TOKEN }, signal: ctl.signal });
+      if (!res.ok) { status.textContent = res.status === 503 ? "Too many live streams are open." : "Live feed unavailable (" + res.status + ")."; return; }
+      status.textContent = "Live: connected (read-only)."; const rd = res.body.getReader(), dec = new TextDecoder(); let buf = "";
+      for (;;) {
+        const { value, done } = await rd.read(); if (done) break; buf += dec.decode(value, { stream: true });
+        let i; while ((i = buf.indexOf("\n\n")) >= 0) {
+          const f = buf.slice(0, i); buf = buf.slice(i + 2); const ev = /^event: (.*)$/m.exec(f)?.[1], dat = /^data: (.*)$/m.exec(f)?.[1], id = /^id: (.*)$/m.exec(f)?.[1];
+          if (!dat || ev === "reset" || ev === "stream-error") { if (ev) status.textContent = ev === "reset" ? "Live: log restarted." : "Live: source unreadable (will retry)."; continue; }
+          let o = {}; try { o = JSON.parse(dat); } catch { continue; }
+          list.prepend(h("li", {}, "#" + id + " " + (o.at ?? "") + " " + (o.event ?? ev) + " " + JSON.stringify(o.data ?? "").slice(0, 160))); if (++n > 200) list.lastChild?.remove();
+        }
+      }
+      status.textContent = "Live: stream ended.";
+    } catch (e) { if (e.name !== "AbortError") status.textContent = "Live feed stopped."; }
+  })();
+}
 let current = "home";
 async function render() {
+  if (current !== "evidence") stopLive();
   $("#nav").replaceChildren(h("h1", {}, "ATLASZ"), h("button", { class: "btn danger big", style: "margin:6px 10px;width:calc(100% - 20px)", onclick: async () => { const r = await ask({ title: "EMERGENCY STOP", text: "Stops all new dispatch and external actions at once. Nothing is deleted.", fields: [PASS], danger: true, ok: "EMERGENCY STOP" }); if (r) act("Emergency stop", "/api/owner-safety/action", { action: "EMERGENCY_STOP", passphrase: r.passphrase }); } }, "EMERGENCY STOP"), ...Object.entries(NAMES).map(([k, n]) => h("button", { "aria-current": k === current ? "page" : null, onclick: () => { current = k; render(); } }, n)));
   const main = $("#main");
   try {

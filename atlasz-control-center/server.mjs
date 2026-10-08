@@ -7,6 +7,8 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { createControlCenterCore } from "./core.mjs";
+import { createEventStream } from "../atlasz-addons/event-stream.mjs";
+import { readAuditFile } from "../atlasz-addons/audit-chain.mjs";
 
 const PUBLIC = path.join(path.dirname(fileURLToPath(import.meta.url)), "public");
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml" };
@@ -17,14 +19,15 @@ export function createControlCenterServer(opts = {}) {
   const token = opts.token ?? randomBytes(24).toString("hex");
   let port = 0;
   const get = { "/api/status": () => core.status(), "/api/opportunities": () => core.opportunities(), "/api/approvals": () => core.approvals(), "/api/backups": () => core.backups(),
-    "/api/repos": () => core.repos(), "/api/finance": () => core.finance(), "/api/documents": () => core.documents(), "/api/knowledge": () => core.knowledge(), "/api/research": () => core.research(), "/api/sandbox": () => core.sandbox(), "/api/workbench": () => core.workbench(), "/api/media": () => core.media(), "/api/observations": () => core.observations(), "/api/brain": () => core.brain(), "/api/money-engine": () => core.moneyEngine(), "/api/money-jobs": () => core.moneyJobs(), "/api/money-agents": () => core.moneyAgents(), "/api/money-recurring": () => core.moneyRecurring(), "/api/crm-inbox": () => core.crmInbox(), "/api/owner-safety": () => core.ownerSafety(), "/api/inbox": () => core.inbox(), "/api/voice": () => core.voice(), "/api/connectors": () => core.connectors(), "/api/techwatch": () => core.techWatch(), "/api/evidence": () => core.evidence(), "/api/brief": () => core.brief({ markShown: true }), "/api/pcc": () => core.pcc(), "/api/prefs": () => core.prefs(), "/api/plugins": () => core.plugins(), "/api/mcp": () => core.mcp(), "/api/theme": () => core.theme(), "/api/doctor": () => core.doctor(), "/api/updates": () => core.updates() };
+    "/api/repos": () => core.repos(), "/api/prototypes": () => core.prototypes(), "/api/finance": () => core.finance(), "/api/documents": () => core.documents(), "/api/knowledge": () => core.knowledge(), "/api/research": () => core.research(), "/api/sandbox": () => core.sandbox(), "/api/workbench": () => core.workbench(), "/api/media": () => core.media(), "/api/observations": () => core.observations(), "/api/brain": () => core.brain(), "/api/money-engine": () => core.moneyEngine(), "/api/money-jobs": () => core.moneyJobs(), "/api/money-agents": () => core.moneyAgents(), "/api/money-recurring": () => core.moneyRecurring(), "/api/crm-inbox": () => core.crmInbox(), "/api/owner-safety": () => core.ownerSafety(), "/api/inbox": () => core.inbox(), "/api/voice": () => core.voice(), "/api/connectors": () => core.connectors(), "/api/techwatch": () => core.techWatch(), "/api/evidence": () => core.evidence(), "/api/brief": () => core.brief({ markShown: true }), "/api/pcc": () => core.pcc(), "/api/prefs": () => core.prefs(), "/api/plugins": () => core.plugins(), "/api/mcp": () => core.mcp(), "/api/theme": () => core.theme(), "/api/doctor": () => core.doctor(), "/api/updates": () => core.updates() };
   const post = {
     "/api/owner-key": b => core.provisionOwnerKey(b), "/api/approvals/decide": b => core.decideApproval(b), "/api/emergency": b => core.setEmergency(b), "/api/safe-mode/exit": b => core.exitSafeMode(b),
     "/api/brain/command": b => core.brainCommand(b), "/api/owner-safety/action": b => core.ownerSafetyAction(b), "/api/runtime/start": () => core.startRuntime(), "/api/runtime/stop": () => core.stopRuntime(),
     "/api/backup": b => core.backupNow(b), "/api/backup/drill": () => core.drill(), "/api/backup/mark-lkg": b => core.markLastKnownGood(b),
     "/api/restore/lkg": b => core.restoreLastKnownGood(b), "/api/restore/backup": b => core.restoreFromBackup(b),
     "/api/updates/check": () => core.updateActions.check(), "/api/updates/test": b => core.updateActions.test(b), "/api/updates/install": b => core.updateActions.install(b),
-    "/api/chat": b => core.chat(b), "/api/pcc/action": b => core.pccAction(b), "/api/knowledge/action": b => core.knowledgeAction(b), "/api/research/action": b => core.researchAction(b), "/api/sandbox/run": b => core.sandboxRun(b), "/api/workbench/action": b => core.workbenchAction(b), "/api/voice/action": b => core.voiceAction(b), "/api/observations/action": b => core.observationsAction(b), "/api/prefs": b => core.setPrefs(b), "/api/plugins/enable": b => core.pluginActions.enable(b), "/api/repos/analyze": b => core.repoActions.analyze(b), "/api/repos/test": b => core.repoActions.test(b), "/api/mcp/start": b => core.mcpActions.start(b), "/api/mcp/call": b => core.mcpActions.call(b), "/api/mcp/stop": b => core.mcpActions.stop(b), "/api/plugins/install": b => core.pluginActions.install(b), "/api/plugins/rollback": b => core.pluginActions.rollback(b), "/api/plugins/uninstall": b => core.pluginActions.uninstall(b), "/api/plugins/disable": b => core.pluginActions.disable(b), "/api/plugins/theme": b => core.pluginActions.setTheme(b), "/api/plugins/reset": b => core.pluginActions.resetQuarantine(b),
+    "/api/chat": b => core.chat(b), "/api/pcc/action": b => core.pccAction(b), "/api/knowledge/action": b => core.knowledgeAction(b), "/api/research/action": b => core.researchAction(b), "/api/sandbox/run": b => core.sandboxRun(b), "/api/workbench/action": b => core.workbenchAction(b), "/api/voice/action": b => core.voiceAction(b), "/api/observations/action": b => core.observationsAction(b), "/api/prefs": b => core.setPrefs(b), "/api/plugins/enable": b => core.pluginActions.enable(b), "/api/repos/analyze": b => core.repoActions.analyze(b), "/api/repos/test": b => core.repoActions.test(b),
+    "/api/prototypes/action": b => (b && typeof b.op === "string" && Object.hasOwn(core.prototypeActions, b.op) ? core.prototypeActions[b.op](b.args ?? {}) : Promise.reject(new Error("PROTOTYPE_OP_UNKNOWN"))), "/api/mcp/start": b => core.mcpActions.start(b), "/api/mcp/call": b => core.mcpActions.call(b), "/api/mcp/stop": b => core.mcpActions.stop(b), "/api/plugins/install": b => core.pluginActions.install(b), "/api/plugins/rollback": b => core.pluginActions.rollback(b), "/api/plugins/uninstall": b => core.pluginActions.uninstall(b), "/api/plugins/disable": b => core.pluginActions.disable(b), "/api/plugins/theme": b => core.pluginActions.setTheme(b), "/api/plugins/reset": b => core.pluginActions.resetQuarantine(b),
     "/api/updates/rollback": b => core.updateActions.rollback(b), "/api/updates/auto": b => core.updateActions.setAuto(b), "/api/updates/unfreeze": b => core.updateActions.unfreeze(b)
   };
   const send = (res, code, obj) => { res.writeHead(code, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" }); res.end(JSON.stringify(obj)); };
@@ -35,6 +38,7 @@ export function createControlCenterServer(opts = {}) {
     req.on("error", reject);
   });
 
+  const BB = path.join(opts.stateDir ?? ".", "brain", "blackbox.jsonl"), stream = createEventStream({ read: () => (fs.existsSync(BB) ? readAuditFile(BB) : []) });
   const server = http.createServer(async (req, res) => {
     try {
       const host = String(req.headers.host || "");
@@ -50,6 +54,9 @@ export function createControlCenterServer(opts = {}) {
         return res.end(fs.readFileSync(full));
       }
       if (!safeEq(req.headers["x-atlasz-token"] ?? "", token)) return send(res, 401, { error: "TOKEN_REQUIRED" });
+      if (req.method === "GET" && route === "/api/stream") {            // G12: read-only SSE over the Black Box chain; token header required (checked above), client-capped
+        const r = stream.attach(req, res); if (!r.ok) return send(res, 503, { error: r.reason }); return;
+      }
       if (req.method === "GET" && get[route]) return send(res, 200, await get[route]());
       if (req.method === "POST" && post[route]) {
         const origin = req.headers.origin;
@@ -63,7 +70,7 @@ export function createControlCenterServer(opts = {}) {
     } catch (e) { return send(res, 400, { error: String(e.message) }); }
   });
   const listen = (p = 0) => new Promise(resolve => server.listen(p, "127.0.0.1", () => { port = server.address().port; resolve({ port, token, url: "http://127.0.0.1:" + port + "/#" + token }); }));
-  const close = async () => { await core.stopRuntime(); await new Promise(r => server.close(r)); };
+  const close = async () => { stream.closeAll(); await core.stopRuntime(); await new Promise(r => server.close(r)); };
   return { core, server, listen, close, token };
 }
 

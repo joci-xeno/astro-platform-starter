@@ -20,6 +20,7 @@ import { createPluginManager } from "../atlasz-addons/plugin-manager.mjs";
 import { createPluginInstaller, packageHash } from "../atlasz-addons/plugin-installer.mjs";
 import { createMcpClient } from "../atlasz-addons/mcp-client.mjs";
 import { analyzeRepo, runRepoTests } from "../atlasz-addons/repo-analyzer.mjs";
+import { createPrototypeBuilder } from "../atlasz-addons/prototype-builder.mjs";
 import { createPersonalCommandCenter } from "../atlasz-addons/personal-command-center.mjs";
 import { buildDailyBrief, answerQuery, DEFAULT_PREFS, briefDue, markBriefShown } from "../atlasz-addons/master-brief.mjs";
 import { assessImpact } from "../atlasz-addons/human-core.mjs";
@@ -430,6 +431,18 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
       return runRepoTests({ name, root, ownerAuth: ownerAuth(), ownerApproval: passphrase ? sign(passphrase, "REPO_TEST_RUN", name + "#" + a.hash) : null, isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL" });
     })
   };
+  let protoInst = null; const protos = () => (protoInst ??= createPrototypeBuilder({ repoRoot, file: path.join(stateDir, "workbench", "prototypes.json") }));
+  const prototypes = () => { try { const b = protos(); return { state: "CONNECTED", templates: b.templates(), prototypes: b.list(), note: "Sandbox prototypes from fixed templates, with generated tests. A prototype is only marked tested after its own tests passed in the restricted sandbox with your signed approval. Nothing is deployed or published." }; } catch (e) { return { state: "UNREADABLE", reason: String(e.message).slice(0, 80) }; } };
+  const prototypeActions = {
+    preview: spec => act(() => protos().preview(spec)),
+    generate: spec => act(() => protos().generate(spec, { actor: "OWNER" })),
+    status: ({ name }) => act(() => protos().status(name)),
+    test: ({ name, passphrase }) => act(async () => {
+      if (typeof name !== "string" || !REPO_NAME.test(name)) return { ok: false, reason: "REPO_NAME_INVALID" };
+      const a = analyzeRepo(path.join(repoRoot, name)); if (!a.ok) return a;
+      return protos().test(name, { ownerAuth: ownerAuth(), ownerApproval: passphrase ? sign(passphrase, "REPO_TEST_RUN", name + "#" + a.hash) : null, isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL" });
+    })
+  };
   const pluginActions = {
     install: ({ name, passphrase }) => act(() => { const { ins, dir } = inboxPkg(name), p = ins.inspectPackage(dir); if (!p.ok) return { ok: false, reason: "PACKAGE_REJECTED", problems: p.problems.slice(0, 10) }; return ins.install(dir, { ownerApproval: passphrase ? sign(passphrase, "PLUGIN_INSTALL", p.subject) : null }); }),
     rollback: ({ id, version, passphrase }) => act(() => { const ins = installer(), s = ins.rollbackSubject(id, version); return ins.rollback(id, version, { ownerApproval: passphrase && s ? sign(passphrase, "PLUGIN_ROLLBACK", s) : null }); }),
@@ -528,6 +541,6 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   };
 
   const moneyViews = createMoneyViews({ stateDir });
-  return { pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, workbench, workbenchAction, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => pluginView(), mcp, mcpActions, repos, repoActions, theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { prototypes, prototypeActions, pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, workbench, workbenchAction, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => pluginView(), mcp, mcpActions, repos, repoActions, theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }
