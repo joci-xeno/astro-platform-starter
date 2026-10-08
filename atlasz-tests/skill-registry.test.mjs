@@ -199,3 +199,17 @@ test("re-running the gate on the ACTIVE version keeps it ACTIVE; a failing re-ru
     const r2 = mk({ file: f, actions: acts() }); assert.equal((await r2.run(T, "shout", { text: "a" })).reason, "TEST_GATE_NOT_PASSED_FOR_THIS_CONTENT");
   } finally { rm(d); }
 });
+
+test("verification fixes M05-2/3/5: a stop during a re-gate records nothing; re-gating never un-revokes; ids must be strings", async () => {
+  let stop = false; const r = mk({ actions: acts(), isStopped: () => stop });
+  r.submit(good()); assert.equal((await r.runGate(T, "shout", 1)).passed, true); assert.equal(r.activate(T, "shout", 1, { actor: "OWNER" }).ok, true);
+  const hist = () => r.get(T, "shout").skill.versions[0].history.length;
+  // stop arrives while the tests are running: the active skill is neither deactivated nor annotated
+  const slow = mk({ actions: { ...acts(), upper: { ...acts().upper, run: async a => { stop2 = true; return { text: String(a.text).toUpperCase(), n: 1 }; } } }, isStopped: () => stop2 }); let stop2 = false;
+  slow.submit(good()); const g = await slow.runGate(T, "shout", 1); assert.deepEqual([g.ok, g.reason], [false, "OWNER_STOP_OR_SAFE_MODE_ACTIVE"]); assert.equal(slow.get(T, "shout").skill.versions[0].gate ?? null, null);
+  // revoked versions stay revoked
+  assert.equal(r.deactivate(T, "shout", { actor: "OWNER" }).ok, true); const h = hist(); assert.equal((await r.runGate(T, "shout", 1)).reason, "VERSION_REVOKED"); assert.equal(hist(), h); assert.equal(r.get(T, "shout").skill.versions[0].status, "REVOKED");
+  // ids that are not strings never reach the store
+  for (const id of [["shout"], { toString: () => "shout" }, 5, null]) { assert.equal(r.get(T, id).reason, "NOT_FOUND"); assert.equal((await r.run(T, id, {})).reason, "SKILL_NOT_ACTIVE"); }
+  assert.equal(r.get(T, "constructor").reason, "NOT_FOUND"); assert.equal(r.get({ toString: () => "T" }, "shout").reason, "NOT_FOUND");
+});

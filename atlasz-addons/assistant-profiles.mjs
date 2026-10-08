@@ -55,7 +55,7 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
     if (hashOf(v.definition) !== v.hash) return { ok: false, reason: "STORED_VERSION_TAMPERED" };
     return save(tenantId, { ...clone(v.definition), actor: "OWNER" }, "ROLLBACK_TO_" + version);   // re-validated against today's grants, stored as a NEW version
   }
-  function remove(tenantId, id, { actor } = {}) { if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" }; const t = peek(tenantId); if (!t?.profiles[id]) return { ok: false, reason: "PROFILE_NOT_FOUND" }; delete t.profiles[id]; store.save(); return { ok: true }; }
+  function remove(tenantId, id, { actor } = {}) { if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" }; const t = peek(tenantId); if (!t || typeof id !== "string" || !Object.hasOwn(t.profiles, id)) return { ok: false, reason: "PROFILE_NOT_FOUND" }; delete t.profiles[id]; store.save(); return { ok: true }; }
   const summary = p => { const v = p.versions.at(-1); return { id: p.id, name: v.definition.name, version: v.version, hash: v.hash, versions: p.versions.map(x => x.version), tools: v.definition.tools.length, skills: v.definition.skills.length, memoryScopes: v.definition.memoryScopes.length }; };
   const listAll = tenantId => Object.values(peek(tenantId)?.profiles ?? {}).map(summary);
   function get(tenantId, id) { const p = own(peek(tenantId)?.profiles, id); if (!p) return { ok: false, reason: "PROFILE_NOT_FOUND" }; const v = p.versions.at(-1); return { ok: true, profile: { ...summary(p), definition: clone(v.definition), history: p.versions.map(x => ({ version: x.version, hash: x.hash, at: x.at, how: x.how })) } }; }

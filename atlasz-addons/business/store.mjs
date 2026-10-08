@@ -13,7 +13,7 @@ export function createStore({ file = null, init = () => ({}), mode = null } = {}
     if (kind(tpl) === "object") for (const k of Object.keys(tpl)) { if (k in loaded ? (kind(tpl[k]) !== "null" && kind(loaded[k]) !== kind(tpl[k])) : false) throw bad(); if (!(k in loaded)) loaded[k] = tpl[k]; }
     data = loaded;
   }
-  const save = () => { if (!file) return; fs.mkdirSync(path.dirname(file), { recursive: true }); const t = file + ".tmp"; fs.writeFileSync(t, JSON.stringify(data), mode ? { mode } : undefined); fs.renameSync(t, file); };
+  const save = () => { if (!file) return; fs.mkdirSync(path.dirname(file), { recursive: true }); const t = file + ".tmp"; fs.rmSync(t, { force: true }); fs.writeFileSync(t, JSON.stringify(data), mode ? { mode, flag: "wx" } : undefined); if (mode) fs.chmodSync(t, mode); fs.renameSync(t, file); };   // a stale or pre-planted .tmp (any mode, even a symlink) is removed first so the new file really has the requested mode
   return { get data() { return data; }, save };
 }
 

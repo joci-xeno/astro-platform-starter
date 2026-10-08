@@ -135,7 +135,7 @@ export function createPluginInstaller({ pluginRoot, stateDir, ownerAuth, atlaszV
     if (!ID_RE.test(String(id)) || !ver(version)) return deny("BAD_ARGUMENTS");
     const name = keptList(id).filter(n => n.startsWith(version + "__")).pop(); if (!name) return deny("VERSION_NOT_KEPT", { version });
     const src = path.join(keptRoot, id, name), w = walk(src); if (!w.ok) return deny("KEPT_COPY_INVALID");
-    const hash = hashFiles(w.files), mf = JSON.parse(fs.readFileSync(path.join(src, "plugin.json"), "utf8"));
+    const hash = hashFiles(w.files); let mf; try { mf = JSON.parse(fs.readFileSync(path.join(src, "plugin.json"), "utf8")); } catch { return deny("KEPT_COPY_INVALID"); }
     if (mf.id !== id || mf.version !== version || !validateManifest(mf, { atlaszVersion }).ok) return deny("KEPT_COPY_INVALID");
     if (name.split("__")[1] !== hash.slice(0, 12)) return deny("KEPT_COPY_TAMPERED");
     if (!audit.entries().some(e => (e.event === "PLUGIN_ARCHIVED" || e.event === "PLUGIN_INSTALLED") && e.data?.id === id && e.data?.version === version && e.data?.hash === hash)) return deny("KEPT_COPY_NOT_IN_AUDIT_CHAIN");
@@ -168,7 +168,9 @@ export function createPluginInstaller({ pluginRoot, stateDir, ownerAuth, atlaszV
     const cur = readInstalled(id); if (!cur) return deny("NOT_INSTALLED");
     const v = ownerAuth.verifyApproval(ownerApproval, { action: "PLUGIN_UNINSTALL", subject: id });
     if (!v.allowed) return deny("OWNER_APPROVAL_REQUIRED:" + v.reason);
-    disableIfEnabled(id); archiveCurrent(id);
+    disableIfEnabled(id);
+    try { archiveCurrent(id); } catch { /* checked below */ }
+    if (fs.existsSync(installedDir(id))) return deny("UNINSTALL_INCOMPLETE");               // never report success while the code is still on disk (e.g. a tree that cannot be hashed and so cannot be archived)
     audit.append("PLUGIN_UNINSTALLED", { id, version: cur.manifest.version }); return { ok: true, id };
   }
   return { inspectPackage, install, versions, rollback, rollbackSubject, uninstall, audit: () => audit.entries?.() ?? [], auditVerify: () => audit.verify?.() ?? { ok: true }, limits: INSTALL_LIMITS, nameOk: n => NAME_OK.test(String(n)) };

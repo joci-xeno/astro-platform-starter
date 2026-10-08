@@ -6,7 +6,9 @@ export const LIMITS = Object.freeze({ maxPages: 6, maxChars: 200000, maxLines: 2
 const SECRET = /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)|(?<![A-Za-z0-9])sk-[A-Za-z0-9_-]{20,}|(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}\b|(?<![A-Za-z0-9])ghp_[A-Za-z0-9]{30,}/g;
 const INJECTION = [/ignore (all |any )?(the )?(previous|prior|above) (instructions|rules)/i, /disregard (all |any )?(the )?(previous|prior|above)/i, /you are now\b/i, /reveal (your |the )?(system prompt|secrets?|api key)/i, /\bsystem prompt\b/i, /(wire|send|transfer) \$?\d[\d,.]* ?(usd|dollars|eur|huf)?/i, /do not tell (the )?(user|owner)/i,
   /ignore (all |any )?(of )?(the |your )?(previous|prior|above|earlier|preceding)\b/i, /forget (everything|all|what)\b.{0,30}\b(above|before|prior|earlier|told)/i, /\bnew (instructions?|rules?)\s*:/i, /\bact as (an? |the )?(admin|administrator|root|system|developer|owner)\b/i,
-  /\b(bypass|circumvent|disable|override) (the |all |any )?(approvals?|safety|security|owner|kill ?switch|rules|polic(y|ies)|restrictions?)\b/i, /\bgrant (yourself |all |every |full )/i, /\bpretend (to be|you are|that you)\b/i];
+  /\b(bypass|circumvent|disable|override) (the |all |any )?(approvals?|safety|security|owner|kill ?switch|rules|polic(y|ies)|restrictions?)\b/i, /\bgrant (yourself |all |every |full )/i, /\bpretend (to be|you are|that you)\b/i,
+  /\b(override|overrule|supersede|replace) (all |any |your |the |these )+(instructions|rules|guidelines|settings)\b/i, /\b(approve|authori[sz]e|pay|release) (all|every|any) (payments?|invoices?|transfers?|requests?)\b/i, /\bnever (ask|wait|check|require)\b.{0,40}\b(approval|permission|owner|confirm)/i, /\b(print|show|output|repeat|dump|display) (me )?(your|the) (system|hidden|initial|original) (prompt|instructions?|message)/i,
+  /(hagyd|hagyja|hagyjátok) figyelmen kívül|felejtsd el (az |a )?(előző|korábbi|fenti)|(előző|korábbi|fenti) (utasításokat|szabályokat)|mostantól te vagy\b|(jóváhagyás|engedély) (nélkül|kérése nélkül)|(utald|fizesd ki|küldd el) .{0,20}(minden|összes)/i];
 const ENT = { "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#39;": "'", "&nbsp;": " " };
 /** HTML -> readable text: scripts/styles/comments dropped, block tags become line breaks, entities decoded (a fixed list - no numeric entity or markup survives). */
 export function toPlainText(input) {
@@ -22,8 +24,9 @@ const words = t => (t.toLowerCase().match(/[\p{L}\p{N}]{3,}/gu) ?? []);
 const STOP = new Set("the and for with that this from are was were have has not you your our their they them his her its into out all any can will would about more than then them also but".split(" "));
 export const redactSecrets = s => scrub(s, "[redacted]");
 /** Normalise before matching: compatibility forms (full-width letters), zero-width / format characters and any run of whitespace (including newlines) cannot be used to split a phrase. One-entry memo: callers test many patterns against the same text. */
+const HOMO = { "\u0430": "a", "\u0435": "e", "\u043e": "o", "\u0440": "p", "\u0441": "c", "\u0445": "x", "\u0456": "i", "\u0443": "y", "\u0455": "s", "\u03bf": "o", "\u03b1": "a" };   // Cyrillic/Greek look-alikes folded to Latin for MATCHING only
 let memoIn = null, memoOut = "";
-const squash = t => { const x = String(t); if (x === memoIn) return memoOut; memoIn = x; memoOut = x.normalize("NFKC").replace(/[\p{Cf}\u00ad]/gu, "").replace(/\s+/g, " "); return memoOut; };
+const squash = t => { const x = String(t); if (x === memoIn) return memoOut; memoIn = x; memoOut = x.normalize("NFKC").replace(/[\p{Cf}\u00ad]/gu, "").replace(/[\u0430\u0435\u043e\u0440\u0441\u0445\u0456\u0443\u0455\u03bf\u03b1\u0455]/g, ch => HOMO[ch]).replace(/\s+/g, " "); return memoOut; };
 export const INJECTION_PATTERNS = Object.freeze(INJECTION.map(r => Object.freeze({ source: r.source, test: t => r.test(squash(t)) })));
 export { facts as pageFacts };
 function facts(text, label) {

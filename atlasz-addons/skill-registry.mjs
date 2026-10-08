@@ -24,7 +24,7 @@ export function createSkillRegistry({ file = null, actions = {}, isStopped = () 
   // recomputed on every use: if the host stops declaring an action pure, skills that use it stop validating and running
   const pure = () => Object.fromEntries(Object.entries(actions).filter(([, a]) => a && a.idempotent === true && a.rewindable === true && typeof a.run === "function"));
   const key = (t, id) => t + "\u0000" + id;
-  const rec = (t, id) => d.skills[key(t, id)] ?? null;
+  const rec = (t, id) => { if (typeof t !== "string" || typeof id !== "string") return null; const k = key(t, id); return Object.hasOwn(d.skills, k) ? d.skills[k] : null; };
   const T = "skills";
   const auth = () => { try { return typeof ownerAuth === "function" ? ownerAuth() : ownerAuth; } catch { return null; } };
   /** What the owner signs: "<tenant>/<skill>@<version>#<content hash>" (deactivation names the active version). */
@@ -86,6 +86,7 @@ export function createSkillRegistry({ file = null, actions = {}, isStopped = () 
   /** Run every test for real (throwaway engine, no store). Needs >= 2 tests with >= 1 negative one. Result is bound to the content hash. */
   async function runGate(tenantId, id, version) {
     const s = rec(tenantId, id), v = s?.versions.find(x => x.version === version); if (!v) return { ok: false, reason: "VERSION_NOT_FOUND" };
+    if (v.status === "REVOKED") return { ok: false, reason: "VERSION_REVOKED" };                // re-testing never brings a revoked version back
     if (stopped()) return { ok: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" };              // a stopped system records nothing about a skill
     if (hashOf(v.definition) !== v.hash) return { ok: false, reason: "STORED_VERSION_TAMPERED" };
     const c = checkDefinition(v.definition); if (!c.ok) return c;
@@ -108,6 +109,7 @@ export function createSkillRegistry({ file = null, actions = {}, isStopped = () 
       } catch (err) { why = "THREW:" + String(err.message).slice(0, 80); }
       results.push({ name, negative: t?.negative === true, passed, ...(why ? { why } : {}) });
     }
+    if (stopped()) return { ok: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" };              // stopped while the tests ran: no result, no deactivation, nothing is recorded
     const passed = results.every(r => r.passed);
     record(s, v, passed, { passed, hash: v.hash, ranAt: now(), results });
     return { ok: true, passed, results };

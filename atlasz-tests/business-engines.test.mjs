@@ -294,3 +294,13 @@ test("Finance intelligence keeps FORECAST / ESTIMATE / CLAIM / ACTUAL / VERIFIED
   assert.equal(live.VERIFIED_ACTUAL.revenueUsd, 0); assert.equal(live.VERIFIED_ACTUAL.netProfitUsd, 0);                 // the live books are untouched by the sandbox flow
   rm(d);
 });
+
+test("verification fix X-1: a stale .tmp file with loose permissions or a planted symlink never leaks into the saved file mode", async () => {
+  const fs2 = await import("node:fs"), path2 = await import("node:path"), { createStore } = await import("../atlasz-addons/business/store.mjs"), { tmp, rm } = await import("./helpers.mjs");
+  const d = tmp("st-"); try {
+    const f = path2.join(d, "s.json"); fs2.writeFileSync(f + ".tmp", "stale", { mode: 0o644 }); const s = createStore({ file: f, init: () => ({ a: 1 }), mode: 0o600 }); s.save();
+    assert.equal(fs2.statSync(f).mode & 0o777, 0o600); assert.equal(JSON.parse(fs2.readFileSync(f, "utf8")).a, 1);
+    const victim = path2.join(d, "victim.txt"); fs2.writeFileSync(victim, "keep"); fs2.rmSync(f + ".tmp", { force: true }); fs2.symlinkSync(victim, f + ".tmp"); s.save();
+    assert.equal(fs2.readFileSync(victim, "utf8"), "keep", "a planted symlink is not followed"); assert.equal(fs2.statSync(f).mode & 0o777, 0o600);
+  } finally { rm(d); }
+});

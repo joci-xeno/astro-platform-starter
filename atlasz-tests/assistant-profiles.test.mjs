@@ -115,3 +115,8 @@ test("instruction-injection filter is not bypassed by spacing, newlines, zero-wi
   for (const a of attacks) assert.equal(mk("Be helpful. " + a).reason, "INSTRUCTIONS_LOOK_LIKE_INJECTION", JSON.stringify(a));
   for (const fine of ["Summarise the notes and list open questions.", "Use a friendly tone and short sentences.", "Act as a careful editor for my drafts.", "Respond in Hungarian when I write in Hungarian."]) assert.equal(mk(fine).ok, true, fine);
 });
+
+test("verification fix M-1: remove ignores inherited names", () => {
+  const p = createProfiles({}); p.create("t", base()); for (const id of ["constructor", "toString", "__proto__", 5, null, ["scout"]]) assert.equal(p.remove("t", id, { actor: "OWNER" }).reason, "PROFILE_NOT_FOUND", String(id));
+  assert.equal(p.remove("t", "scout", { actor: "OWNER" }).ok, true);
+});

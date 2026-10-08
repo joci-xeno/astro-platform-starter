@@ -190,3 +190,19 @@ test("a kept copy that was edited AND renamed to its new hash is refused: the au
     assert.equal(res.reason, "KEPT_COPY_NOT_IN_AUDIT_CHAIN"); assert.equal(r.ins.versions("demo-plugin").installed.version, "1.1.0", "the tampered copy was not installed");
   } finally { r.done(); }
 });
+
+test("verification fixes C05-1/C05-6: uninstall never claims success while code remains; a corrupt kept manifest is a refusal, not a crash", () => {
+  const r = rig(); try {
+    const d1 = r.pkg("a"), p1 = r.ins.inspectPackage(d1); assert.equal(r.ins.install(d1, { ownerApproval: ap("PLUGIN_INSTALL", sub(p1)) }).ok, true);
+    fs.symlinkSync("/etc", path.join(r.plugins, "demo-plugin", "lnk"));       // a tree that cannot be hashed cannot be archived
+    const u = r.ins.uninstall("demo-plugin", { ownerApproval: ap("PLUGIN_UNINSTALL", "demo-plugin") }); assert.deepEqual([u.ok, u.reason], [false, "UNINSTALL_INCOMPLETE"]); assert.equal(fs.existsSync(path.join(r.plugins, "demo-plugin")), true);
+    assert.ok(!r.ins.audit().some(e => e.event === "PLUGIN_UNINSTALLED"), "no success is written to the audit chain");
+  } finally { r.done(); }
+  const q = rig(); try {
+    const d1 = q.pkg("a"), d2 = q.pkg("b", { version: "1.1.0" });
+    q.ins.install(d1, { ownerApproval: ap("PLUGIN_INSTALL", sub(q.ins.inspectPackage(d1))) }); q.ins.install(d2, { ownerApproval: ap("PLUGIN_INSTALL", sub(q.ins.inspectPackage(d2))) });
+    const kept = path.join(q.root, "state", "inst"); const find = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap(e => e.isDirectory() ? find(path.join(dir, e.name)) : e.name === "plugin.json" ? [path.join(dir, e.name)] : []);
+    const mfs = find(q.root).filter(f => f.includes("__")); assert.ok(mfs.length >= 1, "a kept copy exists"); fs.writeFileSync(mfs[0], "{not json");
+    let r2; assert.doesNotThrow(() => { r2 = q.ins.rollback("demo-plugin", "1.0.0", { ownerApproval: null }); }); assert.deepEqual([r2.ok, r2.reason], [false, "KEPT_COPY_INVALID"]);
+  } finally { q.done(); }
+});
