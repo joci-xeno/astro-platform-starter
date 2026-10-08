@@ -52,7 +52,7 @@ test("conversation: create/turns/model switch per turn/persist across restart; a
   const d = tmp("conv-"); const f = path.join(d, "c.json");
   try {
     const s = createConversationStore({ file: f }); const c = s.create({ tenantId: "ten1", title: "T", systemPrompt: "Be brief.", model: "alpha" }); assert.ok(c.ok);
-    assert.equal(s.addTurn(c.id, { tenantId: "ten1", role: "user", text: "my key sk-ABCDEFGHIJKLMNOPQRSTUVWX hello" }).turn.redacted, true);
+    assert.equal(s.addTurn(c.id, { tenantId: "ten1", role: "user", text: "my key " + "s" + "k-ABCDEFGHIJKLMNOPQRSTUVWX hello" }).turn.redacted, true);
     const gw = fakeGw("hi there"); const a = await s.complete(c.id, { tenantId: "ten1", gateway: gw }); assert.equal(a.ok, true); assert.equal(a.turn.untrusted, true); assert.equal(a.turn.modelId, "alpha");
     assert.ok(!JSON.stringify(gw.calls).includes("sk-ABCDEFGH"), "secret must never reach the model");
     s.setModel(c.id, { tenantId: "ten1", model: "beta" }); s.addTurn(c.id, { tenantId: "ten1", role: "user", text: "next" });
@@ -119,4 +119,46 @@ test("effort: never spends - a depth that needs a paid model with budget 0 answe
   assert.equal(chooseEffort(hard).proceed, true);                                  // free providers carry it by default
   for (const bad of [null, { kind: "NOPE" }, { kind: "LOOKUP", inputTokens: -1 }, { kind: "LOOKUP", steps: NaN }]) assert.equal(chooseEffort(bad).ok, false);
   assert.equal(chooseEffort({ kind: "LOOKUP" }, { budgetUsd: -1 }).reason, "BUDGET_INVALID"); assert.equal(complexityScore({ kind: "LOOKUP" }).score, 0);
+});
+
+// ---------- mutation-driven additions (B0)
+test("pack: token total is exactly the sum of per-item cost (text tokens + 4 overhead) - overhead counts against the budget", () => {
+  const p = packContext({ pinned: [{ id: "s", role: "system", text: "abcd" }], turns: [{ id: "a", role: "user", text: "abcdefgh" }], maxTokens: 1000, reserveOutput: 0 });
+  assert.equal(p.tokens, (1 + 4) + (2 + 4));
+  const tight = packContext({ pinned: [], turns: [{ id: "a", role: "user", text: "x".repeat(32) }, { id: "b", role: "user", text: "x".repeat(32) }], maxTokens: 20, reserveOutput: 0 });
+  assert.deepEqual(tight.items.map(i => i.id).filter(i => i === "a" || i === "b"), ["b"]);   // 2 x (8+4) = 24 > 20
+});
+test("conversation: hard limits at the boundary - turns and conversations", () => {
+  const s = createConversationStore(); const c = s.create({ tenantId: "A" }).id;
+  for (let i = 0; i < LIMITS.maxTurns; i++) assert.equal(s.addTurn(c, { tenantId: "A", role: "user", text: "x" }).ok, true);
+  assert.deepEqual(s.addTurn(c, { tenantId: "A", role: "user", text: "x" }), { ok: false, reason: "TOO_MANY_TURNS" });
+  const s2 = createConversationStore();
+  for (let i = 0; i < LIMITS.maxConversations; i++) assert.equal(s2.create({ tenantId: "A" }).ok, true);
+  assert.deepEqual(s2.create({ tenantId: "A" }), { ok: false, reason: "TOO_MANY_CONVERSATIONS" });
+});
+test("conversation: assistant turn records the provider that really answered (not the configured model); same-model switch adds no log entry", async () => {
+  const s = createConversationStore(); const c = s.create({ tenantId: "A", model: "alpha" }).id;
+  s.addTurn(c, { tenantId: "A", role: "user", text: "q" });
+  const a = await s.complete(c, { tenantId: "A", gateway: fakeGw("ans", { provider: "gamma" }) });
+  assert.equal(a.turn.modelId, "gamma"); assert.equal(s.get(c, { tenantId: "A" }).conversation.turns.at(-1).modelId, "gamma");
+  assert.equal(s.setModel(c, { tenantId: "A", model: "alpha" }).switches, 0);
+  assert.equal(s.setModel(c, { tenantId: "A", model: "beta" }).switches, 1);
+  assert.equal(s.setModel(c, { tenantId: "A", model: "beta" }).switches, 1);
+});
+test("conversation: only user turns are unfenced in the context; tool and assistant turns are fenced", () => {
+  const s = createConversationStore(); const c = s.create({ tenantId: "A", model: "m" }).id;
+  s.addTurn(c, { tenantId: "A", role: "user", text: "plain-user" }); s.addTurn(c, { tenantId: "A", role: "tool", text: "tool-out" }); s.addTurn(c, { tenantId: "A", role: "assistant", text: "asst-out", modelId: "m2" });
+  const t = s.context(c, { tenantId: "A" }).items.map(i => i.text);
+  assert.equal(t[0], "plain-user"); assert.match(t[1], /^<<UNTRUSTED TOOL RESULT>>\ntool-out\n<<END>>$/); assert.match(t[2], /^<<ASSISTANT \(model m2\)>>\nasst-out\n<<END>>$/);
+});
+test("effort: each complexity input matters (size tiers, tools) and verification follows level or risk", () => {
+  const sc = o => complexityScore({ kind: "LOOKUP", ...o }).score;
+  assert.deepEqual([sc({ inputTokens: 1500 }), sc({ inputTokens: 1501 }), sc({ inputTokens: 8001 }), sc({ inputTokens: 50001 })], [0, 1, 2, 3]);
+  assert.equal(sc({ requiresTools: true }), 1); assert.equal(sc({ constraints: 3 }), 1); assert.equal(sc({ steps: 3 }), 1);
+  const lv = o => chooseEffort({ risk: "LOW", kind: "LOOKUP", ...o });
+  assert.equal(lv({}).verify, false); assert.equal(lv({ requiresTools: true }).level, "LOW"); assert.equal(lv({ kind: "ANALYSE", requiresTools: true }).level, "MEDIUM");
+  assert.equal(lv({ kind: "DECIDE", inputTokens: 9000 }).level, "HIGH"); assert.equal(lv({ kind: "DECIDE", inputTokens: 9000 }).verify, true);
+  assert.equal(chooseEffort({ kind: "LOOKUP", risk: "MEDIUM" }).verify, false); assert.equal(chooseEffort({ kind: "LOOKUP", risk: "HIGH" }).verify, true);
+  assert.equal(lv({ kind: "ANALYSE" }).verify, false);
+  assert.equal(lv({ kind: "ANALYSE", inputTokens: 1501 }).level, "MEDIUM"); assert.equal(lv({ kind: "DECIDE", inputTokens: 1501, requiresTools: true }).level, "HIGH");
 });

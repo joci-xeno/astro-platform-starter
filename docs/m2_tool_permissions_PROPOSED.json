@@ -222,6 +222,27 @@
    "EXECUTION": "DENY",
    "dataRisk": "LOW",
    "rationale": "no agent workflow needs it; agents can never speak, listen or approve"
+  },
+  "effort.choose": {
+   "SEARCH": "DENY",
+   "EXECUTION": "DENY",
+   "dataRisk": "LOW",
+   "rationale": "NEW after package v1 - DENY until the owner approves: pure policy, no data access; recommended ALLOW for both roles once approved (decision D11)",
+   "addedAfterPackageV1": true
+  },
+  "analyst.analyze": {
+   "SEARCH": "DENY",
+   "EXECUTION": "DENY",
+   "dataRisk": "LOW",
+   "rationale": "NEW after package v1 - DENY until the owner approves: deterministic CSV statistics, no code execution; recommended ALLOW for EXECUTION once approved (D11)",
+   "addedAfterPackageV1": true
+  },
+  "chunk.plan": {
+   "SEARCH": "DENY",
+   "EXECUTION": "DENY",
+   "dataRisk": "LOW",
+   "rationale": "NEW after package v1 - DENY until the owner approves: pure text splitting/planning; recommended ALLOW for both roles once approved (D11)",
+   "addedAfterPackageV1": true
   }
  }
 }

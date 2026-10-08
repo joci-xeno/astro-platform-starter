@@ -42,7 +42,7 @@ export function createConversationStore({ file = null, now = () => new Date().to
     return { ok: true, model: c.model, switches: c.switches.length };
   }
   const fence = t => t.role === "user" ? t.text : `<<${t.role === "tool" ? "UNTRUSTED TOOL RESULT" : "ASSISTANT (model " + (t.modelId ?? "?") + ")"}>>\n${t.text}\n<<END>>`;
-  function context(id, { tenantId, maxTokens = 4000, reserveOutput = 500 } = {}) {
+  function context(id, { tenantId, maxTokens = 4000, reserveOutput = Math.min(500, Math.floor(maxTokens / 4)) } = {}) {
     const c = find(id, tenantId); if (!c) return { ok: false, reason: "NOT_FOUND" };
     const pinned = c.systemPrompt ? [{ id: "system", role: "system", text: c.systemPrompt, pinned: true }] : [];
     const p = packContext({ pinned, turns: c.turns.map(t => ({ id: t.id, role: t.role, text: fence(t) })), maxTokens, reserveOutput });

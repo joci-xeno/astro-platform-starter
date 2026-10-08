@@ -31,6 +31,11 @@ import { createDocumentCenter } from "../atlasz-addons/document-center.mjs";
 import { createUniversalInbox } from "../atlasz-addons/universal-inbox.mjs";
 import { createVoiceSession } from "../atlasz-addons/voice-session.mjs";
 import { createVoiceConversation } from "../atlasz-addons/voice-conversation.mjs";
+import { createWorkbench } from "../atlasz-addons/workbench.mjs";
+import { createModelGateway } from "../atlasz-addons/model-gateway.mjs";
+import { createProviderResilience } from "../atlasz-addons/provider-resilience.mjs";
+import { createModelIntelligence } from "../atlasz-addons/brain/model-intelligence.mjs";
+import { createCapabilityGraph } from "../atlasz-addons/brain/capability-graph.mjs";
 import { createConnectorCatalog } from "../atlasz-addons/connector-catalog.mjs";
 import { createSecretVault } from "../atlasz-addons/secret-vault.mjs";
 import { createTechWatch } from "../atlasz-addons/tech-watch.mjs";
@@ -347,6 +352,20 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   async function sandboxRun({ language, code, stdin } = {}) { const r = await sandboxInst().run({ language, code, stdin }, { actor: "OWNER" }); if (/^INVALID/.test(r.status)) throw new Error(r.status); return r; }
   const inboxMod = () => createUniversalInbox({ dir: path.join(stateDir, "inbox"), ownerAuth: ownerAuth() });
   const inbox = () => { const i = inboxMod(); return { counts: i.counts(), chain: i.verify(), items: i.list().slice(0, 100), note: "Drafts are never sent from here. Sending needs a proven connector, an open kill switch and your signed approval." }; };
+  // Workbench (85-capability programme B0): conversations, analyst, previews, annotations, guidance, effort, chunking, detail policy. ATLASZ attaches NO model provider, so a conversation
+  // "complete" honestly answers NO_ELIGIBLE_PROVIDER; nothing is fabricated, nothing is spent, and every call is gated by the kill switch.
+  const wbGateway = () => createModelGateway({ resilience: createProviderResilience({ gate: x => emergency().gate(x), clock: () => Date.now(), timeoutMs: 15000 }), models: createModelIntelligence({ graph: createCapabilityGraph(), clockMs: () => Date.now() }) });
+  const wbInst = () => createWorkbench({ conversationFile: path.join(stateDir, "workbench", "conversations.json"), gateway: wbGateway(), tenantId: KP_T });
+  async function workbench() {
+    try { const w = wbInst(), g = wbGateway(); return { state: "CONNECTED", ops: w.ops, conversations: (await w.run("conv.list")).conversations, providers: g.summary(), note: "No model provider is attached: asking a model returns NO_ELIGIBLE_PROVIDER. Analysis, rendering, chunking and policy tools run locally and spend nothing." }; }
+    catch (e) { return { state: "UNREADABLE", error: String(e.message) }; }
+  }
+  async function workbenchAction({ op, args } = {}) {
+    if (emergency().status().mode !== "RUNNING" && /^conv\.complete$/.test(String(op))) throw new Error("EMERGENCY_STOP_ACTIVE");
+    const r = await wbInst().run(String(op), args ?? {});
+    if (!r || r.ok === false) throw new Error(String(r?.reason ?? "FAILED"));
+    return r;
+  }
   // Live Voice (owner view of the same conversation file as the runtime). No provider is attached by ATLASZ, so voice is never reported live here; owners can read and delete transcripts.
   const voiceInst = () => createVoiceConversation({ session: createVoiceSession({}), file: path.join(stateDir, "memory", "voice-conversations.json") });
   const voice = () => { const v = createVoiceSession({}); const st = v.status(); try { const c = voiceInst(); return { ...st, state: st.state, conversationStore: "CONNECTED", summary: c.summary({ tenantId: KP_T }), conversations: c.list({ tenantId: KP_T }).reverse().slice(0, 50), note: st.live ? null : "BLOCKED: no tested speech-to-text and text-to-speech provider is attached, so voice is not live. Voice can never approve anything. Transcripts are text only; raw audio is never stored." }; } catch (e) { return { ...st, conversationStore: "UNREADABLE", error: String(e.message), conversations: [], note: "Voice conversation store is unreadable and will not be replaced." }; } };
@@ -462,6 +481,6 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   };
 
   const moneyViews = createMoneyViews({ stateDir });
-  return { pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, workbench, workbenchAction, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }

@@ -14,7 +14,7 @@ Today the 30 agents (SEARCH-1..5, EXECUTION-1..25) run only governed screening j
 ## 2. Verified chain behaviour for agents (sandbox probe, this session)
 READ_STATUS, INTERNAL_COMPUTE and EXTERNAL_READ → allowed when no stop is active. HIGH_RISK_CHANGE → denied at OWNER_APPROVAL (`NO_OWNER_APPROVAL_PRESENTED`). In the approval gateway an agent request for HIGH_RISK_CHANGE becomes PENDING; `CREATE_AGENT` is BLOCKED (`REQUESTER_MAY_NOT_ASK`); `INTERNAL_COMPUTE` needs no approval.
 
-## 3. Proposed permissions for all 31 tools
+## 3. Proposed permissions for all registered tools (31 in package v1, plus tools added later; later additions default to DENY)
 ALLOW = may call. DENY = broker refuses without calling the handler. APPROVAL = may request; each call needs a signed owner approval bound to its arguments.
 
 | Tool | SEARCH (5) | EXECUTION (25) | Data risk | Rationale |
@@ -50,8 +50,11 @@ ALLOW = may call. DENY = broker refuses without calling the handler. APPROVAL = 
 | `obs.summary` | ALLOW | ALLOW | LOW | counts only |
 | `obs.capture_research` | ALLOW | DENY | LOW | stores VERIFIED findings as memory; research-side tool |
 | `voice.status` | DENY | DENY | LOW | no agent workflow needs it; agents can never speak, listen or approve |
+| `effort.choose` | DENY | DENY | LOW | NEW after package v1 - DENY until the owner approves: pure policy, no data access; recommended ALLOW for both roles once approved (decision D11) |
+| `analyst.analyze` | DENY | DENY | LOW | NEW after package v1 - DENY until the owner approves: deterministic CSV statistics, no code execution; recommended ALLOW for EXECUTION once approved (D11) |
+| `chunk.plan` | DENY | DENY | LOW | NEW after package v1 - DENY until the owner approves: pure text splitting/planning; recommended ALLOW for both roles once approved (D11) |
 
-Totals — SEARCH: 21 ALLOW, 10 DENY, 0 APPROVAL. EXECUTION: 19 ALLOW, 11 DENY, 1 APPROVAL. Machine-readable copy: `docs/m2_tool_permissions_PROPOSED.json`.
+Totals — SEARCH: 21 ALLOW, 13 DENY, 0 APPROVAL. EXECUTION: 19 ALLOW, 14 DENY, 1 APPROVAL. Machine-readable copy: `docs/m2_tool_permissions_PROPOSED.json`.
 No tool exists (or is proposed) that lets an agent approve, spend, send, pay, speak, listen, transfer or deploy (probe P19).
 
 ## 4. Proposed default limits (all configurable only by the owner)
@@ -92,6 +95,7 @@ See `docs/M2_PLAN.md` (30 agents each call an allowed tool with a Black Box entr
 | D7 | Approval requests from agents appear in the existing approvals list (no new channel) | Yes |
 | D8 | Runtime bind address (now `0.0.0.0`, token-protected) | Decide separately; not changed here |
 | D9 | Electron/Node `--permission` support for the packaged Windows app (see `docs/SANDBOX_LIMITS_WINDOWS_ELECTRON.md`) | Decide separately |
+| D11 | Three pure-computation tools were added after this package (`effort.choose`, `analyst.analyze`, `chunk.plan`); they are DENY for all agents until you approve | Allow `effort.choose` and `chunk.plan` for both roles and `analyst.analyze` for EXECUTION |
 | D10 | Real-source lead discovery (T3-009): approved source list and network access | Decide separately |
 
 ## 8. Out of scope for M2

@@ -31,6 +31,7 @@ import { createModalityFabric, registerModalityTools } from "../atlasz-addons/mo
 import { createRuntimeHandler } from "./runtime-http.mjs";
 import { createVoiceSession } from "../atlasz-addons/voice-session.mjs";
 import { createVoiceConversation, registerVoiceTools } from "../atlasz-addons/voice-conversation.mjs";
+import { registerWorkbenchTools } from "../atlasz-addons/workbench.mjs";
 import { createObservationMemory, registerObservationTools, registerResearchCapture } from "../atlasz-addons/observation-memory.mjs";
 import { createToolRegistry } from "../atlasz-addons/typed-tools.mjs";
 import { createInboxPipeline } from "../atlasz-addons/business/inbox-pipeline.mjs";
@@ -181,6 +182,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
   const voice = createVoiceConversation({ session: createVoiceSession({ transcriptDir: null }), file: path.join(dataDir, "memory", "voice-conversations.json"), security: brain.security, blackBox: brain.blackBox, now,
     gate: () => { const e = emergencyGate({ external: false }); if (!e.allowed) return e; return safeMode.gate({ write: true }); } });
   registerVoiceTools(tools, voice);
+  registerWorkbenchTools(tools);                                               // pure computation tools; NOT granted to agents until the owner approves the M2 permission table
   const scheduler = createScheduler({ file: path.join(dataDir, "scheduler", "schedules.json"), tools, now, blackBox: brain.blackBox,
     gate: o => { const e = emergencyGate(o); if (!e.allowed) return e; return safeMode.gate({ ...o, write: true }); } });
   const brainSafe = fn => { try { return fn(); } catch (e) { try { console.log(JSON.stringify({ at: now(), type: "brain_error", error: String(e.message).slice(0, 120) })); } catch { /* ignore */ } return null; } };
