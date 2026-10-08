@@ -23,6 +23,8 @@ import { createProviderResilience } from "../atlasz-addons/provider-resilience.m
 import { createModelGateway } from "../atlasz-addons/model-gateway.mjs";
 import { createScheduler } from "../atlasz-addons/scheduler.mjs";
 import { createPersonalCommandCenter, registerPccTools } from "../atlasz-addons/personal-command-center.mjs";
+import { createDocumentCenter } from "../atlasz-addons/document-center.mjs";
+import { createKnowledgeProjects } from "../atlasz-addons/knowledge-projects.mjs";
 import { createToolRegistry } from "../atlasz-addons/typed-tools.mjs";
 import { createInboxPipeline } from "../atlasz-addons/business/inbox-pipeline.mjs";
 import { createOwnerControlSystem } from "../atlasz-addons/owner-control/owner-control-system.mjs";
@@ -135,6 +137,16 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
   // Personal Command Center + durable scheduler: schedules call ONLY registered typed tools (control chain on every run, actor SCHEDULER). Emergency stop / Safe Mode halt the whole tick.
   const pcc = createPersonalCommandCenter({ file: path.join(dataDir, "pcc", "items.json"), now, blackBox: brain.blackBox });
   registerPccTools(tools, pcc);
+  // Knowledge Projects over the Document Center. Tool callers are AGENTS: they always read as role AGENT with forAgent:true (Security-Brain ALLOW text only, SECRET hidden);
+  // tenant is fixed to the owner's tenant and is never an argument. Retrieval is keyword-based, answers are extractive + cited (see knowledge-projects.mjs).
+  const KP_TENANT = "JOCI", kpWho = { tenantId: KP_TENANT, role: "AGENT", forAgent: true };
+  const documents = createDocumentCenter({ dir: path.join(dataDir, "documents"), security: brain.security, graph: brain.entityGraph });
+  const knowledge = createKnowledgeProjects({ file: path.join(dataDir, "knowledge", "projects.json"), documents, security: brain.security, blackBox: brain.blackBox, now });
+  const anyObj = { type: "object", additionalProperties: true, properties: {} }, KP_ID = { type: "string", minLength: 1, maxLength: 80 };
+  tools.register({ name: "kp.list", description: "List knowledge projects the agent role may use.", operation: "READ_STATUS", input: { type: "object", properties: {} }, output: { type: "object", required: ["projects"], properties: { projects: { type: "array" } } }, handler: () => ({ projects: knowledge.list({ tenantId: KP_TENANT, role: "AGENT" }) }) });
+  tools.register({ name: "kp.search", description: "Keyword search inside a knowledge project; returns cited passages (not semantic).", operation: "READ_STATUS", input: { type: "object", required: ["projectId", "query"], properties: { projectId: KP_ID, query: { type: "string", minLength: 1, maxLength: 500 }, limit: { type: "integer", minimum: 1, maximum: 50 } } }, output: anyObj, handler: a => knowledge.search(a.projectId, { query: a.query, limit: a.limit ?? 10, ...kpWho }) });
+  tools.register({ name: "kp.answer", description: "Extractive cited answer from a knowledge project, or NO_SUPPORTING_EVIDENCE.", operation: "READ_STATUS", input: { type: "object", required: ["projectId", "query"], properties: { projectId: KP_ID, query: { type: "string", minLength: 1, maxLength: 500 } } }, output: anyObj, handler: a => knowledge.answer(a.projectId, { query: a.query, ...kpWho }) });
+  tools.register({ name: "kp.verify", description: "Re-check a citation against its current source.", operation: "READ_STATUS", input: { type: "object", required: ["citation"], properties: { citation: { type: "object", additionalProperties: true, properties: {} } } }, output: anyObj, handler: a => knowledge.verifyCitation(a.citation, kpWho) });
   const scheduler = createScheduler({ file: path.join(dataDir, "scheduler", "schedules.json"), tools, now, blackBox: brain.blackBox,
     gate: o => { const e = emergencyGate(o); if (!e.allowed) return e; return safeMode.gate({ ...o, write: true }); } });
   const brainSafe = fn => { try { return fn(); } catch (e) { try { console.log(JSON.stringify({ at: now(), type: "brain_error", error: String(e.message).slice(0, 120) })); } catch { /* ignore */ } return null; } };
@@ -346,7 +358,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
       agents: state.agents, blockers, sourceErrors: state.sourceErrors, emergency: emergencyStatus(), safeMode: safeMode.status(), pendingApprovals: approvalRequests.pending().length, queue: queue.stats(), watchdog: watchdog.status(),
       selfCheck: { level: selfCheck.level, problems: selfCheck.checks.filter(c => c.status !== "OK").map(c => ({ id: c.id, status: c.status, detail: c.detail })) },
       vault: vault.status(), internalAddons: addonSnapshot(),
-      brain: brainSafe(() => brain.summary()) ?? { state: "ERROR" }, models: brainSafe(() => modelGateway.summary()) ?? { state: "ERROR" }, scheduler: brainSafe(() => scheduler.summary()) ?? { state: "ERROR" }, pcc: brainSafe(() => pcc.summary()) ?? { state: "ERROR" }, moneyEngine: brainSafe(() => moneyEngine.panel()) ?? { state: "ERROR" }, behavior: brainSafe(() => brain.behavior.summary()) ?? { state: "ERROR" }, inbox: brainSafe(() => ({ ...inbox.counts(), pipeline: inboxPipeline.summary() })) ?? { state: "ERROR" }, ownerControl: brainSafe(() => ownerControl.status()) ?? { state: "ERROR" }, ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
+      brain: brainSafe(() => brain.summary()) ?? { state: "ERROR" }, models: brainSafe(() => modelGateway.summary()) ?? { state: "ERROR" }, knowledge: brainSafe(() => ({ projects: knowledge.list({ tenantId: KP_TENANT }).length, documents: documents.summary().total, method: "KEYWORD_BM25_NOT_SEMANTIC" })) ?? { state: "ERROR" }, scheduler: brainSafe(() => scheduler.summary()) ?? { state: "ERROR" }, pcc: brainSafe(() => pcc.summary()) ?? { state: "ERROR" }, moneyEngine: brainSafe(() => moneyEngine.panel()) ?? { state: "ERROR" }, behavior: brainSafe(() => brain.behavior.summary()) ?? { state: "ERROR" }, inbox: brainSafe(() => ({ ...inbox.counts(), pipeline: inboxPipeline.summary() })) ?? { state: "ERROR" }, ownerControl: brainSafe(() => ownerControl.status()) ?? { state: "ERROR" }, ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
     };
   }
   const watchdog = createWatchdog({ onEscalate: e => safeMode.enter("WATCHDOG:" + e.id, { detail: e.detail }) });
@@ -375,7 +387,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
     schedule(() => brainSafe(() => brain.behavior.scan()), 60000);          // behaviour anomaly scan over the tamper-evident Black Box (detect + recommend only)
   }
   function stop() { stopping = true; watchdog.stop(); for (const t of timers) clearTimeout(t); save(); }
-  return { tools, modelGateway, pcc, scheduler, inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
+  return { tools, modelGateway, knowledge, documents, pcc, scheduler, inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
 }
 
 if (process.env.ATLASZ_TEST_MODE !== "1") {

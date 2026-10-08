@@ -16,14 +16,14 @@
   ]
  },
  "summary": {
-  "total_gaps": 786,
+  "total_gaps": 787,
   "by_source": {
-   "REGISTRY": 704,
+   "REGISTRY": 705,
    "CAPABILITY_85": 79,
    "IMPORT_SCAN": 3
   },
   "by_reality": {
-   "SANDBOX_TESTED_PARTIAL": 436,
+   "SANDBOX_TESTED_PARTIAL": 437,
    "NOT_BUILT": 198,
    "EXTERNAL": 58,
    "STRUCTURE_ONLY": 56,
@@ -33,7 +33,7 @@
   },
   "by_workstream": {
    "KNOWLEDGE_RESEARCH": 158,
-   "TYPED_TOOLS_MODEL_ROUTER": 85,
+   "TYPED_TOOLS_MODEL_ROUTER": 86,
    "SECURITY_OWNER": 65,
    "MULTIMODAL_VOICE": 58,
    "PERSONAL_HUMAN_CORE": 53,
@@ -65,7 +65,7 @@
    "SECTION_S16": 1
   },
   "by_status": {
-   "PARTIAL": 486,
+   "PARTIAL": 487,
    "MISSING": 198,
    "EXTERNAL_BLOCKER": 58,
    "STRUCTURAL_ONLY": 28,
@@ -74,11 +74,11 @@
    "DISCONNECTED": 2,
    "DISCONNECTED_BY_DESIGN": 1
   },
-  "registry_items": 915,
-  "registry_gaps": 704,
+  "registry_items": 916,
+  "registry_gaps": 705,
   "capabilities_with_gaps": 79,
-  "modules_total": 141,
-  "modules_reachable_from_entrypoints": 138,
+  "modules_total": 142,
+  "modules_reachable_from_entrypoints": 139,
   "orphan_modules": [
    "atlasz-addons/digital-twin.mjs",
    "atlasz-addons/evidence-record.mjs",
@@ -96,7 +96,7 @@
   ],
   "todo_markers": 0,
   "panels": {
-   "CONNECTED": 38
+   "CONNECTED": 39
   },
   "live_verified_items": 0,
   "note": "LIVE_VERIFIED is intentionally zero: no live provider, payment, delivery or Windows-run evidence exists in this workspace."
@@ -116,6 +116,14 @@
    "apis": [
     "/api/pcc",
     "/api/pcc/action"
+   ],
+   "status": "CONNECTED"
+  },
+  {
+   "panel": "knowledge",
+   "apis": [
+    "/api/knowledge",
+    "/api/knowledge/action"
    ],
    "status": "CONNECTED"
   },
@@ -10258,6 +10266,20 @@
    "depends_on": ""
   },
   {
+   "gap_id": "GAP-ATLASZ-PKG84-026",
+   "source": "REGISTRY",
+   "requirement_id": "ATLASZ-PKG84-026",
+   "title": "Knowledge Projects: named workspaces over the Document Center plus owner notes and web snapshots (URL + retrievedAt required); BM25 keyword retrieval labelled NOT semantic; EXTRACT",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P1",
+   "modules": "atlasz-addons/knowledge-projects.mjs; atlasz-runtime/supervisor-safe.mjs; atlasz-control-center/core.mjs; atlasz-control-center/server.mjs; atlasz-control-center/public/app.js",
+   "tests": "['atlasz-tests/knowledge-projects.test.mjs', 'atlasz-tests/knowledge-projects-hosted.test.mjs']",
+   "blocker": "No embedding provider (EXTERNAL): retrieval is keyword-based; no OCR so scanned PDFs/images are not searchable; no tags or decision-log model",
+   "workstream": "TYPED_TOOLS_MODEL_ROUTER",
+   "depends_on": ""
+  },
+  {
    "gap_id": "GAP-CAP-M01",
    "source": "CAPABILITY_85",
    "requirement_id": "M01",
@@ -10279,9 +10301,9 @@
    "status": "PARTIAL",
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
-   "modules": "document-center.mjs; brain/knowledge-brain.mjs; brain/memory-fabric.mjs; shared-project-registry.mjs; business/entity-graph.mjs",
-   "tests": "document-intelligence.test (6), doc-extractors.test (5), memory-fabric.test, knowledge-brain tests",
-   "blocker": "Search is keyword-token based, no embeddings; shared-project-registry is in-process",
+   "modules": "knowledge-projects.mjs; document-center.mjs; brain/knowledge-brain.mjs; brain/memory-fabric.mjs; shared-project-registry.mjs; business/entity-graph.mjs",
+   "tests": "knowledge-projects.test (8) + knowledge-projects-hosted.test (2), 14+3 mutation checks; document-intelligence.test (6), doc-extractors.test (5), memory-fabric.t",
+   "blocker": "BM25 keyword retrieval only (labelled NOT semantic); no embeddings; images not supported",
    "workstream": "KNOWLEDGE_RESEARCH",
    "depends_on": "V73-S03-017;V73-S05-013;V73-S06-002;V73-S06-007;V73-S07-001;V73-S07-002"
   },
@@ -10531,7 +10553,7 @@
    "status": "PARTIAL",
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
-   "modules": "brain/memory-fabric.mjs; brain/knowledge-brain.mjs; business-memory.mjs; experience-learning-engine.mjs; shared-project-registry.mjs",
+   "modules": "knowledge-projects.mjs (project notes); brain/memory-fabric.mjs; brain/knowledge-brain.mjs; business-memory.mjs; experience-learning-engine.mjs; shared-project-registry.mjs",
    "tests": "memory-fabric.test (tenant isolation, HISTORICAL_RESULT only from independent ACCEPT)",
    "blocker": "shared-project-registry not durable",
    "workstream": "KNOWLEDGE_RESEARCH",
@@ -10657,8 +10679,8 @@
    "status": "PARTIAL",
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
-   "modules": "document-center.mjs; enterprise-knowledge-agentic-rag.mjs",
-   "tests": "document-intelligence.test; enterprise RAG basic test",
+   "modules": "knowledge-projects.mjs; document-center.mjs; enterprise-knowledge-agentic-rag.mjs",
+   "tests": "knowledge-projects.test (8) + knowledge-projects-hosted.test (2), 14+3 mutation checks; document-intelligence.test; enterprise RAG basic test",
    "blocker": "RAG module in-memory",
    "workstream": "KNOWLEDGE_RESEARCH",
    "depends_on": "V73-S06-007;V73-S07-001;V73-S07-002;V73-S07-003;V73-S07-004;V73-S07-005"
@@ -10755,8 +10777,8 @@
    "status": "PARTIAL",
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
-   "modules": "document-center.mjs (tokens index); doc-extractors.mjs (size limits)",
-   "tests": "extractor limit tests",
+   "modules": "knowledge-projects.mjs (chunker with offsets); document-center.mjs (tokens index); doc-extractors.mjs (size limits)",
+   "tests": "extractor limit tests; knowledge-projects.test (chunk offsets)",
    "blocker": "No chunker; limits truncate",
    "workstream": "KNOWLEDGE_RESEARCH",
    "depends_on": "V73-S03-017;V73-S03-018;V73-S04-004;V73-S04-011;V73-S07-001;V73-S07-008"
@@ -10801,7 +10823,7 @@
    "tests": "see M08",
    "blocker": "see M08",
    "workstream": "KNOWLEDGE_RESEARCH",
-   "depends_on": ""
+   "depends_on": "ATLASZ-PKG84-026"
   },
   {
    "gap_id": "GAP-CAP-GE05",
@@ -10853,8 +10875,8 @@
    "status": "PARTIAL",
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
-   "modules": "document-center.mjs; enterprise-knowledge-agentic-rag.mjs",
-   "tests": "document-intelligence.test",
+   "modules": "knowledge-projects.mjs; document-center.mjs; enterprise-knowledge-agentic-rag.mjs",
+   "tests": "knowledge-projects.test (8) + knowledge-projects-hosted.test (2), 14+3 mutation checks; document-intelligence.test",
    "blocker": "RAG not persistent",
    "workstream": "KNOWLEDGE_RESEARCH",
    "depends_on": "V73-S07-009;V73-S07-010;V73-S07-016;V73-S07-017;V73-S09-019;V73-S21-031"
@@ -10941,7 +10963,7 @@
    "tests": "Policy classification only",
    "blocker": "No provider",
    "workstream": "MULTIMODAL_VOICE",
-   "depends_on": "V73-S19-008;ATLASZ-BR-033;ATLASZ-PKG84-014;ATLASZ-PKG84-019"
+   "depends_on": "V73-S19-008;ATLASZ-BR-033;ATLASZ-PKG84-014;ATLASZ-PKG84-019;ATLASZ-PKG84-024"
   },
   {
    "gap_id": "GAP-CAP-A03",
@@ -11133,9 +11155,9 @@
    "status": "PARTIAL",
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
-   "modules": "document-center.mjs; brain/knowledge-brain.mjs",
+   "modules": "knowledge-projects.mjs; document-center.mjs; brain/knowledge-brain.mjs",
    "tests": "document-intelligence.test",
-   "blocker": "No notes model",
+   "blocker": "Notes exist (Knowledge Projects) but no tags or reading-list model",
    "workstream": "KNOWLEDGE_RESEARCH",
    "depends_on": "V73-S06-007;V73-S07-001;V73-S07-002;V73-S07-003;V73-S07-004;V73-S07-005"
   },

@@ -1,11 +1,11 @@
 # ATLASZ V7.3 — Unified Master Gap Register
 
-Total gaps: **786** (registry 704, 85-capability 79, scans 3).
+Total gaps: **787** (registry 705, 85-capability 79, scans 3).
 
 LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence exists in this workspace.
 
 ## By reality
-- SANDBOX_TESTED_PARTIAL: 436
+- SANDBOX_TESTED_PARTIAL: 437
 - NOT_BUILT: 198
 - EXTERNAL: 58
 - STRUCTURE_ONLY: 56
@@ -15,7 +15,7 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 
 ## By workstream
 - KNOWLEDGE_RESEARCH: 158
-- TYPED_TOOLS_MODEL_ROUTER: 85
+- TYPED_TOOLS_MODEL_ROUTER: 86
 - SECURITY_OWNER: 65
 - MULTIMODAL_VOICE: 58
 - PERSONAL_HUMAN_CORE: 53
@@ -47,7 +47,7 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - SECTION_S16: 1
 
 ## Reachability
-- Modules in atlasz-addons: 141; reachable from entry points: 138
+- Modules in atlasz-addons: 142; reachable from entry points: 139
 - ORPHAN: atlasz-addons/digital-twin.mjs
 - ORPHAN: atlasz-addons/evidence-record.mjs
 - ORPHAN: atlasz-addons/tenant-isolation.mjs
@@ -64,7 +64,7 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - atlasz-addons/voice-interface.mjs
 
 ## Control Center panels
-- connected: 38 of 38
+- connected: 39 of 39
 
 ## Highest-priority open gaps (P0, not external/owner)
 - GAP-V73-S02-001 [SANDBOX_TESTED_PARTIAL] Authority chain: JOCI/OWNER -> STRONG OWNER AUTH -> MASTER -> AGENTS -> TOOLS/CONNECTORS/COMPUTER USE/EXTERNAL

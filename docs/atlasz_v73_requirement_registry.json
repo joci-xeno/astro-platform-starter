@@ -95,7 +95,7 @@
     52
    ]
   },
-  "item_verified_count": 915
+  "item_verified_count": 916
  },
  "requirements": [
   {
@@ -22977,6 +22977,33 @@
    "test_status": "TESTED_SANDBOX",
    "classification": "SANDBOX",
    "next_action": "Run the generator at every milestone; connect or retire digital-twin and evidence-record (still unreachable)"
+  },
+  {
+   "id": "ATLASZ-PKG84-026",
+   "title": "Knowledge Projects: named workspaces over the Document Center plus owner notes and web snapshots (URL + retrievedAt required); BM25 keyword retrieval labelled NOT semantic; EXTRACTIVE answers with verifiable citations (project, member, version, sha256, offsets, quote) or NO_SUPPORTING_EVIDENCE; permissions enforced at read time (tenant, project role, SECRET hidden, agents see Security-Brain ALLOW text only); superseded versions flagged STALE_SOURCE; hosted as kp.list/kp.search/kp.answer/kp.verify typed tools (role AGENT fixed, tenant not an argument) and a Control Center view",
+   "level": "item",
+   "section": 77,
+   "description": "Knowledge Projects: named workspaces over the Document Center plus owner notes and web snapshots (URL + retrievedAt required); BM25 keyword retrieval labelled NOT semantic; EXTRACTIVE answers with verifiable citations (project, member, version, sha256, offsets, quote) or NO_SUPPORTING_EVIDENCE; permissions enforced at read time (tenant, project role, SECRET hidden, agents see Security-Brain ALLOW text only); superseded versions flagged STALE_SOURCE; hosted as kp.list/kp.search/kp.answer/kp.verify typed tools (role AGENT fixed, tenant not an argument) and a Control Center view",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/knowledge-projects.mjs; atlasz-runtime/supervisor-safe.mjs; atlasz-control-center/core.mjs; atlasz-control-center/server.mjs; atlasz-control-center/public/app.js",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/knowledge-projects.test.mjs",
+    "atlasz-tests/knowledge-projects-hosted.test.mjs"
+   ],
+   "evidence": [
+    "8+2 tests; 14 module mutants and 3 hosting mutants caught"
+   ],
+   "blocker": "No embedding provider (EXTERNAL): retrieval is keyword-based; no OCR so scanned PDFs/images are not searchable; no tags or decision-log model",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Research ledger (M08/C08/G02) next; tags and a typed decision log on top of project notes"
   }
  ]
 }

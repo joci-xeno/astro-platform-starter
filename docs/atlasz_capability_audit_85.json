@@ -114,13 +114,13 @@
     "V73-S07-001",
     "V73-S07-002"
    ],
-   "modules": "document-center.mjs; brain/knowledge-brain.mjs; brain/memory-fabric.mjs; shared-project-registry.mjs; business/entity-graph.mjs",
+   "modules": "knowledge-projects.mjs; document-center.mjs; brain/knowledge-brain.mjs; brain/memory-fabric.mjs; shared-project-registry.mjs; business/entity-graph.mjs",
    "status": "PARTIAL",
-   "evidence": "document-intelligence.test (6), doc-extractors.test (5), memory-fabric.test, knowledge-brain tests",
-   "missing": "Named workspaces grouping docs/notes/webpages/images with source refs; semantic (embedding) retrieval",
-   "integration_gaps": "Search is keyword-token based, no embeddings; shared-project-registry is in-process",
+   "evidence": "knowledge-projects.test (8) + knowledge-projects-hosted.test (2), 14+3 mutation checks; document-intelligence.test (6), doc-extractors.test (5), memory-fabric.test, knowledge-brain tests",
+   "missing": "Semantic (embedding) retrieval; image members (no OCR/vision provider)",
+   "integration_gaps": "BM25 keyword retrieval only (labelled NOT semantic); no embeddings; images not supported",
    "security": "Tenant+role gates already enforced; screening before agent read",
-   "plan": "Build Knowledge Projects over document-center (collections, members, citations); embeddings need a provider (EXTERNAL) so token retrieval stays labelled non-semantic",
+   "plan": "BUILT: projects with document/note/webpage members, extractive cited answers, verifiable citations, hosted as kp.* typed tools + Control Center view. Embeddings need a provider (EXTERNAL BLOCKER)",
    "tests_required": "project isolation, citation traceability, superseded versions, agent-read gating",
    "final_status": "PARTIAL",
    "shared_infrastructure": [
@@ -527,13 +527,13 @@
     "V73-S07-001",
     "V73-S07-002"
    ],
-   "modules": "brain/memory-fabric.mjs; brain/knowledge-brain.mjs; business-memory.mjs; experience-learning-engine.mjs; shared-project-registry.mjs",
+   "modules": "knowledge-projects.mjs (project notes); brain/memory-fabric.mjs; brain/knowledge-brain.mjs; business-memory.mjs; experience-learning-engine.mjs; shared-project-registry.mjs",
    "status": "PARTIAL",
    "evidence": "memory-fabric.test (tenant isolation, HISTORICAL_RESULT only from independent ACCEPT)",
    "missing": "Decision log with provenance across sessions; project registry is in-process",
    "integration_gaps": "shared-project-registry not durable",
    "security": "Tenant isolation verified",
-   "plan": "Persist shared-project-registry; decision records in Knowledge Projects",
+   "plan": "Notes with provenance exist in Knowledge Projects; still need a typed decision-log and persisting shared-project-registry",
    "tests_required": "restart durability, tenant isolation, provenance required",
    "final_status": "PARTIAL",
    "shared_infrastructure": [
@@ -815,13 +815,13 @@
     "V73-S07-004",
     "V73-S07-005"
    ],
-   "modules": "document-center.mjs; enterprise-knowledge-agentic-rag.mjs",
+   "modules": "knowledge-projects.mjs; document-center.mjs; enterprise-knowledge-agentic-rag.mjs",
    "status": "PARTIAL",
-   "evidence": "document-intelligence.test; enterprise RAG basic test",
-   "missing": "Named collections with citation spans; persistent index for RAG module",
+   "evidence": "knowledge-projects.test (8) + knowledge-projects-hosted.test (2), 14+3 mutation checks; document-intelligence.test; enterprise RAG basic test",
+   "missing": "Persistent index for the enterprise RAG module; semantic ranking",
    "integration_gaps": "RAG module in-memory",
    "security": "Tenant/role enforced",
-   "plan": "Collections via Knowledge Projects (M02)",
+   "plan": "BUILT in Knowledge Projects: named collections, chunk offsets, citation spans, durable store",
    "tests_required": "citation to source+offset, tenant isolation",
    "final_status": "PARTIAL",
    "shared_infrastructure": [
@@ -971,13 +971,13 @@
     "V73-S07-001",
     "V73-S07-008"
    ],
-   "modules": "document-center.mjs (tokens index); doc-extractors.mjs (size limits)",
+   "modules": "knowledge-projects.mjs (chunker with offsets); document-center.mjs (tokens index); doc-extractors.mjs (size limits)",
    "status": "PARTIAL",
-   "evidence": "extractor limit tests",
-   "missing": "Chunking/retrieval strategy for large docs and codebases",
+   "evidence": "extractor limit tests; knowledge-projects.test (chunk offsets)",
+   "missing": "Whole-codebase/large-doc strategy; true long-context model use (provider)",
    "integration_gaps": "No chunker; limits truncate",
    "security": "Truncation is flagged, not silent",
-   "plan": "Chunker + retrieval with source offsets in Knowledge Projects",
+   "plan": "Chunker with original-text offsets BUILT (800 chars/120 overlap); codebase indexing not built",
    "tests_required": "chunk boundary integrity, truncation flagged",
    "final_status": "PARTIAL",
    "shared_infrastructure": [
@@ -1026,7 +1026,9 @@
   {
    "id": "GE04",
    "description": "Grounded Search",
-   "registry_links": [],
+   "registry_links": [
+    "ATLASZ-PKG84-026"
+   ],
    "modules": "see M08",
    "status": "PARTIAL",
    "evidence": "see M08",
@@ -1136,13 +1138,13 @@
     "V73-S09-019",
     "V73-S21-031"
    ],
-   "modules": "document-center.mjs; enterprise-knowledge-agentic-rag.mjs",
+   "modules": "knowledge-projects.mjs; document-center.mjs; enterprise-knowledge-agentic-rag.mjs",
    "status": "PARTIAL",
-   "evidence": "document-intelligence.test",
-   "missing": "Evidence-grounded answer assembly with citations",
+   "evidence": "knowledge-projects.test (8) + knowledge-projects-hosted.test (2), 14+3 mutation checks; document-intelligence.test",
+   "missing": "Semantic retrieval; generative synthesis (needs live model)",
    "integration_gaps": "RAG not persistent",
    "security": "tenant/role + screening",
-   "plan": "Knowledge Projects answer assembly (extractive, cited)",
+   "plan": "BUILT: extractive cited answers, refuses unsupported (NO_SUPPORTING_EVIDENCE), citation re-verification",
    "tests_required": "extractive answer cites source, refuses unsupported",
    "final_status": "PARTIAL",
    "shared_infrastructure": [
@@ -1265,7 +1267,8 @@
     "V73-S19-008",
     "ATLASZ-BR-033",
     "ATLASZ-PKG84-014",
-    "ATLASZ-PKG84-019"
+    "ATLASZ-PKG84-019",
+    "ATLASZ-PKG84-024"
    ],
    "modules": "computer-use-fabric.mjs (action 'screenshot' policy)",
    "status": "EXTERNAL_BLOCKER",
@@ -1566,13 +1569,13 @@
     "V73-S07-004",
     "V73-S07-005"
    ],
-   "modules": "document-center.mjs; brain/knowledge-brain.mjs",
+   "modules": "knowledge-projects.mjs; document-center.mjs; brain/knowledge-brain.mjs",
    "status": "PARTIAL",
    "evidence": "document-intelligence.test",
-   "missing": "Notes/books/ideas model with tags",
-   "integration_gaps": "No notes model",
+   "missing": "Tags/books/ideas model",
+   "integration_gaps": "Notes exist (Knowledge Projects) but no tags or reading-list model",
    "security": "Classification PERSONAL/CONFIDENTIAL",
-   "plan": "Knowledge Projects: notes + tags",
+   "plan": "Notes BUILT; add tags next",
    "tests_required": "tag search, classification",
    "final_status": "PARTIAL",
    "shared_infrastructure": [

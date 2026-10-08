@@ -14,12 +14,12 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 
 ## M02 — Intelligent Knowledge Projects — **PARTIAL**
 - Registry links (candidates): V73-S03-017, V73-S05-013, V73-S06-002, V73-S06-007, V73-S07-001, V73-S07-002
-- Modules: document-center.mjs; brain/knowledge-brain.mjs; brain/memory-fabric.mjs; shared-project-registry.mjs; business/entity-graph.mjs
-- Evidence: document-intelligence.test (6), doc-extractors.test (5), memory-fabric.test, knowledge-brain tests
-- Missing: Named workspaces grouping docs/notes/webpages/images with source refs; semantic (embedding) retrieval
-- Integration gaps / blockers: Search is keyword-token based, no embeddings; shared-project-registry is in-process
+- Modules: knowledge-projects.mjs; document-center.mjs; brain/knowledge-brain.mjs; brain/memory-fabric.mjs; shared-project-registry.mjs; business/entity-graph.mjs
+- Evidence: knowledge-projects.test (8) + knowledge-projects-hosted.test (2), 14+3 mutation checks; document-intelligence.test (6), doc-extractors.test (5), memory-fabric.test, knowledge-brain tests
+- Missing: Semantic (embedding) retrieval; image members (no OCR/vision provider)
+- Integration gaps / blockers: BM25 keyword retrieval only (labelled NOT semantic); no embeddings; images not supported
 - Security: Tenant+role gates already enforced; screening before agent read
-- Plan: Build Knowledge Projects over document-center (collections, members, citations); embeddings need a provider (EXTERNAL) so token retrieval stays labelled non-semantic
+- Plan: BUILT: projects with document/note/webpage members, extractive cited answers, verifiable citations, hosted as kp.* typed tools + Control Center view. Embeddings need a provider (EXTERNAL BLOCKER)
 - Tests required: project isolation, citation traceability, superseded versions, agent-read gating
 
 ## M03 — Multi-Model Conversation Interface — **PARTIAL**
@@ -194,12 +194,12 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 
 ## C07 — Project Memory — **PARTIAL**
 - Registry links (candidates): V73-S03-017, V73-S04-010, V73-S05-013, V73-S06-002, V73-S07-001, V73-S07-002
-- Modules: brain/memory-fabric.mjs; brain/knowledge-brain.mjs; business-memory.mjs; experience-learning-engine.mjs; shared-project-registry.mjs
+- Modules: knowledge-projects.mjs (project notes); brain/memory-fabric.mjs; brain/knowledge-brain.mjs; business-memory.mjs; experience-learning-engine.mjs; shared-project-registry.mjs
 - Evidence: memory-fabric.test (tenant isolation, HISTORICAL_RESULT only from independent ACCEPT)
 - Missing: Decision log with provenance across sessions; project registry is in-process
 - Integration gaps / blockers: shared-project-registry not durable
 - Security: Tenant isolation verified
-- Plan: Persist shared-project-registry; decision records in Knowledge Projects
+- Plan: Notes with provenance exist in Knowledge Projects; still need a typed decision-log and persisting shared-project-registry
 - Tests required: restart durability, tenant isolation, provenance required
 
 ## C08 — Advanced Research — **PARTIAL**
@@ -324,12 +324,12 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 
 ## G07 — Collections and Knowledge Search — **PARTIAL**
 - Registry links (candidates): V73-S06-007, V73-S07-001, V73-S07-002, V73-S07-003, V73-S07-004, V73-S07-005
-- Modules: document-center.mjs; enterprise-knowledge-agentic-rag.mjs
-- Evidence: document-intelligence.test; enterprise RAG basic test
-- Missing: Named collections with citation spans; persistent index for RAG module
+- Modules: knowledge-projects.mjs; document-center.mjs; enterprise-knowledge-agentic-rag.mjs
+- Evidence: knowledge-projects.test (8) + knowledge-projects-hosted.test (2), 14+3 mutation checks; document-intelligence.test; enterprise RAG basic test
+- Missing: Persistent index for the enterprise RAG module; semantic ranking
 - Integration gaps / blockers: RAG module in-memory
 - Security: Tenant/role enforced
-- Plan: Collections via Knowledge Projects (M02)
+- Plan: BUILT in Knowledge Projects: named collections, chunk offsets, citation spans, durable store
 - Tests required: citation to source+offset, tenant isolation
 
 ## G08 — Image Understanding — **EXTERNAL_BLOCKER**
@@ -394,12 +394,12 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 
 ## GE01 — Long-Context Intelligence — **PARTIAL**
 - Registry links (candidates): V73-S03-017, V73-S03-018, V73-S04-004, V73-S04-011, V73-S07-001, V73-S07-008
-- Modules: document-center.mjs (tokens index); doc-extractors.mjs (size limits)
-- Evidence: extractor limit tests
-- Missing: Chunking/retrieval strategy for large docs and codebases
+- Modules: knowledge-projects.mjs (chunker with offsets); document-center.mjs (tokens index); doc-extractors.mjs (size limits)
+- Evidence: extractor limit tests; knowledge-projects.test (chunk offsets)
+- Missing: Whole-codebase/large-doc strategy; true long-context model use (provider)
 - Integration gaps / blockers: No chunker; limits truncate
 - Security: Truncation is flagged, not silent
-- Plan: Chunker + retrieval with source offsets in Knowledge Projects
+- Plan: Chunker with original-text offsets BUILT (800 chars/120 overlap); codebase indexing not built
 - Tests required: chunk boundary integrity, truncation flagged
 
 ## GE02 — Unified Multimodal Understanding — **EXTERNAL_BLOCKER**
@@ -423,7 +423,7 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 - Tests required: No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.
 
 ## GE04 — Grounded Search — **PARTIAL**
-- Registry links (candidates): none
+- Registry links (candidates): ATLASZ-PKG84-026
 - Modules: see M08
 - Evidence: see M08
 - Missing: Citation verification, freshness
@@ -474,12 +474,12 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 
 ## GE09 — File Search and RAG — **PARTIAL**
 - Registry links (candidates): V73-S07-009, V73-S07-010, V73-S07-016, V73-S07-017, V73-S09-019, V73-S21-031
-- Modules: document-center.mjs; enterprise-knowledge-agentic-rag.mjs
-- Evidence: document-intelligence.test
-- Missing: Evidence-grounded answer assembly with citations
+- Modules: knowledge-projects.mjs; document-center.mjs; enterprise-knowledge-agentic-rag.mjs
+- Evidence: knowledge-projects.test (8) + knowledge-projects-hosted.test (2), 14+3 mutation checks; document-intelligence.test
+- Missing: Semantic retrieval; generative synthesis (needs live model)
 - Integration gaps / blockers: RAG not persistent
 - Security: tenant/role + screening
-- Plan: Knowledge Projects answer assembly (extractive, cited)
+- Plan: BUILT: extractive cited answers, refuses unsupported (NO_SUPPORTING_EVIDENCE), citation re-verification
 - Tests required: extractive answer cites source, refuses unsupported
 
 ## GE10 — Geographic Intelligence — **EXTERNAL_BLOCKER**
@@ -533,7 +533,7 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 - Tests required: No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.
 
 ## A02 — Screen Awareness — **EXTERNAL_BLOCKER**
-- Registry links (candidates): V73-S19-008, ATLASZ-BR-033, ATLASZ-PKG84-014, ATLASZ-PKG84-019
+- Registry links (candidates): V73-S19-008, ATLASZ-BR-033, ATLASZ-PKG84-014, ATLASZ-PKG84-019, ATLASZ-PKG84-024
 - Modules: computer-use-fabric.mjs (action 'screenshot' policy)
 - Evidence: Policy classification only
 - Missing: Screenshot ingestion + vision
@@ -674,12 +674,12 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 
 ## P03 — Personal Knowledge Organizer — **PARTIAL**
 - Registry links (candidates): V73-S06-007, V73-S07-001, V73-S07-002, V73-S07-003, V73-S07-004, V73-S07-005
-- Modules: document-center.mjs; brain/knowledge-brain.mjs
+- Modules: knowledge-projects.mjs; document-center.mjs; brain/knowledge-brain.mjs
 - Evidence: document-intelligence.test
-- Missing: Notes/books/ideas model with tags
-- Integration gaps / blockers: No notes model
+- Missing: Tags/books/ideas model
+- Integration gaps / blockers: Notes exist (Knowledge Projects) but no tags or reading-list model
 - Security: Classification PERSONAL/CONFIDENTIAL
-- Plan: Knowledge Projects: notes + tags
+- Plan: Notes BUILT; add tags next
 - Tests required: tag search, classification
 
 ## P04 — Rapid Prototype Builder — **MISSING**

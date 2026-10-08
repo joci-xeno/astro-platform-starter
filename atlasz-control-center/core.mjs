@@ -20,6 +20,7 @@ import { buildDailyBrief, answerQuery, DEFAULT_PREFS, briefDue, markBriefShown }
 import { assessImpact } from "../atlasz-addons/human-core.mjs";
 import { createMobileApi } from "../atlasz-addons/mobile-api.mjs";
 import { createApprovalRequests } from "../atlasz-addons/approval-requests.mjs";
+import { createKnowledgeProjects } from "../atlasz-addons/knowledge-projects.mjs";
 import { createDocumentCenter } from "../atlasz-addons/document-center.mjs";
 import { createUniversalInbox } from "../atlasz-addons/universal-inbox.mjs";
 import { createVoiceSession } from "../atlasz-addons/voice-session.mjs";
@@ -277,6 +278,23 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   // ---- Documents / Inbox / Voice / Connectors / Tech Watch (read-mostly views over the durable modules) ----
   const docCenter = () => createDocumentCenter({ dir: path.join(stateDir, "documents") });
   const documents = () => { const d = docCenter(); return { summary: d.summary(), items: d.list({ tenantId: "JOCI", role: "OWNER" }).slice(0, 100) }; };
+  // Knowledge Projects (owner view): same files the runtime uses. Owner reads as OWNER (not forAgent); SECRET stays hidden even from the owner view.
+  const KP_T = "JOCI", kpInst = () => createKnowledgeProjects({ file: path.join(stateDir, "knowledge", "projects.json"), documents: docCenter() });
+  const knowledge = () => { try { const k = kpInst(); return { state: "CONNECTED", method: "KEYWORD_BM25_NOT_SEMANTIC", projects: k.list({ tenantId: KP_T }).map(p => ({ ...p, ...k.summary(p.id, { tenantId: KP_T }) })) }; } catch (e) { return { state: "UNREADABLE", error: String(e.message) }; } };
+  function knowledgeAction({ op, projectId, ...r } = {}) {
+    const k = kpInst(), w = { tenantId: KP_T };
+    switch (op) {
+      case "create": return k.create({ ...w, name: r.name, description: r.description, allowedRoles: r.allowedRoles ?? ["OWNER"] });
+      case "addDocument": return k.addDocument(projectId, { ...w, documentId: r.documentId });
+      case "addNote": return k.addNote(projectId, { ...w, title: r.title, text: r.text });
+      case "addWebSnapshot": return k.addWebSnapshot(projectId, { ...w, url: r.url, retrievedAt: r.retrievedAt, title: r.title, text: r.text });
+      case "removeMember": return k.removeMember(projectId, { ...w, memberId: r.memberId });
+      case "ask": return k.answer(projectId, { ...w, role: "OWNER", query: r.query });
+      case "search": return k.search(projectId, { ...w, role: "OWNER", query: r.query });
+      case "verify": return k.verifyCitation(r.citation, { ...w, role: "OWNER" });
+      default: throw new Error("UNKNOWN_KP_OP");
+    }
+  }
   const inboxMod = () => createUniversalInbox({ dir: path.join(stateDir, "inbox"), ownerAuth: ownerAuth() });
   const inbox = () => { const i = inboxMod(); return { counts: i.counts(), chain: i.verify(), items: i.list().slice(0, 100), note: "Drafts are never sent from here. Sending needs a proven connector, an open kill switch and your signed approval." }; };
   const voice = () => { const v = createVoiceSession({}); const st = v.status(); return { ...st, note: st.live ? null : "BLOCKED: no tested speech-to-text and text-to-speech provider is attached, so voice is not live. Voice can never approve anything." }; };
@@ -375,6 +393,6 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   };
 
   const moneyViews = createMoneyViews({ stateDir });
-  return { pcc, pccAction, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { pcc, pccAction, knowledge, knowledgeAction, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }
