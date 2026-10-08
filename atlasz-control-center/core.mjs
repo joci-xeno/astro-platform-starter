@@ -10,6 +10,7 @@ import { createOwnerAuth } from "../atlasz-addons/owner-auth.mjs";
 import { createEmergencyStop } from "../atlasz-addons/emergency-stop.mjs";
 import { createSafeMode } from "../atlasz-addons/safe-mode.mjs";
 import { runStartupSelfCheck } from "../atlasz-addons/startup-self-check.mjs";
+import { detectNodeRestrictions } from "../atlasz-addons/restricted-node.mjs";
 import { createBackup, verifyBackup, recoveryDrill, createLkgRegistry, rollbackToLastKnownGood, restoreBackup, LKG_CRITERIA } from "../atlasz-addons/backup-recovery.mjs";
 import { createUpdateCenter } from "../atlasz-addons/update-center.mjs";
 import { readAuditFile, verifyChain } from "../atlasz-addons/audit-chain.mjs";
@@ -407,7 +408,11 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
       recovery_readiness: () => (!bk.items.length ? { state: "NOT_CONFIGURED" } : bk.items.some(b => !b.ok) ? { state: "FAILED", detail: "corrupt backup" } : bk.lkg && drills().at(-1)?.ok ? { state: "HEALTHY", detail: "LKG + passing drill" } : { state: "UNKNOWN", detail: "need LKG and a passing drill" }),
       update_center: () => (upd ? { state: upd.freeze?.active ? "BLOCKED" : "HEALTHY", detail: upd.freeze?.active ? "unsafe actions frozen by update" : "idle" } : { state: "UNKNOWN" }),
     };
-    return createSystemDoctor({ probes }).run();
+    const report = createSystemDoctor({ probes }).run();
+    // Informational (does not change `overall`): fail-closed means a host without a process sandbox is SAFE but runs no plugin hooks / update self-tests. The owner should see that, not discover it.
+    const r = detectNodeRestrictions();
+    report.components.process_sandbox = { informational: true, ...(!r.permission ? { state: "BLOCKED", detail: "Node --permission unavailable on this host: plugin hooks and update self-tests will NOT run (fail closed)" } : !r.namespace ? { state: "DEGRADED", detail: "filesystem/process restriction active; NO network isolation on this platform (" + r.platform + ")" } : { state: "HEALTHY", detail: "filesystem/process restriction + network namespace" }) };
+    return report;
   }
   async function ownerSafety() {
     const st = await status(), rt = await runtimeDashboard(), oc = rt.dashboard?.ownerControl ?? null, bk = backups(), dr = drills().at(-1) ?? null;

@@ -66,3 +66,36 @@ console.log(JSON.stringify({ nonLoopbackInterfaces: ifs.length }));`);
     const open = restrictedNodeCommand({ script: f, readDirs: [d], allowNetwork: true }); assert.equal(open.networkBlocked, false);
   } finally { rm(d); }
 });
+
+test("detectNodeRestrictions probes the real binary: a node that rejects --permission is reported permission:false; the real one true", () => {
+  const d = tmp(), fake = path.join(d, "fake.sh");
+  try {
+    fs.writeFileSync(fake, '#!/bin/sh\nif [ "$1" = "--permission" ]; then exit 9; fi\nexit 0\n', { mode: 0o755 });
+    assert.equal(detectNodeRestrictions(fake, { fresh: true }).permission, false);
+    assert.equal(restrictedNodeCommand({ nodeBin: fake, script: "/x.mjs" }).reason, "SANDBOX_UNAVAILABLE");
+    const ok = path.join(d, "ok.sh"); fs.writeFileSync(ok, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    assert.equal(detectNodeRestrictions(ok, { fresh: true }).permission, true);
+    assert.equal(detectNodeRestrictions(process.execPath, { fresh: true }).permission, caps.permission);
+  } finally { rm(d); }
+});
+test("option semantics: requireNoNetwork refuses only when a block was wanted and impossible; allowNetwork never needs a namespace; script is always readable; write dirs are never inferred from read dirs", () => {
+  const c = { permission: true, namespace: false };
+  assert.equal(restrictedNodeCommand({ script: "/s/h.mjs", requireNoNetwork: true, caps: c }).reason, "NETWORK_ISOLATION_UNAVAILABLE");
+  const a = restrictedNodeCommand({ script: "/s/h.mjs", requireNoNetwork: true, allowNetwork: true, caps: c }); assert.equal(a.ok, true); assert.equal(a.networkBlocked, false);
+  const b = restrictedNodeCommand({ script: "/s/h.mjs", readDirs: ["/r"], caps: { permission: true, namespace: true } });
+  assert.ok(b.args.includes("--allow-fs-read=/s/h.mjs") && b.args.includes("--allow-fs-read=/r"));
+  assert.ok(!b.args.some(x => x.startsWith("--allow-fs-write")));
+  assert.equal(b.args.filter(x => x === "--permission").length, 1);
+  assert.equal(b.level, "PERMISSION+NETWORK_NAMESPACE"); assert.equal(restrictedNodeCommand({ script: "/s/h.mjs", caps: c }).level, "PERMISSION");
+  assert.equal(restrictedNodeCommand({ script: "/s/h.mjs", caps: c }).filesystemRestricted, true);
+  assert.deepEqual(b.args.slice(-1), ["/s/h.mjs"]); assert.equal(restrictedNodeCommand({ script: "/s/h.mjs", scriptArgs: ["a"], caps: c }).args.slice(-2).join(), "/s/h.mjs,a");
+});
+test("env passed to the child is exactly PATH plus the explicit extras (no inherited keys), even with many secrets set", () => {
+  const keys = ["ATLASZ_VAULT_KEY", "ATLASZ_OWNER_PASSPHRASE", "ANTHROPIC_API_KEY", "AWS_SECRET_ACCESS_KEY"]; keys.forEach(k => process.env[k] = "s3cret");
+  try { const rc = restrictedNodeCommand({ script: "/s/h.mjs", env: { X: "1" }, caps: { permission: true, namespace: false } }); assert.deepEqual(Object.keys(rc.env).filter(k => k !== "PATH" && k !== "ELECTRON_RUN_AS_NODE").sort(), ["X"]); assert.ok(!JSON.stringify(rc).includes("s3cret")); }
+  finally { keys.forEach(k => delete process.env[k]); }
+});
+test("nodeFlags are passed to node before the script (and after the permission flags)", () => {
+  const rc = restrictedNodeCommand({ script: "/s/h.mjs", nodeFlags: ["--max-old-space-size=64"], caps: { permission: true, namespace: false } });
+  const i = rc.args.indexOf("--max-old-space-size=64"); assert.ok(i > rc.args.indexOf("--permission") && i < rc.args.indexOf("/s/h.mjs", i));
+});

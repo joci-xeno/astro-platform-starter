@@ -69,3 +69,30 @@ test("ATLASZ-T3-006: restore is reachable from the Owner Safety action (UI path)
     assert.equal((await c.post("/api/restore/backup", { id: b.id }, null)).status, 401);
   } finally { await c.close(); }
 });
+const PW = "correct horse battery";
+test("ATLASZ-T3-006: with a provisioned owner key, a correctly SIGNED restore through HTTP restores the backed-up state, preserves the overwritten state aside, and a wrong passphrase / missing token still change nothing", async () => {
+  const c = await boot();
+  try {
+    assert.equal((await c.post("/api/owner-key", { passphrase: PW })).status, 200);
+    const f = path.join(c.stateDir, "important.json"); fs.writeFileSync(f, '{"v":1}');
+    const b = JSON.parse((await c.post("/api/backup", { label: "pre" })).body).result; assert.ok(b.id);
+    fs.writeFileSync(f, '{"v":2}');
+    // negative cases first: all leave v2 untouched
+    assert.equal((await c.post("/api/restore/backup", { id: b.id, passphrase: PW }, null)).status, 401);
+    const wrong = await c.post("/api/restore/backup", { id: b.id, passphrase: "not the passphrase" }); assert.equal(wrong.status, 400); assert.match(wrong.body, /WRONG_/); assert.ok(!wrong.body.includes("not the passphrase"));
+    assert.equal((await c.post("/api/restore/backup", { id: "../../etc", passphrase: PW })).status, 400);
+    assert.equal(fs.readFileSync(f, "utf8"), '{"v":2}');
+    // positive: signed restore
+    const ok = await c.post("/api/restore/backup", { id: b.id, passphrase: PW }); assert.equal(ok.status, 200, ok.body);
+    assert.equal(fs.readFileSync(f, "utf8"), '{"v":1}', "state must come back from the backup");
+    const aside = fs.readdirSync(path.dirname(c.stateDir)).filter(n => n.startsWith(path.basename(c.stateDir) + ".pre-restore-"));
+    assert.equal(aside.length, 1, "overwritten state must be preserved, never deleted");
+    assert.equal(fs.readFileSync(path.join(path.dirname(c.stateDir), aside[0], "important.json"), "utf8"), '{"v":2}');
+    // Owner Safety (UI) path: wrong signature refused, correct signature restores again
+    fs.writeFileSync(f, '{"v":3}');
+    const bad = await c.post("/api/owner-safety/action", { action: "RESTORE", id: b.id, passphrase: "bad bad bad bad" }); assert.ok(bad.status >= 400, bad.body);
+    assert.equal(fs.readFileSync(f, "utf8"), '{"v":3}');
+    const good = await c.post("/api/owner-safety/action", { action: "RESTORE", id: b.id, passphrase: PW }); assert.equal(good.status, 200, good.body);
+    assert.equal(fs.readFileSync(f, "utf8"), '{"v":1}');
+  } finally { await c.close(); }
+});

@@ -69,3 +69,14 @@ test("Owner Safety over HTTP: token-protected, cross-origin refused, unsigned st
     assert.equal(JSON.parse((await raw(port, "/api/owner-safety", { headers: { ...H, "x-atlasz-token": token } })).body).killSwitch.mode, "RUNNING");
   } finally { await cc.close?.(); rm(base); }
 });
+
+test("doctor reports the process sandbox honestly (ATLASZ-T3-002): BLOCKED when hooks cannot run, DEGRADED without network isolation, HEALTHY only with both", async () => {
+  const { detectNodeRestrictions } = await import("../atlasz-addons/restricted-node.mjs");
+  const { base, core } = mk();
+  try {
+    const d = await core.doctorV2(); const c = d.components.process_sandbox; const r = detectNodeRestrictions();
+    assert.ok(c, "process_sandbox component missing");
+    assert.equal(c.state, !r.permission ? "BLOCKED" : !r.namespace ? "DEGRADED" : "HEALTHY");
+    assert.ok(c.detail.length > 10); assert.equal(c.informational, true); assert.ok(!Object.keys(d.counts).includes("process_sandbox"));
+  } finally { rm(base); }
+});
