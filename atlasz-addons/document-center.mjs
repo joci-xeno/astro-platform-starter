@@ -13,7 +13,7 @@ export const DOC_TYPES = Object.freeze(["GENERIC", "INVOICE", "RECEIPT", "CONTRA
 const TEXT_EXT = new Set([".txt", ".md", ".csv", ".tsv", ".json", ".html", ".htm", ".xml", ".log"]);
 const BINARY_KNOWN = new Set([".pdf", ".docx", ".xlsx", ".xls", ".doc", ".png", ".jpg", ".jpeg", ".gif", ".zip"]);
 const MAX_BYTES = 5 * 1024 * 1024;
-const SECRET = [/-----BEGIN [A-Z ]*PRIVATE KEY-----/, /\bsk-[A-Za-z0-9]{20,}/, /\bAKIA[0-9A-Z]{16}\b/, /\bghp_[A-Za-z0-9]{30,}/, /\bxox[bp]-[A-Za-z0-9-]{20,}/];
+const SECRET = [/-----BEGIN [A-Z ]*PRIVATE KEY-----/, /(?<![A-Za-z0-9])sk-[A-Za-z0-9]{20,}/, /(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}\b/, /(?<![A-Za-z0-9])ghp_[A-Za-z0-9]{30,}/, /(?<![A-Za-z0-9])xox[bp]-[A-Za-z0-9-]{20,}/];
 const sha = b => createHash("sha256").update(b).digest("hex");
 const tokens = s => [...new Set(String(s).toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(x => x.length > 2))];
 

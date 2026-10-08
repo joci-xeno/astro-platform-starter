@@ -30,7 +30,7 @@ test("offer: ordering, dedupe, invalid counting, canAct is always false, nothing
   assert.deepEqual(r.shown.map(x => x.key), ["a", "c", "b"]); assert.deepEqual([r.suppressed.duplicate, r.suppressed.invalid, r.suppressed.overInput], [1, 2, 0]); assert.ok(r.shown.every(x => x.canAct === false));
   assert.ok(r.shown.every(x => Object.values(x).every(v => typeof v !== "function")));
   assert.deepEqual(s.offer("t", "not a list").shown, []); assert.deepEqual(s.offer("t", undefined).shown, []);
-  const many = s.offer("u", Array.from({ length: LIMITS.maxCandidates + 7 }, (_, i) => cand("k" + i))); assert.equal(many.suppressed.overInput, 7); assert.equal(many.suppressed.dailyLimit, LIMITS.maxCandidates - 5, "only the first 100 candidates are looked at"); assert.equal(s.offer("v", Array.from({ length: LIMITS.maxCandidates }, (_, i) => cand("k" + i))).suppressed.overInput, 0);
+  const many = s.offer("u", Array.from({ length: LIMITS.maxInput + 7 }, (_, i) => cand("k" + i))); assert.equal(many.suppressed.overInput, 7); assert.equal(many.suppressed.dailyLimit, LIMITS.maxInput - 5, "only the first 1000 candidates are looked at"); assert.equal(s.offer("v", Array.from({ length: LIMITS.maxCandidates }, (_, i) => cand("k" + i))).suppressed.overInput, 0);
   const wide = createSuggestions({ prefs: { get: (_t, k) => ({ value: k === "suggestions.maxPerDay" ? 50 : k === "suggestions.mutedSources" ? [] : true }), recordChoice: () => ({ ok: true }) }, now: clock() }); assert.equal(wide.offer("t", Array.from({ length: 40 }, (_, i) => cand("w" + i))).shown.length, LIMITS.maxShownHardCap, "a preference store cannot raise the cap above the hard limit"); assert.throws(() => s.offer("a b", []), /TENANT_INVALID/);
 });
 
@@ -78,7 +78,7 @@ test("bookkeeping stays bounded; durability and corrupt-file handling", () => {
 
 test("adapters: each source yields well-formed, bounded, untrusted-safe candidates; malformed snapshots yield nothing", () => {
   const c = collectCandidates({
-    approvals: [{ id: "AP1", action: "PLUGIN_INSTALL" }, { id: "../x" }, null, { id: 5 }], decisions: [{ projectId: "P1", decisionId: "D1", title: "Use X" }, { projectId: "P1" }],
+    approvals: [{ id: "ap1", action: "PLUGIN_INSTALL" }, { id: "../x" }, null, { id: 5 }], decisions: [{ projectId: "p1", decisionId: "d1", title: "Use X" }, { projectId: "p1" }],
     workflows: [{ id: "w1", templateId: "t1", status: "PAUSED", steps: ["DONE", "NEEDS_REVIEW"] }, { id: "w2", templateId: "t2", status: "FAILED", reason: "boom", steps: ["FAILED"] }, { id: "w3", status: "DONE", steps: ["DONE"] }, { id: "w4", status: "PAUSED", steps: ["PENDING"] }],
     skills: [{ id: "s1", name: "N", active: false, versions: [{ status: "TESTED" }] }, { id: "s2", active: true, versions: [{ status: "TESTED" }] }, { id: "s3", active: false, versions: [{ status: "TEST_FAILED" }] }, { id: "s4", active: false }],
     plugins: [{ id: "pl1", quarantined: true }, { id: "pl2", state: "QUARANTINED" }, { id: "pl3", state: "ENABLED" }], preferences: [{ id: "pp1", key: "ui.language", reason: "r" }, {}], bogus: [1] });
@@ -91,4 +91,17 @@ test("adapters: each source yields well-formed, bounded, untrusted-safe candidat
   assert.equal(SOURCES.approvals([{ id: "x".repeat(62) }]).length, 0); assert.equal(SOURCES.approvals([{ id: "x".repeat(61) }]).length, 1);
   assert.equal(SOURCES.workflows([{ id: "w", status: "FAILED", reason: SK, steps: [] }]).length, 1);
   const { s } = mk(); const shown = s.offer("t", SOURCES.workflows([{ id: "w", status: "FAILED", reason: "key " + SK, steps: [] }])).shown; assert.ok(!JSON.stringify(shown).includes("ABCDEFGHIJKLMNOPQRSTUV"));
+});
+test("hardening: urgent items are ranked before the cut and are never starved by earlier low-priority ones; ids differing only by case stay distinct", () => {
+  const { now, s } = mk();
+  const low = Array.from({ length: 30 }, (_, i) => cand("low" + i, { priority: 1 }));
+  assert.equal(s.offer("u", low).shown.length, 5, "default daily cap for ordinary items");
+  const r = s.offer("u", [...low, cand("approval:late", { priority: 5 })]); assert.ok(r.shown.some(x => x.key === "approval:late"), "a priority-5 item arriving later in the day is still shown"); assert.equal(r.shown.length, 6);
+  // priority ranking happens over ALL valid candidates (the urgent one is item 500)
+  const { s: s2 } = mk(); const many = Array.from({ length: 500 }, (_, i) => cand("m" + i, { priority: 1 })); many.push(cand("zz-urgent", { priority: 5 })); const r2 = s2.offer("v", many); assert.equal(r2.shown[0].key, "zz-urgent");
+  // urgent allowance is bounded
+  const { s: s3 } = mk(); const u = Array.from({ length: 40 }, (_, i) => cand("u" + i, { priority: 5 })); assert.equal(s3.offer("w", u).shown.length, LIMITS.maxShownHardCap);
+  const c = collectCandidates({ approvals: [{ id: "Abc" }, { id: "abc" }] }); assert.equal(new Set(c.map(x => x.key)).size, 2); assert.ok(c.some(x => x.key === "approval:abc"));
+  const { s: s4 } = mk(); s4.offer("y", [cand("approval:first", { priority: 5 })]); assert.equal(s4.offer("y", Array.from({ length: 8 }, (_, i) => cand("o" + i, { priority: 2 }))).shown.length, 5, "an urgent item does not use the ordinary daily allowance");
+  now.adv(0);
 });

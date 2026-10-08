@@ -360,7 +360,7 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   // "complete" honestly answers NO_ELIGIBLE_PROVIDER; nothing is fabricated, nothing is spent, and every call is gated by the kill switch.
   const wbGateway = () => createModelGateway({ resilience: createProviderResilience({ gate: x => emergency().gate(x), clock: () => Date.now(), timeoutMs: 15000 }), models: createModelIntelligence({ graph: createCapabilityGraph(), clockMs: () => Date.now() }) });
   let wbCache = null;                                   // ONE workbench per Control Center: workflow run-guards and batch state must be shared across requests
-  const wbInst = () => (wbCache ??= createWorkbench({ conversationFile: path.join(stateDir, "workbench", "conversations.json"), memoryFile: path.join(stateDir, "workbench", "project-memory.json"), notesFile: path.join(stateDir, "workbench", "notes.json"), workflowFile: path.join(stateDir, "workbench", "workflows.json"), skillsFile: path.join(stateDir, "workbench", "skills.json"), prefsFile: path.join(stateDir, "workbench", "preferences.json"), profilesFile: path.join(stateDir, "workbench", "profiles.json"), studyFile: path.join(stateDir, "workbench", "study.json"), suggestionsFile: path.join(stateDir, "workbench", "suggestions.json"), suggestionExtras: () => ({ approvals: [...approvalStore().pending().map(x => ({ id: x.id, action: x.operation ?? x.action })), ...createApprovalGateway({ dir: path.join(stateDir, "owner-control", "approvals"), ownerAuth: ownerAuth() }).pending().map(x => ({ id: x.id, action: x.operation }))], plugins: plugins().list().plugins }),
+  const wbInst = () => (wbCache ??= createWorkbench({ ownerAuth: () => ownerAuth(), conversationFile: path.join(stateDir, "workbench", "conversations.json"), memoryFile: path.join(stateDir, "workbench", "project-memory.json"), notesFile: path.join(stateDir, "workbench", "notes.json"), workflowFile: path.join(stateDir, "workbench", "workflows.json"), skillsFile: path.join(stateDir, "workbench", "skills.json"), prefsFile: path.join(stateDir, "workbench", "preferences.json"), profilesFile: path.join(stateDir, "workbench", "profiles.json"), studyFile: path.join(stateDir, "workbench", "study.json"), suggestionsFile: path.join(stateDir, "workbench", "suggestions.json"), suggestionExtras: () => ({ approvals: [...approvalStore().pending().map(x => ({ id: x.id, action: x.operation ?? x.action })), ...createApprovalGateway({ dir: path.join(stateDir, "owner-control", "approvals"), ownerAuth: ownerAuth() }).pending().map(x => ({ id: x.id, action: x.operation }))], plugins: plugins().list().plugins }),
     gateway: wbGateway(), tenantId: KP_T, isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL" }));
   async function workbench() {
     try { const w = wbInst(), g = wbGateway(); return { state: "CONNECTED", ops: w.ops, conversations: (await w.run("conv.list")).conversations, providers: g.summary(), note: "No model provider is attached: asking a model returns NO_ELIGIBLE_PROVIDER. Analysis, rendering, chunking and policy tools run locally and spend nothing." }; }
@@ -368,7 +368,14 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   }
   async function workbenchAction({ op, args } = {}) {
     if (emergency().status().mode !== "RUNNING" && /^(conv\.complete|(workflow\.(run|resume|batchRun|tick)|skill\.run))$/.test(String(op))) throw new Error("EMERGENCY_STOP_ACTIVE");
-    const r = await wbInst().run(String(op), args ?? {});
+    let a = args ?? {};
+    if (/^skill\.(activate|rollback|deactivate)$/.test(String(op))) {          // owner approval for skill changes: signed here from the passphrase, bound to this exact skill version and content, never accepted from the request
+      const { passphrase, ownerApproval: _ignored, ...rest } = a; a = rest; const verb = String(op).slice(6).toUpperCase();
+      if (typeof passphrase !== "string" || !passphrase) throw new Error("PASSPHRASE_REQUIRED");
+      const sub = await wbInst().run("skill.subject", { verb, id: a.id, version: a.version }); if (!sub?.ok) throw new Error(String(sub?.reason ?? "FAILED"));
+      a.ownerApproval = sign(passphrase, "SKILL_" + verb, sub.subject);
+    }
+    const r = await wbInst().run(String(op), a);
     if (!r || r.ok === false) throw new Error(String(r?.reason ?? "FAILED"));
     return r;
   }
@@ -431,12 +438,13 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
       return runRepoTests({ name, root, ownerAuth: ownerAuth(), ownerApproval: passphrase ? sign(passphrase, "REPO_TEST_RUN", name + "#" + a.hash) : null, isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL" });
     })
   };
-  let protoInst = null; const protos = () => (protoInst ??= createPrototypeBuilder({ repoRoot, file: path.join(stateDir, "workbench", "prototypes.json") }));
+  let protoInst = null; const protos = () => (protoInst ??= createPrototypeBuilder({ repoRoot, file: path.join(stateDir, "workbench", "prototypes.json"), isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL" }));
   const prototypes = () => { try { const b = protos(); return { state: "CONNECTED", templates: b.templates(), prototypes: b.list(), note: "Sandbox prototypes from fixed templates, with generated tests. A prototype is only marked tested after its own tests passed in the restricted sandbox with your signed approval. Nothing is deployed or published." }; } catch (e) { return { state: "UNREADABLE", reason: String(e.message).slice(0, 80) }; } };
   const prototypeActions = {
     preview: spec => act(() => protos().preview(spec)),
     generate: spec => act(() => protos().generate(spec, { actor: "OWNER" })),
     status: ({ name }) => act(() => protos().status(name)),
+    previewPage: ({ name }) => act(() => protos().previewPage(name)),
     test: ({ name, passphrase }) => act(async () => {
       if (typeof name !== "string" || !REPO_NAME.test(name)) return { ok: false, reason: "REPO_NAME_INVALID" };
       const a = analyzeRepo(path.join(repoRoot, name)); if (!a.ok) return a;

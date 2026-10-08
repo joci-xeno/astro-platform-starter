@@ -174,3 +174,19 @@ test("rollback refuses a kept copy whose manifest disagrees with its folder name
     assert.deepEqual(calls, ["demo-plugin", "demo-plugin", "demo-plugin", "demo-plugin"]);
   } finally { r.done(); }
 });
+
+test("a kept copy that was edited AND renamed to its new hash is refused: the audit chain remembers the real hash", async () => {
+  const { createHash } = await import("node:crypto");
+  const r = rig();
+  try {
+    const d1 = r.pkg("a1", { version: "1.0.0" }), p1 = r.ins.inspectPackage(d1); assert.equal(r.ins.install(d1, { ownerApproval: ap("PLUGIN_INSTALL", sub(p1)) }).ok, true);
+    const d2 = r.pkg("a2", { version: "1.1.0" }), p2 = r.ins.inspectPackage(d2); assert.equal(r.ins.install(d2, { ownerApproval: ap("PLUGIN_INSTALL", sub(p2)) }).ok, true);
+    const keptRoot = path.join(r.root, "state", "inst", "plugin-versions", "demo-plugin"), name = fs.readdirSync(keptRoot).find(n => n.startsWith("1.0.0__")), dir = path.join(keptRoot, name);
+    assert.ok(r.ins.audit().some(e => e.event === "PLUGIN_ARCHIVED" && e.data.version === "1.0.0" && e.data.hash.startsWith(name.split("__")[1])), "the archived copy is recorded with its full hash");
+    fs.appendFileSync(path.join(dir, "main.mjs"), "\n//evil");
+    const sig = r.ins.rollbackSubject("demo-plugin", "1.0.0"); const newHash = sig.split("#")[1];
+    fs.renameSync(dir, path.join(keptRoot, "1.0.0__" + newHash.slice(0, 12)));                          // the attacker makes the directory name agree with the edited content
+    const res = r.ins.rollback("demo-plugin", "1.0.0", { ownerApproval: ap("PLUGIN_ROLLBACK", r.ins.rollbackSubject("demo-plugin", "1.0.0")) });
+    assert.equal(res.reason, "KEPT_COPY_NOT_IN_AUDIT_CHAIN"); assert.equal(r.ins.versions("demo-plugin").installed.version, "1.1.0", "the tampered copy was not installed");
+  } finally { r.done(); }
+});

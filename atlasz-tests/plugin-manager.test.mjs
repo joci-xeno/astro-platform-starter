@@ -155,3 +155,28 @@ test("privilege escalation by editing the manifest AFTER enabling: granted permi
     assert.ok(!fs.existsSync(path.join(dir, "o.txt")));
   } finally { r.done(); }
 });
+
+test("prototype-chain plugin ids are refused as BAD_ID, so they can never read inherited state or write onto Object", () => {
+  for (const id of ["constructor", "toString", "hasOwnProperty", "valueOf", "prototype"]) assert.match(validateManifest({ ...base, id, name: "x", kind: "PLUGIN", entry: "m.mjs" }).problems.join(), /BAD_ID/, id);
+  const r = rig(); try {
+    r.mk("ctor", { ...base, id: "constructor", name: "C", kind: "PLUGIN", entry: "main.mjs" }, { "main.mjs": ok });
+    const l = r.pm.list(); assert.equal(l.plugins.length, 0); assert.match(JSON.stringify(l.rejected), /BAD_ID/);
+    assert.equal(r.pm.enable("constructor").reason, "UNKNOWN_PLUGIN"); assert.equal(Object.hasOwn(Object, "failures"), false);
+  } finally { r.done(); }
+});
+
+test("a state file that cannot be read is kept as found: every plugin stays disabled, nothing is written, mutations are refused with a clear reason", () => {
+  const r = rig(); try {
+    r.mk("p1", { ...base, id: "p-one", name: "P", kind: "PLUGIN", entry: "main.mjs" }, { "main.mjs": ok });
+    const sf = path.join(r.root, "state", "plugins-state.json"); fs.mkdirSync(path.dirname(sf), { recursive: true });
+    for (const bad of ["{CORRUPT", "null", "[]", '{"enabled":[]}', '{"health":5}']) {
+      fs.writeFileSync(sf, bad);
+      const pm = createPluginManager({ roots: [path.join(r.root, "plugins")], stateDir: path.join(r.root, "state"), ownerAuth: createOwnerAuth({ publicKeyB64: key.publicKeyB64 }) });
+      const l = pm.list(); assert.equal(l.plugins[0].status, "DISABLED", bad); assert.match(l.stateProblem, /STATE_UNREADABLE/, bad);
+      assert.equal(pm.enable("p-one", { ownerApproval: ap("PLUGIN_ENABLE", "p-one") }).reason, "STATE_UNREADABLE:plugins-state.json"); assert.equal(pm.setTheme(null).reason, "STATE_UNREADABLE:plugins-state.json"); assert.equal(pm.resetQuarantine("p-one", { ownerApproval: ap("PLUGIN_RESET_QUARANTINE", "p-one") }).reason, "STATE_UNREADABLE:plugins-state.json");
+      assert.equal(fs.readFileSync(sf, "utf8"), bad, "the unreadable file is untouched");
+    }
+    fs.writeFileSync(sf, JSON.stringify({ enabled: {}, health: {}, theme: null }));
+    const ok2 = createPluginManager({ roots: [path.join(r.root, "plugins")], stateDir: path.join(r.root, "state"), ownerAuth: createOwnerAuth({ publicKeyB64: key.publicKeyB64 }) }); assert.equal(ok2.list().stateProblem, undefined); assert.equal(ok2.enable("p-one", { ownerApproval: ap("PLUGIN_ENABLE", "p-one") }).ok, true);
+  } finally { r.done(); }
+});

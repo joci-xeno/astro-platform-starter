@@ -5,6 +5,7 @@
 import { createStore } from "./business/store.mjs";
 import crypto from "node:crypto";
 import fs from "node:fs";
+import { ownProp } from "./safe-keys.mjs";
 
 export const TYPES = Object.freeze(["TASK", "REMINDER", "DEADLINE"]);
 export const PRIORITIES = Object.freeze(["LOW", "NORMAL", "HIGH", "URGENT"]);
@@ -20,7 +21,7 @@ export function createPersonalCommandCenter({ file = null, tenantId = "ATLASZ", 
   const reload = () => { if (!file || !fs.existsSync(file)) return; let d; try { d = JSON.parse(fs.readFileSync(file, "utf8")); } catch { throw new Error("STORE_UNREADABLE:" + file.split(/[\\/]/).pop()); } S.items = d.items ?? {}; S.seq = d.seq ?? 0; };
   const log = (kind, d) => { try { blackBox?.record({ kind, ...d }); } catch { /* audit must not change behaviour */ } };
   const mine = () => Object.values(S.items).filter(i => i.tenantId === tenantId);
-  const own = id => { const i = S.items[id]; return i && i.tenantId === tenantId ? i : null; };
+  const own = id => { const i = ownProp(S.items, id); return i && i.tenantId === tenantId ? i : null; };
   const iso = (v, field) => { if (!Number.isFinite(t(v))) throw new Error(field.toUpperCase() + "_INVALID"); return new Date(t(v)).toISOString(); };
 
   function add({ type, title, dueAt = null, remindAt = null, priority = "NORMAL", project = null, notes = "", classification = "PERSONAL", source = "OWNER" } = {}) {

@@ -5,10 +5,12 @@
 //     at most suggestions.maxPerDay NEW keys are shown per UTC day (a key already shown today may be listed again without using the cap).
 //   * Dismissals and acknowledgements are counted through the preference store (labels only) so repeated dismissals can be PROPOSED as a mute (owner confirms).
 //   * Candidates are untrusted text: control characters are stripped, secrets redacted, lengths capped, malformed candidates dropped.
+import crypto from "node:crypto";
 import { createStore } from "./business/store.mjs";
 import { redactSecrets } from "./text-compare.mjs";
+import { okName, own } from "./safe-keys.mjs";
 
-export const LIMITS = Object.freeze({ maxCandidates: 100, maxKnown: 200, keepDays: 7, keyChars: 80, titleChars: 120, detailChars: 300, maxShownHardCap: 20 });
+export const LIMITS = Object.freeze({ maxCandidates: 100, maxInput: 1000, maxKnown: 200, keepDays: 7, keyChars: 80, titleChars: 120, detailChars: 300, maxShownHardCap: 20 });
 const KEY = /^[a-z0-9][a-z0-9:._-]{0,79}$/, SOURCE = /^[a-z][a-z0-9._-]{0,39}$/, TENANT = /^[A-Za-z0-9._-]{1,64}$/, DAY = 86400000;
 const clean = (v, n) => redactSecrets(String(v).replace(/[\u0000-\u001f\u007f-\u009f‪-‮⁦-⁩]/g, " ").replace(/\s+/g, " ").trim()).slice(0, n);
 const dayOf = ms => new Date(ms).toISOString().slice(0, 10);
@@ -25,7 +27,7 @@ export function normalizeCandidate(c) {
 export function createSuggestions({ file = null, prefs, now = () => Date.now() } = {}) {
   if (!prefs || typeof prefs.get !== "function" || typeof prefs.recordChoice !== "function") throw new Error("PREFERENCES_REQUIRED");
   const store = createStore({ file, init: () => ({ tenants: {} }), mode: 0o600 }), d = store.data;
-  const T = tenantId => { if (typeof tenantId !== "string" || !TENANT.test(tenantId)) throw new Error("TENANT_INVALID"); return (d.tenants[tenantId] ??= { days: {}, snoozed: {}, known: {} }); };
+  const T = tenantId => { if (typeof tenantId !== "string" || !okName(TENANT, tenantId)) throw new Error("TENANT_INVALID"); return (d.tenants[tenantId] ??= { days: {}, snoozed: {}, known: {} }); };
   const pv = (tenantId, key) => prefs.get(tenantId, key).value;
   function prune(t, t0) {
     for (const [k, until] of Object.entries(t.snoozed)) if (until <= t0) delete t.snoozed[k];
@@ -36,16 +38,21 @@ export function createSuggestions({ file = null, prefs, now = () => Date.now() }
   function offer(tenantId, candidates) {
     const t = T(tenantId), t0 = now(); prune(t, t0);
     const sup = { invalid: 0, duplicate: 0, disabled: 0, muted: 0, snoozed: 0, dailyLimit: 0, overInput: 0 };
-    const list = Array.isArray(candidates) ? candidates : []; sup.overInput = Math.max(0, list.length - LIMITS.maxCandidates);
-    const seen = new Set(), ok = []; for (const raw of list.slice(0, LIMITS.maxCandidates)) { const c = normalizeCandidate(raw); if (!c) { sup.invalid++; continue; } if (seen.has(c.key)) { sup.duplicate++; continue; } seen.add(c.key); ok.push(c); }
+    const list = Array.isArray(candidates) ? candidates : []; sup.overInput = Math.max(0, list.length - LIMITS.maxInput);
+    const seen = new Set(), ok = []; for (const raw of list.slice(0, LIMITS.maxInput)) { const c = normalizeCandidate(raw); if (!c) { sup.invalid++; continue; } if (seen.has(c.key)) { sup.duplicate++; continue; } seen.add(c.key); ok.push(c); }
     if (!pv(tenantId, "suggestions.enabled")) { sup.disabled = ok.length; return { ok: true, shown: [], suppressed: sup, note: "Suggestions are turned off in the preferences." }; }
     const muted = new Set(pv(tenantId, "suggestions.mutedSources")), cap = Math.min(LIMITS.maxShownHardCap, pv(tenantId, "suggestions.maxPerDay")), today = (t.days[dayOf(t0)] ??= { shown: [] }), shownToday = new Set(today.shown);
-    ok.sort((a, b) => b.priority - a.priority || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
-    const shown = []; let newCount = shownToday.size;
+    ok.sort((a, b) => b.priority - a.priority || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));        // ALL valid candidates are ranked before anything is cut
+    today.urgent ??= []; const urgentToday = new Set(today.urgent);
+    const shown = []; let newCount = shownToday.size - urgentToday.size, urgentCount = urgentToday.size;     // priority-5 items (e.g. waiting approvals) have their own allowance and are never starved by lower priorities shown earlier in the day
     for (const c of ok) {
       if (muted.has(c.source)) { sup.muted++; continue; }
       if (Object.hasOwn(t.snoozed, c.key)) { sup.snoozed++; continue; }               // prune() above already removed every snooze that has ended
-      if (!shownToday.has(c.key)) { if (newCount >= cap) { sup.dailyLimit++; continue; } newCount++; today.shown.push(c.key); shownToday.add(c.key); }
+      if (!shownToday.has(c.key)) {
+        if (c.priority >= 5) { if (urgentCount >= LIMITS.maxShownHardCap) { sup.dailyLimit++; continue; } urgentCount++; today.urgent.push(c.key); }
+        else { if (newCount >= cap) { sup.dailyLimit++; continue; } newCount++; }
+        today.shown.push(c.key); shownToday.add(c.key);
+      }
       t.known[c.key] = { source: c.source, seenMs: t0 }; shown.push({ ...c, canAct: false });
     }
     store.save(); return { ok: true, shown, suppressed: sup, note: "Suggestions only point at things that need you; none of them does anything by itself." };
@@ -53,7 +60,7 @@ export function createSuggestions({ file = null, prefs, now = () => Date.now() }
   function settle(tenantId, key, kind, actor) {
     if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_" + kind.toUpperCase() };
     if (typeof key !== "string" || !KEY.test(key)) return { ok: false, reason: "KEY_INVALID" };
-    const t = T(tenantId), k = t.known[key]; if (!k) return { ok: false, reason: "SUGGESTION_UNKNOWN" };
+    const t = T(tenantId), k = own(t.known, key); if (!k) return { ok: false, reason: "SUGGESTION_UNKNOWN" };
     const days = pv(tenantId, "suggestions.snoozeDays"), t0 = now(); t.snoozed[key] = t0 + days * DAY; store.save();
     const rc = prefs.recordChoice(tenantId, { kind, subject: k.source, actor: "OWNER" }); return { ok: true, key, hiddenUntil: new Date(t.snoozed[key]).toISOString(), counted: Boolean(rc.ok && rc.recorded) };
   }
@@ -65,7 +72,7 @@ export function createSuggestions({ file = null, prefs, now = () => Date.now() }
 
 // ---------- P20 adapters: pure functions from a snapshot of another module's data to candidates. They read nothing themselves. ----------
 const arr = (x, n = 50) => (Array.isArray(x) ? x.slice(0, n) : []);
-const idOf = v => (typeof v === "string" && /^[A-Za-z0-9][A-Za-z0-9._-]{0,60}$/.test(v) ? v.toLowerCase() : null);
+const idOf = v => { if (typeof v !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,60}$/.test(v)) return null; const l = v.toLowerCase(); return l === v ? l : l + "." + crypto.createHash("sha256").update(v).digest("hex").slice(0, 6); };   // ids differing only by case stay distinct
 const str = v => (typeof v === "string" ? v : "");
 export const SOURCES = Object.freeze({
   approvals: list => arr(list).flatMap(a => { const id = idOf(a?.id); return id ? [{ key: "approval:" + id, source: "approvals", title: "Approval waiting: " + (str(a.action) || "unknown action"), detail: "Nothing happens until you decide.", priority: 5, where: "approvals" }] : []; }),

@@ -36,7 +36,7 @@ test("walk rules: symlinks, hidden files, node_modules/.git, oversize files and 
   try {
     fs.symlinkSync("/etc/passwd", path.join(r.root, "link.txt")); fs.symlinkSync("/etc", path.join(r.root, "linkdir"));
     const w = walkRepo(r.root); assert.deepEqual(w.files.map(f => f.rel).sort(), [".gitignore", "README.md", "package.json", "src/pay.mjs", "src/ship.mjs", "tests/pay.test.mjs"]);
-    assert.deepEqual(w.skipped, { symlinks: 2, special: 0, oversize: 1, dirs: 2, hidden: 1 });
+    assert.deepEqual(w.skipped, { symlinks: 2, special: 0, oversize: 1, dirs: 1, hidden: 1, vcs: 1 });
     assert.ok(!analyzeRepo(r.root).review.findings.some(f => f.file.startsWith("node_modules")), "dependencies are not reviewed");
     assert.equal(analyzeRepo(path.join(r.base, "nope")).reason, "REPO_NOT_FOUND"); assert.equal(analyzeRepo(path.join(r.root, "README.md")).reason, "REPO_MUST_BE_A_REAL_DIRECTORY");
     fs.symlinkSync(r.root, path.join(r.base, "lnk")); assert.equal(analyzeRepo(path.join(r.base, "lnk")).reason, "REPO_MUST_BE_A_REAL_DIRECTORY", "a symlinked root is refused");
@@ -104,4 +104,23 @@ test("walk and review caps: hidden dirs, special files, total bytes, depth bound
   const ff = mkRepo(); try { for (let i = 0; i < 150; i++) fs.writeFileSync(path.join(ff.root, "src", "e" + i + ".js"), "eval(x)\n"); assert.equal(analyzeRepo(ff.root).review.findings.length, 100); } finally { ff.done(); }
   const tf = mkRepo(); const scr = tmp("scr-"); try { for (let i = 0; i < 25; i++) fs.writeFileSync(path.join(tf.root, "tests", "t" + String(i).padStart(2, "0") + ".test.mjs"), "process.exit(0);\n"); const a = analyzeRepo(tf.root); assert.equal(a.testFiles.length, 26);
     if (ISOLATED) { const res = await runRepoTests({ name: "many", root: tf.root, ownerAuth: auth, ownerApproval: ap("REPO_TEST_RUN", "many#" + a.hash), scratchRoot: scr }); assert.equal(res.ran, LIMITS.maxTestFiles); } } finally { tf.done(); rm(scr); }
+});
+test("hardening: unreviewed files never yield NO_FINDINGS; test runs are refused while unhashed content exists; findings are severity-ordered before truncation; secrets on long lines are found", async () => {
+  const r = mkRepo({ "src/big.mjs": "const a = 1;\n".repeat(20000) + "eval(x)\n", "src/bin.mjs": "ok\0binary", "src/one.mjs": "export const one = 1;\n" });
+  try {
+    const a = analyzeRepo(r.root); assert.equal(a.review.coverage.notReviewed.oversize, 1); assert.equal(a.review.coverage.notReviewed.binary, 1);
+    r.put("src/pay.mjs", "export const pay = 2;\n"); const b = analyzeRepo(r.root); assert.equal(b.review.verdict, "INCOMPLETE_REVIEW", "a clean-looking result is not reported when files were skipped");
+    // oversize file on disk (over the 1 MB walk cap) is counted and also blocks a test run
+    r.put("src/huge.mjs", "x".repeat(LIMITS.maxFileBytes + 5)); assert.equal(analyzeRepo(r.root).skipped.oversize, 1);
+    const run = await runRepoTests({ name: "demo", root: r.root, ownerAuth: auth, ownerApproval: ap("REPO_TEST_RUN", "demo#" + analyzeRepo(r.root).hash), caps });
+    assert.equal(run.reason, "UNHASHED_CONTENT_PRESENT"); assert.equal(run.unhashed.oversize, 1);
+    fs.rmSync(path.join(r.root, "src/huge.mjs")); r.put("node_modules/x/index.js", "module.exports=1"); const run2 = await runRepoTests({ name: "demo", root: r.root, ownerAuth: auth, ownerApproval: null, caps });
+    assert.equal(run2.reason, "UNHASHED_CONTENT_PRESENT"); assert.equal(run2.unhashed.dirs, 1);
+  } finally { r.done(); }
+});
+test("hardening: a lone oversize file alone makes the review INCOMPLETE; an unreviewable path never crashes the analysis", () => {
+  const r = mkRepo({ "src/huge.mjs": "x".repeat(LIMITS.maxFileBytes + 5) });
+  try { r.put("src/pay.mjs", "export const pay = 2;\n"); const a = analyzeRepo(r.root); assert.equal(a.review.coverage.notReviewed.oversize, 0); assert.equal(a.skipped.oversize, 1); assert.equal(a.review.verdict, "INCOMPLETE_REVIEW"); } finally { r.done(); }
+  const q = mkRepo({ "src/we\\ird.mjs": "export const w = 1;\n" });
+  try { q.put("src/pay.mjs", "export const pay = 2;\n"); const a = analyzeRepo(q.root); assert.equal(a.ok, true); assert.equal(a.review.verdict, "INCOMPLETE_REVIEW"); assert.match(a.review.notes[0], /^REVIEW_FAILED:PATH_INVALID/); } finally { q.done(); }
 });

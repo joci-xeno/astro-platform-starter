@@ -9,6 +9,8 @@
 import crypto from "node:crypto";
 import { createStore, clone } from "./business/store.mjs";
 import { redactSecrets } from "./text-compare.mjs";
+import { okName, own } from "./safe-keys.mjs";
+import { AGENT_ID_RE } from "./agent-tool-policy.mjs";
 
 export const SCHEMA = Object.freeze({
   "suggestions.enabled": { type: "boolean", default: true, doc: "Show proactive suggestions at all." },
@@ -21,7 +23,7 @@ export const SCHEMA = Object.freeze({
   "learning.confirmFirst": { type: "boolean", default: true, doc: "Learned changes are only ever proposals (cannot be turned off here: stays true)." },
 });
 export const LIMITS = Object.freeze({ maxProposals: 50, proposalTtlMs: 14 * 24 * 3600 * 1000, maxHistory: 1000, maxCounters: 200, maxIdSet: 20, learnThreshold: 3, maxReason: 300, maxLabel: 40 });
-const ID = /^[a-z][a-z0-9._-]{0,39}$/, ACTOR = /^(OWNER|SYSTEM|(?:SEARCH|EXECUTION)-\d{1,2})$/, TENANT = /^[A-Za-z0-9._-]{1,64}$/;
+const ID = /^[a-z][a-z0-9._-]{0,39}$/, TENANT = /^[A-Za-z0-9._-]{1,64}$/;
 const rid = p => p + crypto.randomBytes(5).toString("hex");
 
 /** Validate a value for a key. Returns {ok, value} (normalised) or {ok:false, reason}. */
@@ -39,9 +41,9 @@ export function validatePreference(key, value) {
 
 export function createPreferences({ file = null, now = () => Date.now() } = {}) {
   const store = createStore({ file, init: () => ({ tenants: {} }), mode: 0o600 }), d = store.data;
-  const T = tenantId => { if (typeof tenantId !== "string" || !TENANT.test(tenantId)) throw new Error("TENANT_INVALID"); return (d.tenants[tenantId] ??= { values: {}, history: [], proposals: [], counters: {} }); };
-  const peek = tenantId => (typeof tenantId === "string" && TENANT.test(tenantId) ? d.tenants[tenantId] ?? null : null);
-  const actorOk = a => typeof a === "string" && ACTOR.test(a);
+  const T = tenantId => { if (typeof tenantId !== "string" || !okName(TENANT, tenantId)) throw new Error("TENANT_INVALID"); return (d.tenants[tenantId] ??= { values: {}, history: [], proposals: [], counters: {} }); };
+  const peek = tenantId => (typeof tenantId === "string" && okName(TENANT, tenantId) ? own(d.tenants, tenantId) ?? null : null);
+  const actorOk = a => a === "OWNER" || a === "SYSTEM" || AGENT_ID_RE.test(a);
   const log = (t, e) => { t.history.push({ at: new Date(now()).toISOString(), ...e }); if (t.history.length > LIMITS.maxHistory) t.history.splice(0, t.history.length - LIMITS.maxHistory); };
 
   const get = (tenantId, key) => { if (!Object.hasOwn(SCHEMA, key)) return { ok: false, reason: "UNKNOWN_PREFERENCE" }; const t = peek(tenantId); const set = t && Object.hasOwn(t.values, key); return { ok: true, key, value: clone(set ? t.values[key] : SCHEMA[key].default), isDefault: !set }; };
@@ -111,8 +113,8 @@ export function createPreferences({ file = null, now = () => Date.now() } = {}) 
   const exportAll = tenantId => { const t = peek(tenantId); return { ok: true, preferences: all(tenantId), history: t ? clone(t.history) : [], counters: t ? clone(t.counters) : {}, proposals: proposals(tenantId) }; };
   function forgetAll(tenantId, { actor } = {}) {
     if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_FORGET" };
-    if (typeof tenantId !== "string" || !TENANT.test(tenantId)) return { ok: false, reason: "TENANT_INVALID" };
-    const had = Boolean(d.tenants[tenantId]); delete d.tenants[tenantId]; store.save(); return { ok: true, deleted: had };
+    if (typeof tenantId !== "string" || !okName(TENANT, tenantId)) return { ok: false, reason: "TENANT_INVALID" };
+    const had = Boolean(own(d.tenants, tenantId)); delete d.tenants[tenantId]; store.save(); return { ok: true, deleted: had };
   }
   return { get, all, set, reset, propose, confirm, rejectProposal, proposals, recordChoice, learn, history, exportAll, forgetAll, schema: SCHEMA, limits: LIMITS };
 }

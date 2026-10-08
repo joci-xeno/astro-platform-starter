@@ -11,7 +11,7 @@ export const estimateTokens = text => Math.ceil(String(text ?? "").length / 4);
  * pinned: [{id, role, text}] always kept (fails closed if they alone exceed the budget); turns: oldest -> newest.
  * Returns {ok, items, tokens, budget, droppedIds, truncatedIds, omittedMarker}. Newest turn is kept even if it must be truncated; older turns are dropped as a whole.
  */
-export function packContext({ pinned = [], turns = [], maxTokens, reserveOutput = 0 } = {}) {
+export function packContext({ pinned = [], turns = [], maxTokens, reserveOutput = 0, requireNewest = false } = {}) {
   if (!Number.isInteger(maxTokens) || maxTokens < 16) return { ok: false, reason: "MAX_TOKENS_INVALID" };
   if (!Number.isInteger(reserveOutput) || reserveOutput < 0) return { ok: false, reason: "RESERVE_INVALID" };
   const budget = maxTokens - reserveOutput; if (budget < 16) return { ok: false, reason: "BUDGET_TOO_SMALL" };
@@ -32,8 +32,10 @@ export function packContext({ pinned = [], turns = [], maxTokens, reserveOutput 
   const kept = keptRev.reverse(), keptIds = new Set(kept.map(x => x.id)), droppedIds = turns.filter(x => !keptIds.has(x.id)).map(x => x.id);
   let marker = null;
   if (droppedIds.length && left + MARKER_COST >= 12) { marker = { id: "omitted", role: "system", text: `[${droppedIds.length} earlier turn(s) omitted to fit the context window]`, synthetic: true }; left = Math.max(0, left - t(marker)); }
-  const items = [...pinned, ...(marker ? [marker] : []), ...kept];
-  return { ok: true, items, tokens: items.reduce((a, x) => a + t(x), 0), budget, droppedIds, truncatedIds, omittedMarker: Boolean(marker), tokenNote: TOKEN_NOTE };
+  if (requireNewest && turns.length && !keptIds.has(turns.at(-1).id)) return { ok: false, reason: "NO_ROOM_FOR_NEWEST_TURN", budget };
+  let items = [...pinned, ...(marker ? [marker] : []), ...kept], total = items.reduce((a, x) => a + t(x), 0);
+  if (total > budget && marker) { marker = null; items = [...pinned, ...kept]; total = items.reduce((a, x) => a + t(x), 0); }   // the result never exceeds the budget: no room => no marker (droppedIds still says what was omitted)
+  return { ok: true, items, tokens: total, budget, droppedIds, truncatedIds, omittedMarker: Boolean(marker), tokenNote: TOKEN_NOTE };
 }
 
 /** Per-conversation usage ledger. record() never throws; invalid input is rejected with a reason. */
@@ -43,15 +45,16 @@ export function createUsageLedger({ now = () => new Date().toISOString() } = {})
   function record({ conversationId, modelId = "unknown", promptTokens = 0, completionTokens = 0, source = "ESTIMATE", costUsd = 0, budgetUsd = 0 } = {}) {
     if (!conversationId || typeof conversationId !== "string") return { ok: false, reason: "CONVERSATION_REQUIRED" };
     if (!["ESTIMATE", "PROVIDER"].includes(source)) return { ok: false, reason: "SOURCE_INVALID" };
+    const costKnown = costUsd !== null; if (!costKnown) costUsd = 0;                  // null = the provider did not report a cost: recorded as UNKNOWN, never as a real zero
     if (![promptTokens, completionTokens, costUsd, budgetUsd].every(num)) return { ok: false, reason: "NUMBERS_INVALID" };
     if (source === "ESTIMATE" && costUsd > 0) return { ok: false, reason: "COST_ONLY_FROM_PROVIDER_REPORT" };
     const unapprovedSpend = costUsd > budgetUsd;                               // flagged, never hidden
-    const row = { at: now(), conversationId, modelId, promptTokens, completionTokens, source, costUsd, unapprovedSpend }; rows.push(row); return { ok: true, row };
+    const row = { at: now(), conversationId, modelId, promptTokens, completionTokens, source, costUsd, costKnown, unapprovedSpend }; rows.push(row); return { ok: true, row };
   }
   function summary(conversationId) {
     const r = rows.filter(x => x.conversationId === conversationId), sum = k => r.reduce((a, x) => a + x[k], 0);
     const byModel = {}; for (const x of r) { const m = byModel[x.modelId] ??= { calls: 0, promptTokens: 0, completionTokens: 0, costUsd: 0 }; m.calls++; m.promptTokens += x.promptTokens; m.completionTokens += x.completionTokens; m.costUsd += x.costUsd; }
-    return { conversationId, calls: r.length, promptTokens: sum("promptTokens"), completionTokens: sum("completionTokens"), totalTokens: sum("promptTokens") + sum("completionTokens"), costUsd: sum("costUsd"),
+    return { conversationId, calls: r.length, promptTokens: sum("promptTokens"), completionTokens: sum("completionTokens"), totalTokens: sum("promptTokens") + sum("completionTokens"), costUsd: sum("costUsd"), unknownCostCalls: r.filter(x => x.costKnown === false).length, costNote: "costUsd is the sum of REPORTED costs only; calls with unknown cost are counted in unknownCostCalls",
       estimatedCalls: r.filter(x => x.source === "ESTIMATE").length, providerReportedCalls: r.filter(x => x.source === "PROVIDER").length, unapprovedSpendCalls: r.filter(x => x.unapprovedSpend).length, byModel, tokenNote: TOKEN_NOTE };
   }
   return { record, summary, rows: () => rows.map(x => ({ ...x })), load: list => { rows.length = 0; for (const x of list ?? []) rows.push({ ...x }); } };

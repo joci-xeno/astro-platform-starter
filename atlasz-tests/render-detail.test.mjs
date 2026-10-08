@@ -72,3 +72,21 @@ test("detail level: no provider -> metadata only; CONFIDENTIAL never goes extern
   const u = chooseDetail({ modality: "audio", bytes: 1, privacy: "TOP SECRET", provider: "EXTERNAL" }); assert.equal(u.privacy, "CONFIDENTIAL"); assert.equal(u.level, "METADATA_ONLY"); assert.equal(u.spendUsd, 0);
   for (const bad of [{}, { modality: "x", bytes: 1 }, { modality: "image", bytes: -1 }, { modality: "image", bytes: 1, purpose: "X" }, { modality: "image", bytes: 1, provider: "CLOUD" }, { modality: "image", bytes: 1, budgetUsd: -1 }]) assert.equal(chooseDetail(bad).ok, false);
 });
+test("hardening: odd inputs are refused not thrown; huge magnitudes never yield NaN markup; invalid XML characters are dropped; output carries a content hash", async () => {
+  const R = await import("../atlasz-addons/render.mjs");
+  const hostile = { toString() { throw new Error("boom"); } }, nullo = Object.create(null);
+  assert.equal(R.renderChart({ type: "bar", labels: [hostile, nullo], values: [1, 2] }).ok, true, "hostile toString is rendered as ?");
+  assert.equal(R.renderChart({ type: "line", values: [1, 2, 3], x: "abc" }).ok, true, "a non-array x falls back to the index");
+  for (const big of [1e308, -1e308, 1e16]) { const r = R.renderChart({ type: "line", values: [big, 1, 2] }); assert.equal(r.ok, false, String(big)); assert.equal(r.reason, "LINE_DATA_INVALID"); }
+  const r1 = R.renderChart({ type: "scatter", points: [[1e15, -1e15], [0, 0]] }); assert.equal(r1.ok, true); assert.doesNotMatch(r1.svg, /NaN|Infinity/);
+  const r2 = R.renderChart({ type: "bar", labels: ["a￾b\uD800c", "ok"], values: [1, 2], title: "t￿\uDC00" }); assert.equal(r2.ok, true); assert.doesNotMatch(r2.svg, /[￾￿\uD800-\uDFFF]/);
+  assert.match(r2.sha256, /^[0-9a-f]{64}$/); const r2b = R.renderChart({ type: "bar", labels: ["a\uFFFEb\uD800c", "ok"], values: [1, 2], title: "t\uFFFF\uDC00" }); assert.equal(r2b.sha256, r2.sha256, "same input, same hash"); assert.notEqual(R.renderChart({ type: "bar", labels: ["x", "ok"], values: [1, 2] }).sha256, r2.sha256);
+  assert.deepEqual(R.renderDiagram({ nodes: [{ id: "a", label: hostile }], edges: [] }).ok, true);
+  for (const bad of [null, undefined, 5, "x", [], { nodes: 5 }]) { assert.doesNotThrow(() => R.renderDiagram(bad)); assert.equal(R.renderDiagram(bad).ok, false); }
+  assert.equal(R.renderAnnotationOverlay([{ type: "text", x: 0.1, y: 0.1, label: hostile }]).ok, true); assert.doesNotThrow(() => R.buildGuidance({ title: "t", steps: [{ text: "s", region: 5 }, null] }));
+  assert.equal(R.renderTextPreview("a\uD800b").html.includes("\uD800"), false);
+  assert.equal(R.renderChart({ type: "histogram", values: [1e15, -1e15, 0] }).ok, true);
+});
+test("hardening: esc drops each XML-invalid character class individually", () => {
+  assert.equal(esc("a￾b"), "ab"); assert.equal(esc("a￿b"), "ab"); assert.equal(esc("a\uD800b"), "ab", "lone high surrogate"); assert.equal(esc("a\uDC00b"), "ab", "lone low surrogate"); assert.equal(esc("a😀b"), "a😀b", "a valid pair survives"); assert.equal(esc("x\uD800"), "x"); assert.equal(esc("\uDC00y"), "y"); assert.equal(esc("\uD83D😀"), "😀", "high surrogate before a pair is the lone one");
+});

@@ -91,6 +91,7 @@ export function createPluginInstaller({ pluginRoot, stateDir, ownerAuth, atlaszV
     const cur = readInstalled(id); if (!cur?.hash) return null;
     const name = cur.manifest.version + "__" + cur.hash.slice(0, 12), dest = path.join(keptRoot, id, name);
     fs.mkdirSync(path.join(keptRoot, id), { recursive: true }); rmrf(dest); fs.renameSync(installedDir(id), dest);
+    audit.append("PLUGIN_ARCHIVED", { id, version: cur.manifest.version, hash: cur.hash });                 // the audit chain remembers the full hash of every kept copy, so a renamed-and-edited copy cannot pass for it
     const all = keptList(id); for (const old of all.slice(0, Math.max(0, all.length - INSTALL_LIMITS.maxKeptVersions))) rmrf(path.join(keptRoot, id, old));
     return name;
   }
@@ -137,6 +138,7 @@ export function createPluginInstaller({ pluginRoot, stateDir, ownerAuth, atlaszV
     const hash = hashFiles(w.files), mf = JSON.parse(fs.readFileSync(path.join(src, "plugin.json"), "utf8"));
     if (mf.id !== id || mf.version !== version || !validateManifest(mf, { atlaszVersion }).ok) return deny("KEPT_COPY_INVALID");
     if (name.split("__")[1] !== hash.slice(0, 12)) return deny("KEPT_COPY_TAMPERED");
+    if (!audit.entries().some(e => (e.event === "PLUGIN_ARCHIVED" || e.event === "PLUGIN_INSTALLED") && e.data?.id === id && e.data?.version === version && e.data?.hash === hash)) return deny("KEPT_COPY_NOT_IN_AUDIT_CHAIN");
     const v = ownerAuth.verifyApproval(ownerApproval, { action: "PLUGIN_ROLLBACK", subject: subjectOf(mf, hash) });
     if (!v.allowed) return deny("OWNER_APPROVAL_REQUIRED:" + v.reason, { subject: subjectOf(mf, hash) });
     const stage = path.join(staging, id + "-rb-" + Date.now().toString(36));

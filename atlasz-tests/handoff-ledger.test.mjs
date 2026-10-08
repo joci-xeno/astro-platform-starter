@@ -129,3 +129,10 @@ test("exact limit boundaries are accepted and one over is refused", () => {
   assert.equal(m.handoff("t", "h", { from: E(1), to: E(2), artifacts: arts(1), summary: "x".repeat(LIMITS.maxSummary + 1) }).reason, "SUMMARY_INVALID");
   const ok = m.handoff("t", "h", { from: E(1), to: E(2), artifacts: arts(LIMITS.maxArtifacts), summary: "x".repeat(LIMITS.maxSummary) }); assert.equal(ok.ok, true, JSON.stringify(ok));
 });
+test("hardening: duplicate detection compares meaning (case, whitespace, undefined/NaN, unicode forms, key order)", () => {
+  const l = mk(); assert.equal(l.register("t", { id: "a", kind: "research", payload: { q: "Find  the Report", n: 1 }, owner: E(1) }).ok, true);
+  for (const [i, pl] of [{ n: 1, q: "find the report" }, { q: " FIND the\treport ", n: 1, extra: undefined }, { q: "Ｆind the report", n: 1 }].entries()) { const r = l.register("t", { id: "d" + i, kind: "research", payload: pl, owner: E(2) }); assert.equal(r.reason, "DUPLICATE_WORK", JSON.stringify(pl)); }
+  assert.notEqual(fingerprint("k", { a: NaN }), fingerprint("k", { a: 0 })); assert.equal(fingerprint("k", { a: NaN }), fingerprint("k", { a: null })); assert.equal(fingerprint("k", [undefined]), fingerprint("k", [null]));
+  assert.equal(l.register("t", { id: "ok", kind: "research", payload: { q: "different", n: 1 }, owner: E(2) }).ok, true);
+  assert.equal(l.register("t", { id: "k2", kind: "other", payload: { q: "find the report", n: 1 }, owner: E(3) }).ok, true, "same payload, different kind is not a duplicate");
+});

@@ -6,9 +6,10 @@
 import crypto from "node:crypto";
 import { createStore, clone } from "./business/store.mjs";
 import { packContext, estimateTokens, createUsageLedger } from "./context-manager.mjs";
+import { okName, own } from "./safe-keys.mjs";
 
 export const LIMITS = Object.freeze({ maxConversations: 200, maxTurns: 500, maxTextChars: 20000, maxTitleChars: 120, maxSystemChars: 4000 });
-const SECRET = /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)|\bsk-[A-Za-z0-9_-]{20,}|\bAKIA[0-9A-Z]{16}\b|\bghp_[A-Za-z0-9]{30,}/g;
+const SECRET = /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)|(?<![A-Za-z0-9])sk-[A-Za-z0-9_-]{20,}|(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}\b|(?<![A-Za-z0-9])ghp_[A-Za-z0-9]{30,}/g;
 const redact = s => { SECRET.lastIndex = 0; const out = String(s ?? "").replace(SECRET, "[redacted]"); return { text: out, redacted: out !== String(s ?? "") }; };
 const rid = p => p + crypto.randomBytes(8).toString("hex");
 const ROLES = new Set(["user", "assistant", "tool"]);
@@ -16,7 +17,7 @@ const ROLES = new Set(["user", "assistant", "tool"]);
 export function createConversationStore({ file = null, now = () => new Date().toISOString() } = {}) {
   const store = createStore({ file, init: () => ({ conversations: {}, usage: [] }) });
   const d = store.data, usage = createUsageLedger({ now }); usage.load(d.usage);
-  const find = (id, tenantId) => { const c = d.conversations[id]; return c && c.tenantId === tenantId ? c : null; };
+  const find = (id, tenantId) => { const c = own(d.conversations, id); return c && c.tenantId === tenantId ? c : null; };
   const pub = c => ({ id: c.id, title: c.title, model: c.model, turns: c.turns.length, createdAt: c.createdAt, updatedAt: c.updatedAt, switches: c.switches.length });
   const persist = () => { d.usage = usage.rows(); store.save(); };
 
@@ -41,17 +42,19 @@ export function createConversationStore({ file = null, now = () => new Date().to
     if (c.model !== model) { c.switches.push({ at: now(), from: c.model, to: model, afterTurn: c.turns.length }); c.model = model; c.updatedAt = now(); persist(); }
     return { ok: true, model: c.model, switches: c.switches.length };
   }
-  const fence = t => t.role === "user" ? t.text : `<<${t.role === "tool" ? "UNTRUSTED TOOL RESULT" : "ASSISTANT (model " + (t.modelId ?? "?") + ")"}>>\n${t.text}\n<<END>>`;
+  const defuse = x => String(x).replace(/<</g, "\u2039\u2039").replace(/>>/g, "\u203a\u203a");          // text inside a fence can never contain the fence delimiters
+  const fence = t => t.role === "user" ? t.text : `<<${t.role === "tool" ? "UNTRUSTED TOOL RESULT" : "ASSISTANT (model " + defuse(String(t.modelId ?? "?").slice(0, 80)) + ")"}>>\n${defuse(t.text)}\n<<END>>`;
   function context(id, { tenantId, maxTokens = 4000, reserveOutput = Math.min(500, Math.floor(maxTokens / 4)) } = {}) {
     const c = find(id, tenantId); if (!c) return { ok: false, reason: "NOT_FOUND" };
     const pinned = c.systemPrompt ? [{ id: "system", role: "system", text: c.systemPrompt, pinned: true }] : [];
-    const p = packContext({ pinned, turns: c.turns.map(t => ({ id: t.id, role: t.role, text: fence(t) })), maxTokens, reserveOutput });
+    const p = packContext({ pinned, turns: c.turns.map(t => ({ id: t.id, role: t.role, text: fence(t) })), maxTokens, reserveOutput, requireNewest: true });
     return p.ok ? { ...p, conversationId: id, model: c.model } : p;
   }
   /** Ask the gateway for the next assistant turn. Adds a turn only on a real, non-quarantined answer. */
   async function complete(id, { tenantId, gateway, capability = "text", maxTokens = 4000, budgetUsd = 0 } = {}) {
     const c = find(id, tenantId); if (!c) return { ok: false, reason: "NOT_FOUND" };
     if (!gateway || typeof gateway.complete !== "function") return { ok: false, reason: "GATEWAY_REQUIRED" };
+    if (typeof budgetUsd !== "number" || !Number.isFinite(budgetUsd) || budgetUsd < 0) return { ok: false, reason: "BUDGET_INVALID" };
     if (!c.turns.length || c.turns.at(-1).role !== "user") return { ok: false, reason: "LAST_TURN_MUST_BE_USER" };
     const ctx = context(id, { tenantId, maxTokens, reserveOutput: Math.min(500, Math.floor(maxTokens / 4)) }); if (!ctx.ok) return ctx;
     const prompt = ctx.items.map(i => (i.role === "system" ? "[SYSTEM] " : "") + i.text).join("\n\n");
@@ -59,7 +62,7 @@ export function createConversationStore({ file = null, now = () => new Date().to
     if (!r.ok || r.output == null) { return { ok: false, reason: r.reason ?? (r.quarantined ? "OUTPUT_QUARANTINED" : "NO_OUTPUT"), turnAdded: false, quarantined: Boolean(r.quarantined) }; }
     const t = addTurn(id, { tenantId, role: "assistant", text: r.output, modelId: r.providerId ?? c.model });
     if (!t.ok) return { ok: false, reason: t.reason, turnAdded: false };
-    const u = usage.record({ conversationId: id, modelId: r.providerId ?? "unknown", promptTokens: ctx.tokens, completionTokens: estimateTokens(r.output), source: r.costUsd > 0 ? "PROVIDER" : "ESTIMATE", costUsd: r.costUsd ?? 0, budgetUsd }); persist();
+    const u = usage.record({ conversationId: id, modelId: r.providerId ?? "unknown", promptTokens: ctx.tokens, completionTokens: estimateTokens(r.output), source: Number.isFinite(r.costUsd) && r.costUsd >= 0 ? "PROVIDER" : "ESTIMATE", costUsd: Number.isFinite(r.costUsd) && r.costUsd >= 0 ? r.costUsd : null, budgetUsd }); persist();
     return { ok: true, turn: t.turn, providerId: r.providerId, untrusted: true, droppedTurns: ctx.droppedIds.length, usageRecorded: u.ok };
   }
   const get = (id, { tenantId } = {}) => { const c = find(id, tenantId); return c ? { ok: true, conversation: { ...pub(c), systemPrompt: c.systemPrompt, switchLog: clone(c.switches), turns: clone(c.turns) } } : { ok: false, reason: "NOT_FOUND" }; };

@@ -10,6 +10,7 @@ import { createStore } from "./business/store.mjs";
 import { terms } from "./knowledge-projects.mjs";
 import crypto from "node:crypto";
 import fs from "node:fs";
+import { okName, own } from "./safe-keys.mjs";
 
 export const KINDS = Object.freeze(["OBSERVATION", "CONTEXT", "TASK_NOTE", "RESEARCH_FINDING", "MEDIA"]);
 export const MODALITIES = Object.freeze(["text", "image", "audio", "video", "screen", "document"]);
@@ -17,7 +18,7 @@ export const CLASSES = Object.freeze(["PUBLIC", "PERSONAL", "CONFIDENTIAL", "SEC
 export const SCOPES = Object.freeze(["PERSONAL", "BUSINESS", "CUSTOMER", "SYSTEM"]);
 const NEEDS_CONSENT = new Set(["image", "audio", "video", "screen"]);
 export const LIMITS = Object.freeze({ textChars: 4000, maxRetentionDays: 730, defaultRetention: { PUBLIC: 365, PERSONAL: 90, CONFIDENTIAL: 30 }, maxRecords: 20000, tags: 10 });
-const SECRET = /-----BEGIN [A-Z ]*PRIVATE KEY-----|\bsk-[A-Za-z0-9]{20,}|\bAKIA[0-9A-Z]{16}\b|\bghp_[A-Za-z0-9]{30,}/;
+const SECRET = /-----BEGIN [A-Z ]*PRIVATE KEY-----|(?<![A-Za-z0-9])sk-[A-Za-z0-9]{20,}|(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}\b|(?<![A-Za-z0-9])ghp_[A-Za-z0-9]{30,}/;
 const sha = s => crypto.createHash("sha256").update(s).digest("hex");
 const RANK = { PUBLIC: 0, PERSONAL: 1, CONFIDENTIAL: 2, SECRET: 3 };
 
@@ -32,7 +33,7 @@ export function createObservationMemory({ file = null, security = null, blackBox
   const who = w => ({ tenantId: w?.tenantId, role: w?.role ?? "OWNER", forAgent: Boolean(w?.forAgent), actorId: w?.actorId ?? null });
   const need = w => { if (!w?.tenantId) throw new Error("TENANT_REQUIRED"); return who(w); };
   const isOwner = w => who(w).role === "OWNER" && !who(w).forAgent;
-  const mine = (id, w) => { const i = S.items[id]; return i && i.tenantId === w.tenantId ? i : null; };
+  const mine = (id, w) => { const i = own(S.items, id); return i && i.tenantId === w.tenantId ? i : null; };
   const expired = i => Date.parse(i.retentionUntil) <= Date.parse(now());
   const addDays = (iso, d) => new Date(Date.parse(iso) + d * 86400000).toISOString();
   const by = w => (w.forAgent ? "AGENT" + (w.actorId ? ":" + w.actorId : "") : "OWNER");

@@ -48,7 +48,7 @@ test("failure handling: retries then FAILED with a redacted error; onError conti
   const i = e.getInstance(id, T).instance; assert.deepEqual(i.steps.map(s => [s.status, s.attempts]), [["DONE", 3], ["FAILED", 1], ["DONE", 1]]); assert.ok(!JSON.stringify(i).includes("k-ABCDEFGH") && i.steps[1].error.includes("[redacted]"));
   e.saveTemplate({ ...T, id: "stop", name: "s", steps: [{ id: "x", action: "boom" }, { id: "y", action: "count", args: { value: 1 } }] });
   const j = e.start({ ...T, templateId: "stop" }).id, rj = await e.execute(j, T); assert.deepEqual([rj.status, rj.reason], ["FAILED", "STEP_FAILED:x"]); assert.equal(e.getInstance(j, T).instance.steps[1].status, "PENDING", "later steps did not run");
-  e.saveTemplate({ ...T, id: "slow", name: "s", steps: [{ id: "h", action: "hang" }] }); const k = e.start({ ...T, templateId: "slow" }).id; const rk = await e.execute(k, T); assert.equal(rk.status, "FAILED"); assert.equal(e.getInstance(k, T).instance.steps[0].error, "STEP_TIMEOUT");
+  e.saveTemplate({ ...T, id: "slow", name: "s", steps: [{ id: "h", action: "hang" }] }); const k = e.start({ ...T, templateId: "slow" }).id; const rk = await e.execute(k, T); assert.equal(rk.status, "PAUSED"); const sk = e.getInstance(k, T).instance.steps[0]; assert.equal(sk.status, "NEEDS_REVIEW"); assert.equal(sk.error, "STEP_OUTCOME_UNKNOWN_AFTER_TIMEOUT", "a timed-out non-idempotent step is never blindly retried");
   const c = e.start({ ...T, templateId: "stop" }).id; assert.equal(e.cancel(c, T).ok, true); assert.equal((await e.execute(c, T)).reason, "NOT_RUNNABLE:CANCELLED"); assert.equal(e.cancel(c, T).reason, "NOT_CANCELLABLE:CANCELLED"); assert.equal(e.cancel(c, { tenantId: "O" }).reason, "NOT_FOUND");
 });
 test("P08 continuation across a REAL restart: the checkpoint file lets a new engine continue after the last finished step; idempotent steps are retried, others need review", async () => {
@@ -127,7 +127,7 @@ test("schedule: due() reports templates whose interval passed; tick() runs each 
   e.saveTemplate({ ...tpl(), schedule: { everyMinutes: 60, params: { who: "cron" } } }); e.saveTemplate({ ...T, id: "manual", name: "m", steps: [{ id: "a", action: "count", args: { value: 1 } }] });
   assert.deepEqual(e.due(T), ["greet"]); const r = await e.tick(T); assert.deepEqual(r.map(x => [x.templateId, x.started, x.result]), [["greet", true, "DONE"]]); assert.deepEqual(e.due(T), []);
   ms += 59 * 60000; assert.deepEqual(await e.tick(T), []); ms += 2 * 60000; assert.equal((await e.tick(T)).length, 1); assert.equal(e.listInstances({ ...T, status: "DONE" }).length, 2); assert.equal(e.due({ tenantId: "O" }).length, 0);
-  e.saveTemplate({ ...tpl(), schedule: { everyMinutes: 60, params: { who: 5 } } }); ms += 3600000; const bad = await e.tick(T); assert.deepEqual([bad[0].started, bad[0].reason], [false, "PARAMETER_INVALID:who"]);
+  assert.match(e.saveTemplate({ ...tpl(), schedule: { everyMinutes: 60, params: { who: 5 } } }).reason, /^SCHEDULE_PARAMS_INVALID/, "bad schedule params are refused at save time");
 });
 test("security: substitution never evaluates anything; a malicious parameter stays inert data; outputs are redacted and size-capped; prototype keys cannot be referenced", async () => {
   const log = [], e = createWorkflowEngine({ actions: { ...mkActions(log), big: { run: async () => ({ s: "x".repeat(30000) }) }, leak: { run: async () => ({ k: "s" + "k-ABCDEFGHIJKLMNOPQRSTUVWX" }) } } });
@@ -158,4 +158,48 @@ test("mutation-driven: forbidden references, failed-continue steps are not re-ru
   e2.saveTemplate({ ...T, id: "w", name: "w", params: { v: { type: "enum", values: ["x", "z"], required: true } }, steps: [{ id: "a", action: "work", args: { v: "{{p.v}}" } }] });   // "y" is no longer valid
   const br = await e2.runBatch(b, T); assert.deepEqual([br.status, br.DONE, br.FAILED], ["DONE_WITH_ERRORS", 2, 1]); assert.equal(e2.getBatch(b, T).batch.items[1].error, "PARAMETER_INVALID:v");
   assert.deepEqual(sleeps, [60000], "the third item waited for exactly the rest of the window");
+});
+test("hardening: batch finalises a finished instance without re-running, stop leaves the in-flight item PENDING, requeue recovers DONE_WITH_ERRORS without repeating done steps", async () => {
+  let stop = false; const log = [];
+  const acts = { ok: { run: async a => { log.push("ok" + a.n); return {}; }, idempotent: true, rewindable: true },
+    fl: { run: async a => { log.push("fl" + a.n); if (!globalThis.__flOk) throw new Error("x"); return {}; }, idempotent: true, rewindable: true },
+    sv: { run: async () => { log.push("sv"); if (!globalThis.__flOk) throw new Error("y"); return {}; }, idempotent: false } };
+  const e = createWorkflowEngine({ actions: acts, isStopped: () => stop });
+  e.saveTemplate({ ...T, id: "w", name: "w", params: { n: { type: "number", required: true } }, steps: [{ id: "a", action: "ok", args: { n: "{{p.n}}" } }, { id: "b", action: "fl", args: { n: "{{p.n}}" }, onError: "continue" }] });
+  globalThis.__flOk = false; const b = e.createBatch({ ...T, templateId: "w", items: [{ n: 1 }] }).id; const r = await e.runBatch(b, T); assert.equal(r.status, "DONE_WITH_ERRORS");
+  globalThis.__flOk = true; assert.equal(e.requeueFailed(b, T).requeued, 1); const r2 = await e.runBatch(b, T); assert.equal(r2.status, "DONE"); assert.deepEqual(log, ["ok1", "fl1", "fl1"], "step a was NOT repeated");
+  // non-idempotent failed step becomes NEEDS_REVIEW after requeue, never silently re-executed
+  e.saveTemplate({ ...T, id: "s", name: "s", steps: [{ id: "x", action: "sv", onError: "continue" }] }); globalThis.__flOk = false; const b2 = e.createBatch({ ...T, templateId: "s", items: [{}] }).id; await e.runBatch(b2, T);
+  e.requeueFailed(b2, T); globalThis.__flOk = true; const r3 = await e.runBatch(b2, T); assert.equal(r3.status, "DONE_WITH_ERRORS"); assert.equal(log.filter(x => x === "sv").length, 1, "non-idempotent step not re-run without review");
+  // crash window: instance DONE but the item was never saved (simulated by rewriting the file)
+  { const d = tmp("wfb-"), f = path.join(d, "w.json"); try {
+    const l2 = [], e1 = createWorkflowEngine({ file: f, actions: { ok: { run: async () => { l2.push(1); return {}; }, idempotent: true } } });
+    e1.saveTemplate({ ...T, id: "q", name: "q", steps: [{ id: "a", action: "ok" }] }); const bid = e1.createBatch({ ...T, templateId: "q", items: [{}] }).id; await e1.runBatch(bid, T);
+    const j = JSON.parse(fs.readFileSync(f, "utf8")); j.batches[bid].items[0].status = "PENDING"; j.batches[bid].status = "RUNNING"; fs.writeFileSync(f, JSON.stringify(j));
+    const e2 = createWorkflowEngine({ file: f, actions: { ok: { run: async () => { l2.push(2); return {}; }, idempotent: true } } }); const rr = await e2.runBatch(bid, T);
+    assert.equal(rr.status, "DONE"); assert.deepEqual(l2, [1], "the finished instance was finalised, not executed again");
+  } finally { rm(d); } }
+  globalThis.__flOk = true; const n0 = log.length;
+  // stop mid-run: in-flight item stays PENDING and the batch PAUSED
+  stop = true; const b4 = e.createBatch({ ...T, templateId: "w", items: [{ n: 8 }, { n: 9 }] }).id; const r4 = await e.runBatch(b4, T); assert.deepEqual([r4.status, r4.PENDING], ["PAUSED", 2]); stop = false; assert.equal(n0, log.length);
+  delete globalThis.__flOk;
+});
+test("hardening: rewind blocks non-rewindable states, refuses CANCELLED, a no-op rewind changes nothing; tick during a stop consumes no period", async () => {
+  let stop = false, ms = Date.parse("2026-10-07T10:00:00Z"); const log = [];
+  const e = createWorkflowEngine({ actions: mkActions(log), isStopped: () => stop, now: () => new Date(ms).toISOString() });
+  e.saveTemplate({ ...T, id: "r", name: "r", steps: [{ id: "a", action: "count", args: { value: 1 } }, { id: "h", action: "hang" }, { id: "c", action: "count", args: { value: 3 } }] });
+  const id = e.start({ ...T, templateId: "r" }).id; await e.execute(id, T).catch(() => {});
+  const c = e.start({ ...T, templateId: "r" }).id; e.cancel(c, T); assert.equal(e.rewind(c, null, T).reason, "NOT_REWINDABLE:CANCELLED");
+  e.saveTemplate({ ...T, id: "p", name: "p", steps: [{ id: "a", action: "count", args: { value: 1 } }] }); const p = e.start({ ...T, templateId: "p" }).id; await e.execute(p, T);
+  const before = JSON.stringify(e.getInstance(p, T).instance); assert.deepEqual(e.rewind(p, "a", T), { ok: true, reset: [] }); assert.equal(JSON.stringify(e.getInstance(p, T).instance), before, "no-op rewind leaves status and checkpoints untouched");
+  e.saveTemplate({ ...tpl(), schedule: { everyMinutes: 60, params: { who: "cron" } } }); stop = true; assert.deepEqual(await e.tick(T), []); assert.deepEqual(e.due(T), ["greet"], "period not consumed while stopped"); stop = false; assert.equal((await e.tick(T)).length, 1);
+});
+test("hardening: a stop arriving DURING an item leaves it PENDING (batch PAUSED); rewinding over a FAILED non-rewindable step is blocked", async () => {
+  let stop = false; const acts = { trip: { run: async () => { stop = true; return {}; }, idempotent: true, rewindable: true }, two: { run: async () => ({}), idempotent: true, rewindable: true }, bad: { run: async () => { throw new Error("no"); }, idempotent: true, rewindable: false } };
+  const e = createWorkflowEngine({ actions: acts, isStopped: () => stop });
+  e.saveTemplate({ ...T, id: "m", name: "m", steps: [{ id: "a", action: "trip" }, { id: "b", action: "two" }] });
+  const b = e.createBatch({ ...T, templateId: "m", items: [{}, {}] }).id; const r = await e.runBatch(b, T);
+  assert.deepEqual([r.status, r.reason, r.PENDING, r.FAILED], ["PAUSED", "OWNER_STOP_OR_SAFE_MODE_ACTIVE", 2, 0]);
+  stop = false; e.saveTemplate({ ...T, id: "f", name: "f", steps: [{ id: "a", action: "two" }, { id: "x", action: "bad", onError: "continue" }] }); const id = e.start({ ...T, templateId: "f" }).id; await e.execute(id, T);
+  assert.equal(e.getInstance(id, T).instance.steps[1].status, "FAILED"); assert.equal(e.rewind(id, "a", T).reason, "REWIND_BLOCKED:x");
 });

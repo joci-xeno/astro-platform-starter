@@ -21,7 +21,7 @@ export const RELATIONS = Object.freeze(["SUPPORTS", "REFUTES"]);
 export const STATUSES = Object.freeze(["VERIFIED", "UNSUPPORTED", "ASSUMPTION", "OUTDATED", "CONFLICTED", "REFUTED", "REJECTED", "UNVERIFIABLE"]);
 export const LIMITS = Object.freeze({ questionChars: 500, claimChars: 1000, noteChars: 1000, topicChars: 120, valueChars: 200, evidencePerFinding: 50, minCoverage: 0.5, freshnessDays: 30 });
 const sha = s => crypto.createHash("sha256").update(s).digest("hex");
-const SECRET = /-----BEGIN [A-Z ]*PRIVATE KEY-----|\bsk-[A-Za-z0-9]{20,}|\bAKIA[0-9A-Z]{16}\b|\bghp_[A-Za-z0-9]{30,}/;
+const SECRET = /-----BEGIN [A-Z ]*PRIVATE KEY-----|(?<![A-Za-z0-9])sk-[A-Za-z0-9]{20,}|(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}\b|(?<![A-Za-z0-9])ghp_[A-Za-z0-9]{30,}/;
 const norm = s => String(s ?? "").toLowerCase().replace(/\s+/g, " ").trim();
 
 export function createResearchLedger({ file = null, knowledge, security = null, blackBox = null, now = () => new Date().toISOString(), freshnessDays = LIMITS.freshnessDays } = {}) {

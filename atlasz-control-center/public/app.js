@@ -85,8 +85,8 @@ const views = {
         h("button", { class: "btn primary", onclick: async () => { const r = await ask({ title: "New prototype", text: "Templates: " + protov.templates.map(t => t.id).join(", ") + ". Parameters are JSON, e.g. {\"ops\":[\"slugify\"]} or {\"routes\":[{\"path\":\"/\",\"body\":\"hi\"}]}. Nothing is written until you press Generate.", fields: [{ name: "template", label: "Template", value: "text-transform" }, { name: "name", label: "Folder name (a-z, 0-9, -)" }, { name: "idea", label: "Idea (one line)" }, { name: "params", label: "Parameters (JSON)", value: "{}" }], ok: "Preview" }); if (!r) return; let params; try { params = JSON.parse(r.params || "{}"); } catch { return note("Parameters are not valid JSON.", "bad"); } const spec = { template: r.template, name: r.name, idea: r.idea, params };
           act("Preview prototype", "/api/prototypes/action", { op: "preview", args: spec }, async x => { const pv = x.result?.result ?? x.result ?? x; window.__protoResult = { kind: "preview", r: pv }; if (pv.ok) { const g = await ask({ title: "Generate " + spec.name + "?", text: "Files: " + pv.files.map(f => f.path).join(", "), ok: "Generate" }); if (g) act("Generate prototype", "/api/prototypes/action", { op: "generate", args: spec }); } }); } }, "New prototype…")),
       protov.prototypes.length ? table(["Prototype", "Template", "Status", "Actions"], protov.prototypes.map(x => [x.name, x.template, pill(x.status), h("div", { class: "row", style: "margin:0" },
-        h("button", { class: "btn primary", onclick: async () => { const r = await ask({ title: "Run generated tests of " + x.name, text: "Runs in a read-only, no-network, no-child-process sandbox. Approval is bound to the exact content; a pass is not a production-readiness claim.", fields: [PASS2], ok: "Run (signs this content)" }); if (r) act("Run prototype tests", "/api/prototypes/action", { op: "test", args: { name: x.name, passphrase: r.passphrase } }, y => { window.__protoResult = { kind: "tests", name: x.name, r: y.result?.result ?? y.result ?? y }; }); } }, "Run tests"))])) : note("No prototypes yet."),
-      window.__protoResult ? [h("h3", {}, "Last " + window.__protoResult.kind), h("pre", { class: "code" }, JSON.stringify(window.__protoResult.r, null, 2).slice(0, 6000))] : null] : null,
+        h("button", { class: "btn primary", onclick: async () => { const r = await ask({ title: "Run generated tests of " + x.name, text: "Runs in a read-only, no-network, no-child-process sandbox. Approval is bound to the exact content; a pass is not a production-readiness claim.", fields: [PASS2], ok: "Run (signs this content)" }); if (r) act("Run prototype tests", "/api/prototypes/action", { op: "test", args: { name: x.name, passphrase: r.passphrase } }, y => { window.__protoResult = { kind: "tests", name: x.name, r: y.result?.result ?? y.result ?? y }; }); } }, "Run tests"), x.template === "static-page" ? h("button", { class: "btn", onclick: () => act("Preview page", "/api/prototypes/action", { op: "previewPage", args: { name: x.name } }, y => { const r = y.result?.result ?? y.result ?? y; window.__protoResult = { kind: "page preview", name: x.name, r: r.ok ? { sha256: r.sha256, bytes: r.bytes, status: r.status, note: r.note } : r, srcdoc: r.ok ? r.srcdoc : null }; }) }, "Preview page") : null)])) : note("No prototypes yet."),
+      window.__protoResult ? [h("h3", {}, "Last " + window.__protoResult.kind), window.__protoResult.srcdoc ? h("iframe", { sandbox: "", title: "Prototype page preview (sandboxed)", srcdoc: window.__protoResult.srcdoc, style: "width:100%;height:320px;border:1px solid #888;background:#fff" }) : null, h("pre", { class: "code" }, JSON.stringify(window.__protoResult.r, null, 2).slice(0, 6000))] : null] : null,
       p.rejected.length ? [h("h2", {}, "Rejected packages"), table(["Folder", "Problems"], p.rejected.map(x => [x.dir.split(/[\\/]/).slice(-1)[0], x.problems.join(", ")]))] : null];
   },
   async finance() {
@@ -426,7 +426,7 @@ views.projects = async () => {
     tpl, h("div", { class: "row" }, h("button", { class: "btn", onclick: guard(async () => { const t = JSON.parse(tpl.value); show("Saved", await call("workflow.save", t)); }) }, "Save template"), h("button", { class: "btn", onclick: guard(async () => show("Actions", await call("workflow.actions", {}))) }, "List actions")),
     h("div", { class: "row" }, wtpl, wparams, h("button", { class: "btn", onclick: guard(async () => show("Started", await call("workflow.start", { templateId: wtpl.value, params: wparams.value ? JSON.parse(wparams.value) : {} }))) }, "Start")),
     h("div", { class: "row" }, wid, h("button", { class: "btn primary", onclick: guard(async () => show("Run", await call("workflow.run", { id: wid.value }))) }, "Run"), h("button", { class: "btn", onclick: guard(async () => show("Resume", await call("workflow.resume", { id: wid.value }))) }, "Resume"),
-      h("button", { class: "btn", onclick: guard(async () => show("Instance", await call("workflow.instance", { id: wid.value }))) }, "Show"), h("button", { class: "btn", onclick: guard(async () => show("Cancelled", await call("workflow.cancel", { id: wid.value }))) }, "Cancel"),
+      h("button", { class: "btn", onclick: guard(async () => show("Scheduled workflows run", await call("workflow.tick", {}))) }, "Run due scheduled"), h("button", { class: "btn", onclick: guard(async () => show("Instance", await call("workflow.instance", { id: wid.value }))) }, "Show"), h("button", { class: "btn", onclick: guard(async () => show("Cancelled", await call("workflow.cancel", { id: wid.value }))) }, "Cancel"),
       wstep, h("button", { class: "btn", onclick: guard(async () => show("Rewind", await call("workflow.rewind", { id: wid.value, toStepId: wstep.value || null }))) }, "Rewind"), h("button", { class: "btn", onclick: guard(async () => show("Batch run", await call("workflow.batchRun", { id: wid.value }))) }, "Run batch")),
     h("h3", {}, "Compare pages (P13) - supplied text only"), pagesBox, h("div", { class: "row" }, h("button", { class: "btn", onclick: guard(async () => show("Comparison (untrusted data)", await call("compare.pages", { pages: JSON.parse(pagesBox.value) }))) }, "Compare")),
     h("h3", {}, "Transcript to steps (P02) - supplied transcript only"), tr, h("div", { class: "row" }, h("button", { class: "btn", onclick: guard(async () => show("Transcript analysis (extractive)", await call("transcript.analyze", { transcript: tr.value }))) }, "Analyse")),
@@ -436,9 +436,9 @@ views.projects = async () => {
     table(["Skill", "Active", "Versions (status)"], skillList.map(k => [k.id + " - " + k.name, k.active ?? "none", k.versions.map(v => "v" + v.version + " " + v.status).join(", ")])),
     skillBox, h("div", { class: "row" }, h("button", { class: "btn", onclick: guard(async () => show("Submitted", await call("skill.submit", JSON.parse(skillBox.value)))) }, "Submit draft"),
       sid, sver, h("button", { class: "btn", onclick: guard(async () => show("Test gate", await call("skill.gate", { id: sid.value, version: Number(sver.value) }))) }, "Run test gate"),
-      h("button", { class: "btn primary", onclick: guard(async () => show("Activated", await call("skill.activate", { id: sid.value, version: Number(sver.value) }))) }, "Activate (owner)"),
-      h("button", { class: "btn", onclick: guard(async () => show("Rolled back", await call("skill.rollback", { id: sid.value, version: Number(sver.value) }))) }, "Roll back to version"),
-      h("button", { class: "btn", onclick: guard(async () => show("Deactivated", await call("skill.deactivate", { id: sid.value }))) }, "Deactivate"),
+      h("button", { class: "btn primary", onclick: guard(async () => { const r = await ask({ title: "Activate " + sid.value + " v" + sver.value, text: "Signs this exact skill version and content. Single use.", fields: [PASS], ok: "Activate (signs)" }); if (r) show("Activated", await call("skill.activate", { id: sid.value, version: Number(sver.value), passphrase: r.passphrase })); }) }, "Activate (owner)"),
+      h("button", { class: "btn", onclick: guard(async () => { const r = await ask({ title: "Roll back " + sid.value + " to v" + sver.value, text: "Signs this exact skill version and content. Single use.", fields: [PASS], ok: "Roll back (signs)" }); if (r) show("Rolled back", await call("skill.rollback", { id: sid.value, version: Number(sver.value), passphrase: r.passphrase })); }) }, "Roll back to version"),
+      h("button", { class: "btn", onclick: guard(async () => { const r = await ask({ title: "Deactivate " + sid.value, text: "Switches off the active version. Signs this exact version. Single use.", fields: [PASS], ok: "Deactivate (signs)" }); if (r) show("Deactivated", await call("skill.deactivate", { id: sid.value, passphrase: r.passphrase })); }) }, "Deactivate"),
       h("button", { class: "btn", onclick: guard(async () => show("Skill", await call("skill.get", { id: sid.value }))) }, "Show")),
     h("div", { class: "row" }, sparams, h("button", { class: "btn primary", onclick: guard(async () => show("Skill run", await call("skill.run", { id: sid.value, params: sparams.value ? JSON.parse(sparams.value) : {} }))) }, "Run active skill")),
     h("h3", {}, "Assistant profiles (M12) - configuration only, no new agents"), note("A profile is a named set of instructions, tools, skills and memory scopes for the EXISTING agents. It can only narrow what the tool matrix already allows; it never adds an agent or a permission. Fields other than id, name, instructions, tools, skills and memoryScopes are refused."),
@@ -486,23 +486,30 @@ const NAMES = { home: "Home", pcc: "Tasks / Reminders", observations: "Observati
 let liveAbort = null;
 function stopLive() { try { liveAbort?.abort(); } catch {} liveAbort = null; }
 function startLive(list, status) {
-  stopLive(); const ctl = new AbortController(); liveAbort = ctl; let n = 0;
+  stopLive(); const ctl = new AbortController(); liveAbort = ctl; let n = 0, lastId = null, failures = 0;
+  const wait = ms => new Promise(r => { const t = setTimeout(r, ms); ctl.signal.addEventListener("abort", () => { clearTimeout(t); r(); }, { once: true }); });
   (async () => {
-    try {
-      const res = await fetch("/api/stream", { headers: { "x-atlasz-token": TOKEN }, signal: ctl.signal });
-      if (!res.ok) { status.textContent = res.status === 503 ? "Too many live streams are open." : "Live feed unavailable (" + res.status + ")."; return; }
-      status.textContent = "Live: connected (read-only)."; const rd = res.body.getReader(), dec = new TextDecoder(); let buf = "";
-      for (;;) {
-        const { value, done } = await rd.read(); if (done) break; buf += dec.decode(value, { stream: true });
-        let i; while ((i = buf.indexOf("\n\n")) >= 0) {
-          const f = buf.slice(0, i); buf = buf.slice(i + 2); const ev = /^event: (.*)$/m.exec(f)?.[1], dat = /^data: (.*)$/m.exec(f)?.[1], id = /^id: (.*)$/m.exec(f)?.[1];
-          if (!dat || ev === "reset" || ev === "stream-error") { if (ev) status.textContent = ev === "reset" ? "Live: log restarted." : "Live: source unreadable (will retry)."; continue; }
-          let o = {}; try { o = JSON.parse(dat); } catch { continue; }
-          list.prepend(h("li", {}, "#" + id + " " + (o.at ?? "") + " " + (o.event ?? ev) + " " + JSON.stringify(o.data ?? "").slice(0, 160))); if (++n > 200) list.lastChild?.remove();
+    while (!ctl.signal.aborted) {
+      try {
+        const res = await fetch("/api/stream", { headers: lastId === null ? { "x-atlasz-token": TOKEN } : { "x-atlasz-token": TOKEN, "last-event-id": String(lastId) }, signal: ctl.signal });
+        if (!res.ok) { status.textContent = res.status === 503 ? "Too many live streams are open. Retrying..." : "Live feed unavailable (" + res.status + "). Retrying..."; }
+        else {
+          status.textContent = "Live: connected (read-only)."; failures = 0; const rd = res.body.getReader(), dec = new TextDecoder(); let buf = "";
+          for (;;) {
+            const { value, done } = await rd.read(); if (done) break; buf += dec.decode(value, { stream: true });
+            let i; while ((i = buf.indexOf("\n\n")) >= 0) {
+              const f = buf.slice(0, i); buf = buf.slice(i + 2); const ev = /^event: (.*)$/m.exec(f)?.[1], dat = /^data: (.*)$/m.exec(f)?.[1], id = /^id: (\d+)$/m.exec(f)?.[1];
+              if (!dat || ev === "reset" || ev === "stream-error" || ev === "gap") { if (ev) { status.textContent = ev === "reset" ? "Live: log restarted." : ev === "gap" ? "Live: some older entries were skipped." : "Live: source unreadable (will retry)."; if (ev === "reset") lastId = null; } continue; }
+              let o = {}; try { o = JSON.parse(dat); } catch { continue; }
+              if (id !== undefined) lastId = Number(id);
+              list.prepend(h("li", {}, "#" + id + " " + (o.at ?? "") + " " + (o.event ?? ev) + " " + JSON.stringify(o.data ?? "").slice(0, 160))); if (++n > 200) list.lastChild?.remove();
+            }
+          }
+          status.textContent = "Live: stream ended. Reconnecting...";
         }
-      }
-      status.textContent = "Live: stream ended.";
-    } catch (e) { if (e.name !== "AbortError") status.textContent = "Live feed stopped."; }
+      } catch (e) { if (e.name === "AbortError" || ctl.signal.aborted) return; status.textContent = "Live feed interrupted. Reconnecting..."; }
+      failures++; await wait(Math.min(30000, 1000 * 2 ** Math.min(failures, 5)));
+    }
   })();
 }
 let current = "home";

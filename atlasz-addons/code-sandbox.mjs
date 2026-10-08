@@ -21,7 +21,7 @@ import crypto from "node:crypto";
 export const LANGUAGES = Object.freeze(["javascript", "python"]);
 export const ISOLATION = Object.freeze(["NAMESPACE", "PROCESS_ONLY"]);
 export const LIMITS = Object.freeze({ timeoutMs: 5000, maxTimeoutMs: 30000, maxOutputBytes: 65536, maxCodeBytes: 100000, maxStdinBytes: 100000, maxInputFiles: 10, maxInputFileBytes: 100000, maxOutputFiles: 10, maxOutputFileBytes: 262144, memoryMb: 256, maxConcurrent: 2, cpuSeconds: 10, openFiles: 64 });
-const SECRET = /-----BEGIN [A-Z ]*PRIVATE KEY-----|\bsk-[A-Za-z0-9]{20,}|\bAKIA[0-9A-Z]{16}\b|\bghp_[A-Za-z0-9]{30,}/;
+const SECRET = /-----BEGIN [A-Z ]*PRIVATE KEY-----|(?<![A-Za-z0-9])sk-[A-Za-z0-9]{20,}|(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}\b|(?<![A-Za-z0-9])ghp_[A-Za-z0-9]{30,}/;
 const NAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 const sha = b => crypto.createHash("sha256").update(b).digest("hex");
 const IS_WIN = process.platform === "win32";

@@ -34,12 +34,14 @@ test("HTTP: prototypes - preview writes nothing, generate is owner-only via the 
     const g = await A("generate", { ...spec, actor: "SEARCH-1" }); assert.equal(g.result.result.ok, true, JSON.stringify(g)); assert.equal(g.result.result.status, "GENERATED_UNTESTED");
     assert.equal(JSON.stringify(t.J(await t.get("/api/prototypes"))).includes(SK), false);
     assert.equal((await A("generate", spec)).result.result.reason, "PROTOTYPE_EXISTS");
+    assert.equal((await A("previewPage", { name: "hello-api" })).result.result.reason, "PREVIEW_ONLY_FOR_STATIC_PAGES");
+    await A("generate", { template: "static-page", name: "landing", params: { title: "T", heading: "H", text: "Hello" } }); const pp = (await A("previewPage", { name: "landing" })).result.result; assert.equal(pp.ok, true); assert.equal(pp.sandbox, ""); assert.match(pp.srcdoc, /<h1>H<\/h1>/);
     const noPass = await A("test", { name: "hello-api" }); assert.match(noPass.result.result.reason, /^OWNER_APPROVAL_REQUIRED/); assert.equal((await A("status", { name: "hello-api" })).result.result.status, "GENERATED_UNTESTED");
     const bad = await A("test", { name: "hello-api", passphrase: "wrong wrong wrong" }); assert.equal(bad.ok === false || /OWNER_APPROVAL_REQUIRED|PASSPHRASE|DECRYPT|AUTH/i.test(JSON.stringify(bad)), true, JSON.stringify(bad).slice(0, 200));
     assert.equal((await A("status", { name: "hello-api" })).result.result.status, "GENERATED_UNTESTED", "a wrong passphrase ran nothing");
     assert.match((await A("test", { name: "../x", passphrase: PW })).result.result.reason, /REPO_NAME_INVALID/);
     const ok = await A("test", { name: "hello-api", passphrase: PW }); const r = ok.result.result; assert.equal(r.ok, true, JSON.stringify(ok).slice(0, 600)); assert.equal(r.failed, 0); assert.equal(r.status, "TESTS_PASSED_IN_SANDBOX");
-    const list = t.J(await t.get("/api/prototypes")); assert.deepEqual(list.prototypes, [{ name: "hello-api", template: "http-handler", status: "TESTS_PASSED_IN_SANDBOX" }]);
+    const list = t.J(await t.get("/api/prototypes")); assert.deepEqual(list.prototypes, [{ name: "hello-api", template: "http-handler", status: "TESTS_PASSED_IN_SANDBOX" }, { name: "landing", template: "static-page", status: "GENERATED_UNTESTED" }]);
     fs.appendFileSync(path.join(t.configDir, "repos", "hello-api", "src", "index.mjs"), "// changed\n"); assert.equal((await A("status", { name: "hello-api" })).result.result.status, "MODIFIED_AFTER_TEST");
     assert.equal(t.J(await t.post("/api/emergency", { mode: "PAUSE_ALL", passphrase: PW })).ok, true);
     assert.equal((await A("test", { name: "hello-api", passphrase: PW })).result.result.reason, "OWNER_STOP_OR_SAFE_MODE_ACTIVE", "the kill switch stops prototype test runs");

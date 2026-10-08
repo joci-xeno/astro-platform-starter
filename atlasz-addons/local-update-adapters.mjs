@@ -15,7 +15,7 @@ const LEGACY_MARKER = new RegExp("atlasz-" + "competition", "i");
 export const INSTALL_MANIFEST = ".atlasz-install-manifest.json";
 export const SELFTEST = "atlasz-update-selftest.mjs";
 const MAX_FILE = 2 * 1024 * 1024, MAX_FILES = 2000;
-const SECRET_PATTERNS = [/-----BEGIN [A-Z ]*PRIVATE KEY-----/, /\bsk-[A-Za-z0-9]{20,}/, /\bAKIA[0-9A-Z]{16}\b/, /\bghp_[A-Za-z0-9]{30,}/, /\bxox[bp]-[A-Za-z0-9-]{20,}/, /\bsk_live_[A-Za-z0-9]{8,}/];
+const SECRET_PATTERNS = [/-----BEGIN [A-Z ]*PRIVATE KEY-----/, /(?<![A-Za-z0-9])sk-[A-Za-z0-9]{20,}/, /(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}\b/, /(?<![A-Za-z0-9])ghp_[A-Za-z0-9]{30,}/, /(?<![A-Za-z0-9])xox[bp]-[A-Za-z0-9-]{20,}/, /\bsk_live_[A-Za-z0-9]{8,}/];
 const sha = buf => createHash("sha256").update(buf).digest("hex");
 const safeRel = rel => typeof rel === "string" && rel.length > 0 && !path.isAbsolute(rel) && !rel.split(/[\\/]/).some(p => p === ".." || p === "") && !rel.includes("\0");
 const inside = (root, p) => { const r = path.resolve(root), t = path.resolve(p); return t === r || t.startsWith(r + path.sep); };

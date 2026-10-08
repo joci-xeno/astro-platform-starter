@@ -34,14 +34,15 @@ test("attach: headers, backlog of the latest 20, then only new entries in order;
   const res3 = fakeRes(); s.attach(fakeReq({ "last-event-id": "garbage" }), res3); assert.equal(ids(res3).length, 20, "an invalid id falls back to the backlog");
 });
 
-test("bounds: client cap, batch size, heartbeat, close cleanup, buffered-bytes drop", () => {
-  const log = Array.from({ length: 500 }, (_, i) => ent(i + 1)); const t = timers();
-  const s = createEventStream({ read: () => log, setTimer: t.set, clearTimer: t.clear, limits: { maxClients: 2, batch: 100, pollMs: 5000, heartbeatMs: 10000 } });
+test("bounds: client cap, batch size, heartbeat, one shared timer and one read per poll, close cleanup, buffered-bytes drop", () => {
+  const log = Array.from({ length: 500 }, (_, i) => ent(i + 1)); const t = timers(); let reads = 0;
+  const s = createEventStream({ read: () => { reads++; return log; }, setTimer: t.set, clearTimer: t.clear, limits: { maxClients: 2, batch: 100, pollMs: 5000, heartbeatMs: 10000 } });
   const a = fakeRes(), b = fakeRes(), c = fakeRes(); assert.equal(s.attach(fakeReq({ "last-event-id": "0" }), a).ok, true); assert.equal(s.attach(fakeReq(), b).ok, true);
+  assert.equal(t.fns.length, 1, "one timer for all clients");
   const refused = s.attach(fakeReq(), c); assert.deepEqual(refused, { ok: false, reason: "TOO_MANY_STREAM_CLIENTS" }); assert.equal(c.head, null, "a refused client gets no stream headers");
-  assert.equal(ids(a).length, 100, "one tick sends at most `batch` frames"); t.fns[0](); assert.equal(ids(a).length, 200); assert.equal(a.out.join("").includes(": heartbeat"), false); t.fns[0](); assert.ok(a.out.join("").includes(": heartbeat"), "a heartbeat after heartbeatMs");
-  log.push(ent(501)); b.writableLength = LIMITS.maxBufferedBytes + 1; t.fns[1](); assert.equal(b.ended, true); assert.equal(s.count(), 1, "a client with an unread backlog is dropped");
-  a.emit("close"); assert.equal(s.count(), 0); assert.ok(t.cleared >= 2); assert.equal(s.attach(fakeReq(), fakeRes()).ok, true, "a slot is free again after close");
+  assert.equal(ids(a).length, 100, "one tick sends at most `batch` frames"); const r0 = reads; t.fns[0](); assert.equal(reads, r0 + 1, "one read per poll however many clients"); assert.equal(ids(a).length, 200); assert.equal(a.out.join("").includes(": heartbeat"), false); t.fns[0](); assert.ok(a.out.join("").includes(": heartbeat"), "a heartbeat after heartbeatMs");
+  log.push(ent(501)); b.writableLength = LIMITS.maxBufferedBytes + 1; t.fns[0](); assert.equal(b.ended, true); assert.equal(s.count(), 1, "a client with an unread backlog is dropped");
+  a.emit("close"); assert.equal(s.count(), 0); assert.equal(t.cleared, 1, "the timer stops with the last client"); assert.equal(s.attach(fakeReq(), fakeRes()).ok, true, "a slot is free again after close"); assert.equal(t.fns.length, 2, "and a new timer starts");
   const q = fakeReq(), r = fakeRes(); const s2 = createEventStream({ read: () => [], setTimer: t.set, clearTimer: t.clear }); s2.attach(q, r); q.emit("close"); assert.equal(s2.count(), 0, "request close also detaches"); s2.attach(fakeReq(), fakeRes()); s2.closeAll(); assert.equal(s2.count(), 0);
 });
 
@@ -56,16 +57,43 @@ test("source problems: unreadable log reports a fixed code once and keeps the st
   assert.throws(() => createEventStream({}), /READ_REQUIRED/);
 });
 
-test("mutation hardening: default client cap, exact size boundaries, empty event names, error re-reporting, heartbeat spacing", () => {
+test("mutation hardening: default client cap, exact size boundaries, empty event names, exact buffer limit, error re-reporting, heartbeat spacing, gap notice", () => {
   assert.equal(LIMITS.maxClients, 5); const t = timers(); const s = createEventStream({ read: () => [], setTimer: t.set, clearTimer: t.clear });
   for (let i = 0; i < 5; i++) assert.equal(s.attach(fakeReq(), fakeRes()).ok, true); assert.equal(s.attach(fakeReq(), fakeRes()).ok, false, "the sixth stream is refused");
   const e = ent(3, { a: 1 }); const exact = JSON.stringify({ seq: 3, at: e.at, event: e.event, data: e.data }).length;
   assert.doesNotMatch(frame(e, { maxDataChars: exact }), /truncated/, "data of exactly the cap is kept"); assert.match(frame(e, { maxDataChars: exact - 1 }), /truncated/);
   assert.match(frame(ent(4, {}, "")), /event: message\n/); assert.match(frame(ent(4, {}, "///")), /event: ___\n/);
-  const t2 = timers(); const r = fakeRes(); const s2 = createEventStream({ read: () => [ent(1)], setTimer: t2.set, clearTimer: t2.clear }); s2.attach(fakeReq(), r); r.writableLength = LIMITS.maxBufferedBytes; r.out.length = 0;
-  const log = [ent(1)]; const s3 = createEventStream({ read: () => log, setTimer: t2.set, clearTimer: t2.clear }); const r3 = fakeRes(); s3.attach(fakeReq(), r3); r3.writableLength = LIMITS.maxBufferedBytes; log.push(ent(2)); t2.fns.at(-1)(); assert.equal(r3.ended, false, "exactly at the limit is still allowed"); assert.deepEqual(ids(r3), [1, 2]);
+  const t3 = timers(); const log = [ent(1)]; const s3 = createEventStream({ read: () => log, setTimer: t3.set, clearTimer: t3.clear }); const r3 = fakeRes(); s3.attach(fakeReq(), r3); r3.writableLength = LIMITS.maxBufferedBytes; log.push(ent(2)); t3.fns[0](); assert.equal(r3.ended, false, "exactly at the limit is still allowed"); assert.deepEqual(ids(r3), [1, 2]);
   let bad = false; const t4 = timers(); const s4 = createEventStream({ read: () => { if (bad) throw new Error("x"); return []; }, setTimer: t4.set, clearTimer: t4.clear, limits: { pollMs: 1000, heartbeatMs: 3000 } }); const r4 = fakeRes(); s4.attach(fakeReq(), r4);
   bad = true; t4.fns[0](); bad = false; t4.fns[0](); bad = true; t4.fns[0](); assert.equal((r4.out.join("").match(/stream-error/g) || []).length, 2, "a new failure after recovery is reported again");
   const t5 = timers(); const s5 = createEventStream({ read: () => [], setTimer: t5.set, clearTimer: t5.clear, limits: { pollMs: 1000, heartbeatMs: 3000 } }); const r5 = fakeRes(); s5.attach(fakeReq(), r5);
-  for (let i = 0; i < 4; i++) t5.fns[0](); assert.equal((r5.out.join("").match(/: heartbeat/g) || []).length, 1, "ticks 3 sends one heartbeat, tick 4 none (counter reset)");
+  for (let i = 0; i < 4; i++) t5.fns[0](); assert.equal((r5.out.join("").match(/: heartbeat/g) || []).length, 1, "tick 3 sends one heartbeat, tick 4 none (counter reset)");
+  // the window only keeps the newest entries: a client far behind is told about the gap and then continues
+  const t6 = timers(); const win = Array.from({ length: 5 }, (_, i) => ent(i + 100)); const s6 = createEventStream({ read: () => win, setTimer: t6.set, clearTimer: t6.clear }); const r6 = fakeRes(); s6.attach(fakeReq({ "last-event-id": "10" }), r6);
+  assert.match(r6.out.join(""), /event: gap\ndata: \{"from":11,"to":99\}/); assert.deepEqual(ids(r6), [100, 101, 102, 103, 104]);
+  const r7 = fakeRes(); s6.attach(fakeReq({ "last-event-id": "99" }), r7); assert.equal(r7.out.join("").includes("event: gap"), false, "no gap when the next entry follows directly"); assert.deepEqual(ids(r7), [100, 101, 102, 103, 104]);
+  const r8 = fakeRes(); s6.attach(fakeReq({ "last-event-id": "0" }), r8); assert.equal(r8.out.join("").includes("event: gap"), false, "id 0 means from the start, not a gap"); 
+});
+
+test("frame never throws and never emits what looks like a credential, in the data, the event name or nested under a secret-looking key", () => {
+  let deep = { v: 1 }; for (let i = 0; i < 20000; i++) deep = { n: deep };
+  const f = frame(ent(9, deep)); assert.match(f, /^id: 9\nevent: BB_TOOL\ndata: \{.*"truncated":true\}\n\n$/, "an unserialisable entry becomes a minimal frame");
+  const K = SK, J = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV";
+  const g = frame(ent(5, { secret: { k: "nested-secret-val" }, password: 123456789, token: 99887766, auth: { Authorization: "Bearer abcdefghijklmnop" }, url: "https://user:pw12345@host/x", jwt: J, note: "key_" + K, bare: "Bearer abcdefghijklmnop" }, "BB_" + K));
+  for (const bad of ["nested-secret-val", "123456789", "99887766", "abcdefghijklmnop", "pw12345", J, K]) assert.equal(g.includes(bad), false, bad);
+  assert.equal(frame({ seq: "x", at: 1, event: { toString() { throw new Error("boom"); } } }).startsWith("id: 0\n"), true, "hostile fields do not throw");
+});
+
+test("createChainTail: reads only appended lines, keeps the newest window, survives torn tails, shrinking files and corrupt lines", async () => {
+  const { createChainTail } = await import("../atlasz-addons/event-stream.mjs"); const fs = await import("node:fs"); const path = await import("node:path"); const { tmp, rm } = await import("./helpers.mjs");
+  const dir = tmp("tail-"); const f = path.join(dir, "bb.jsonl"); try {
+    const tail = createChainTail(f, { keep: 3 }); assert.deepEqual(tail.read(), [], "a missing file is an empty log");
+    const line = n => JSON.stringify(ent(n)) + "\n"; fs.writeFileSync(f, line(1) + line(2));
+    assert.deepEqual(tail.read().map(e => e.seq), [1, 2]); fs.appendFileSync(f, line(3).slice(0, 10)); assert.deepEqual(tail.read().map(e => e.seq), [1, 2], "a torn last line waits");
+    fs.appendFileSync(f, line(3).slice(10) + line(4) + line(5)); assert.deepEqual(tail.read().map(e => e.seq), [3, 4, 5], "only the newest `keep` entries are retained");
+    const same = tail.read(); assert.equal(tail.read(), same, "nothing changed: the cached array is returned");
+    fs.writeFileSync(f, line(1)); assert.deepEqual(tail.read().map(e => e.seq), [1], "a shrunken file is re-read from the start");
+    fs.appendFileSync(f, "not json\n"); assert.throws(() => tail.read(), /LOG_CORRUPT/); fs.writeFileSync(f, line(1) + line(2)); assert.deepEqual(tail.read().map(e => e.seq), [1, 2], "recovers once the file is sound");
+    fs.writeFileSync(f, JSON.stringify(ent(1, { t: "é€😀" })) + "\n"); const t2 = createChainTail(f); assert.equal(t2.read()[0].data.t, "é€😀");
+  } finally { rm(dir); }
 });

@@ -1,13 +1,16 @@
 // Safe preview renderer (85-capability programme: M13 Interactive Artifacts / C09, P18 Visual Highlighting, A07 Visual Guidance).
 // Everything here produces INERT SVG/HTML from validated data: all text is escaped, numbers are checked finite, sizes are capped, nothing references an external resource,
 // and every produced SVG passes checkSvgSafe() before it is returned (a failed self-check returns ok:false instead of markup). It never executes or evaluates input.
+import { createHash } from "node:crypto";
 export const LIMITS = Object.freeze({ maxPoints: 500, maxLabels: 50, labelChars: 40, maxNodes: 60, maxEdges: 200, maxAnnotations: 50, maxSteps: 30, maxPreviewChars: 20000 });
 export const PALETTE = Object.freeze({ blue: "#2b6cb0", green: "#2f855a", amber: "#b7791f", red: "#c53030", grey: "#4a5568" });
 const SERIES = ["#2b6cb0", "#2f855a", "#b7791f", "#805ad5", "#c53030", "#2c7a7b"];
-export const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "");
+const str = s => { try { return String(s ?? ""); } catch { return "?"; } };                 // a hostile toString() must not crash a render
+export const esc = s => str(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]|[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/g, "");   // characters that are invalid in XML are dropped
 const f = n => { const v = Math.round(n * 100) / 100; return Object.is(v, -0) ? 0 : v; };
-const short = (s, n = LIMITS.labelChars) => { const t = String(s ?? ""); return t.length > n ? t.slice(0, n - 1) + "…" : t; };
+const short = (s, n = LIMITS.labelChars) => { const t = str(s); return t.length > n ? t.slice(0, n - 1) + "…" : t; };
 const fin = v => typeof v === "number" && Number.isFinite(v);
+const num = v => fin(v) && Math.abs(v) <= 1e15;                                              // chart data: large enough for any real series, small enough that scaling arithmetic cannot overflow
 
 /** Reject anything that could run code or reach out: scripts, handlers, javascript:, foreignObject, external href, DOCTYPE/ENTITY, <image>, <use> to other docs, css url(). */
 export function checkSvgSafe(svg) {
@@ -18,28 +21,31 @@ export function checkSvgSafe(svg) {
   for (const [re, name] of rules) if (re.test(s)) problems.push(name);
   return { safe: problems.length === 0, problems };
 }
-const done = (svg, extra = {}) => { const c = checkSvgSafe(svg); return c.safe ? { ok: true, svg, bytes: svg.length, ...extra } : { ok: false, reason: "SVG_SELF_CHECK_FAILED", problems: c.problems }; };
+const done = (svg, extra = {}) => {
+  const c = checkSvgSafe(svg); if (/="[^"]*(?:NaN|Infinity)[^"]*"/.test(svg)) c.problems.push("NON_FINITE_NUMBER_IN_MARKUP");
+  return c.problems.length === 0 ? { ok: true, svg, bytes: svg.length, sha256: createHash("sha256").update(svg).digest("hex"), ...extra } : { ok: false, reason: "SVG_SELF_CHECK_FAILED", problems: c.problems };
+};
 export const svgToDataUri = svg => "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 const frame = (w, h, title, desc, body) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-labelledby="t d"><title id="t">${esc(title)}</title><desc id="d">${esc(desc)}</desc><rect width="${w}" height="${h}" fill="#ffffff"/>${body}</svg>`;
 function niceTicks(lo, hi, n = 5) { if (lo === hi) { lo -= 1; hi += 1; } const span = hi - lo, step0 = span / n, mag = 10 ** Math.floor(Math.log10(step0)), r = step0 / mag, step = (r < 1.5 ? 1 : r < 3 ? 2 : r < 7 ? 5 : 10) * mag, a = Math.floor(lo / step) * step, b = Math.ceil(hi / step) * step, t = []; for (let v = a; v <= b + step / 2; v += step) t.push(Math.round(v / step) * step); return { a, b, t }; }
 const tickLabel = v => Math.abs(v) >= 1e6 || (v !== 0 && Math.abs(v) < 1e-3) ? v.toExponential(1) : String(+v.toPrecision(4));
 
-export function renderChart(spec, { width = 640, height = 360 } = {}) {
+function renderChart_(spec, { width = 640, height = 360 } = {}) {
   if (!spec || typeof spec !== "object") return { ok: false, reason: "SPEC_REQUIRED" };
   if (![width, height].every(n => Number.isInteger(n) && n >= 200 && n <= 2000)) return { ok: false, reason: "SIZE_INVALID" };
   const title = short(spec.title || "Chart", 80), M = { l: 56, r: 16, t: 36, b: 48 }, W = width - M.l - M.r, H = height - M.t - M.b;
   let series, xs = null, cats = null, kind = spec.type;
   if (kind === "bar") {
     if (!Array.isArray(spec.labels) || !Array.isArray(spec.values) || spec.labels.length !== spec.values.length || !spec.values.length) return { ok: false, reason: "BAR_DATA_INVALID" };
-    if (spec.values.length > LIMITS.maxLabels || !spec.values.every(fin)) return { ok: false, reason: "BAR_DATA_INVALID" }; cats = spec.labels.map(l => short(l)); series = spec.values;
+    if (spec.values.length > LIMITS.maxLabels || !spec.values.every(num)) return { ok: false, reason: "BAR_DATA_INVALID" }; cats = spec.labels.map(l => short(l)); series = spec.values;
   } else if (kind === "histogram") {
-    const v = spec.values; if (!Array.isArray(v) || !v.length || !v.every(fin) || v.length > 100000) return { ok: false, reason: "HISTOGRAM_DATA_INVALID" };
+    const v = spec.values; if (!Array.isArray(v) || !v.length || !v.every(num) || v.length > 100000) return { ok: false, reason: "HISTOGRAM_DATA_INVALID" };
     const bins = Math.min(30, Math.max(3, Math.ceil(Math.log2(v.length) + 1))), lo = Math.min(...v), hi = Math.max(...v), w = (hi - lo) / bins || 1, cnt = new Array(bins).fill(0);
     for (const x of v) cnt[Math.min(bins - 1, Math.floor((x - lo) / w))]++; series = cnt; cats = cnt.map((_, i) => tickLabel(lo + i * w)); kind = "bar";
   } else if (kind === "line") {
-    const y = spec.values; if (!Array.isArray(y) || y.length < 2 || y.length > LIMITS.maxPoints || !y.every(fin)) return { ok: false, reason: "LINE_DATA_INVALID" }; series = y; xs = spec.x && spec.x.length === y.length && spec.x.every(fin) ? spec.x : y.map((_, i) => i);
+    const y = spec.values; if (!Array.isArray(y) || y.length < 2 || y.length > LIMITS.maxPoints || !y.every(num)) return { ok: false, reason: "LINE_DATA_INVALID" }; series = y; xs = Array.isArray(spec.x) && spec.x.length === y.length && spec.x.every(num) ? spec.x : y.map((_, i) => i);
   } else if (kind === "scatter") {
-    const p = spec.points; if (!Array.isArray(p) || !p.length || p.length > LIMITS.maxPoints || !p.every(q => Array.isArray(q) && q.length === 2 && q.every(fin))) return { ok: false, reason: "SCATTER_DATA_INVALID" }; xs = p.map(q => q[0]); series = p.map(q => q[1]);
+    const p = spec.points; if (!Array.isArray(p) || !p.length || p.length > LIMITS.maxPoints || !p.every(q => Array.isArray(q) && q.length === 2 && q.every(num))) return { ok: false, reason: "SCATTER_DATA_INVALID" }; xs = p.map(q => q[0]); series = p.map(q => q[1]);
   } else return { ok: false, reason: "TYPE_UNKNOWN" };
   const yt = niceTicks(Math.min(0, ...series) === 0 && kind === "bar" ? 0 : Math.min(...series), Math.max(...series)), sy = v => f(M.t + H - ((v - yt.a) / (yt.b - yt.a || 1)) * H);
   let body = yt.t.map(t => `<line x1="${M.l}" x2="${M.l + W}" y1="${sy(t)}" y2="${sy(t)}" stroke="#e2e8f0"/><text x="${M.l - 6}" y="${f(sy(t) + 4)}" font-size="11" text-anchor="end" fill="#4a5568">${esc(tickLabel(t))}</text>`).join("");
@@ -52,7 +58,7 @@ export function renderChart(spec, { width = 640, height = 360 } = {}) {
   return done(frame(width, height, title, `${spec.type} chart with ${series.length} data point(s)`, body), { type: spec.type, points: series.length });
 }
 
-export function renderDiagram({ nodes, edges = [], title = "Diagram" } = {}) {
+function renderDiagram_({ nodes, edges = [], title = "Diagram" } = {}) {
   if (!Array.isArray(nodes) || !nodes.length || nodes.length > LIMITS.maxNodes || !Array.isArray(edges) || edges.length > LIMITS.maxEdges) return { ok: false, reason: "DIAGRAM_DATA_INVALID" };
   const ids = new Set(); for (const n of nodes) { if (!n || typeof n.id !== "string" || !n.id || ids.has(n.id)) return { ok: false, reason: "NODE_ID_INVALID" }; ids.add(n.id); }
   for (const e of edges) if (!e || !ids.has(e.from) || !ids.has(e.to)) return { ok: false, reason: "EDGE_REFERENCES_UNKNOWN_NODE" };
@@ -73,7 +79,7 @@ export function renderDiagram({ nodes, edges = [], title = "Diagram" } = {}) {
 }
 
 /** Inert HTML preview of plain text: everything escaped, paragraphs only. Safe to assign with innerHTML; the UI should still prefer textContent. */
-export function renderTextPreview(text, { maxChars = LIMITS.maxPreviewChars } = {}) {
+function renderTextPreview_(text, { maxChars = LIMITS.maxPreviewChars } = {}) {
   if (typeof text !== "string") return { ok: false, reason: "TEXT_REQUIRED" };
   const t = text.slice(0, maxChars), paras = t.split(/\n\s*\n/).map(p => `<p>${esc(p).replace(/\n/g, "<br>")}</p>`).join("");
   return { ok: true, html: `<div class="preview">${paras}</div>`, truncated: text.length > maxChars };
@@ -82,7 +88,7 @@ export function renderTextPreview(text, { maxChars = LIMITS.maxPreviewChars } = 
 // ---- P18 annotations / A07 guidance (coordinates are RELATIVE 0..1 so they work on any image size)
 export const ANNOTATION_TYPES = Object.freeze(["rect", "ellipse", "arrow", "text", "marker"]);
 const rel = v => fin(v) && v >= 0 && v <= 1;
-export function validateAnnotations(list) {
+function validateAnnotations_(list) {
   if (!Array.isArray(list)) return { ok: false, reason: "LIST_REQUIRED" };
   if (list.length > LIMITS.maxAnnotations) return { ok: false, reason: "TOO_MANY_ANNOTATIONS" };
   const out = [], problems = [];
@@ -90,7 +96,7 @@ export function validateAnnotations(list) {
     const bad = r => problems.push({ index: i, reason: r });
     if (!a || !ANNOTATION_TYPES.includes(a.type)) return bad("TYPE_INVALID");
     const color = a.color ?? "red"; if (!PALETTE[color]) return bad("COLOR_INVALID");
-    const label = a.label === undefined ? "" : String(a.label); if (label.length > 80) return bad("LABEL_TOO_LONG");
+    const label = a.label === undefined ? "" : str(a.label); if (label.length > 80) return bad("LABEL_TOO_LONG");
     if (a.type === "rect" || a.type === "ellipse") { if (![a.x, a.y, a.w, a.h].every(rel) || a.w <= 0 || a.h <= 0 || a.x + a.w > 1.0001 || a.y + a.h > 1.0001) return bad("REGION_INVALID"); out.push({ type: a.type, x: a.x, y: a.y, w: a.w, h: a.h, color, label }); }
     else if (a.type === "arrow") { if (![a.x1, a.y1, a.x2, a.y2].every(rel)) return bad("REGION_INVALID"); out.push({ type: "arrow", x1: a.x1, y1: a.y1, x2: a.x2, y2: a.y2, color, label }); }
     else { if (![a.x, a.y].every(rel)) return bad("REGION_INVALID"); if (a.type === "text" && !label) return bad("TEXT_NEEDS_LABEL"); out.push({ type: a.type, x: a.x, y: a.y, color, label }); }
@@ -98,7 +104,7 @@ export function validateAnnotations(list) {
   return problems.length ? { ok: false, reason: "ANNOTATIONS_INVALID", problems } : { ok: true, annotations: out };
 }
 /** Transparent overlay (to be layered over a screenshot/image the UI already shows); width/height are the displayed pixel size. */
-export function renderAnnotationOverlay(list, { width = 800, height = 600, numbered = false } = {}) {
+function renderAnnotationOverlay_(list, { width = 800, height = 600, numbered = false } = {}) {
   const v = validateAnnotations(list); if (!v.ok) return v;
   if (![width, height].every(n => Number.isInteger(n) && n >= 50 && n <= 4000)) return { ok: false, reason: "SIZE_INVALID" };
   let body = `<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" context-fill="currentColor"/></marker></defs>`.replace(' context-fill="currentColor"', ' fill="#c53030"');
@@ -113,7 +119,7 @@ export function renderAnnotationOverlay(list, { width = 800, height = 600, numbe
   return done(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="annotation overlay with ${v.annotations.length} item(s)">${body}</svg>`, { count: v.annotations.length });
 }
 /** A07: ordered, validated guidance steps; each step may point at a region. Descriptors only - ATLASZ never clicks anything for the user. */
-export function buildGuidance({ title, steps } = {}) {
+function buildGuidance_({ title, steps } = {}) {
   if (typeof title !== "string" || !title.trim() || title.length > 120) return { ok: false, reason: "TITLE_INVALID" };
   if (!Array.isArray(steps) || !steps.length || steps.length > LIMITS.maxSteps) return { ok: false, reason: "STEPS_INVALID" };
   const out = [];
@@ -124,8 +130,13 @@ export function buildGuidance({ title, steps } = {}) {
   }
   return { ok: true, title: title.trim(), steps: out };
 }
-export function renderGuidanceStep(guidance, n, opts = {}) {
+function renderGuidanceStep_(guidance, n, opts = {}) {
   const s = guidance?.steps?.[n - 1]; if (!s) return { ok: false, reason: "STEP_NOT_FOUND" };
   const list = s.region ? [s.region, ...(s.region.type === "marker" ? [] : [{ type: "marker", x: s.region.x ?? s.region.x1, y: s.region.y ?? s.region.y1, color: s.region.color, label: "" }])] : [];
   return renderAnnotationOverlay(list, { ...opts, numbered: false });
 }
+
+// Every public renderer is wrapped: whatever odd input arrives, the answer is a refusal, never an exception.
+const guarded = fn => (...a) => { try { return fn(...a); } catch { return { ok: false, reason: "RENDER_FAILED" }; } };
+export const renderChart = guarded(renderChart_), renderDiagram = guarded(renderDiagram_), renderTextPreview = guarded(renderTextPreview_), validateAnnotations = guarded(validateAnnotations_),
+  renderAnnotationOverlay = guarded(renderAnnotationOverlay_), buildGuidance = guarded(buildGuidance_), renderGuidanceStep = guarded(renderGuidanceStep_);

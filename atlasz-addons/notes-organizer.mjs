@@ -3,11 +3,12 @@
 // Tenant-scoped (another tenant's item looks missing); secrets are redacted before storage; all text is data. No network, no model, no spend.
 import crypto from "node:crypto";
 import { createStore, clone } from "./business/store.mjs";
+import { ownProp } from "./safe-keys.mjs";
 
 export const LIMITS = Object.freeze({ maxItems: 5000, maxText: 20000, maxTitle: 160, maxTags: 12, maxTag: 32, maxLinks: 20 });
 export const READING_STATUS = Object.freeze(["TO_READ", "READING", "DONE", "ABANDONED"]);
 export const IDEA_STATUS = Object.freeze(["NEW", "EXPLORING", "PARKED", "DONE", "DROPPED"]);
-const SECRET = /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)|\bsk-[A-Za-z0-9_-]{20,}|\bAKIA[0-9A-Z]{16}\b|\bghp_[A-Za-z0-9]{30,}/g;
+const SECRET = /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)|(?<![A-Za-z0-9])sk-[A-Za-z0-9_-]{20,}|(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}\b|(?<![A-Za-z0-9])ghp_[A-Za-z0-9]{30,}/g;
 const redact = s => { SECRET.lastIndex = 0; return String(s ?? "").replace(SECRET, "[redacted]"); };
 const rid = p => p + crypto.randomBytes(6).toString("hex");
 /** Tags are lower-case, 1-32 chars of letters/digits/-/_ ; '#Foo Bar' -> 'foo-bar'. Duplicates are merged. */
@@ -25,8 +26,8 @@ export function normTags(tags) {
 }
 
 export function createNotesOrganizer({ file = null, now = () => new Date().toISOString() } = {}) {
-  const store = createStore({ file, init: () => ({ items: {} }) }), d = store.data;
-  const own = (id, tenantId, kind = null) => { const x = d.items[id]; return x && x.tenantId === tenantId && (!kind || x.kind === kind) ? x : null; };
+  const store = createStore({ file, init: () => ({ items: {} }), mode: 0o600 }), d = store.data;
+  const own = (id, tenantId, kind = null) => { const x = ownProp(d.items, id); return x && x.tenantId === tenantId && (!kind || x.kind === kind) ? x : null; };
   const count = () => Object.keys(d.items).length;
   const tenantItems = (tenantId, kind) => Object.values(d.items).filter(x => x.tenantId === tenantId && (!kind || x.kind === kind));
   const pub = ({ tenantId: _t, ...x }) => clone(x);

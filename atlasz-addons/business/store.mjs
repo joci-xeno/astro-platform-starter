@@ -4,7 +4,15 @@ import path from "node:path";
 
 export function createStore({ file = null, init = () => ({}), mode = null } = {}) {
   let data = init();
-  if (file && fs.existsSync(file)) { try { data = JSON.parse(fs.readFileSync(file, "utf8")); } catch { throw new Error("STORE_UNREADABLE:" + path.basename(file)); } }
+  if (file && fs.existsSync(file)) {
+    const bad = () => new Error("STORE_UNREADABLE:" + path.basename(file));
+    let loaded; try { loaded = JSON.parse(fs.readFileSync(file, "utf8")); } catch { throw bad(); }
+    // Shape check against the empty store: the root and every top-level collection must have the kind the engine expects ({} / [] / number), otherwise the file is refused, never "repaired".
+    const kind = v => (Array.isArray(v) ? "array" : v === null ? "null" : typeof v), tpl = data;
+    if (kind(loaded) !== kind(tpl)) throw bad();
+    if (kind(tpl) === "object") for (const k of Object.keys(tpl)) { if (k in loaded ? (kind(tpl[k]) !== "null" && kind(loaded[k]) !== kind(tpl[k])) : false) throw bad(); if (!(k in loaded)) loaded[k] = tpl[k]; }
+    data = loaded;
+  }
   const save = () => { if (!file) return; fs.mkdirSync(path.dirname(file), { recursive: true }); const t = file + ".tmp"; fs.writeFileSync(t, JSON.stringify(data), mode ? { mode } : undefined); fs.renameSync(t, file); };
   return { get data() { return data; }, save };
 }

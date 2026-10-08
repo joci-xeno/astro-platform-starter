@@ -7,8 +7,7 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { createControlCenterCore } from "./core.mjs";
-import { createEventStream } from "../atlasz-addons/event-stream.mjs";
-import { readAuditFile } from "../atlasz-addons/audit-chain.mjs";
+import { createEventStream, createChainTail } from "../atlasz-addons/event-stream.mjs";
 
 const PUBLIC = path.join(path.dirname(fileURLToPath(import.meta.url)), "public");
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml" };
@@ -38,7 +37,7 @@ export function createControlCenterServer(opts = {}) {
     req.on("error", reject);
   });
 
-  const BB = path.join(opts.stateDir ?? ".", "brain", "blackbox.jsonl"), stream = createEventStream({ read: () => (fs.existsSync(BB) ? readAuditFile(BB) : []) });
+  const BB = path.join(opts.stateDir ?? ".", "brain", "blackbox.jsonl"), stream = createEventStream({ read: createChainTail(BB).read });
   const server = http.createServer(async (req, res) => {
     try {
       const host = String(req.headers.host || "");
@@ -70,14 +69,17 @@ export function createControlCenterServer(opts = {}) {
     } catch (e) { return send(res, 400, { error: String(e.message) }); }
   });
   const listen = (p = 0) => new Promise(resolve => server.listen(p, "127.0.0.1", () => { port = server.address().port; resolve({ port, token, url: "http://127.0.0.1:" + port + "/#" + token }); }));
-  const close = async () => { stream.closeAll(); await core.stopRuntime(); await new Promise(r => server.close(r)); };
+  // Optional scheduler (off by default): runs due scheduled workflows. Same gates as a manual tick (kill switch/safe mode are checked inside the engine); overlapping ticks are skipped.
+  let schedBusy = false, schedTimer = null; const schedMs = Number(opts.schedulerMs ?? 0);
+  if (schedMs >= 1000) { schedTimer = setInterval(async () => { if (schedBusy) return; schedBusy = true; try { await core.workbenchAction({ op: "workflow.tick", args: {} }); } catch { /* next interval retries */ } finally { schedBusy = false; } }, schedMs); schedTimer.unref?.(); }
+  const close = async () => { if (schedTimer) clearInterval(schedTimer); stream.closeAll(); await core.stopRuntime(); await new Promise(r => server.close(r)); };
   return { core, server, listen, close, token };
 }
 
 // Direct launch (used by the Electron shell and by `npm run control-center` for development in a normal browser).
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const base = process.env.ATLASZ_HOME || path.join(process.env.APPDATA || path.join(process.env.HOME || ".", ".config"), "ATLASZ");
-  const cc = createControlCenterServer({ stateDir: path.join(base, "state"), configDir: path.join(base, "config"), port: Number(process.env.ATLASZ_RUNTIME_PORT || 8080) });
+  const cc = createControlCenterServer({ stateDir: path.join(base, "state"), configDir: path.join(base, "config"), port: Number(process.env.ATLASZ_RUNTIME_PORT || 8080), schedulerMs: Number(process.env.ATLASZ_SCHEDULER_MS || 0) });
   cc.listen(Number(process.env.ATLASZ_CC_PORT || 0)).then(i => {
     console.log("ATLASZ Control Center: " + i.url);
     // Interim launcher (no Electron): open the default browser on the token URL. Set ATLASZ_OPEN_BROWSER=0 to disable.

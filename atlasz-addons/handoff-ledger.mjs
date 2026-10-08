@@ -9,18 +9,21 @@
 import crypto from "node:crypto";
 import { createStore, clone } from "./business/store.mjs";
 import { AGENT_ID_RE } from "./agent-tool-policy.mjs";
+import { okName, own } from "./safe-keys.mjs";
 
 export const LIMITS = Object.freeze({ perAgentOpen: 3, maxOpen: 200, maxTasks: 5000, maxDeps: 10, maxArtifacts: 10, maxSummary: 300, maxEvents: 2000, maxPayloadChars: 20000 });
 const OPEN = new Set(["ASSIGNED", "IN_PROGRESS", "HANDOFF_PENDING", "VERIFYING"]), RETRYABLE = new Set(["FAILED", "CANCELLED"]);
 const KIND = /^[a-z][a-z0-9._-]{0,39}$/, TASK = /^[A-Za-z0-9][A-Za-z0-9._-]{0,59}$/, TENANT = /^[A-Za-z0-9._-]{1,64}$/, HASH = /^[0-9a-f]{64}$/;
 const rosterOk = a => typeof a === "string" && AGENT_ID_RE.test(a);
 const canon = v => (Array.isArray(v) ? "[" + v.map(canon).join(",") + "]" : v && typeof v === "object" ? "{" + Object.keys(v).sort().map(k => JSON.stringify(k) + ":" + canon(v[k])).join(",") + "}" : JSON.stringify(v));
-export const fingerprint = (kind, payload) => crypto.createHash("sha256").update(kind + "\0" + canon(payload ?? null)).digest("hex");
+// Duplicate detection compares MEANING, not spelling: strings are NFKC-normalised, trimmed, whitespace-collapsed and case-folded; undefined/NaN/Infinity fields count as absent/null; key order is irrelevant.
+const norm = v => (typeof v === "string" ? v.normalize("NFKC").replace(/\s+/g, " ").trim().toLowerCase() : typeof v === "number" ? (Number.isFinite(v) ? v : null) : Array.isArray(v) ? v.map(x => norm(x === undefined ? null : x)) : v && typeof v === "object" ? Object.fromEntries(Object.keys(v).filter(k => v[k] !== undefined).map(k => [k.normalize("NFKC").trim().toLowerCase(), norm(v[k])])) : v);
+export const fingerprint = (kind, payload) => crypto.createHash("sha256").update(kind + "\0" + canon(norm(payload ?? null))).digest("hex");
 
 export function createHandoffLedger({ file = null, isStopped = () => false, now = () => Date.now(), limits = {} } = {}) {
   const L = { ...LIMITS, ...limits }, store = createStore({ file, init: () => ({ tenants: {} }), mode: 0o600 }), d = store.data;
-  const T = tenantId => { if (typeof tenantId !== "string" || !TENANT.test(tenantId)) throw new Error("TENANT_INVALID"); return (d.tenants[tenantId] ??= { tasks: {}, events: [], seq: 0 }); };
-  const peek = tenantId => (typeof tenantId === "string" && TENANT.test(tenantId) ? d.tenants[tenantId] ?? null : null);
+  const T = tenantId => { if (typeof tenantId !== "string" || !okName(TENANT, tenantId)) throw new Error("TENANT_INVALID"); return (d.tenants[tenantId] ??= { tasks: {}, events: [], seq: 0 }); };
+  const peek = tenantId => (typeof tenantId === "string" && okName(TENANT, tenantId) ? own(d.tenants, tenantId) ?? null : null);
   const stopped = () => { try { return Boolean(isStopped()); } catch { return true; } };
   const ev = (t, task, type, by, extra = {}) => { t.events.push({ n: ++t.seq, at: new Date(now()).toISOString(), task, type, by, ...extra }); if (t.events.length > L.maxEvents) t.events.splice(0, t.events.length - L.maxEvents); };
   const guard = () => (stopped() ? { ok: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" } : null);

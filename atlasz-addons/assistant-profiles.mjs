@@ -8,6 +8,7 @@ import crypto from "node:crypto";
 import { createStore, clone } from "./business/store.mjs";
 import { redactSecrets, INJECTION_PATTERNS } from "./text-compare.mjs";
 import { TOOL_POLICY, ROLES, permissionFor } from "./agent-tool-policy.mjs";
+import { okName, own } from "./safe-keys.mjs";
 
 export const LIMITS = Object.freeze({ maxProfiles: 50, maxVersions: 10, maxInstructions: 2000, maxName: 60, maxTools: 40, maxSkills: 20, maxScopes: 20 });
 const ID = /^[a-z][a-z0-9-]{0,39}$/, TOOLNAME = /^[a-z][a-z0-9._-]{0,59}$/, SCOPE = /^[a-z][a-z0-9:._-]{0,59}$/, TENANT = /^[A-Za-z0-9._-]{1,64}$/;
@@ -20,14 +21,14 @@ export const defaultGrantable = (role, policy = TOOL_POLICY) => Object.keys(poli
 
 export function createProfiles({ file = null, grantable = defaultGrantable, skillExists = () => true, now = () => Date.now() } = {}) {
   const store = createStore({ file, init: () => ({ tenants: {} }), mode: 0o600 }), d = store.data;
-  const T = tenantId => { if (typeof tenantId !== "string" || !TENANT.test(tenantId)) throw new Error("TENANT_INVALID"); return (d.tenants[tenantId] ??= { profiles: {} }); };
-  const peek = tenantId => (typeof tenantId === "string" && TENANT.test(tenantId) ? d.tenants[tenantId] ?? null : null);
+  const T = tenantId => { if (typeof tenantId !== "string" || !okName(TENANT, tenantId)) throw new Error("TENANT_INVALID"); return (d.tenants[tenantId] ??= { profiles: {} }); };
+  const peek = tenantId => (typeof tenantId === "string" && okName(TENANT, tenantId) ? own(d.tenants, tenantId) ?? null : null);
   const union = () => new Set(ROLES.flatMap(r => { try { return grantable(r); } catch { return []; } }));
   const list = (arr, max, re, what) => (Array.isArray(arr) && arr.length <= max && arr.every(x => typeof x === "string" && re.test(x)) ? null : what);
 
   function validate(inp) {
     for (const k of Object.keys(inp ?? {})) if (!FIELDS.has(k)) return { ok: false, reason: "UNKNOWN_FIELD:" + String(k).slice(0, 40) };           // e.g. agents, budget, network, credentials
-    if (typeof inp.id !== "string" || !ID.test(inp.id)) return { ok: false, reason: "PROFILE_ID_INVALID" };
+    if (!okName(ID, inp.id)) return { ok: false, reason: "PROFILE_ID_INVALID" };
     if (typeof inp.name !== "string" || !inp.name.trim() || inp.name.length > LIMITS.maxName) return { ok: false, reason: "NAME_INVALID" };
     if (typeof inp.instructions !== "string" || !inp.instructions.trim() || inp.instructions.length > LIMITS.maxInstructions) return { ok: false, reason: "INSTRUCTIONS_INVALID" };
     if (INJECTION_PATTERNS.some(p => p.test(inp.instructions)) || INJECTION_PATTERNS.some(p => p.test(inp.name))) return { ok: false, reason: "INSTRUCTIONS_LOOK_LIKE_INJECTION" };
@@ -39,7 +40,7 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
   }
   function save(tenantId, inp, how) {
     if (inp?.actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" };
-    const v = validate(inp); if (!v.ok) return v; const t = T(tenantId), cur = t.profiles[v.def.id];
+    const v = validate(inp); if (!v.ok) return v; const t = T(tenantId), cur = own(t.profiles, v.def.id);
     if (!cur && Object.keys(t.profiles).length >= LIMITS.maxProfiles) return { ok: false, reason: "TOO_MANY_PROFILES" };
     const hash = hashOf(v.def); if (cur && cur.versions.at(-1).hash === hash) return { ok: true, id: v.def.id, version: cur.versions.at(-1).version, unchanged: true };
     const ver = { version: (cur?.nextVersion ?? 1), hash, definition: v.def, at: new Date(now()).toISOString(), how };
@@ -50,19 +51,19 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
   const create = (tenantId, inp) => save(tenantId, inp, "SAVE");
   function rollback(tenantId, id, version, { actor } = {}) {
     if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" };
-    const p = peek(tenantId)?.profiles[id]; if (!p) return { ok: false, reason: "PROFILE_NOT_FOUND" }; const v = p.versions.find(x => x.version === version); if (!v) return { ok: false, reason: "VERSION_NOT_FOUND" };
+    const p = own(peek(tenantId)?.profiles, id); if (!p) return { ok: false, reason: "PROFILE_NOT_FOUND" }; const v = p.versions.find(x => x.version === version); if (!v) return { ok: false, reason: "VERSION_NOT_FOUND" };
     if (hashOf(v.definition) !== v.hash) return { ok: false, reason: "STORED_VERSION_TAMPERED" };
     return save(tenantId, { ...clone(v.definition), actor: "OWNER" }, "ROLLBACK_TO_" + version);   // re-validated against today's grants, stored as a NEW version
   }
   function remove(tenantId, id, { actor } = {}) { if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" }; const t = peek(tenantId); if (!t?.profiles[id]) return { ok: false, reason: "PROFILE_NOT_FOUND" }; delete t.profiles[id]; store.save(); return { ok: true }; }
   const summary = p => { const v = p.versions.at(-1); return { id: p.id, name: v.definition.name, version: v.version, hash: v.hash, versions: p.versions.map(x => x.version), tools: v.definition.tools.length, skills: v.definition.skills.length, memoryScopes: v.definition.memoryScopes.length }; };
   const listAll = tenantId => Object.values(peek(tenantId)?.profiles ?? {}).map(summary);
-  function get(tenantId, id) { const p = peek(tenantId)?.profiles[id]; if (!p) return { ok: false, reason: "PROFILE_NOT_FOUND" }; const v = p.versions.at(-1); return { ok: true, profile: { ...summary(p), definition: clone(v.definition), history: p.versions.map(x => ({ version: x.version, hash: x.hash, at: x.at, how: x.how })) } }; }
+  function get(tenantId, id) { const p = own(peek(tenantId)?.profiles, id); if (!p) return { ok: false, reason: "PROFILE_NOT_FOUND" }; const v = p.versions.at(-1); return { ok: true, profile: { ...summary(p), definition: clone(v.definition), history: p.versions.map(x => ({ version: x.version, hash: x.hash, at: x.at, how: x.how })) } }; }
 
   /** Effective capabilities for a role: the stored lists narrowed by today's owner grants. Revoked tools / vanished skills are reported, not silently kept. */
   function resolve(tenantId, id, { role } = {}) {
     if (!ROLES.includes(role)) return { ok: false, reason: "ROLE_INVALID" };
-    const p = peek(tenantId)?.profiles[id]; if (!p) return { ok: false, reason: "PROFILE_NOT_FOUND" }; const v = p.versions.at(-1);
+    const p = own(peek(tenantId)?.profiles, id); if (!p) return { ok: false, reason: "PROFILE_NOT_FOUND" }; const v = p.versions.at(-1);
     if (hashOf(v.definition) !== v.hash) return { ok: false, reason: "STORED_VERSION_TAMPERED" };
     let g = new Set(); try { g = new Set(grantable(role)); } catch { g = new Set(); }
     const tools = v.definition.tools.filter(t => g.has(t)), skills = v.definition.skills.filter(s => { try { return skillExists(s) === true; } catch { return false; } });

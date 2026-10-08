@@ -16,7 +16,7 @@ export const LIMITS = Object.freeze({ maxPrototypes: 100, maxIdea: 200, maxText:
 const NAME = /^[a-z][a-z0-9-]{1,40}$/, ROUTE = /^\/[a-z0-9_/-]{0,40}$/, PRINTABLE = /^[^\u0000-\u001f\u007f\u2028\u2029]*$/;
 const OPS = ["slugify", "titleCase", "wordCount", "reverseWords"];
 
-const line = (v, max, reason, { empty = false } = {}) => (typeof v === "string" && (empty || v.trim()) && v.length <= max && PRINTABLE.test(v) ? { ok: true, v: redactSecrets(v.trim()) } : { ok: false, reason });
+const line = (v, max, reason, { empty = false } = {}) => (typeof v === "string" && (empty || v.trim()) && v.length <= max && PRINTABLE.test(v) && v.isWellFormed() ? { ok: true, v: redactSecrets(v.trim()) } : { ok: false, reason });
 const esc = s => s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const J = JSON.stringify;
 
@@ -50,7 +50,7 @@ const TEMPLATES = {
     title: "HTTP route handler", describe: "A pure request handler for fixed GET routes (no server is started).", params: { routes: `1-${LIMITS.maxRoutes} of { path: "/x", body: "text" }` },
     check(p) {
       const r = p.routes; if (!Array.isArray(r) || !r.length || r.length > LIMITS.maxRoutes) return { ok: false, reason: "ROUTES_INVALID" }; const out = [];
-      for (const x of r) { if (!x || typeof x !== "object" || typeof x.path !== "string" || !ROUTE.test(x.path)) return { ok: false, reason: "ROUTE_PATH_INVALID" }; const b = line(x.body, LIMITS.maxRouteBody, "ROUTE_BODY_INVALID"); if (!b.ok) return b; out.push({ path: x.path, body: b.v }); }
+      for (const x of r) { if (!x || typeof x !== "object" || typeof x.path !== "string" || !ROUTE.test(x.path)) return { ok: false, reason: "ROUTE_PATH_INVALID" }; if (x.path === "/__missing__" || x.path === "/__proto__") return { ok: false, reason: "ROUTE_PATH_RESERVED" }; const b = line(x.body, LIMITS.maxRouteBody, "ROUTE_BODY_INVALID"); if (!b.ok) return b; out.push({ path: x.path, body: b.v }); }
       if (new Set(out.map(x => x.path)).size !== out.length) return { ok: false, reason: "ROUTE_DUPLICATE" }; return { ok: true, p: { routes: out } };
     },
     build: p => ({
@@ -60,7 +60,7 @@ const TEMPLATES = {
   },
   "static-page": {
     title: "Static page", describe: "One accessible HTML page (lang, title, viewport, high-contrast colours, escaped text).", params: { title: "text", heading: "text", text: "text" },
-    check(p) { const o = {}; for (const k of ["title", "heading", "text"]) { const r = line(p[k], LIMITS.maxText, k.toUpperCase() + "_INVALID"); if (!r.ok) return r; o[k] = r.v; } return { ok: true, p: o }; },
+    check(p) { const o = {}; for (const k of ["title", "heading", "text"]) { const r = line(p[k], LIMITS.maxText, k.toUpperCase() + "_INVALID"); if (!r.ok) return r; if (/https?:\/\/|\bon[a-z]+\s*=/i.test(r.v)) return { ok: false, reason: k.toUpperCase() + "_HAS_URL_OR_SCRIPT" }; o[k] = r.v; } return { ok: true, p: o }; },
     build: p => ({
       "index.html": `<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>${esc(p.title)}</title>\n<link rel="stylesheet" href="style.css">\n</head>\n<body>\n<main>\n<h1>${esc(p.heading)}</h1>\n<p>${esc(p.text)}</p>\n</main>\n</body>\n</html>\n`,
       "style.css": `:root { --bg: #ffffff; --ink: #111111; }\nbody { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, sans-serif; }\nmain { max-width: 40rem; margin: 2rem auto; padding: 0 1rem; }\n`,
@@ -72,7 +72,7 @@ const TEMPLATES = {
 const sha = s => crypto.createHash("sha256").update(s).digest("hex");
 export const templateNames = () => Object.keys(TEMPLATES);
 
-export function createPrototypeBuilder({ repoRoot, file = null, now = () => Date.now(), run = runRepoTests } = {}) {
+export function createPrototypeBuilder({ repoRoot, file = null, now = () => Date.now(), run = runRepoTests, isStopped = () => false } = {}) {
   if (typeof repoRoot !== "string" || !repoRoot) throw new Error("REPO_ROOT_REQUIRED");
   const store = createStore({ file, init: () => ({ prototypes: {} }), mode: 0o600 }), d = store.data;
   const owner = actor => (actor === "OWNER" ? null : { ok: false, reason: "ONLY_OWNER_MAY_BUILD_PROTOTYPES" });
@@ -93,6 +93,8 @@ export function createPrototypeBuilder({ repoRoot, file = null, now = () => Date
 
   function generate(spec, { actor } = {}) {
     const no = owner(actor); if (no) return no;
+    let stopped = true; try { stopped = Boolean(isStopped()); } catch { /* fail closed */ }
+    if (stopped) return { ok: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" };
     const p = prepare(spec); if (!p.ok) return p;
     if (Object.hasOwn(d.prototypes, p.name) || fs.existsSync(path.join(repoRoot, p.name))) return { ok: false, reason: "PROTOTYPE_EXISTS" };
     if (Object.keys(d.prototypes).length >= LIMITS.maxPrototypes) return { ok: false, reason: "TOO_MANY_PROTOTYPES" };
@@ -112,7 +114,10 @@ export function createPrototypeBuilder({ repoRoot, file = null, now = () => Date
     const m = Object.hasOwn(d.prototypes, name) ? d.prototypes[name] : null; if (!m) return { ok: false, reason: "PROTOTYPE_NOT_FOUND" };
     const a = analyzeRepo(path.join(repoRoot, name)); if (!a.ok) return { ok: true, name, template: m.template, status: "FOLDER_UNREADABLE", reason: a.reason };
     let s = "GENERATED_UNTESTED";
-    if (m.tested) s = m.tested.hash !== a.hash ? "MODIFIED_AFTER_TEST" : m.tested.passed ? "TESTS_PASSED_IN_SANDBOX" : "TESTS_FAILED";
+    const testsChanged = m.files.filter(f => f.path.startsWith("tests/")).some(f => { try { return sha(fs.readFileSync(path.join(repoRoot, name, f.path), "utf8")) !== f.sha256; } catch { return true; } })
+      || a.testFiles.some(t => !m.files.some(f => f.path === t));                              // a replaced, emptied or additional test file means "passed" no longer says what it used to
+    if (testsChanged) s = "TESTS_MODIFIED";
+    else if (m.tested) s = m.tested.hash !== a.hash ? "MODIFIED_AFTER_TEST" : m.tested.passed ? "TESTS_PASSED_IN_SANDBOX" : "TESTS_FAILED";
     else if (m.generatedHash !== a.hash) s = "MODIFIED_BEFORE_TEST";
     return { ok: true, name, template: m.template, idea: m.idea, createdAt: m.createdAt, status: s, hash: a.hash, tested: m.tested ? { at: m.tested.at, passed: m.tested.passed, ran: m.tested.ran, failed: m.tested.failed, hash: m.tested.hash } : null, note: "Sandbox prototype. TESTS_PASSED_IN_SANDBOX is not a production-readiness claim." };
   }
@@ -126,6 +131,16 @@ export function createPrototypeBuilder({ repoRoot, file = null, now = () => Date
     m.tested = { at: new Date(now()).toISOString(), hash: a.hash, passed, ran: r.ran, failed: r.failed }; store.save();
     return { ok: true, name, status: status(name).status, ran: r.ran, passed: r.passed, failed: r.failed, results: r.results, isolation: r.isolation };
   }
+  /** Static-page preview for a sandboxed iframe (sandbox="" => no scripts, no forms, no navigation, unique origin). The page is read as found on disk, so it is untrusted; a CSP is injected as well. */
+  function previewPage(name) {
+    const m = Object.hasOwn(d.prototypes, name) ? d.prototypes[name] : null; if (!m) return { ok: false, reason: "PROTOTYPE_NOT_FOUND" };
+    if (m.template !== "static-page") return { ok: false, reason: "PREVIEW_ONLY_FOR_STATIC_PAGES" };
+    const root = path.join(repoRoot, name); let html, css;
+    try { const st = fs.lstatSync(path.join(root, "index.html")); if (!st.isFile() || st.size > 100000) return { ok: false, reason: "PAGE_UNAVAILABLE" }; html = fs.readFileSync(path.join(root, "index.html"), "utf8"); const cs = fs.lstatSync(path.join(root, "style.css")); css = cs.isFile() && cs.size <= 20000 ? fs.readFileSync(path.join(root, "style.css"), "utf8") : ""; } catch { return { ok: false, reason: "PAGE_UNAVAILABLE" }; }
+    const csp = '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src data:; base-uri \'none\'; form-action \'none\'">';
+    const doc = html.replace(/<link[^>]*rel=["']stylesheet["'][^>]*>/i, () => "<style>" + css.replace(/<\/style/gi, "<\\/style") + "</style>").replace(/<head>/i, () => "<head>" + csp);
+    return { ok: true, srcdoc: doc, sandbox: "", bytes: Buffer.byteLength(doc), sha256: sha(doc), status: status(name).status, untrusted: true, note: "Rendered in an iframe with sandbox=\"\" and a restrictive CSP: no script, no network, no navigation." };
+  }
   const list = () => Object.keys(d.prototypes).sort().map(n => { const s = status(n); return { name: n, template: d.prototypes[n].template, status: s.status ?? "UNKNOWN" }; });
-  return { templates, preview, generate, status, test, list };
+  return { templates, preview, previewPage, generate, status, test, list };
 }

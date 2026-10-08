@@ -1,11 +1,12 @@
 // Adaptive reasoning allocation (85-capability programme: C10). Chooses HOW MUCH reasoning/verification a task gets from its complexity, risk and budget.
 // Pure, deterministic policy: no model call, no spend, no randomness. It never raises a budget: when the chosen depth needs a paid model and the approved budget is 0,
 // the answer is proceed:false + requiresSpend:true (the owner decides), not a silent downgrade of a risky task. Unknown or invalid risk is treated as HIGH (fail closed).
+import { okName, own } from "./safe-keys.mjs";
 export const RISKS = Object.freeze(["LOW", "MEDIUM", "HIGH", "CRITICAL"]);
 export const LEVELS = Object.freeze(["LOW", "MEDIUM", "HIGH", "MAX"]);
 const KIND_WEIGHT = Object.freeze({ LOOKUP: 0, SUMMARISE: 1, TRANSFORM: 1, DRAFT: 2, ANALYSE: 3, PLAN: 3, CODE: 3, DECIDE: 4, FINANCIAL: 4 });
 export function complexityScore({ kind = "LOOKUP", inputTokens = 0, constraints = 0, requiresTools = false, steps = 1 } = {}) {
-  const k = KIND_WEIGHT[kind]; if (k === undefined) return { ok: false, reason: "KIND_UNKNOWN" };
+  const k = own(KIND_WEIGHT, kind); if (k === undefined) return { ok: false, reason: "KIND_UNKNOWN" };
   for (const v of [inputTokens, constraints, steps]) if (!Number.isFinite(v) || v < 0) return { ok: false, reason: "NUMBERS_INVALID" };
   const size = inputTokens > 50000 ? 3 : inputTokens > 8000 ? 2 : inputTokens > 1500 ? 1 : 0;
   const score = k + size + Math.min(3, Math.floor(constraints / 3)) + Math.min(3, Math.floor((steps - 1) / 2)) + (requiresTools ? 1 : 0);

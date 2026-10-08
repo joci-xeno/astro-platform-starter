@@ -59,7 +59,7 @@ test("HTTP: workflow end to end - template with real actions, run, per-step resu
     assert.equal((await c.wb("workflow.rewind", { id, toStepId: "note" })).status, 200);
     // restart: instance survives; batch with an invalid item starts nothing
     await c.close(); c = await boot(base);
-    assert.equal((await c.wb("workflow.instance", { id })).result.instance.status, "PAUSED");
+    assert.equal((await c.wb("workflow.instance", { id })).result.instance.status, "DONE", "rewind to the last step was a no-op and changed nothing");
     const bad = await c.wb("workflow.batchCreate", { templateId: "report", items: [{ csv: "a\n1\n" }, { csv: 5 }] }); assert.equal(bad.status, 400); assert.match(bad.error, /ITEM_1_PARAMETER_INVALID:csv/);
     const b = (await c.wb("workflow.batchCreate", { templateId: "report", items: [{ csv: "a,b\n1,2\n" }, { csv: "a,b\n1\n" }, { csv: "a,b\n3,4\n" }], ratePerMinute: 100 })).result.id;
     const br = (await c.wb("workflow.batchRun", { id: b })).result; assert.deepEqual([br.status, br.DONE, br.FAILED], ["DONE_WITH_ERRORS", 2, 1]);
@@ -81,4 +81,15 @@ test("HTTP: page comparison and transcript analysis work on supplied text only a
     assert.equal(t.source, "SUPPLIED_TRANSCRIPT"); assert.equal(t.steps[0].at, "00:01"); assert.equal((await c.wb("transcript.analyze", { transcript: "" })).status, 400);
     assert.equal((await c.wb("nope.op", {})).status, 400);
   } finally { await c.close(); }
+});
+test("HTTP: the optional scheduler runs a due scheduled workflow by itself, exactly once per period; off by default", async () => {
+  const base = tmp("b1s-"), stateDir = path.join(base, "s"), configDir = path.join(base, "c"); fs.mkdirSync(stateDir, { recursive: true });
+  const mk = async schedulerMs => { const cc = createControlCenterServer({ stateDir, configDir, port: await freePort(), schedulerMs }); const { port, token } = await cc.listen(); const wb = async (op, args) => JSON.parse((await raw(port, "/api/workbench/action", { method: "POST", headers: { host: "127.0.0.1:" + port, "content-type": "application/json", "x-atlasz-token": token }, body: JSON.stringify({ op, args }) })).body); return { cc, wb }; };
+  let a = await mk(0);
+  try {
+    await a.wb("workflow.save", { id: "cron", name: "cron", steps: [{ id: "n", action: "notes.addNote", args: { title: "tick", text: "scheduled" } }], schedule: { everyMinutes: 60, params: {} } });
+    await new Promise(r => setTimeout(r, 1300)); assert.equal((await a.wb("workflow.instances", {})).result.instances.length, 0, "scheduler off by default");
+    await a.cc.close(); a = await mk(1000); await new Promise(r => setTimeout(r, 2600));
+    const list = (await a.wb("workflow.instances", {})).result.instances; assert.equal(list.length, 1, "ran once, period consumed"); assert.equal(list[0].status, "DONE");
+  } finally { await a.cc.close(); rm(base); }
 });

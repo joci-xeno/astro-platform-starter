@@ -9,6 +9,7 @@ import { spawn } from "node:child_process";
 import { restrictedNodeCommand } from "./restricted-node.mjs";
 import { satisfies, parseVersion } from "./update-center.mjs";
 import { createAuditChain } from "./audit-chain.mjs";
+import { okName, own } from "./safe-keys.mjs";
 
 export const PLUGIN_KINDS = Object.freeze(["PLUGIN", "EXTENSION", "MODULE", "THEME", "SKIN"]);
 export const GRANTABLE_PERMISSIONS = Object.freeze(["READ_STATE", "WRITE_STATE", "NETWORK", "EXTERNAL_ACTION", "FILESYSTEM_PLUGIN_DIR", "UI_THEME"]);
@@ -20,7 +21,7 @@ export function validateManifest(m, { atlaszVersion = "7.3.0" } = {}) {
   const problems = [];
   if (!m || typeof m !== "object") return { ok: false, problems: ["MANIFEST_NOT_OBJECT"] };
   if (m.schema !== 1) problems.push("UNSUPPORTED_SCHEMA");
-  if (typeof m.id !== "string" || !/^[a-z][a-z0-9-]{1,48}$/.test(m.id)) problems.push("BAD_ID");
+  if (typeof m.id !== "string" || !okName(/^[a-z][a-z0-9-]{1,48}$/, m.id)) problems.push("BAD_ID");
   if (typeof m.name !== "string" || !m.name) problems.push("NAME_REQUIRED");
   if (!parseVersion(m.version)) problems.push("BAD_VERSION");
   if (!PLUGIN_KINDS.includes(m.kind)) problems.push("BAD_KIND");
@@ -43,8 +44,13 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
   const stateFile = path.join(stateDir, "plugins-state.json");
   const audit = createAuditChain({ filePath: path.join(stateDir, "plugins-audit.jsonl"), now });
   let S = { enabled: {}, health: {}, theme: null };
-  if (fs.existsSync(stateFile)) { try { S = { ...S, ...JSON.parse(fs.readFileSync(stateFile, "utf8")) }; } catch { /* unreadable state: everything starts disabled (fail closed) */ } }
-  const save = () => { const t = stateFile + ".tmp"; fs.writeFileSync(t, JSON.stringify(S)); fs.renameSync(t, stateFile); };
+  let unreadable = false;                                                                             // a state file we cannot read is evidence to keep, never to overwrite: everything stays disabled and nothing is written
+  if (fs.existsSync(stateFile)) {
+    try { const j = JSON.parse(fs.readFileSync(stateFile, "utf8")); if (j === null || typeof j !== "object" || Array.isArray(j) || (j.enabled !== undefined && (typeof j.enabled !== "object" || j.enabled === null || Array.isArray(j.enabled))) || (j.health !== undefined && (typeof j.health !== "object" || j.health === null || Array.isArray(j.health)))) throw new Error("SHAPE"); S = { ...S, ...j }; }
+    catch { unreadable = true; }
+  }
+  const STATE_BAD = { ok: false, reason: "STATE_UNREADABLE:plugins-state.json" };
+  const save = () => { if (unreadable) return; const t = stateFile + ".tmp"; fs.writeFileSync(t, JSON.stringify(S)); fs.renameSync(t, stateFile); };
   const approve = (ap, action, subject) => ownerAuth.verifyApproval(ap, { action, subject });
 
   function scan() {
@@ -65,31 +71,33 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
     return { found, rejected };
   }
   function status(id, p) {
-    const h = S.health[id] ?? { failures: 0 };
+    const h = own(S.health, id) ?? { failures: 0 };
     if (h.quarantined) return "QUARANTINED";
-    if (!S.enabled[id]) return "DISABLED";
+    if (!own(S.enabled, id)) return "DISABLED";
     return h.failures > 0 ? "DEGRADED" : "ENABLED";
   }
   function list() {
     const { found, rejected } = scan();
     return { plugins: [...found.values()].map(({ manifest: m }) => ({ id: m.id, name: m.name, version: m.version, kind: m.kind, permissions: m.permissions, status: status(m.id), failures: S.health[m.id]?.failures ?? 0, lastError: S.health[m.id]?.lastError ?? null, activeTheme: S.theme === m.id })),
-      rejected, activeTheme: S.theme, note: "Plugin code runs in isolated child processes with no secrets; themes are data only." };
+      rejected, activeTheme: S.theme, ...(unreadable ? { stateProblem: "STATE_UNREADABLE:plugins-state.json (kept as found; all plugins stay disabled until the owner repairs or removes the file)" } : {}), note: "Plugin code runs in isolated child processes with no secrets; themes are data only." };
   }
   function enable(id, { ownerApproval = null } = {}) {
+    if (unreadable) return STATE_BAD;
     const p = scan().found.get(id); if (!p) return { ok: false, reason: "UNKNOWN_PLUGIN" };
-    if (S.health[id]?.quarantined) return { ok: false, reason: "QUARANTINED_RESET_REQUIRES_OWNER_APPROVAL" };
+    if (own(S.health, id)?.quarantined) return { ok: false, reason: "QUARANTINED_RESET_REQUIRES_OWNER_APPROVAL" };
     const codeLess = p.manifest.kind === "THEME" || p.manifest.kind === "SKIN";
     if (!codeLess) { const v = approve(ownerApproval, "PLUGIN_ENABLE", id); if (!v.allowed) return { ok: false, reason: "OWNER_APPROVAL_REQUIRED:" + v.reason }; }
     S.enabled[id] = { since: now(), version: p.manifest.version, permissions: p.manifest.permissions }; S.health[id] = { failures: 0 };
     audit.append("PLUGIN_ENABLED", { id, version: p.manifest.version, permissions: p.manifest.permissions }); save(); return { ok: true };
   }
-  function disable(id) { if (!S.enabled[id]) return { ok: true, already: true }; delete S.enabled[id]; if (S.theme === id) S.theme = null; audit.append("PLUGIN_DISABLED", { id }); save(); return { ok: true }; }
+  function disable(id) { if (!own(S.enabled, id)) return { ok: true, already: true }; delete S.enabled[id]; if (S.theme === id) S.theme = null; audit.append("PLUGIN_DISABLED", { id }); save(); return { ok: true }; }
   function resetQuarantine(id, { ownerApproval = null } = {}) {
+    if (unreadable) return STATE_BAD;
     const v = approve(ownerApproval, "PLUGIN_RESET_QUARANTINE", id); if (!v.allowed) return { ok: false, reason: "OWNER_APPROVAL_REQUIRED:" + v.reason };
     S.health[id] = { failures: 0 }; audit.append("PLUGIN_QUARANTINE_RESET", { id }); save(); return { ok: true };
   }
   function fail(id, why) {
-    const h = (S.health[id] ??= { failures: 0 }); h.failures++; h.lastError = String(why).slice(0, 200);
+    const h = (Object.hasOwn(S.health, id) ? S.health[id] : (S.health[id] = { failures: 0 })); h.failures++; h.lastError = String(why).slice(0, 200);
     if (h.failures >= quarantineAfter) { h.quarantined = true; delete S.enabled[id]; if (S.theme === id) S.theme = null; audit.append("PLUGIN_QUARANTINED", { id, why: h.lastError }); }
     else audit.append("PLUGIN_FAILURE", { id, why: h.lastError });
     save();
@@ -98,14 +106,14 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
   function invoke(id, hook, input = {}) {
     return new Promise(resolve => {
       const p = scan().found.get(id);
-      if (!p || !S.enabled[id] || S.health[id]?.quarantined) return resolve({ ok: false, reason: !p ? "UNKNOWN_PLUGIN" : "NOT_ENABLED" });
+      if (!p || !own(S.enabled, id) || own(S.health, id)?.quarantined) return resolve({ ok: false, reason: !p ? "UNKNOWN_PLUGIN" : "NOT_ENABLED" });
       if (!p.manifest.entry) return resolve({ ok: false, reason: "NO_CODE_ENTRY" });
       let out = "", err = "", done = false, timer = null;
       const finish = r => { if (done) return; done = true; clearTimeout(timer); resolve(r); };
       let child;
       // Least privilege (ATLASZ-T3-002): read-only access to the plugin's own directory; write access only with the granted FILESYSTEM_PLUGIN_DIR permission; no network unless NETWORK
       // was granted at enable time; no child processes or workers (Node permission model). A host that cannot restrict Node does not run the hook at all (fails closed, no quarantine).
-      const granted = S.enabled[id]?.permissions ?? [];
+      const granted = own(S.enabled, id)?.permissions ?? [];
       const rc = restrictedNodeCommand({ nodeBin, script: path.join(p.dir, p.manifest.entry), readDirs: [p.dir], writeDirs: granted.includes("FILESYSTEM_PLUGIN_DIR") ? [p.dir] : [], allowNetwork: granted.includes("NETWORK"), env: { ATLASZ_PLUGIN_ID: id, ATLASZ_PLUGIN_HOOK: String(hook) } });
       if (!rc.ok) { audit.append("PLUGIN_HOOK_NOT_RUN", { id, reason: rc.reason }); return finish({ ok: false, reason: rc.reason }); }
       try { child = spawn(rc.cmd, rc.args, { cwd: p.dir, env: rc.env, stdio: ["pipe", "pipe", "pipe"], windowsHide: true }); }
@@ -117,13 +125,14 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
       child.on("close", code => {
         if (done) return;
         if (code !== 0) { fail(id, "EXIT_" + code + ":" + err.split("\n")[0]); return finish({ ok: false, reason: "PLUGIN_CRASHED", exit: code }); }
-        try { const r = JSON.parse(out); if (S.health[id]) S.health[id].failures = 0; save(); finish({ ok: true, result: r }); }
+        try { const r = JSON.parse(out); if (own(S.health, id)) S.health[id].failures = 0; save(); finish({ ok: true, result: r }); }
         catch { fail(id, "INVALID_JSON_OUTPUT"); finish({ ok: false, reason: "INVALID_OUTPUT" }); }
       });
       child.stdin.on("error", () => {}); child.stdin.end(JSON.stringify({ hook, input }));
     });
   }
   function setTheme(id) {
+    if (unreadable) return STATE_BAD;
     if (id === null) { S.theme = null; audit.append("THEME_CLEARED", {}); save(); return { ok: true }; }
     const p = scan().found.get(id); if (!p || !["THEME", "SKIN"].includes(p.manifest.kind)) return { ok: false, reason: "NOT_A_THEME" };
     S.theme = id; S.enabled[id] ??= { since: now(), version: p.manifest.version, permissions: ["UI_THEME"] }; audit.append("THEME_SET", { id }); save(); return { ok: true };

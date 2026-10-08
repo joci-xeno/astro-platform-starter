@@ -117,3 +117,39 @@ test("corrupt manifest fails closed; limits on prototype count", () => {
     assert.equal(b.generate({ template: "csv-to-json", name: "overflow" }, { actor: "OWNER" }).reason, "TOO_MANY_PROTOTYPES");
   } finally { rm(base); }
 });
+test("hardening: parameters that would break the generated tests are refused; the kill switch blocks generate; replaced tests are TESTS_MODIFIED", async () => {
+  const { base, repoRoot, b } = mk(); try {
+    const page = (o) => b.preview({ template: "static-page", name: "pg", params: { title: "t", heading: "h", text: "x", ...o } }).reason;
+    assert.equal(page({ text: "see http://example.com" }), "TEXT_HAS_URL_OR_SCRIPT"); assert.equal(page({ heading: "x onclick=1" }), "HEADING_HAS_URL_OR_SCRIPT"); assert.equal(page({ title: "bad \ud800 lone" }), "TITLE_INVALID"); assert.equal(page({ text: "ok https only" }), undefined);
+    const rt = p => b.preview({ template: "http-handler", name: "ap", params: { routes: [{ path: p, body: "b" }] } }).reason;
+    assert.equal(rt("/__missing__"), "ROUTE_PATH_RESERVED"); assert.equal(rt("/__proto__"), "ROUTE_PATH_RESERVED"); assert.equal(rt("/ok"), undefined);
+    let stop = true; const s = createPrototypeBuilder({ repoRoot: path.join(base, "r2"), isStopped: () => stop }); assert.equal(s.generate(SPECS["csv-to-json"], { actor: "OWNER" }).reason, "OWNER_STOP_OR_SAFE_MODE_ACTIVE"); assert.equal(fs.existsSync(path.join(base, "r2")), false);
+    stop = () => { throw new Error("x"); }; const s2 = createPrototypeBuilder({ repoRoot: path.join(base, "r3"), isStopped: stop }); assert.equal(s2.generate(SPECS["csv-to-json"], { actor: "OWNER" }).reason, "OWNER_STOP_OR_SAFE_MODE_ACTIVE", "fails closed");
+    stop = false; const s3 = createPrototypeBuilder({ repoRoot: path.join(base, "r4"), file: path.join(base, "p3.json"), isStopped: () => stop }); assert.equal(s3.generate(SPECS["csv-to-json"], { actor: "OWNER" }).ok, true);
+    assert.equal(s3.status("csv").status, "GENERATED_UNTESTED");
+    fs.writeFileSync(path.join(base, "r4", "csv", "tests", "extra.test.mjs"), ""); assert.equal(s3.status("csv").status, "TESTS_MODIFIED", "an additional test file"); fs.rmSync(path.join(base, "r4", "csv", "tests", "extra.test.mjs")); assert.equal(s3.status("csv").status, "GENERATED_UNTESTED");
+    const keep = fs.readFileSync(path.join(base, "r4", "csv", "tests", "index.test.mjs"), "utf8"); fs.rmSync(path.join(base, "r4", "csv", "tests", "index.test.mjs")); assert.equal(s3.status("csv").status, "TESTS_MODIFIED", "a deleted test file"); fs.writeFileSync(path.join(base, "r4", "csv", "tests", "index.test.mjs"), keep); assert.equal(s3.status("csv").status, "GENERATED_UNTESTED");
+    fs.writeFileSync(path.join(base, "r4", "csv", "tests", "index.test.mjs"), "import test from 'node:test'; test('x', () => {});\n"); assert.equal(s3.status("csv").status, "TESTS_MODIFIED");
+  } finally { rm(base); }
+});
+test("hardening: a vacuous replacement of the generated tests can never end as TESTS_PASSED_IN_SANDBOX", { skip: !ISOLATED }, async () => {
+  const scr = tmp("scr-"); const { base, repoRoot, b } = mk({ run: o => import("../atlasz-addons/repo-analyzer.mjs").then(m => m.runRepoTests({ ...o, timeoutMs: 20000, scratchRoot: scr })) }); try {
+    b.generate(SPECS["csv-to-json"], { actor: "OWNER" }); fs.writeFileSync(path.join(repoRoot, "csv", "tests", "index.test.mjs"), "import test from 'node:test'; test('vacuous', () => {});\n");
+    const sub = "csv#" + analyzeRepo(path.join(repoRoot, "csv")).hash; const r = await b.test("csv", { ownerAuth: auth, isStopped: () => false, ownerApproval: ap("REPO_TEST_RUN", sub) });
+    assert.equal(r.ok, true); assert.equal(r.status, "TESTS_MODIFIED"); assert.notEqual(b.status("csv").status, "TESTS_PASSED_IN_SANDBOX");
+  } finally { rm(base); rm(scr); }
+});
+test("preview: a static page is returned for a sandboxed iframe with CSS inlined and a CSP; other templates and tampered paths are refused", () => {
+  const { base, repoRoot, b } = mk(); try {
+    b.generate(SPECS["static-page"], { actor: "OWNER" }); b.generate(SPECS["csv-to-json"], { actor: "OWNER" });
+    const p = b.previewPage("page"); assert.equal(p.ok, true); assert.equal(p.sandbox, ""); assert.equal(p.status, "GENERATED_UNTESTED"); assert.match(p.sha256, /^[0-9a-f]{64}$/);
+    assert.match(p.srcdoc, /<head><meta http-equiv="Content-Security-Policy" content="default-src 'none'/); assert.match(p.srcdoc, /<style>:root/); assert.doesNotMatch(p.srcdoc, /<link/); assert.ok(!/<script[ >]/.test(p.srcdoc));
+    assert.equal(b.previewPage("csv").reason, "PREVIEW_ONLY_FOR_STATIC_PAGES"); assert.equal(b.previewPage("nope").reason, "PROTOTYPE_NOT_FOUND"); assert.equal(b.previewPage("__proto__").reason, "PROTOTYPE_NOT_FOUND");
+    fs.writeFileSync(path.join(repoRoot, "page", "style.css"), "body{}</style><script>alert(1)</script>"); const q = b.previewPage("page"); assert.ok(!/<\/style><script/.test(q.srcdoc), "a stylesheet cannot close its own style element"); assert.equal(q.status, "MODIFIED_BEFORE_TEST");
+    fs.writeFileSync(path.join(repoRoot, "page", "style.css"), "b{}".repeat(8000)); assert.doesNotMatch(b.previewPage("page").srcdoc, /b\{\}b\{\}/, "an oversize stylesheet is not inlined");
+    fs.writeFileSync(path.join(repoRoot, "page", "style.css"), "b{}"); assert.match(b.previewPage("page").srcdoc, /<style>b\{\}<\/style>/);
+    fs.rmSync(path.join(repoRoot, "page", "style.css")); fs.symlinkSync("/etc/hostname", path.join(repoRoot, "page", "style.css")); assert.doesNotMatch(b.previewPage("page").srcdoc, new RegExp(fs.readFileSync("/etc/hostname", "utf8").trim()), "a symlinked stylesheet is not followed"); assert.match(b.previewPage("page").srcdoc, /<style><\/style>/);
+    const keep = fs.readFileSync(path.join(repoRoot, "page", "index.html"), "utf8"); fs.writeFileSync(path.join(repoRoot, "page", "index.html"), keep + "x".repeat(100001)); assert.equal(b.previewPage("page").reason, "PAGE_UNAVAILABLE", "oversize page"); fs.writeFileSync(path.join(repoRoot, "page", "index.html"), keep);
+    fs.rmSync(path.join(repoRoot, "page", "index.html")); fs.symlinkSync("/etc/passwd", path.join(repoRoot, "page", "index.html")); assert.equal(b.previewPage("page").reason, "PAGE_UNAVAILABLE", "a symlink is not followed");
+  } finally { rm(base); }
+});

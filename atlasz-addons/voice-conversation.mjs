@@ -11,7 +11,7 @@ import { isTested } from "./probe-evidence.mjs";
 import crypto from "node:crypto";
 
 export const LIMITS = Object.freeze({ maxTurns: 100, idleMs: 5 * 60 * 1000, maxUtteranceChars: 1000, maxReplyChars: 600, retentionDays: 30, maxRetentionDays: 180, maxConversations: 500, audioBytes: 5 * 1024 * 1024 });
-const SECRET = /-----BEGIN [A-Z ]*PRIVATE KEY-----|\bsk-[A-Za-z0-9]{20,}|\bAKIA[0-9A-Z]{16}\b|\bghp_[A-Za-z0-9]{30,}/g;
+const SECRET = /-----BEGIN [A-Z ]*PRIVATE KEY-----|(?<![A-Za-z0-9])sk-[A-Za-z0-9]{20,}|(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}\b|(?<![A-Za-z0-9])ghp_[A-Za-z0-9]{30,}/g;
 const FIXED = new Set(["APPROVAL_ATTEMPT", "OWNER_CONTROL_REQUEST", "BLOCKED_BY_SECURITY", "EMPTY", "GATED"]);   // intents whose reply is never produced by a responder
 const redact = s => String(s ?? "").replace(SECRET, "[redacted]");
 const hasSecret = s => { SECRET.lastIndex = 0; const r = SECRET.test(String(s ?? "")); SECRET.lastIndex = 0; return r; };

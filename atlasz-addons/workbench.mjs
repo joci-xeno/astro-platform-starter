@@ -20,11 +20,12 @@ import { createSuggestions, collectCandidates } from "./suggestions.mjs";
 import { reviewCode } from "./code-review.mjs";
 import { comparePages } from "./text-compare.mjs";
 import { analyzeTranscript } from "./transcript-actions.mjs";
+import { okName, own } from "./safe-keys.mjs";
 
 export const WB_LIMITS = Object.freeze({ csvChars: 400_000, textChars: 400_000, maxChartsReturned: 6 });
 const isObj = v => v && typeof v === "object" && !Array.isArray(v);
 
-export function createWorkbench({ conversationFile = null, memoryFile = null, notesFile = null, workflowFile = null, skillsFile = null, prefsFile = null, profilesFile = null, studyFile = null, suggestionsFile = null, suggestionExtras = () => ({}), gateway = null, tenantId = "JOCI", now, isStopped = () => false } = {}) {
+export function createWorkbench({ conversationFile = null, memoryFile = null, notesFile = null, workflowFile = null, skillsFile = null, prefsFile = null, profilesFile = null, studyFile = null, suggestionsFile = null, suggestionExtras = () => ({}), gateway = null, ownerAuth = null, tenantId = "JOCI", now, isStopped = () => false } = {}) {
   const conv = createConversationStore({ file: conversationFile, ...(now ? { now } : {}) });
   const T = { tenantId };
   const memory = createProjectMemory({ file: memoryFile, ...(now ? { now } : {}) }), notes = createNotesOrganizer({ file: notesFile, ...(now ? { now } : {}) });
@@ -39,7 +40,7 @@ export function createWorkbench({ conversationFile = null, memoryFile = null, no
     "memory.propose": { run: a => { const r = memory.propose(a.projectId, { ...T, actor: "SYSTEM", title: a.title, decision: a.decision, rationale: a.rationale ?? "", session: "workflow" }); if (!r.ok) throw new Error(r.reason); return { id: r.id }; }, idempotent: false, rewindable: false },
   };
   const wf = createWorkflowEngine({ file: workflowFile, actions: wfActions, isStopped, ...(now ? { now } : {}) });
-  const skills = createSkillRegistry({ file: skillsFile, actions: wfActions, isStopped });       // declarative skills; only pure wfActions; the console is the OWNER
+  const skills = createSkillRegistry({ file: skillsFile, actions: wfActions, isStopped, ownerAuth });       // declarative skills; only pure wfActions; the console is the OWNER
   const prefs = createPreferences({ file: prefsFile, ...(now ? { now } : {}) });                  // owner preferences; the console is the OWNER, learning only proposes
   const profiles = createProfiles({ file: profilesFile, skillExists: id => skills.list(T.tenantId).some(k => k.id === id), ...(now ? { now } : {}) });   // configuration for the existing agents only; narrowed by the tool matrix at every use
   const study = createStudy({ file: studyFile, ...(now ? { now } : {}) }), sug = createSuggestions({ file: suggestionsFile, prefs, ...(now ? { now } : {}) });
@@ -125,9 +126,10 @@ export function createWorkbench({ conversationFile = null, memoryFile = null, no
     "skill.actions": () => ({ ok: true, actions: skills.pureActions() }),
     "skill.submit": a => skills.submit({ ...T, id: a.id, name: a.name, description: a.description, params: a.params, steps: a.steps, permissions: a.permissions, tests: a.tests, submittedBy: "OWNER" }),
     "skill.gate": a => skills.runGate(T.tenantId, a.id, a.version),
-    "skill.activate": a => skills.activate(T.tenantId, a.id, a.version, { actor: "OWNER" }),
-    "skill.rollback": a => skills.rollback(T.tenantId, a.id, a.version, { actor: "OWNER" }),
-    "skill.deactivate": a => skills.deactivate(T.tenantId, a.id, { actor: "OWNER" }),
+    "skill.subject": a => { const s = skills.subject(String(a.verb), T.tenantId, a.id, a.version); return s ? { ok: true, subject: s } : { ok: false, reason: "VERSION_NOT_FOUND" }; },
+    "skill.activate": a => skills.activate(T.tenantId, a.id, a.version, { actor: "OWNER", ownerApproval: a.ownerApproval ?? null }),
+    "skill.rollback": a => skills.rollback(T.tenantId, a.id, a.version, { actor: "OWNER", ownerApproval: a.ownerApproval ?? null }),
+    "skill.deactivate": a => skills.deactivate(T.tenantId, a.id, { actor: "OWNER", ownerApproval: a.ownerApproval ?? null }),
     "skill.run": a => skills.run(T.tenantId, a.id, a.params ?? {}),
     "skill.list": () => ({ ok: true, skills: skills.list(T.tenantId) }),
     "skill.get": a => skills.get(T.tenantId, a.id),
@@ -178,7 +180,7 @@ export function createWorkbench({ conversationFile = null, memoryFile = null, no
     "transcript.analyze": a => analyzeTranscript(a.transcript, { summarySentences: a.summarySentences }),
   };
   async function run(op, args = {}) {
-    const f = OPS[op]; if (!f) return { ok: false, reason: "OP_UNKNOWN" };
+    const f = own(OPS, op); if (!f) return { ok: false, reason: "OP_UNKNOWN" };
     if (!isObj(args)) return { ok: false, reason: "ARGS_INVALID" };
     try { return await f(args); } catch (e) { return { ok: false, reason: "OP_FAILED", detail: String(e?.message ?? e).slice(0, 120) }; }
   }

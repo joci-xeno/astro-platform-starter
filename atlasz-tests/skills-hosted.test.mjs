@@ -27,11 +27,15 @@ test("HTTP: skill lifecycle through the real Control Center - drafts cannot run,
   try {
     assert.deepEqual((await c.wb("skill.actions", {})).result.actions.sort(), ["analyst.analyze", "chunk.plan", "effort.choose", "text.compare", "transcript.analyze"], "memory/notes writers are not available to skills");
     assert.equal((await c.post("/api/workbench/action", { op: "skill.list", args: {} }, null)).status, 401, "token required");
+    await c.post("/api/owner-key", { passphrase: "correct horse battery" });
     const sub = (await c.wb("skill.submit", skill)).result; assert.deepEqual([sub.ok, sub.version, sub.status], [true, 1, "SUBMITTED"]);
     assert.equal((await c.wb("skill.run", { id: "csv-rows", params: { csv: "a\n1\n" } })).status >= 400, true, "a draft cannot run");
     assert.equal((await c.wb("skill.activate", { id: "csv-rows", version: 1 })).status >= 400, true, "not activatable before the gate");
     const g = (await c.wb("skill.gate", { id: "csv-rows", version: 1 })).result; assert.equal(g.passed, true, JSON.stringify(g));
-    assert.equal((await c.wb("skill.activate", { id: "csv-rows", version: 1 })).result.ok, true);
+    const noPass = await c.wb("skill.activate", { id: "csv-rows", version: 1 }); assert.equal(noPass.status >= 400, true); assert.equal(noPass.result, undefined, "activation needs the owner passphrase");
+    const forged = await c.wb("skill.activate", { id: "csv-rows", version: 1, ownerApproval: { forged: true } }); assert.equal(forged.status >= 400, true, "an approval supplied by the request is ignored");
+    const wrongPass = await c.wb("skill.activate", { id: "csv-rows", version: 1, passphrase: "not the passphrase" }); assert.equal(wrongPass.status >= 400, true); assert.equal((await c.wb("skill.list", {})).result.skills[0].active, null, "a wrong passphrase activates nothing");
+    assert.equal((await c.wb("skill.activate", { id: "csv-rows", version: 1, passphrase: "correct horse battery" })).result.ok, true);
     const run = (await c.wb("skill.run", { id: "csv-rows", params: { csv: "a,b\n1,2\n3,4\n5,6\n" } })).result; assert.deepEqual([run.ok, run.outputs.an.report.rows], [true, 3]);
     await c.close(); c = await boot(base);
     assert.equal((await c.wb("skill.list", {})).result.skills[0].active, 1, "active version persisted");
@@ -39,7 +43,6 @@ test("HTTP: skill lifecycle through the real Control Center - drafts cannot run,
     // unknown / non-pure action in a submission
     assert.equal((await c.wb("skill.submit", { ...skill, id: "bad", steps: [{ id: "n", action: "notes.addNote", args: { title: "x" } }], permissions: ["notes.addNote"] })).status >= 400, true, "writers are refused");
     // kill switch
-    await c.post("/api/owner-key", { passphrase: "correct horse battery" });
     assert.equal(JSON.parse((await c.post("/api/emergency", { mode: "PAUSE_ALL", passphrase: "correct horse battery" })).body).ok, true);
     const stopped = await c.wb("skill.run", { id: "csv-rows", params: { csv: "a\n1\n" } }); assert.equal(stopped.status >= 400, true); assert.match(JSON.stringify(stopped), /EMERGENCY_STOP_ACTIVE/);
   } finally { await c.close(); rm(base); }
