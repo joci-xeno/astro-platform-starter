@@ -50,6 +50,9 @@ test("Control Center: voice view is honest (BLOCKED, not live); owner reads and 
     const cv = conv.begin({ tenantId: "JOCI", consent: CONSENT, purpose: "briefing" }); await conv.turn(Buffer.from("a"), { conversationId: cv.id, tenantId: "JOCI" }); conv.end({ conversationId: cv.id, tenantId: "JOCI" });
     const v1 = (await call(port, token, "GET", "/api/voice")).body; assert.equal(v1.conversations.length, 1); assert.equal(v1.conversations[0].providerMode, "MOCK"); assert.equal(v1.live, false, "a mock transcript never makes voice live");
     const g = (await post({ op: "get", id: cv.id })).body.result; assert.equal(g.turns[0].intent, "STATUS");
+    const mem = (await post({ op: "remember", id: cv.id, turn: 1 })).body.result; assert.equal(mem.text, "Voice note: what is the status"); assert.deepEqual(mem.tags, ["voice"]); assert.equal(mem.source.type, "OWNER"); assert.equal(mem.source.ref.conversationId, cv.id);
+    assert.equal((await post({ op: "remember", id: cv.id, turn: 9 })).status, 400); assert.equal((await post({ op: "remember", id: "nope", turn: 1 })).status, 400);
+    assert.equal((await call(port, token, "POST", "/api/observations/action", { op: "search", query: "status voice" })).body.result.results.length, 1, "the note is an ordinary, deletable observation");
     assert.equal((await post({ op: "get", id: "nope" })).status, 400); assert.equal((await post({ op: "launch" })).status, 400);
     assert.deepEqual((await post({ op: "delete", id: cv.id })).body.result, { deleted: true, id: cv.id }); assert.ok(!fs.readFileSync(file, "utf8").includes("what is the status"));
     assert.equal((await call(port, token, "GET", "/api/voice")).body.conversations.length, 0);

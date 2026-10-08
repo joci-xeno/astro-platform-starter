@@ -352,6 +352,10 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
       case "get": { const g = c.get(id, { tenantId: KP_T }); if (!g) throw new Error("CONVERSATION_NOT_FOUND"); return g; }
       case "delete": return c.remove(id, { tenantId: KP_T });
       case "purge": return c.purgeExpired({ tenantId: KP_T });
+      case "remember": { // transcript -> memory linkage: the OWNER chooses a turn; it becomes an ordinary observation (consent, retention, correction and deletion all apply). Nothing is linked automatically.
+        const g = c.get(id, { tenantId: KP_T }); if (!g) throw new Error("CONVERSATION_NOT_FOUND"); const t = g.turns.find(x => x.n === a.turn); if (!t || !t.userText) throw new Error("TURN_NOT_FOUND");
+        return obsInst().observe({ text: "Voice note: " + t.userText, kind: "CONTEXT", scope: "PERSONAL", tags: ["voice"], source: { type: "OWNER", ref: { conversationId: g.id, turn: t.n } } }, OW);
+      }
       default: throw new Error("UNKNOWN_VOICE_OP");
     }
   }

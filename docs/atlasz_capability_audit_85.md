@@ -1,6 +1,6 @@
 # ATLASZ V7.3 — 85-capability audit
 
-Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total 85
+Statuses: MISSING 10, PARTIAL 47, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 6, total 85
 
 ## M01 — Universal AI Browser Sidebar — **MISSING**
 - Registry links (candidates): V73-S19-001, V73-S19-002, V73-S19-003, V73-S19-004, V73-S19-005, V73-S19-006
@@ -54,18 +54,18 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 
 ## M06 — Isolated Sandbox Workspace — **PARTIAL**
 - Registry links (candidates): V73-S19-001, V73-S19-002, V73-S19-003, V73-S19-004, V73-S19-005, V73-S19-006
-- Modules: computer-use-fabric.mjs (policy); plugin-manager.mjs (child process, minimal env, timeout)
-- Evidence: plugin-manager.test timeouts/containment
-- Missing: General code execution sandbox with CPU/memory/time/file limits and no network
-- Integration gaps / blockers: No OS-level isolation (namespaces/containers) available to verify here
+- Modules: computer-use-fabric.mjs (policy); plugin-manager.mjs (child process, minimal env, timeout) ; code-sandbox.mjs (separate-process JS/Python runner, detected isolation level, limits, audit)
+- Evidence: plugin-manager.test timeouts/containment; code-sandbox.test (9) + code-sandbox-hosted.test (3) + mutation checks; Linux namespace isolation (no network) verified on this host
+- Missing: Container/VM-grade isolation; Windows has only process limits + timeouts
+- Integration gaps / blockers: Isolation is labelled NAMESPACE or PROCESS_ONLY and is NOT a container or VM; Python filesystem restriction is best effort (audit hook); process-only mode needs argument-bound owner approval
 - Security: Untrusted code must never get secrets; honest label if isolation is process-level only
 - Plan: Build code-sandbox runner (child process, rlimits, scrubbed env, temp dir, output caps) and label isolation level truthfully
 - Tests required: timeout kill, memory cap, env scrub, path escape refused, output cap
 
 ## M07 — Advanced Analyst Mode — **MISSING**
 - Registry links (candidates): V73-S09-020, V73-S26-006, V73-S30-007, ATLASZ-BR-004
-- Modules: doc-extractors.mjs (XLSX/ODS read); tool-fabric.mjs (catalogue 'data-analysis')
-- Evidence: Extractors read spreadsheets as text only
+- Modules: doc-extractors.mjs (XLSX/ODS read); tool-fabric.mjs (catalogue 'data-analysis') ; code-sandbox.mjs (runner only)
+- Evidence: Extractors read spreadsheets as text only; the sandbox exists as a runner, but no spreadsheet/statistics/chart workflow is built on it
 - Missing: Cleaning, calculation, statistics, charts, reproducible reports
 - Integration gaps / blockers: Needs sandbox runner + deterministic calc library
 - Security: Computations must be reproducible and hash-recorded
@@ -83,7 +83,7 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 - Tests required: claim-source linkage, conflict flagging, stale-source detection, no uncited claim marked VERIFIED
 
 ## M09 — Video Intelligence — **EXTERNAL_BLOCKER**
-- Registry links (candidates): V73-S05-012, V73-S05-013, V73-S28-002
+- Registry links (candidates): V73-S05-012, V73-S05-013, V73-S28-002, ATLASZ-PKG84-029, ATLASZ-PKG84-030, ATLASZ-PKG84-031
 - Modules: voice-session.mjs (state machine only)
 - Evidence: None for video
 - Missing: Video/transcript analysis, timestamps, summaries
@@ -134,8 +134,8 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 
 ## C01 — Advanced Software Engineering Agent — **MISSING**
 - Registry links (candidates): V73-S08-001, V73-S08-007, V73-S12-005, V73-S12-006, V73-S16-003, V73-S20-006
-- Modules: tool-fabric.mjs (catalogue 'code','test','github'); regression-eval-suite.mjs; skill-factory.mjs
-- Evidence: Only catalogue entries and an eval suite scaffold
+- Modules: tool-fabric.mjs (catalogue 'code','test','github'); regression-eval-suite.mjs; skill-factory.mjs ; code-sandbox.mjs (runner only)
+- Evidence: Only catalogue entries and an eval suite scaffold; tests/code can be executed in the sandbox; repo analysis/edit/review workflow still not built
 - Missing: Repo analysis, edit, test run, review workflow as governed tools
 - Integration gaps / blockers: No code tools wired; needs sandbox + typed tools
 - Security: Writes only inside a project sandbox; no push without approval
@@ -304,8 +304,8 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 
 ## G05 — Secure Code Execution — **PARTIAL**
 - Registry links (candidates): V73-S02-003, V73-S09-002, V73-S09-013, V73-S09-014, V73-S09-029, V73-S10-001
-- Modules: see M06
-- Evidence: see M06
+- Modules: see M06 ; code-sandbox.mjs
+- Evidence: see M06; sandbox.run / sandbox.run_process_only typed tools; Control Center sandbox view (owner runs are NAMESPACE-only)
 - Missing: see M06
 - Integration gaps / blockers: see M06
 - Security: see M06
@@ -333,9 +333,9 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 - Tests required: citation to source+offset, tenant isolation
 
 ## G08 — Image Understanding — **EXTERNAL_BLOCKER**
-- Registry links (candidates): V73-S03-008, V73-S23-012, V73-S28-001, ATLASZ-CR-007, ATLASZ-OSC-028
-- Modules: doc-extractors.mjs (no OCR)
-- Evidence: Scanned PDFs reported NO_TEXT_LAYER, never faked
+- Registry links (candidates): V73-S03-008, V73-S23-012, V73-S28-001, ATLASZ-CR-007, ATLASZ-OSC-028, ATLASZ-PKG84-029
+- Modules: doc-extractors.mjs (no OCR) ; modality-fabric.mjs (metadata only)
+- Evidence: Scanned PDFs reported NO_TEXT_LAYER, never faked; modality-fabric: PNG/JPEG/GIF/WEBP/BMP identified and parsed for size/EXIF flags (GPS present flagged, coordinates never extracted); NO image understanding: vision slot is EXTERNAL_PROVIDER_REQUIRED
 - Missing: Vision model/OCR
 - Integration gaps / blockers: No provider
 - Security: Images may be personal data
@@ -343,9 +343,9 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 - Tests required: No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.
 
 ## G09 — Video Understanding — **EXTERNAL_BLOCKER**
-- Registry links (candidates): V73-S28-002
-- Modules: none
-- Evidence: None
+- Registry links (candidates): V73-S28-002, ATLASZ-PKG84-029, ATLASZ-PKG84-030
+- Modules: none ; modality-fabric.mjs (MP4 metadata only)
+- Evidence: None; MP4/WebM identified, MP4 duration/size parsed; no video understanding (slot NOT_CONNECTED)
 - Missing: Video model
 - Integration gaps / blockers: No provider
 - Security: Authorized only
@@ -353,7 +353,7 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 - Tests required: No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.
 
 ## G10 — Voice Intelligence — **EXTERNAL_BLOCKER**
-- Registry links (candidates): V73-S05-001, V73-S05-002, V73-S05-003, V73-S05-004, V73-S05-005, V73-S05-006
+- Registry links (candidates): V73-S04-010, V73-S05-001, V73-S05-002, V73-S05-003, V73-S05-004, V73-S05-005
 - Modules: voice-interface.mjs; voice-session.mjs
 - Evidence: voice-session.test: state machine reports BLOCKED_NO_PROVIDER, no LISTEN without probed chain, approvals same as text
 - Missing: Real STT/TTS
@@ -364,8 +364,8 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 
 ## G11 — Image and Video Generation — **EXTERNAL_BLOCKER**
 - Registry links (candidates): V73-S09-024, V73-S22-006, V73-S26-005, V73-S26-006, V73-S28-001, V73-S28-002
-- Modules: tool-fabric.mjs (catalogue)
-- Evidence: None
+- Modules: tool-fabric.mjs (catalogue) ; modality-fabric.mjs (slot only)
+- Evidence: None; image_generation slot exists and refuses paid providers (REFUSED_COST); nothing is generated
 - Missing: Provider interface
 - Integration gaps / blockers: No provider; spend gate
 - Security: Spending needs approval; content labelling
@@ -402,18 +402,18 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 - Plan: Chunker with original-text offsets BUILT (800 chars/120 overlap); codebase indexing not built
 - Tests required: chunk boundary integrity, truncation flagged
 
-## GE02 — Unified Multimodal Understanding — **EXTERNAL_BLOCKER**
-- Registry links (candidates): none
-- Modules: none (text only)
-- Evidence: None
-- Missing: Cross-modal pipeline
-- Integration gaps / blockers: Needs vision/audio/video providers
+## GE02 — Unified Multimodal Understanding — **PARTIAL**
+- Registry links (candidates): ATLASZ-PKG84-029
+- Modules: none (text only) ; modality-fabric.mjs; document-center.mjs; observation-memory.mjs
+- Evidence: None; modality-fabric.test (8) + hosted (3): one envelope for document/image/audio/video metadata with privacy flags; understanding of image/audio/video content needs providers
+- Missing: Content understanding for images, audio and video (OCR/STT/vision providers)
+- Integration gaps / blockers: Built-in analysis is metadata and structure only; provider output would be untrusted and verified:false
 - Security: Privacy class per modality
 - Plan: Modality fabric common envelope
 - Tests required: No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.
 
 ## GE03 — Real-Time Voice Interaction — **EXTERNAL_BLOCKER**
-- Registry links (candidates): V73-S05-001, V73-S05-002, V73-S05-003, V73-S05-004, V73-S05-005, V73-S05-006
+- Registry links (candidates): V73-S04-010, V73-S05-001, V73-S05-002, V73-S05-003, V73-S05-004, V73-S05-005
 - Modules: voice-session.mjs
 - Evidence: State machine (interruption states) tested
 - Missing: Low-latency streaming provider
@@ -452,11 +452,11 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 - Plan: See C02
 - Tests required: No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.
 
-## GE07 — Analytical Code Execution — **MISSING**
+## GE07 — Analytical Code Execution — **PARTIAL**
 - Registry links (candidates): none
-- Modules: see M07/M06
-- Evidence: None
-- Missing: Runner + libraries
+- Modules: see M07/M06 ; code-sandbox.mjs
+- Evidence: None; code runs in the sandbox with the code SHA-256 in a hash-chained audit (runs are reproducible by hash)
+- Missing: No analysis libraries, data loading or report pipeline on top of the sandbox
 - Integration gaps / blockers: depends on M06
 - Security: reproducible, hash recorded
 - Plan: Shared with M06/M07
@@ -504,8 +504,8 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 
 ## GE12 — Multimodal Content Generation — **EXTERNAL_BLOCKER**
 - Registry links (candidates): V73-S09-024, V73-S22-006, V73-S26-005, V73-S26-006, V73-S28-001, V73-S28-002
-- Modules: see G11
-- Evidence: None
+- Modules: see G11 ; modality-fabric.mjs (slot only)
+- Evidence: None; see G11
 - Missing: Providers
 - Integration gaps / blockers: No provider
 - Security: see G11
@@ -524,8 +524,8 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 
 ## A01 — Live Visual Understanding — **EXTERNAL_BLOCKER**
 - Registry links (candidates): none
-- Modules: none
-- Evidence: None
+- Modules: none ; modality-fabric.mjs; observation-memory.mjs (consent gate)
+- Evidence: None; no camera pipeline; observations of image/video/screen modality require owner consent with a purpose (observation-memory.test)
 - Missing: Camera pipeline + vision provider
 - Integration gaps / blockers: No provider
 - Security: Camera = highest privacy class; explicit consent
@@ -533,9 +533,9 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 - Tests required: No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.
 
 ## A02 — Screen Awareness — **EXTERNAL_BLOCKER**
-- Registry links (candidates): V73-S19-008, ATLASZ-BR-033, ATLASZ-PKG84-014, ATLASZ-PKG84-019, ATLASZ-PKG84-024
-- Modules: computer-use-fabric.mjs (action 'screenshot' policy)
-- Evidence: Policy classification only
+- Registry links (candidates): V73-S19-008, ATLASZ-BR-033, ATLASZ-PKG84-014, ATLASZ-PKG84-019, ATLASZ-PKG84-024, ATLASZ-PKG84-030
+- Modules: computer-use-fabric.mjs (action 'screenshot' policy) ; observation-memory.mjs (consent gate)
+- Evidence: Policy classification only; screen observations are consent-gated metadata/text only; no screenshot ingestion or vision
 - Missing: Screenshot ingestion + vision
 - Integration gaps / blockers: No provider
 - Security: Screens may hold secrets -> redaction
@@ -543,31 +543,31 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 - Tests required: No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.
 
 ## A03 — Natural Real-Time Conversation — **EXTERNAL_BLOCKER**
-- Registry links (candidates): V73-S03-016, V73-S04-009, V73-S05-001, V73-S05-002, V73-S05-003, V73-S05-004
-- Modules: voice-session.mjs; human-core.mjs
-- Evidence: State machine; Human Core tone
-- Missing: Streaming providers
-- Integration gaps / blockers: No provider
+- Registry links (candidates): V73-S03-016, V73-S04-009, V73-S04-010, V73-S05-001, V73-S05-002, V73-S05-003
+- Modules: voice-session.mjs; human-core.mjs ; voice-conversation.mjs (conversation layer over voice-session.mjs)
+- Evidence: State machine; Human Core tone; voice-conversation.test (14) + voice-conversation-hosted.test (3) + 53 mutation checks (10/11 survivors killed, 1 redundant): consented conversations, kill-switch/Safe-Mode gating per turn, transcript+reply screening and secret redaction, barge-in, restart recovery, deletion; ONLY mock providers exercised - NO STT/TTS provider exists, so voice is never LIVE
+- Missing: STT/TTS providers with our own passing probe
+- Integration gaps / blockers: Voice can never approve (NEEDS_STRONG_AUTH); wake phrase is a filter, not a credential
 - Security: Approvals via strong auth only
 - Plan: Keep
 - Tests required: No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.
 
 ## A04 — Multilingual Live Communication — **PARTIAL**
 - Registry links (candidates): V73-S09-025, V73-S12-001, V73-S12-002, V73-S12-003, V73-S12-004, V73-S12-005
-- Modules: master-brief.mjs and owner-command.mjs (EN/HU templates only)
-- Evidence: human-core.test (hu/en)
+- Modules: master-brief.mjs and owner-command.mjs (EN/HU templates only) ; voice-conversation.mjs
+- Evidence: human-core.test (hu/en); voice interaction is language-agnostic at the conversation layer; Hungarian approval/intent words are recognised; translation still not built
 - Missing: General translation, language switching
 - Integration gaps / blockers: No translation provider
 - Security: Translations of approvals must not alter bound subject
 - Plan: Language packs for system text; translation via provider slot
 - Tests required: hu/en parity, approval text not machine-translated
 
-## A05 — Multimodal Memory — **MISSING**
+## A05 — Multimodal Memory — **PARTIAL**
 - Registry links (candidates): V73-S04-010, V73-S05-013, V73-S07-001, V73-S07-002, V73-S07-003, V73-S07-004
-- Modules: brain/memory-fabric.mjs (text)
-- Evidence: Text memory only
-- Missing: Observation memory with modality, consent, retention, privacy class
-- Integration gaps / blockers: none
+- Modules: brain/memory-fabric.mjs (text) ; observation-memory.mjs
+- Evidence: Text memory only; observation-memory.test (8) + hosted (2) + mutation checks; modality + consent + classification + retention + correction + real deletion; raw media never stored
+- Missing: Semantic recall; media content (only descriptions and metadata are stored)
+- Integration gaps / blockers: Keyword recall labelled NOT semantic
 - Security: Consent + classification + deletion required
 - Plan: Observation memory module (metadata/descriptions; raw media not stored by default)
 - Tests required: consent required, class enforced, retention expiry, recall permission
@@ -663,7 +663,7 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 - Tests required: scheduler intervals, scoring, persistence
 
 ## P02 — Video-to-Action Workflow — **MISSING**
-- Registry links (candidates): V73-S02-001, V73-S04-010, V73-S05-003, V73-S05-004, V73-S07-005, V73-S13-006
+- Registry links (candidates): V73-S02-001, V73-S04-010, V73-S05-003, V73-S05-004, V73-S05-013, V73-S07-005
 - Modules: none
 - Evidence: None
 - Missing: Transcript -> steps
@@ -684,8 +684,8 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 
 ## P04 — Rapid Prototype Builder — **MISSING**
 - Registry links (candidates): V73-S08-001, V73-S08-007, V73-S29-001, V73-S29-010, V73-S43-011, V73-S48-013
-- Modules: none
-- Evidence: None
+- Modules: none ; code-sandbox.mjs (runner only)
+- Evidence: None; prototype execution is possible; generator + test gate not built
 - Missing: Idea->prototype with tests
 - Integration gaps / blockers: Needs sandbox + model
 - Security: Sandbox only
@@ -762,11 +762,11 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 - Plan: Batch runner on scheduler/queue
 - Tests required: error isolation, resume mid-batch, rate limit
 
-## P12 — Personal Media Organizer — **MISSING**
+## P12 — Personal Media Organizer — **PARTIAL**
 - Registry links (candidates): V73-S09-024, V73-S22-006, V73-S28-001, V73-S28-002, V73-S28-003, V73-S28-004
-- Modules: document-center.mjs (documents only)
-- Evidence: None
-- Missing: Photo/audio/video index
+- Modules: document-center.mjs (documents only) ; modality-fabric.mjs; observation-memory.mjs
+- Evidence: None; media metadata index via the Document Center (METADATA_ONLY) and consent-gated observations of media; no content analysis
+- Missing: Content-based organizing (faces, objects, scenes)
 - Integration gaps / blockers: Metadata only without providers
 - Security: Personal/private class; consent
 - Plan: Media index: metadata, tags, classification via observation memory (no content analysis)
@@ -793,7 +793,7 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 - Tests required: accept/reject matrix, no coercion
 
 ## P15 — Adaptive Multimodal Processing — **MISSING**
-- Registry links (candidates): none
+- Registry links (candidates): ATLASZ-PKG84-029
 - Modules: none
 - Evidence: None
 - Missing: Detail-level chooser
@@ -813,7 +813,7 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 - Tests required: restart restores validated state
 
 ## P17 — Voice Focus and Noise Handling — **EXTERNAL_BLOCKER**
-- Registry links (candidates): V73-S05-001, V73-S05-002, V73-S05-003, V73-S05-004, V73-S05-005, V73-S05-006
+- Registry links (candidates): V73-S04-010, V73-S05-001, V73-S05-002, V73-S05-003, V73-S05-004, V73-S05-005
 - Modules: voice-session.mjs
 - Evidence: State machine only
 - Missing: Audio DSP/provider
@@ -832,12 +832,12 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 - Plan: Annotation schema (see A07)
 - Tests required: schema validation
 
-## P19 — Personal Object and Information Recall — **MISSING**
+## P19 — Personal Object and Information Recall — **PARTIAL**
 - Registry links (candidates): V73-S04-010, V73-S05-013, V73-S07-001, V73-S07-002, V73-S07-003, V73-S07-004
-- Modules: brain/memory-fabric.mjs (text)
-- Evidence: Text only
-- Missing: Authorized observation recall
-- Integration gaps / blockers: none
+- Modules: brain/memory-fabric.mjs (text) ; observation-memory.mjs; obs.* typed tools
+- Evidence: Text only; permission-controlled recall with provenance, tenant isolation and deletion (observation-memory.test, hosted)
+- Missing: Semantic recall; recall of objects seen by cameras (no vision)
+- Integration gaps / blockers: Agents see only PUBLIC/PERSONAL records the Security Brain screened ALLOW
 - Security: Consent, retention, deletion
 - Plan: Observation memory (A05)
 - Tests required: recall requires permission and consent

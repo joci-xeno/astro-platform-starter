@@ -48,6 +48,10 @@
     "C01",
     "P04"
    ],
+   "LIVE_VOICE": [
+    "A03",
+    "A04"
+   ],
    "KNOWLEDGE_PROJECTS": [
     "M02",
     "G07",
@@ -74,9 +78,9 @@
   }
  },
  "summary": {
-  "MISSING": 14,
-  "PARTIAL": 42,
-  "EXTERNAL_BLOCKER": 23,
+  "MISSING": 10,
+  "PARTIAL": 47,
+  "EXTERNAL_BLOCKER": 22,
   "VERIFIED_WORKING": 6,
   "total": 85
  },
@@ -208,11 +212,11 @@
     "V73-S19-005",
     "V73-S19-006"
    ],
-   "modules": "computer-use-fabric.mjs (policy); plugin-manager.mjs (child process, minimal env, timeout)",
+   "modules": "computer-use-fabric.mjs (policy); plugin-manager.mjs (child process, minimal env, timeout) ; code-sandbox.mjs (separate-process JS/Python runner, detected isolation level, limits, audit)",
    "status": "PARTIAL",
-   "evidence": "plugin-manager.test timeouts/containment",
-   "missing": "General code execution sandbox with CPU/memory/time/file limits and no network",
-   "integration_gaps": "No OS-level isolation (namespaces/containers) available to verify here",
+   "evidence": "plugin-manager.test timeouts/containment; code-sandbox.test (9) + code-sandbox-hosted.test (3) + mutation checks; Linux namespace isolation (no network) verified on this host",
+   "missing": "Container/VM-grade isolation; Windows has only process limits + timeouts",
+   "integration_gaps": "Isolation is labelled NAMESPACE or PROCESS_ONLY and is NOT a container or VM; Python filesystem restriction is best effort (audit hook); process-only mode needs argument-bound owner approval",
    "security": "Untrusted code must never get secrets; honest label if isolation is process-level only",
    "plan": "Build code-sandbox runner (child process, rlimits, scrubbed env, temp dir, output caps) and label isolation level truthfully",
    "tests_required": "timeout kill, memory cap, env scrub, path escape refused, output cap",
@@ -230,9 +234,9 @@
     "V73-S30-007",
     "ATLASZ-BR-004"
    ],
-   "modules": "doc-extractors.mjs (XLSX/ODS read); tool-fabric.mjs (catalogue 'data-analysis')",
+   "modules": "doc-extractors.mjs (XLSX/ODS read); tool-fabric.mjs (catalogue 'data-analysis') ; code-sandbox.mjs (runner only)",
    "status": "MISSING",
-   "evidence": "Extractors read spreadsheets as text only",
+   "evidence": "Extractors read spreadsheets as text only; the sandbox exists as a runner, but no spreadsheet/statistics/chart workflow is built on it",
    "missing": "Cleaning, calculation, statistics, charts, reproducible reports",
    "integration_gaps": "Needs sandbox runner + deterministic calc library",
    "security": "Computations must be reproducible and hash-recorded",
@@ -273,7 +277,10 @@
    "registry_links": [
     "V73-S05-012",
     "V73-S05-013",
-    "V73-S28-002"
+    "V73-S28-002",
+    "ATLASZ-PKG84-029",
+    "ATLASZ-PKG84-030",
+    "ATLASZ-PKG84-031"
    ],
    "modules": "voice-session.mjs (state machine only)",
    "status": "EXTERNAL_BLOCKER",
@@ -388,9 +395,9 @@
     "V73-S16-003",
     "V73-S20-006"
    ],
-   "modules": "tool-fabric.mjs (catalogue 'code','test','github'); regression-eval-suite.mjs; skill-factory.mjs",
+   "modules": "tool-fabric.mjs (catalogue 'code','test','github'); regression-eval-suite.mjs; skill-factory.mjs ; code-sandbox.mjs (runner only)",
    "status": "MISSING",
-   "evidence": "Only catalogue entries and an eval suite scaffold",
+   "evidence": "Only catalogue entries and an eval suite scaffold; tests/code can be executed in the sandbox; repo analysis/edit/review workflow still not built",
    "missing": "Repo analysis, edit, test run, review workflow as governed tools",
    "integration_gaps": "No code tools wired; needs sandbox + typed tools",
    "security": "Writes only inside a project sandbox; no push without approval",
@@ -767,9 +774,9 @@
     "V73-S09-029",
     "V73-S10-001"
    ],
-   "modules": "see M06",
+   "modules": "see M06 ; code-sandbox.mjs",
    "status": "PARTIAL",
-   "evidence": "see M06",
+   "evidence": "see M06; sandbox.run / sandbox.run_process_only typed tools; Control Center sandbox view (owner runs are NAMESPACE-only)",
    "missing": "see M06",
    "integration_gaps": "see M06",
    "security": "see M06",
@@ -836,11 +843,12 @@
     "V73-S23-012",
     "V73-S28-001",
     "ATLASZ-CR-007",
-    "ATLASZ-OSC-028"
+    "ATLASZ-OSC-028",
+    "ATLASZ-PKG84-029"
    ],
-   "modules": "doc-extractors.mjs (no OCR)",
+   "modules": "doc-extractors.mjs (no OCR) ; modality-fabric.mjs (metadata only)",
    "status": "EXTERNAL_BLOCKER",
-   "evidence": "Scanned PDFs reported NO_TEXT_LAYER, never faked",
+   "evidence": "Scanned PDFs reported NO_TEXT_LAYER, never faked; modality-fabric: PNG/JPEG/GIF/WEBP/BMP identified and parsed for size/EXIF flags (GPS present flagged, coordinates never extracted); NO image understanding: vision slot is EXTERNAL_PROVIDER_REQUIRED",
    "missing": "Vision model/OCR",
    "integration_gaps": "No provider",
    "security": "Images may be personal data",
@@ -855,11 +863,13 @@
    "id": "G09",
    "description": "Video Understanding",
    "registry_links": [
-    "V73-S28-002"
+    "V73-S28-002",
+    "ATLASZ-PKG84-029",
+    "ATLASZ-PKG84-030"
    ],
-   "modules": "none",
+   "modules": "none ; modality-fabric.mjs (MP4 metadata only)",
    "status": "EXTERNAL_BLOCKER",
-   "evidence": "None",
+   "evidence": "None; MP4/WebM identified, MP4 duration/size parsed; no video understanding (slot NOT_CONNECTED)",
    "missing": "Video model",
    "integration_gaps": "No provider",
    "security": "Authorized only",
@@ -874,12 +884,12 @@
    "id": "G10",
    "description": "Voice Intelligence",
    "registry_links": [
+    "V73-S04-010",
     "V73-S05-001",
     "V73-S05-002",
     "V73-S05-003",
     "V73-S05-004",
-    "V73-S05-005",
-    "V73-S05-006"
+    "V73-S05-005"
    ],
    "modules": "voice-interface.mjs; voice-session.mjs",
    "status": "EXTERNAL_BLOCKER",
@@ -903,9 +913,9 @@
     "V73-S28-001",
     "V73-S28-002"
    ],
-   "modules": "tool-fabric.mjs (catalogue)",
+   "modules": "tool-fabric.mjs (catalogue) ; modality-fabric.mjs (slot only)",
    "status": "EXTERNAL_BLOCKER",
-   "evidence": "None",
+   "evidence": "None; image_generation slot exists and refuses paid providers (REFUSED_COST); nothing is generated",
    "missing": "Provider interface",
    "integration_gaps": "No provider; spend gate",
    "security": "Spending needs approval; content labelling",
@@ -987,16 +997,18 @@
   {
    "id": "GE02",
    "description": "Unified Multimodal Understanding",
-   "registry_links": [],
-   "modules": "none (text only)",
-   "status": "EXTERNAL_BLOCKER",
-   "evidence": "None",
-   "missing": "Cross-modal pipeline",
-   "integration_gaps": "Needs vision/audio/video providers",
+   "registry_links": [
+    "ATLASZ-PKG84-029"
+   ],
+   "modules": "none (text only) ; modality-fabric.mjs; document-center.mjs; observation-memory.mjs",
+   "status": "PARTIAL",
+   "evidence": "None; modality-fabric.test (8) + hosted (3): one envelope for document/image/audio/video metadata with privacy flags; understanding of image/audio/video content needs providers",
+   "missing": "Content understanding for images, audio and video (OCR/STT/vision providers)",
+   "integration_gaps": "Built-in analysis is metadata and structure only; provider output would be untrusted and verified:false",
    "security": "Privacy class per modality",
    "plan": "Modality fabric common envelope",
    "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
-   "final_status": "EXTERNAL_BLOCKER",
+   "final_status": "PARTIAL",
    "shared_infrastructure": [
     "MODALITY_FABRIC_AND_OBSERVATION_MEMORY"
    ]
@@ -1005,12 +1017,12 @@
    "id": "GE03",
    "description": "Real-Time Voice Interaction",
    "registry_links": [
+    "V73-S04-010",
     "V73-S05-001",
     "V73-S05-002",
     "V73-S05-003",
     "V73-S05-004",
-    "V73-S05-005",
-    "V73-S05-006"
+    "V73-S05-005"
    ],
    "modules": "voice-session.mjs",
    "status": "EXTERNAL_BLOCKER",
@@ -1091,15 +1103,15 @@
    "id": "GE07",
    "description": "Analytical Code Execution",
    "registry_links": [],
-   "modules": "see M07/M06",
-   "status": "MISSING",
-   "evidence": "None",
-   "missing": "Runner + libraries",
+   "modules": "see M07/M06 ; code-sandbox.mjs",
+   "status": "PARTIAL",
+   "evidence": "None; code runs in the sandbox with the code SHA-256 in a hash-chained audit (runs are reproducible by hash)",
+   "missing": "No analysis libraries, data loading or report pipeline on top of the sandbox",
    "integration_gaps": "depends on M06",
    "security": "reproducible, hash recorded",
    "plan": "Shared with M06/M07",
    "tests_required": "see M07",
-   "final_status": "MISSING",
+   "final_status": "PARTIAL",
    "shared_infrastructure": [
     "CODE_SANDBOX"
    ]
@@ -1209,9 +1221,9 @@
     "V73-S28-001",
     "V73-S28-002"
    ],
-   "modules": "see G11",
+   "modules": "see G11 ; modality-fabric.mjs (slot only)",
    "status": "EXTERNAL_BLOCKER",
-   "evidence": "None",
+   "evidence": "None; see G11",
    "missing": "Providers",
    "integration_gaps": "No provider",
    "security": "see G11",
@@ -1248,9 +1260,9 @@
    "id": "A01",
    "description": "Live Visual Understanding",
    "registry_links": [],
-   "modules": "none",
+   "modules": "none ; modality-fabric.mjs; observation-memory.mjs (consent gate)",
    "status": "EXTERNAL_BLOCKER",
-   "evidence": "None",
+   "evidence": "None; no camera pipeline; observations of image/video/screen modality require owner consent with a purpose (observation-memory.test)",
    "missing": "Camera pipeline + vision provider",
    "integration_gaps": "No provider",
    "security": "Camera = highest privacy class; explicit consent",
@@ -1269,11 +1281,12 @@
     "ATLASZ-BR-033",
     "ATLASZ-PKG84-014",
     "ATLASZ-PKG84-019",
-    "ATLASZ-PKG84-024"
+    "ATLASZ-PKG84-024",
+    "ATLASZ-PKG84-030"
    ],
-   "modules": "computer-use-fabric.mjs (action 'screenshot' policy)",
+   "modules": "computer-use-fabric.mjs (action 'screenshot' policy) ; observation-memory.mjs (consent gate)",
    "status": "EXTERNAL_BLOCKER",
-   "evidence": "Policy classification only",
+   "evidence": "Policy classification only; screen observations are consent-gated metadata/text only; no screenshot ingestion or vision",
    "missing": "Screenshot ingestion + vision",
    "integration_gaps": "No provider",
    "security": "Screens may hold secrets -> redaction",
@@ -1290,21 +1303,23 @@
    "registry_links": [
     "V73-S03-016",
     "V73-S04-009",
+    "V73-S04-010",
     "V73-S05-001",
     "V73-S05-002",
-    "V73-S05-003",
-    "V73-S05-004"
+    "V73-S05-003"
    ],
-   "modules": "voice-session.mjs; human-core.mjs",
+   "modules": "voice-session.mjs; human-core.mjs ; voice-conversation.mjs (conversation layer over voice-session.mjs)",
    "status": "EXTERNAL_BLOCKER",
-   "evidence": "State machine; Human Core tone",
-   "missing": "Streaming providers",
-   "integration_gaps": "No provider",
+   "evidence": "State machine; Human Core tone; voice-conversation.test (14) + voice-conversation-hosted.test (3) + 53 mutation checks (10/11 survivors killed, 1 redundant): consented conversations, kill-switch/Safe-Mode gating per turn, transcript+reply screening and secret redaction, barge-in, restart recovery, deletion; ONLY mock providers exercised - NO STT/TTS provider exists, so voice is never LIVE",
+   "missing": "STT/TTS providers with our own passing probe",
+   "integration_gaps": "Voice can never approve (NEEDS_STRONG_AUTH); wake phrase is a filter, not a credential",
    "security": "Approvals via strong auth only",
    "plan": "Keep",
    "tests_required": "No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.",
    "final_status": "EXTERNAL_BLOCKER",
-   "shared_infrastructure": []
+   "shared_infrastructure": [
+    "LIVE_VOICE"
+   ]
   },
   {
    "id": "A04",
@@ -1317,16 +1332,18 @@
     "V73-S12-004",
     "V73-S12-005"
    ],
-   "modules": "master-brief.mjs and owner-command.mjs (EN/HU templates only)",
+   "modules": "master-brief.mjs and owner-command.mjs (EN/HU templates only) ; voice-conversation.mjs",
    "status": "PARTIAL",
-   "evidence": "human-core.test (hu/en)",
+   "evidence": "human-core.test (hu/en); voice interaction is language-agnostic at the conversation layer; Hungarian approval/intent words are recognised; translation still not built",
    "missing": "General translation, language switching",
    "integration_gaps": "No translation provider",
    "security": "Translations of approvals must not alter bound subject",
    "plan": "Language packs for system text; translation via provider slot",
    "tests_required": "hu/en parity, approval text not machine-translated",
    "final_status": "PARTIAL",
-   "shared_infrastructure": []
+   "shared_infrastructure": [
+    "LIVE_VOICE"
+   ]
   },
   {
    "id": "A05",
@@ -1339,15 +1356,15 @@
     "V73-S07-003",
     "V73-S07-004"
    ],
-   "modules": "brain/memory-fabric.mjs (text)",
-   "status": "MISSING",
-   "evidence": "Text memory only",
-   "missing": "Observation memory with modality, consent, retention, privacy class",
-   "integration_gaps": "none",
+   "modules": "brain/memory-fabric.mjs (text) ; observation-memory.mjs",
+   "status": "PARTIAL",
+   "evidence": "Text memory only; observation-memory.test (8) + hosted (2) + mutation checks; modality + consent + classification + retention + correction + real deletion; raw media never stored",
+   "missing": "Semantic recall; media content (only descriptions and metadata are stored)",
+   "integration_gaps": "Keyword recall labelled NOT semantic",
    "security": "Consent + classification + deletion required",
    "plan": "Observation memory module (metadata/descriptions; raw media not stored by default)",
    "tests_required": "consent required, class enforced, retention expiry, recall permission",
-   "final_status": "MISSING",
+   "final_status": "PARTIAL",
    "shared_infrastructure": [
     "MODALITY_FABRIC_AND_OBSERVATION_MEMORY"
    ]
@@ -1545,8 +1562,8 @@
     "V73-S04-010",
     "V73-S05-003",
     "V73-S05-004",
-    "V73-S07-005",
-    "V73-S13-006"
+    "V73-S05-013",
+    "V73-S07-005"
    ],
    "modules": "none",
    "status": "MISSING",
@@ -1594,9 +1611,9 @@
     "V73-S43-011",
     "V73-S48-013"
    ],
-   "modules": "none",
+   "modules": "none ; code-sandbox.mjs (runner only)",
    "status": "MISSING",
-   "evidence": "None",
+   "evidence": "None; prototype execution is possible; generator + test gate not built",
    "missing": "Idea->prototype with tests",
    "integration_gaps": "Needs sandbox + model",
    "security": "Sandbox only",
@@ -1783,15 +1800,15 @@
     "V73-S28-003",
     "V73-S28-004"
    ],
-   "modules": "document-center.mjs (documents only)",
-   "status": "MISSING",
-   "evidence": "None",
-   "missing": "Photo/audio/video index",
+   "modules": "document-center.mjs (documents only) ; modality-fabric.mjs; observation-memory.mjs",
+   "status": "PARTIAL",
+   "evidence": "None; media metadata index via the Document Center (METADATA_ONLY) and consent-gated observations of media; no content analysis",
+   "missing": "Content-based organizing (faces, objects, scenes)",
    "integration_gaps": "Metadata only without providers",
    "security": "Personal/private class; consent",
    "plan": "Media index: metadata, tags, classification via observation memory (no content analysis)",
    "tests_required": "consent, class, no raw bytes leakage",
-   "final_status": "MISSING",
+   "final_status": "PARTIAL",
    "shared_infrastructure": [
     "MODALITY_FABRIC_AND_OBSERVATION_MEMORY"
    ]
@@ -1847,7 +1864,9 @@
   {
    "id": "P15",
    "description": "Adaptive Multimodal Processing",
-   "registry_links": [],
+   "registry_links": [
+    "ATLASZ-PKG84-029"
+   ],
    "modules": "none",
    "status": "MISSING",
    "evidence": "None",
@@ -1887,12 +1906,12 @@
    "id": "P17",
    "description": "Voice Focus and Noise Handling",
    "registry_links": [
+    "V73-S04-010",
     "V73-S05-001",
     "V73-S05-002",
     "V73-S05-003",
     "V73-S05-004",
-    "V73-S05-005",
-    "V73-S05-006"
+    "V73-S05-005"
    ],
    "modules": "voice-session.mjs",
    "status": "EXTERNAL_BLOCKER",
@@ -1933,15 +1952,15 @@
     "V73-S07-003",
     "V73-S07-004"
    ],
-   "modules": "brain/memory-fabric.mjs (text)",
-   "status": "MISSING",
-   "evidence": "Text only",
-   "missing": "Authorized observation recall",
-   "integration_gaps": "none",
+   "modules": "brain/memory-fabric.mjs (text) ; observation-memory.mjs; obs.* typed tools",
+   "status": "PARTIAL",
+   "evidence": "Text only; permission-controlled recall with provenance, tenant isolation and deletion (observation-memory.test, hosted)",
+   "missing": "Semantic recall; recall of objects seen by cameras (no vision)",
+   "integration_gaps": "Agents see only PUBLIC/PERSONAL records the Security Brain screened ALLOW",
    "security": "Consent, retention, deletion",
    "plan": "Observation memory (A05)",
    "tests_required": "recall requires permission and consent",
-   "final_status": "MISSING",
+   "final_status": "PARTIAL",
    "shared_infrastructure": [
     "MODALITY_FABRIC_AND_OBSERVATION_MEMORY"
    ]

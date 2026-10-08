@@ -95,7 +95,7 @@
     52
    ]
   },
-  "item_verified_count": 917
+  "item_verified_count": 921
  },
  "requirements": [
   {
@@ -969,13 +969,16 @@
    "dependencies": [
     "V73-S04"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Repo keyword scan: no implementation exists (only a PLANNED label in completion-registry)"
+   "implementation_location": "atlasz-addons/observation-memory.mjs; atlasz-addons/voice-conversation.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/observation-memory.test.mjs",
+    "atlasz-tests/observation-memory-hosted.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Observation memory: consent, retention, correction, real deletion, tenant isolation; owner can save a voice transcript turn as a memory note (voice-conversation-hosted.test)"
+   ],
+   "blocker": "Recall is keyword-based, not semantic; nothing is captured automatically",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -1462,13 +1465,15 @@
    "dependencies": [
     "V73-S05"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "No memory linkage"
+   "implementation_location": "atlasz-control-center/core.mjs (voiceAction remember); atlasz-addons/observation-memory.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/voice-conversation-hosted.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Owner-chosen transcript turn becomes an ordinary observation with source.ref {conversationId, turn}; no automatic linkage by design"
+   ],
+   "blocker": "No automatic or project linkage; no live voice provider so only mock-provider transcripts exist",
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -8944,13 +8949,17 @@
    "dependencies": [
     "V73-S23"
    ],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "No document center module; document-format tools exist only as catalogue entries"
+   "implementation_location": "atlasz-addons/modality-fabric.mjs; atlasz-addons/document-center.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/modality-fabric.test.mjs",
+    "atlasz-tests/modality-fabric-hosted.test.mjs",
+    "atlasz-tests/document-center.test.mjs"
    ],
-   "blocker": null,
+   "evidence": [
+    "Images (PNG/JPEG/GIF/WEBP/BMP) are identified and parsed for size/EXIF flags and stored as METADATA_ONLY documents; GPS flagged, coordinates never extracted"
+   ],
+   "blocker": "No OCR/vision provider: image content is not understood and not searchable",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -19971,13 +19980,16 @@
    "source": "Joci supplementary requirement",
    "priority_proposed": "P3",
    "dependencies": [],
-   "implementation_location": null,
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "placeholder panel states NOT BUILT"
+   "implementation_location": "atlasz-control-center/core.mjs; atlasz-control-center/server.mjs; atlasz-control-center/public/app.js (voice)",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/voice-conversation-hosted.test.mjs",
+    "atlasz-tests/control-center-systems.test.mjs"
    ],
-   "blocker": "EXTERNAL: STT/TTS providers",
+   "evidence": [
+    "Voice panel shows BLOCKED/NOT LIVE honestly, MOCK labelling, transcripts with read, remember and delete"
+   ],
+   "blocker": "EXTERNAL: STT/TTS providers; no push-to-talk control because no audio path exists",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -23031,6 +23043,116 @@
    "test_status": "TESTED_SANDBOX",
    "classification": "SANDBOX",
    "next_action": "Task 2 of this workstream is not started; connect a fetcher only after owner-approved provider path exists"
+  },
+  {
+   "id": "ATLASZ-PKG84-028",
+   "title": "Secure Code Sandbox: JS/Python run in a SEPARATE process (never in the runtime) with scrubbed env, private work dir, wall-clock/CPU/memory/output limits, Node --permission filesystem restriction, Python audit hook (best effort), Linux user+pid+net+ipc+uts namespaces with no network when available; secrets in code/files refused; hash-chained audit stores the code SHA-256 only; process-only mode requires argument-bound owner approval; typed tools sandbox.run / sandbox.run_process_only / sandbox.status; Control Center view",
+   "level": "item",
+   "section": 77,
+   "description": "Secure Code Sandbox: JS/Python run in a SEPARATE process (never in the runtime) with scrubbed env, private work dir, wall-clock/CPU/memory/output limits, Node --permission filesystem restriction, Python audit hook (best effort), Linux user+pid+net+ipc+uts namespaces with no network when available; secrets in code/files refused; hash-chained audit stores the code SHA-256 only; process-only mode requires argument-bound owner approval; typed tools sandbox.run / sandbox.run_process_only / sandbox.status; Control Center view",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/code-sandbox.mjs; atlasz-runtime/supervisor-safe.mjs; atlasz-control-center/core.mjs; atlasz-control-center/server.mjs; atlasz-control-center/public/app.js",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/code-sandbox.test.mjs",
+    "atlasz-tests/code-sandbox-hosted.test.mjs"
+   ],
+   "evidence": [
+    "9+3 tests plus mutation checks (survivors killed); NOT a container or VM"
+   ],
+   "blocker": "No container/VM isolation; Windows installer machine has PROCESS_ONLY isolation (timeouts and output caps only) and needs signed owner approval; Python filesystem restriction is best effort; Control Center cannot run process-only code",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Evaluate gVisor/Firecracker/Docker only after owner approval; Windows job-object limits"
+  },
+  {
+   "id": "ATLASZ-PKG84-029",
+   "title": "Multimodal fabric: magic-byte identification and bounded parsers for PNG/JPEG/GIF/WEBP/BMP/WAV/MP3/OGG/FLAC/MP4 (WebM and TIFF identified only), JPEG EXIF presence flags (GPS flagged, coordinates never extracted), documents via the existing extractors; Document Center stores media as METADATA_ONLY; external slots ocr/stt/vision/video_understanding/image_generation/tts all NOT_CONNECTED (EXTERNAL_PROVIDER_REQUIRED), LIVE only after a successful own probe, paid providers refused (no-spend); provider output untrusted and verified:false; media.inspect_document / media.status tools; Control Center view",
+   "level": "item",
+   "section": 77,
+   "description": "Multimodal fabric: magic-byte identification and bounded parsers for PNG/JPEG/GIF/WEBP/BMP/WAV/MP3/OGG/FLAC/MP4 (WebM and TIFF identified only), JPEG EXIF presence flags (GPS flagged, coordinates never extracted), documents via the existing extractors; Document Center stores media as METADATA_ONLY; external slots ocr/stt/vision/video_understanding/image_generation/tts all NOT_CONNECTED (EXTERNAL_PROVIDER_REQUIRED), LIVE only after a successful own probe, paid providers refused (no-spend); provider output untrusted and verified:false; media.inspect_document / media.status tools; Control Center view",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/modality-fabric.mjs; atlasz-addons/document-center.mjs; atlasz-runtime/supervisor-safe.mjs; atlasz-control-center/core.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/modality-fabric.test.mjs",
+    "atlasz-tests/modality-fabric-hosted.test.mjs",
+    "atlasz-tests/document-center.test.mjs"
+   ],
+   "evidence": [
+    "8+3 tests plus mutation checks"
+   ],
+   "blocker": "OCR, speech recognition, vision, video understanding and generation need providers (EXTERNAL BLOCKER); WebM/TIFF not parsed; MP3 duration is an estimate",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Attach a provider only after owner approval of source and cost; first probe decides LIVE"
+  },
+  {
+   "id": "ATLASZ-PKG84-030",
+   "title": "Observation & user-context memory: consent (image/audio/video/screen need owner consent with a purpose), retention (defaults 365/90/30 days, max 730), classification (GPS/faces raise to CONFIDENTIAL), tenant isolation, agent visibility limited to PUBLIC/PERSONAL screened ALLOW, corrections as versions, real deletion with content-free tombstones, hash-chained audit, VERIFIED_AT_CAPTURE research findings, raw media never stored; obs.* typed tools (agents can only correct/forget their own records; no bulk delete/export); Control Center view",
+   "level": "item",
+   "section": 77,
+   "description": "Observation & user-context memory: consent (image/audio/video/screen need owner consent with a purpose), retention (defaults 365/90/30 days, max 730), classification (GPS/faces raise to CONFIDENTIAL), tenant isolation, agent visibility limited to PUBLIC/PERSONAL screened ALLOW, corrections as versions, real deletion with content-free tombstones, hash-chained audit, VERIFIED_AT_CAPTURE research findings, raw media never stored; obs.* typed tools (agents can only correct/forget their own records; no bulk delete/export); Control Center view",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/observation-memory.mjs; atlasz-runtime/supervisor-safe.mjs; atlasz-control-center/core.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/observation-memory.test.mjs",
+    "atlasz-tests/observation-memory-hosted.test.mjs"
+   ],
+   "evidence": [
+    "8+2 tests plus mutation checks (survivors killed)"
+   ],
+   "blocker": "Recall is keyword-based, not semantic; media content is never stored (only descriptions/metadata); no automatic observation sources",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Semantic recall needs an embedding provider (EXTERNAL BLOCKER)"
+  },
+  {
+   "id": "ATLASZ-PKG84-031",
+   "title": "Live Voice conversation layer over voice-session.mjs: consented conversations, per-turn kill-switch and Safe-Mode gating, transcript and reply screening by the Security Brain, secret redaction of what is stored and spoken, fixed refusals for approval/control attempts (voice can never approve), barge-in bookkeeping, turn and idle limits, wake phrase as a filter (not a credential), retention + real deletion, restart recovery (open conversations closed, unfinished turns marked); mock providers for tests only (labelled MOCK, never LIVE); voice.status counts-only agent tool; Control Center view with transcript read/delete",
+   "level": "item",
+   "section": 77,
+   "description": "Live Voice conversation layer over voice-session.mjs: consented conversations, per-turn kill-switch and Safe-Mode gating, transcript and reply screening by the Security Brain, secret redaction of what is stored and spoken, fixed refusals for approval/control attempts (voice can never approve), barge-in bookkeeping, turn and idle limits, wake phrase as a filter (not a credential), retention + real deletion, restart recovery (open conversations closed, unfinished turns marked); mock providers for tests only (labelled MOCK, never LIVE); voice.status counts-only agent tool; Control Center view with transcript read/delete",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/voice-conversation.mjs; atlasz-addons/voice-session.mjs; atlasz-runtime/supervisor-safe.mjs; atlasz-control-center/core.mjs; atlasz-control-center/server.mjs; atlasz-control-center/public/app.js",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/voice-conversation.test.mjs",
+    "atlasz-tests/voice-conversation-hosted.test.mjs",
+    "atlasz-tests/voice-session.test.mjs"
+   ],
+   "evidence": [
+    "14+3+4 tests; 53 mutants, 10 of 11 survivors killed, 1 redundant bookkeeping line left"
+   ],
+   "blocker": "NO STT/TTS provider and no microphone/speaker path: voice cannot start (BLOCKED_NO_PROVIDER) and has never run against real audio; streaming/partial transcripts not implemented; no speaker verification",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Attach a provider only after owner approval of source and cost; strong auth stays required for approvals"
   }
  ]
 }

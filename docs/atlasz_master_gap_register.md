@@ -1,24 +1,24 @@
 # ATLASZ V7.3 — Unified Master Gap Register
 
-Total gaps: **788** (registry 706, 85-capability 79, scans 3).
+Total gaps: **792** (registry 710, 85-capability 79, scans 3).
 
 LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence exists in this workspace.
 
 ## By reality
-- SANDBOX_TESTED_PARTIAL: 438
-- NOT_BUILT: 198
-- EXTERNAL: 58
+- SANDBOX_TESTED_PARTIAL: 451
+- NOT_BUILT: 190
+- EXTERNAL: 57
 - STRUCTURE_ONLY: 56
 - MODULE_NOT_CONNECTED: 24
 - UNTESTED: 10
 - OWNER_DECISION: 4
 
 ## By workstream
-- KNOWLEDGE_RESEARCH: 158
-- TYPED_TOOLS_MODEL_ROUTER: 87
-- SECURITY_OWNER: 65
+- KNOWLEDGE_RESEARCH: 159
+- TYPED_TOOLS_MODEL_ROUTER: 88
+- SECURITY_OWNER: 64
 - MULTIMODAL_VOICE: 58
-- PERSONAL_HUMAN_CORE: 53
+- PERSONAL_HUMAN_CORE: 54
 - WINDOWS_CONTROL_CENTER: 49
 - MONEY_BUSINESS: 44
 - AGENT_ORCHESTRATION: 41
@@ -43,11 +43,12 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - SECTION_S50: 4
 - SECTION_S48: 3
 - SECTION_S47: 2
+- LIVE_VOICE: 2
 - SECTION_S15: 1
 - SECTION_S16: 1
 
 ## Reachability
-- Modules in atlasz-addons: 143; reachable from entry points: 140
+- Modules in atlasz-addons: 147; reachable from entry points: 144
 - ORPHAN: atlasz-addons/digital-twin.mjs
 - ORPHAN: atlasz-addons/evidence-record.mjs
 - ORPHAN: atlasz-addons/tenant-isolation.mjs
@@ -64,7 +65,7 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - atlasz-addons/voice-interface.mjs
 
 ## Control Center panels
-- connected: 40 of 40
+- connected: 43 of 43
 
 ## Highest-priority open gaps (P0, not external/owner)
 - GAP-V73-S02-001 [SANDBOX_TESTED_PARTIAL] Authority chain: JOCI/OWNER -> STRONG OWNER AUTH -> MASTER -> AGENTS -> TOOLS/CONNECTORS/COMPUTER USE/EXTERNAL
