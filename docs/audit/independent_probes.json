@@ -151,6 +151,12 @@
    "claim": "Agents cannot enable/rollback/restore via the chain: RESTORE-class operations fail closed without owner approval",
    "ok": true,
    "note": "allowed: "
+  },
+  {
+   "id": "P26",
+   "claim": "Plugin cannot gain write access by editing its manifest after the owner enabled it",
+   "ok": true,
+   "note": "{\"ok\":true,\"result\":{\"w\":\"DENIED\"}}"
   }
  ]
 }

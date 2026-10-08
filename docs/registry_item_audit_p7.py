@@ -78,5 +78,166 @@ I = {
    "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Task 4 M1.3: three Math.random fallbacks replaced by node:crypto; static regression guard over all production sources; probe P24"
   ],
   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
+ },
+ "V73-S03-005": {
+  "status": "PARTIAL",
+  "evidence": [
+   "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: dependsOn gating and cycle rejection tested"
+  ],
+  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
+ },
+ "V73-S03-011": {
+  "status": "PARTIAL",
+  "evidence": [
+   "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: taskComplete needs every done-criterion passed; empty definition never done"
+  ],
+  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
+ },
+ "V73-S07-013": {
+  "status": "PARTIAL",
+  "evidence": [
+   "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Compile, validate, owner-gated execution request"
+  ],
+  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
+ },
+ "V73-S09-026": {
+  "status": "PARTIAL",
+  "evidence": [
+   "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Evidence-required QA gate tested"
+  ],
+  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
+ },
+ "V73-S11-003": {
+  "status": "PARTIAL",
+  "evidence": [
+   "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Blockers: upfront spend, illegal/deceptive, non-remote, license, missing evidence"
+  ],
+  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
+ },
+ "V73-S11-007": {
+  "status": "PARTIAL",
+  "evidence": [
+   "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Forward-only states; approvals/evidence gates"
+  ],
+  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
+ },
+ "V73-S11-010": {
+  "status": "PARTIAL",
+  "evidence": [
+   "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: 2/5/10-day schedule; stops on reply"
+  ],
+  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
+ },
+ "V73-S11-011": {
+  "status": "PARTIAL",
+  "evidence": [
+   "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: QA -> owner approval -> external evidence"
+  ],
+  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
+ },
+ "V73-S11-012": {
+  "status": "PARTIAL",
+  "evidence": [
+   "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Amount, owner approval, external reference rules"
+  ],
+  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
+ },
+ "V73-S11-014": {
+  "status": "PARTIAL",
+  "evidence": [
+   "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Only confirmed, evidenced receipts are profit"
+  ],
+  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
+ },
+ "V73-S15-002": {
+  "status": "PARTIAL",
+  "evidence": [
+   "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: PASS only with evidence for every required check"
+  ],
+  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
+ },
+ "V73-S15-004": {
+  "status": "PARTIAL",
+  "evidence": [
+   "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: High-risk actions, truthfulness, credentials"
+  ],
+  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
+ },
+ "V73-S15-006": {
+  "status": "PARTIAL",
+  "evidence": [
+   "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Unauthorised goals, self-evaluation, hidden channels flagged"
+  ],
+  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
+ },
+ "V73-S15-007": {
+  "status": "PARTIAL",
+  "evidence": [
+   "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: GAME_EVALUATION/SACRIFICE intents flagged"
+  ],
+  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
+ },
+ "V73-S15-009": {
+  "status": "PARTIAL",
+  "evidence": [
+   "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Failing/throwing/duplicate tests handled; regression gate"
+  ],
+  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
+ },
+ "V73-S15-011": {
+  "status": "PARTIAL",
+  "evidence": [
+   "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Evidence required per check/criterion"
+  ],
+  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
+ },
+ "V73-S16-002": {
+  "status": "PARTIAL",
+  "evidence": [
+   "TASK3 downgrade from EXISTS_AND_WORKING: module is not reachable from the runtime, Control Center or owner CLI. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: riskScore from reversibility, unverified assumptions, spend, conflicts, low probability (tested)"
+  ],
+  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
+ },
+ "V73-S16-003": {
+  "status": "PARTIAL",
+  "evidence": [
+   "TASK3 downgrade from EXISTS_AND_WORKING: module is not reachable from the runtime, Control Center or owner CLI. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Assumptions marked SUPPORTED/UNVERIFIED; unverified ones raise risk and force REVISE"
+  ],
+  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
+ },
+ "V73-S16-005": {
+  "status": "PARTIAL",
+  "evidence": [
+   "TASK3 downgrade from EXISTS_AND_WORKING: module is not reachable from the runtime, Control Center or owner CLI. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Forbidden/locked resource conflicts => REJECT (tested)"
+  ],
+  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
+ },
+ "V73-S16-006": {
+  "status": "PARTIAL",
+  "evidence": [
+   "TASK3 downgrade from EXISTS_AND_WORKING: module is not reachable from the runtime, Control Center or owner CLI. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: compare(): risk-adjusted ranking; rejected options never recommended; recommendation only"
+  ],
+  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
+ },
+ "V73-S27-009": {
+  "status": "PARTIAL",
+  "evidence": [
+   "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Verified profit only"
+  ],
+  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
+ },
+ "V73-S29-012": {
+  "status": "PARTIAL",
+  "evidence": [
+   "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: requireNoRegression enforced"
+  ],
+  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
+ },
+ "V73-S50-005": {
+  "status": "PARTIAL",
+  "evidence": [
+   "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Checkpoints taken in this build and in the engine"
+  ],
+  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)"
  }
 }

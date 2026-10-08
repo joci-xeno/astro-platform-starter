@@ -1,11 +1,11 @@
 # ATLASZ V7.3 — Unified Master Gap Register
 
-Total gaps: **801** (registry 716, 85-capability 82, scans 3).
+Total gaps: **823** (registry 738, 85-capability 82, scans 3).
 
 LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence exists in this workspace.
 
 ## By reality
-- SANDBOX_TESTED_PARTIAL: 456
+- SANDBOX_TESTED_PARTIAL: 478
 - NOT_BUILT: 193
 - EXTERNAL: 58
 - STRUCTURE_ONLY: 56
@@ -14,18 +14,18 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - OWNER_DECISION: 4
 
 ## By workstream
-- KNOWLEDGE_RESEARCH: 160
+- KNOWLEDGE_RESEARCH: 163
 - TYPED_TOOLS_MODEL_ROUTER: 92
 - SECURITY_OWNER: 65
 - MULTIMODAL_VOICE: 59
 - PERSONAL_HUMAN_CORE: 54
+- MONEY_BUSINESS: 50
 - WINDOWS_CONTROL_CENTER: 49
-- MONEY_BUSINESS: 44
-- AGENT_ORCHESTRATION: 41
-- RECOVERY_BACKUP: 36
+- AGENT_ORCHESTRATION: 43
+- RECOVERY_BACKUP: 37
 - SCHEDULER_PCC: 26
 - CODE_SANDBOX_ENGINEERING: 26
-- OBSERVABILITY_DOCTOR: 22
+- OBSERVABILITY_DOCTOR: 23
 - SECTION_S31: 17
 - UNASSIGNED: 15
 - SECTION_S52: 11
@@ -33,10 +33,12 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - SECTION_S44: 10
 - SECTION_S26: 8
 - SECTION_S33: 8
+- SECTION_S29: 6
 - SECTION_S32: 6
 - SECTION_S49: 6
+- SECTION_S15: 5
+- SECTION_S16: 5
 - COMPUTER_USE: 5
-- SECTION_S29: 5
 - SECTION_S42: 5
 - SECTION_S22: 4
 - SECTION_S38: 4
@@ -44,8 +46,6 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - SECTION_S48: 3
 - SECTION_S47: 2
 - LIVE_VOICE: 2
-- SECTION_S15: 1
-- SECTION_S16: 1
 
 ## Reachability
 - Modules in atlasz-addons: 148; reachable from entry points: 145
@@ -74,11 +74,13 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - GAP-V73-S03-002 [NOT_BUILT] Strategic Planning Engine
 - GAP-V73-S03-003 [SANDBOX_TESTED_PARTIAL] Universal Planner / Orchestrator
 - GAP-V73-S03-004 [STRUCTURE_ONLY] task decomposition
+- GAP-V73-S03-005 [SANDBOX_TESTED_PARTIAL] dependency planning
 - GAP-V73-S03-006 [SANDBOX_TESTED_PARTIAL] dynamic agent assignment
 - GAP-V73-S03-007 [SANDBOX_TESTED_PARTIAL] model/tool selection
 - GAP-V73-S03-008 [SANDBOX_TESTED_PARTIAL] progress supervision
 - GAP-V73-S03-009 [SANDBOX_TESTED_PARTIAL] replanning
 - GAP-V73-S03-010 [SANDBOX_TESTED_PARTIAL] independent verification routing
+- GAP-V73-S03-011 [SANDBOX_TESTED_PARTIAL] completion/evidence tracking
 - GAP-V73-S03-012 [NOT_BUILT] contradiction handling
 - GAP-V73-S03-014 [SANDBOX_TESTED_PARTIAL] owner approval routing
 - GAP-V73-S03-015 [NOT_BUILT] daily/startup briefing
@@ -106,6 +108,7 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - GAP-V73-S09-023 [STRUCTURE_ONLY] content
 - GAP-V73-S09-024 [STRUCTURE_ONLY] media
 - GAP-V73-S09-025 [STRUCTURE_ONLY] translation
+- GAP-V73-S09-026 [SANDBOX_TESTED_PARTIAL] QA
 - GAP-V73-S09-027 [NOT_BUILT] customer support
 - GAP-V73-S09-028 [SANDBOX_TESTED_PARTIAL] delivery preparation
 - GAP-V73-S09-029 [STRUCTURE_ONLY] más, ténylegesen rendelkezésre álló toolokkal elvégezhető digitális munka
@@ -125,6 +128,3 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - GAP-V73-S10-023 [SANDBOX_TESTED_PARTIAL] availability
 - GAP-V73-S12-001 [SANDBOX_TESTED_PARTIAL] MISSING
 - GAP-V73-S12-002 [SANDBOX_TESTED_PARTIAL] PLANNED
-- GAP-V73-S12-003 [SANDBOX_TESTED_PARTIAL] STRUCTURAL_ONLY / STRUCTURALLY_WIRED
-- GAP-V73-S12-006 [SANDBOX_TESTED_PARTIAL] TESTED
-- GAP-V73-S12-009 [SANDBOX_TESTED_PARTIAL] BLOCKED_AWAITING_JOCI_APPROVAL

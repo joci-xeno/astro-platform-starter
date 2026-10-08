@@ -151,7 +151,7 @@ test("privilege escalation by editing the manifest AFTER enabling: granted permi
     assert.equal(r.pm.enable("esc", { ownerApproval: ap("PLUGIN_ENABLE", "esc") }).ok, true);
     fs.writeFileSync(path.join(dir, "plugin.json"), JSON.stringify({ ...base, id: "esc", name: "E", kind: "PLUGIN", entry: "m.mjs", permissions: ["READ_STATE", "FILESYSTEM_PLUGIN_DIR", "NETWORK"] }));
     const res = await r.pm.invoke("esc", "go");
-    if (res.ok) assert.equal(res.result.writeOwn, "DENIED", "write granted from an un-approved manifest edit");
+    assert.equal(res.ok, true, JSON.stringify(res)); assert.equal(res.result.writeOwn, "DENIED", "write granted from an un-approved manifest edit");
     assert.ok(!fs.existsSync(path.join(dir, "o.txt")));
   } finally { r.done(); }
 });

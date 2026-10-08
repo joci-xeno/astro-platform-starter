@@ -1,9 +1,9 @@
 {
  "command": "npm test --prefix atlasz-runtime",
- "tests": 554,
- "pass_": 554,
+ "tests": 568,
+ "pass_": 568,
  "fail": 0,
  "cancelled": 0,
  "skipped": 0,
- "recorded": "2026-10-07 Task 4 M1 run: 554/554 in one process and 554/554 across 85 files run one by one; the coverage-instrumented run was last done at 527 tests in Task 3 and was NOT repeated"
+ "recorded": "2026-10-07 Task 4 M1 follow-up: 568/568 in one process and 568/568 across 86 files run one by one; independent probes 26/26; the coverage-instrumented run was last done at 527 tests in Task 3 and was NOT repeated"
 }

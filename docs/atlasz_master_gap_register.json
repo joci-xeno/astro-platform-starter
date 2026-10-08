@@ -16,14 +16,14 @@
   ]
  },
  "summary": {
-  "total_gaps": 801,
+  "total_gaps": 823,
   "by_source": {
-   "REGISTRY": 716,
+   "REGISTRY": 738,
    "CAPABILITY_85": 82,
    "IMPORT_SCAN": 3
   },
   "by_reality": {
-   "SANDBOX_TESTED_PARTIAL": 456,
+   "SANDBOX_TESTED_PARTIAL": 478,
    "NOT_BUILT": 193,
    "EXTERNAL": 58,
    "STRUCTURE_ONLY": 56,
@@ -32,18 +32,18 @@
    "OWNER_DECISION": 4
   },
   "by_workstream": {
-   "KNOWLEDGE_RESEARCH": 160,
+   "KNOWLEDGE_RESEARCH": 163,
    "TYPED_TOOLS_MODEL_ROUTER": 92,
    "SECURITY_OWNER": 65,
    "MULTIMODAL_VOICE": 59,
    "PERSONAL_HUMAN_CORE": 54,
+   "MONEY_BUSINESS": 50,
    "WINDOWS_CONTROL_CENTER": 49,
-   "MONEY_BUSINESS": 44,
-   "AGENT_ORCHESTRATION": 41,
-   "RECOVERY_BACKUP": 36,
+   "AGENT_ORCHESTRATION": 43,
+   "RECOVERY_BACKUP": 37,
    "SCHEDULER_PCC": 26,
    "CODE_SANDBOX_ENGINEERING": 26,
-   "OBSERVABILITY_DOCTOR": 22,
+   "OBSERVABILITY_DOCTOR": 23,
    "SECTION_S31": 17,
    "UNASSIGNED": 15,
    "SECTION_S52": 11,
@@ -51,22 +51,22 @@
    "SECTION_S44": 10,
    "SECTION_S26": 8,
    "SECTION_S33": 8,
+   "SECTION_S29": 6,
    "SECTION_S32": 6,
    "SECTION_S49": 6,
+   "SECTION_S15": 5,
+   "SECTION_S16": 5,
    "COMPUTER_USE": 5,
-   "SECTION_S29": 5,
    "SECTION_S42": 5,
    "SECTION_S22": 4,
    "SECTION_S38": 4,
    "SECTION_S50": 4,
    "SECTION_S48": 3,
    "SECTION_S47": 2,
-   "LIVE_VOICE": 2,
-   "SECTION_S15": 1,
-   "SECTION_S16": 1
+   "LIVE_VOICE": 2
   },
   "by_status": {
-   "PARTIAL": 506,
+   "PARTIAL": 528,
    "MISSING": 193,
    "EXTERNAL_BLOCKER": 58,
    "STRUCTURAL_ONLY": 28,
@@ -76,7 +76,7 @@
    "DISCONNECTED_BY_DESIGN": 1
   },
   "registry_items": 930,
-  "registry_gaps": 716,
+  "registry_gaps": 738,
   "capabilities_with_gaps": 82,
   "modules_total": 148,
   "modules_reachable_from_entrypoints": 145,
@@ -527,6 +527,20 @@
    "depends_on": "['V73-S03']"
   },
   {
+   "gap_id": "GAP-V73-S03-005",
+   "source": "REGISTRY",
+   "requirement_id": "V73-S03-005",
+   "title": "dependency planning",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P0",
+   "modules": "atlasz-addons/master-planner-orchestrator.mjs",
+   "tests": "['atlasz-tests/contract-existing-modules.test.mjs', 'atlasz-tests/contract-core-engine.test.mjs']",
+   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "workstream": "AGENT_ORCHESTRATION",
+   "depends_on": "['V73-S03']"
+  },
+  {
    "gap_id": "GAP-V73-S03-006",
    "source": "REGISTRY",
    "requirement_id": "V73-S03-006",
@@ -594,6 +608,20 @@
    "tests": "['atlasz-tests/contract-existing-modules.test.mjs', 'atlasz-tests/contract-core-engine.test.mjs']",
    "blocker": "EXTERNAL: second provider",
    "workstream": "TYPED_TOOLS_MODEL_ROUTER",
+   "depends_on": "['V73-S03']"
+  },
+  {
+   "gap_id": "GAP-V73-S03-011",
+   "source": "REGISTRY",
+   "requirement_id": "V73-S03-011",
+   "title": "completion/evidence tracking",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P0",
+   "modules": "atlasz-addons/task-ledger.mjs; qa-reviewer.mjs",
+   "tests": "['atlasz-tests/contract-existing-modules.test.mjs', 'atlasz-tests/contract-core-engine.test.mjs']",
+   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "workstream": "KNOWLEDGE_RESEARCH",
    "depends_on": "['V73-S03']"
   },
   {
@@ -1493,6 +1521,20 @@
    "depends_on": "['V73-S07']"
   },
   {
+   "gap_id": "GAP-V73-S07-013",
+   "source": "REGISTRY",
+   "requirement_id": "V73-S07-013",
+   "title": "Outcome Compiler",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P3",
+   "modules": "atlasz-addons/outcome-compiler.mjs",
+   "tests": "['atlasz-tests/contract-factories.test.mjs']",
+   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "workstream": "KNOWLEDGE_RESEARCH",
+   "depends_on": "['V73-S07']"
+  },
+  {
    "gap_id": "GAP-V73-S07-014",
    "source": "REGISTRY",
    "requirement_id": "V73-S07-014",
@@ -2123,6 +2165,20 @@
    "depends_on": "['V73-S09']"
   },
   {
+   "gap_id": "GAP-V73-S09-026",
+   "source": "REGISTRY",
+   "requirement_id": "V73-S09-026",
+   "title": "QA",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P0",
+   "modules": "atlasz-addons/qa-reviewer.mjs",
+   "tests": "['atlasz-tests/contract-existing-modules.test.mjs']",
+   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "workstream": "AGENT_ORCHESTRATION",
+   "depends_on": "['V73-S09']"
+  },
+  {
    "gap_id": "GAP-V73-S09-027",
    "source": "REGISTRY",
    "requirement_id": "V73-S09-027",
@@ -2389,6 +2445,20 @@
    "depends_on": "['V73-S11']"
   },
   {
+   "gap_id": "GAP-V73-S11-003",
+   "source": "REGISTRY",
+   "requirement_id": "V73-S11-003",
+   "title": "Qualification Engine",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P2",
+   "modules": "atlasz-addons/opportunity-qualification-engine.mjs; atlasz-runtime/supervisor-safe.mjs",
+   "tests": "['atlasz-tests/contract-money-tax.test.mjs', 'atlasz-tests/canonical-runtime.test.mjs']",
+   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "workstream": "MONEY_BUSINESS",
+   "depends_on": "['V73-S11']"
+  },
+  {
    "gap_id": "GAP-V73-S11-004",
    "source": "REGISTRY",
    "requirement_id": "V73-S11-004",
@@ -2431,6 +2501,20 @@
    "depends_on": "['V73-S11']"
   },
   {
+   "gap_id": "GAP-V73-S11-007",
+   "source": "REGISTRY",
+   "requirement_id": "V73-S11-007",
+   "title": "Deal State",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P2",
+   "modules": "atlasz-addons/deal-state.mjs",
+   "tests": "['atlasz-tests/contract-money-tax.test.mjs', 'atlasz-tests/gated-modules.test.mjs']",
+   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "workstream": "MONEY_BUSINESS",
+   "depends_on": "['V73-S11']"
+  },
+  {
    "gap_id": "GAP-V73-S11-008",
    "source": "REGISTRY",
    "requirement_id": "V73-S11-008",
@@ -2459,6 +2543,48 @@
    "depends_on": "['V73-S11']"
   },
   {
+   "gap_id": "GAP-V73-S11-010",
+   "source": "REGISTRY",
+   "requirement_id": "V73-S11-010",
+   "title": "Follow-Up Engine",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P2",
+   "modules": "atlasz-addons/follow-up-engine.mjs",
+   "tests": "['atlasz-tests/contract-money-tax.test.mjs']",
+   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "workstream": "MONEY_BUSINESS",
+   "depends_on": "['V73-S11']"
+  },
+  {
+   "gap_id": "GAP-V73-S11-011",
+   "source": "REGISTRY",
+   "requirement_id": "V73-S11-011",
+   "title": "Delivery Engine",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P2",
+   "modules": "atlasz-addons/delivery-engine.mjs",
+   "tests": "['atlasz-tests/contract-money-tax.test.mjs', 'atlasz-tests/gated-modules.test.mjs']",
+   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "workstream": "MONEY_BUSINESS",
+   "depends_on": "['V73-S11']"
+  },
+  {
+   "gap_id": "GAP-V73-S11-012",
+   "source": "REGISTRY",
+   "requirement_id": "V73-S11-012",
+   "title": "Invoice Engine",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P2",
+   "modules": "atlasz-addons/invoice-engine.mjs",
+   "tests": "['atlasz-tests/contract-money-tax.test.mjs', 'atlasz-tests/gated-modules.test.mjs']",
+   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "workstream": "MULTIMODAL_VOICE",
+   "depends_on": "['V73-S11']"
+  },
+  {
    "gap_id": "GAP-V73-S11-013",
    "source": "REGISTRY",
    "requirement_id": "V73-S11-013",
@@ -2469,6 +2595,20 @@
    "modules": "atlasz-addons/payment-confirmation-adapter.mjs",
    "tests": "['atlasz-tests/contract-existing-modules.test.mjs']",
    "blocker": "providerConfirmed/signatureVerified are caller-asserted; real provider verification adapter missing (EXTERNAL)",
+   "workstream": "MONEY_BUSINESS",
+   "depends_on": "['V73-S11']"
+  },
+  {
+   "gap_id": "GAP-V73-S11-014",
+   "source": "REGISTRY",
+   "requirement_id": "V73-S11-014",
+   "title": "Profit Ledger",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P2",
+   "modules": "atlasz-addons/profit-ledger.mjs; profit-accounting-engine.mjs",
+   "tests": "['atlasz-tests/contract-existing-modules.test.mjs', 'atlasz-tests/contract-money-tax.test.mjs']",
+   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
    "workstream": "MONEY_BUSINESS",
    "depends_on": "['V73-S11']"
   },
@@ -2795,6 +2935,20 @@
    "depends_on": "['V73-S15']"
   },
   {
+   "gap_id": "GAP-V73-S15-002",
+   "source": "REGISTRY",
+   "requirement_id": "V73-S15-002",
+   "title": "QA Reviewer",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P1",
+   "modules": "atlasz-addons/qa-reviewer.mjs",
+   "tests": "['atlasz-tests/contract-existing-modules.test.mjs']",
+   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "workstream": "SECTION_S15",
+   "depends_on": "['V73-S15']"
+  },
+  {
    "gap_id": "GAP-V73-S15-003",
    "source": "REGISTRY",
    "requirement_id": "V73-S15-003",
@@ -2806,6 +2960,20 @@
    "tests": "",
    "blocker": "",
    "workstream": "PERSONAL_HUMAN_CORE",
+   "depends_on": "['V73-S15']"
+  },
+  {
+   "gap_id": "GAP-V73-S15-004",
+   "source": "REGISTRY",
+   "requirement_id": "V73-S15-004",
+   "title": "Guardrail Engine",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P1",
+   "modules": "atlasz-addons/guardrail-engine.mjs",
+   "tests": "['atlasz-tests/contract-core-engine.test.mjs', 'atlasz-tests/stop-enforcement.test.mjs']",
+   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "workstream": "SECTION_S15",
    "depends_on": "['V73-S15']"
   },
   {
@@ -2823,6 +2991,34 @@
    "depends_on": "['V73-S15']"
   },
   {
+   "gap_id": "GAP-V73-S15-006",
+   "source": "REGISTRY",
+   "requirement_id": "V73-S15-006",
+   "title": "Anti-Collusion Monitor",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P1",
+   "modules": "atlasz-addons/anti-collusion-guard.mjs",
+   "tests": "['atlasz-tests/contract-core-engine.test.mjs']",
+   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "workstream": "OBSERVABILITY_DOCTOR",
+   "depends_on": "['V73-S15']"
+  },
+  {
+   "gap_id": "GAP-V73-S15-007",
+   "source": "REGISTRY",
+   "requirement_id": "V73-S15-007",
+   "title": "Anti-Evaluation-Gaming",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P1",
+   "modules": "atlasz-addons/anti-collusion-guard.mjs",
+   "tests": "['atlasz-tests/contract-core-engine.test.mjs']",
+   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "workstream": "SECTION_S15",
+   "depends_on": "['V73-S15']"
+  },
+  {
    "gap_id": "GAP-V73-S15-008",
    "source": "REGISTRY",
    "requirement_id": "V73-S15-008",
@@ -2834,6 +3030,20 @@
    "tests": "",
    "blocker": "",
    "workstream": "OBSERVABILITY_DOCTOR",
+   "depends_on": "['V73-S15']"
+  },
+  {
+   "gap_id": "GAP-V73-S15-009",
+   "source": "REGISTRY",
+   "requirement_id": "V73-S15-009",
+   "title": "Regression/Evaluation Suite",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P1",
+   "modules": "atlasz-addons/regression-eval-suite.mjs",
+   "tests": "['atlasz-tests/contract-core-engine.test.mjs']",
+   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "workstream": "SECTION_S15",
    "depends_on": "['V73-S15']"
   },
   {
@@ -2851,6 +3061,20 @@
    "depends_on": "['V73-S15']"
   },
   {
+   "gap_id": "GAP-V73-S15-011",
+   "source": "REGISTRY",
+   "requirement_id": "V73-S15-011",
+   "title": "evidence verification",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P1",
+   "modules": "atlasz-addons/qa-reviewer.mjs; tracing-evals.mjs",
+   "tests": "['atlasz-tests/contract-existing-modules.test.mjs', 'atlasz-tests/contract-core-engine.test.mjs']",
+   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "workstream": "KNOWLEDGE_RESEARCH",
+   "depends_on": "['V73-S15']"
+  },
+  {
    "gap_id": "GAP-V73-S16-001",
    "source": "REGISTRY",
    "requirement_id": "V73-S16-001",
@@ -2861,6 +3085,34 @@
    "modules": "atlasz-addons/digital-twin.mjs",
    "tests": "['atlasz-tests/digital-twin.test.mjs']",
    "blocker": "Rule-based model of a proposed change, not a behavioural simulation of the live system; not wired into runtime decisions",
+   "workstream": "SECTION_S16",
+   "depends_on": "['V73-S16']"
+  },
+  {
+   "gap_id": "GAP-V73-S16-002",
+   "source": "REGISTRY",
+   "requirement_id": "V73-S16-002",
+   "title": "assess risk",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P4",
+   "modules": "atlasz-addons/digital-twin.mjs",
+   "tests": "['atlasz-tests/digital-twin.test.mjs']",
+   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "workstream": "SECTION_S16",
+   "depends_on": "['V73-S16']"
+  },
+  {
+   "gap_id": "GAP-V73-S16-003",
+   "source": "REGISTRY",
+   "requirement_id": "V73-S16-003",
+   "title": "test assumptions",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P4",
+   "modules": "atlasz-addons/digital-twin.mjs",
+   "tests": "['atlasz-tests/digital-twin.test.mjs']",
+   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
    "workstream": "SECTION_S16",
    "depends_on": "['V73-S16']"
   },
@@ -2876,6 +3128,34 @@
    "tests": "['atlasz-tests/contract-core-engine.test.mjs', 'atlasz-tests/contract-money-tax.test.mjs']",
    "blocker": "",
    "workstream": "TYPED_TOOLS_MODEL_ROUTER",
+   "depends_on": "['V73-S16']"
+  },
+  {
+   "gap_id": "GAP-V73-S16-005",
+   "source": "REGISTRY",
+   "requirement_id": "V73-S16-005",
+   "title": "detect conflicts",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P4",
+   "modules": "atlasz-addons/digital-twin.mjs",
+   "tests": "['atlasz-tests/digital-twin.test.mjs']",
+   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "workstream": "SECTION_S16",
+   "depends_on": "['V73-S16']"
+  },
+  {
+   "gap_id": "GAP-V73-S16-006",
+   "source": "REGISTRY",
+   "requirement_id": "V73-S16-006",
+   "title": "compare alternatives",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P4",
+   "modules": "atlasz-addons/digital-twin.mjs",
+   "tests": "['atlasz-tests/digital-twin.test.mjs']",
+   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "workstream": "SECTION_S16",
    "depends_on": "['V73-S16']"
   },
   {
@@ -5231,6 +5511,20 @@
    "depends_on": "['V73-S27']"
   },
   {
+   "gap_id": "GAP-V73-S27-009",
+   "source": "REGISTRY",
+   "requirement_id": "V73-S27-009",
+   "title": "cost/profit records",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P2",
+   "modules": "atlasz-addons/profit-accounting-engine.mjs",
+   "tests": "['atlasz-tests/contract-money-tax.test.mjs']",
+   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "workstream": "MONEY_BUSINESS",
+   "depends_on": "['V73-S27']"
+  },
+  {
    "gap_id": "GAP-V73-S27-010",
    "source": "REGISTRY",
    "requirement_id": "V73-S27-010",
@@ -5564,6 +5858,20 @@
    "tests": "",
    "blocker": "Not a security scanner for generated code",
    "workstream": "SECURITY_OWNER",
+   "depends_on": "['V73-S29']"
+  },
+  {
+   "gap_id": "GAP-V73-S29-012",
+   "source": "REGISTRY",
+   "requirement_id": "V73-S29-012",
+   "title": "regression;",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P4",
+   "modules": "atlasz-addons/regression-eval-suite.mjs",
+   "tests": "['atlasz-tests/contract-core-engine.test.mjs']",
+   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "workstream": "SECTION_S29",
    "depends_on": "['V73-S29']"
   },
   {
@@ -8423,6 +8731,20 @@
    "depends_on": "['V73-S50']"
   },
   {
+   "gap_id": "GAP-V73-S50-005",
+   "source": "REGISTRY",
+   "requirement_id": "V73-S50-005",
+   "title": "checkpointolj",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
+   "priority": "P?",
+   "modules": "atlasz-addons/checkpoint-engine.mjs; /mnt/user-data/outputs/checkpoints",
+   "tests": "['atlasz-tests/contract-core-engine.test.mjs']",
+   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "workstream": "RECOVERY_BACKUP",
+   "depends_on": "['V73-S50']"
+  },
+  {
    "gap_id": "GAP-V73-S50-006",
    "source": "REGISTRY",
    "requirement_id": "V73-S50-006",
@@ -10391,8 +10713,8 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "P1",
    "modules": "atlasz-addons/plugin-manager.mjs:105; atlasz-addons/local-update-adapters.mjs:102",
-   "tests": "['atlasz-tests/restricted-node.test.mjs', 'atlasz-tests/plugin-manager.test.mjs', 'atlasz-tests/local-update-adapters.test.mjs']",
-   "blocker": "Windows: PERMISSION level only (no network block). Electron/older Node without --permission: hooks and update self-tests fail closed - owner decision needed",
+   "tests": "['atlasz-tests/restricted-node.test.mjs', 'atlasz-tests/plugin-manager.test.mjs', 'atlasz-tests/local-update-adapters.test.mjs', 'atlasz-tests/control-center-ow",
+   "blocker": "NOT verified on Windows or inside Electron (Electron ^33.2 bundles Node 20.x whose --permission support is unconfirmed): there hooks/self-tests fail closed. Network isolation exists only on Linux with",
    "workstream": "CODE_SANDBOX_ENGINEERING",
    "depends_on": ""
   },
@@ -10422,20 +10744,6 @@
    "tests": "",
    "blocker": "Each decision (merge/retire) should be recorded per module; no behaviour may be lost",
    "workstream": "SECURITY_OWNER",
-   "depends_on": ""
-  },
-  {
-   "gap_id": "GAP-ATLASZ-T3-006",
-   "source": "REGISTRY",
-   "requirement_id": "ATLASZ-T3-006",
-   "title": "Control Center screen for restore-from-backup (/api/restore/backup exists server-side; no UI uses it)",
-   "status": "PARTIAL",
-   "reality": "SANDBOX_TESTED_PARTIAL",
-   "priority": "P2",
-   "modules": "atlasz-control-center/server.mjs; atlasz-control-center/public/app.js",
-   "tests": "['atlasz-tests/control-center-routes-m1.test.mjs']",
-   "blocker": "Positive signed restore via UI not yet tested; restore is destructive - drill first",
-   "workstream": "MULTIMODAL_VOICE",
    "depends_on": ""
   },
   {

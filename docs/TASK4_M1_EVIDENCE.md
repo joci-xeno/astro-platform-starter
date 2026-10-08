@@ -19,3 +19,24 @@ Owner approval single-use + argument-bound + forged key refused (P01-P03); unkno
 ## Validation
 - Full suite `npm test --prefix atlasz-runtime`: **554 tests, 554 pass, 0 fail**; also 554/554 across 85 files run one by one. Coverage run not repeated.
 - Nothing was classified VERIFIED_WORKING by this work.
+
+## Follow-up (owner message 20:07): remaining M1 work
+| Item | Result | Evidence |
+|---|---|---|
+| Mutation tests for `restricted-node.mjs` | 18/18 mutants killed (first run 17/18; the survivor — `nodeFlags` dropped — got its own test). Also plugin-manager 9/9 (one survivor = permissions taken from disk instead of the enabled grant → a real escalation scenario, now tested), update adapters 4/4 | `restricted-node.test.mjs` (10 tests), `plugin-manager.test.mjs` (+network, +manifest-escalation) |
+| Signed restore through HTTP | PASS: with a provisioned owner key, `/api/restore/backup` and `/api/owner-safety/action RESTORE` restore the backup and keep the overwritten state aside; negatives (no token 401, wrong passphrase 400, traversal id 400) leave state untouched. T3-006 → EXISTS_AND_WORKING | `control-center-routes-m1.test.mjs` |
+| Secret protection | No GET route of the Control Center returns the runtime token, owner passphrase, Control Center token or key material (30 routes crawled) | same file |
+| Windows/Electron investigation | Documented; fail-closed behaviour tested with a fake node; Doctor shows informational `process_sandbox`. NOT verified on Windows/Electron | `docs/SANDBOX_LIMITS_WINDOWS_ELECTRON.md` |
+| Probes | 26/26 (added P26: manifest-escalation) | `docs/audit/independent_probes.mjs` |
+| Regression | **568 tests, 568 pass, 0 fail** in one process and across 86 files one by one | `docs/audit/full_suite_result.json` |
+| M2 authorization package | Proposal only; consistency tests prove it matches the 31 real tools and that nothing consumes it | `docs/M2_AUTHORIZATION_PACKAGE.md`, `docs/m2_tool_permissions_PROPOSED.json`, `m2-proposal-consistency.test.mjs` |
+
+### Review of the remaining M1 registry items — what is NOT closable in the sandbox
+- PKG84-003 (4 recovery categories have no real local source) — mapping them would mean inventing directories; left NOT_CONFIGURED on purpose.
+- OSC-004 / OSC-018 — real call sites for Computer Use, live connectors and outbound mail do not exist yet (M6/M8, not LIVE).
+- OSC-028 — live/staging proof with a real owner key: needs the owner and a live environment.
+- PKG84-016 — monitor thresholds are untuned defaults without production traffic.
+- Most other M1 rows (S02/S14/S34/S36/S37/S51/S52 items) are already EXISTS_AND_WORKING or PARTIAL with the same kinds of blockers; no honest status change was made without new evidence.
+
+### Correction to the earlier M1 report (registry counts)
+The first M1 report said 214 registry rows EXISTS_AND_WORKING. That number was **wrong by 23**: `docs/audit/reclassify.py` (my Task 3 tool) only examined rows that were *currently* EXISTS_AND_WORKING, so re-running the documentation pipeline flipped the 23 Task 3 downgrades back and forth (215 / 192). The tool is now idempotent (earlier downgrades are carried over). Correct, stable counts after this follow-up: **192 EXISTS_AND_WORKING, 502 PARTIAL, 197 MISSING, 36 STRUCTURAL_ONLY, 36 EXTERNAL_BLOCKER, 17 EXISTS_NEEDS_TEST, 3 BLOCKED_AWAITING_JOCI_APPROVAL (983 rows)**. Of the 192, four are Task 4 closures (T3-001, T3-005, T3-006, T3-007); T3-002 stays PARTIAL.
