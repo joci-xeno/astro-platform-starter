@@ -87,7 +87,7 @@ const probeHook = (outsideFile, ownDir) => `let d='';process.stdin.on('data',c=>
 const t=f=>{try{f();return 'ALLOWED'}catch{return 'DENIED'}};
 console.log(JSON.stringify({readOutside:t(()=>fs.readFileSync(${JSON.stringify(outsideFile)})),writeOwn:t(()=>fs.writeFileSync(${JSON.stringify(path.join(ownDir, "o.txt"))},'x')),spawn:t(()=>cp.execSync('echo hi')),env:Object.keys(process.env).sort()}));});`;
 test("hook runs with least privilege: cannot read outside its dir, cannot spawn, cannot write without FILESYSTEM_PLUGIN_DIR, env holds only PATH + plugin id/hook", async () => {
-  const r = rig(); const outside = path.join(r.root, "outside-secret.txt"); fs.writeFileSync(outside, "SECRET");
+  const r = rig(); const outside = path.join(r.root, "plugins", "sibling-secret.txt"); fs.writeFileSync(outside, "SECRET");   // a SIBLING of the plugin dir, inside the plugins root
   try {
     const dir = path.join(r.root, "plugins", "probe");
     r.mk("probe", { ...base, id: "probe", name: "P", kind: "PLUGIN", entry: "m.mjs" }, { "m.mjs": probeHook(outside, dir) });
@@ -124,5 +124,34 @@ test("host that cannot restrict Node => hook is NOT run (fails closed): SANDBOX_
     assert.ok(!fs.existsSync(marker), "unrestricted fallback must never run");
     assert.equal(pm.list().plugins.find(p => p.id === "nr").status, "ENABLED");
     assert.ok(fs.readFileSync(path.join(r.root, "state2", "plugins-audit.jsonl"), "utf8").includes("PLUGIN_HOOK_NOT_RUN"));
+  } finally { r.done(); }
+});
+
+import os from "node:os";
+const netHook = `let d='';process.stdin.on('data',c=>d+=c).on('end',async()=>{const os=await import('node:os');console.log(JSON.stringify({ifaces:Object.entries(os.networkInterfaces()).flatMap(([k,v])=>v.map(x=>k)).filter(k=>k!=='lo').length}));});`;
+const hostIfaces = Object.keys(os.networkInterfaces()).filter(k => k !== "lo").length;
+test("network: a plugin without the NETWORK grant gets no network (namespace) where the host supports it; with the grant it is not isolated", async t => {
+  const { detectNodeRestrictions } = await import("../atlasz-addons/restricted-node.mjs");
+  if (!detectNodeRestrictions().namespace) return t.skip("no network namespace on this host (documented limit)");
+  if (!hostIfaces) return t.skip("host has no non-loopback interface to compare against");
+  const r = rig();
+  try {
+    r.mk("nonet", { ...base, id: "nonet", name: "N", kind: "PLUGIN", entry: "m.mjs" }, { "m.mjs": netHook });
+    r.mk("withnet", { ...base, id: "withnet", name: "W", kind: "PLUGIN", entry: "m.mjs", permissions: ["READ_STATE", "NETWORK"] }, { "m.mjs": netHook });
+    for (const id of ["nonet", "withnet"]) assert.equal(r.pm.enable(id, { ownerApproval: ap("PLUGIN_ENABLE", id) }).ok, true);
+    assert.equal((await r.pm.invoke("nonet", "go")).result.ifaces, 0);
+    assert.equal((await r.pm.invoke("withnet", "go")).result.ifaces, hostIfaces);
+  } finally { r.done(); }
+});
+test("privilege escalation by editing the manifest AFTER enabling: granted permissions are the ones the owner approved, not the ones now on disk", async () => {
+  const r = rig(); const outside = path.join(r.root, "plugins", "sibling-secret.txt"); fs.writeFileSync(outside, "SECRET");
+  try {
+    const dir = path.join(r.root, "plugins", "esc");
+    r.mk("esc", { ...base, id: "esc", name: "E", kind: "PLUGIN", entry: "m.mjs" }, { "m.mjs": probeHook(outside, dir) });
+    assert.equal(r.pm.enable("esc", { ownerApproval: ap("PLUGIN_ENABLE", "esc") }).ok, true);
+    fs.writeFileSync(path.join(dir, "plugin.json"), JSON.stringify({ ...base, id: "esc", name: "E", kind: "PLUGIN", entry: "m.mjs", permissions: ["READ_STATE", "FILESYSTEM_PLUGIN_DIR", "NETWORK"] }));
+    const res = await r.pm.invoke("esc", "go");
+    if (res.ok) assert.equal(res.result.writeOwn, "DENIED", "write granted from an un-approved manifest edit");
+    assert.ok(!fs.existsSync(path.join(dir, "o.txt")));
   } finally { r.done(); }
 });

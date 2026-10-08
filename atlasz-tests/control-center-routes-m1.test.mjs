@@ -96,3 +96,14 @@ test("ATLASZ-T3-006: with a provisioned owner key, a correctly SIGNED restore th
     assert.equal(fs.readFileSync(f, "utf8"), '{"v":1}');
   } finally { await c.close(); }
 });
+test("secret protection: the runtime token, the owner passphrase and the Control Center token are never present in any GET response", async () => {
+  const RT = "RUNTIME-TOKEN-" + "q".repeat(30); process.env.ATLASZ_RUNTIME_TOKEN = RT;
+  let c; try { c = await boot(); } finally { delete process.env.ATLASZ_RUNTIME_TOKEN; }
+  try {
+    assert.equal((await c.post("/api/owner-key", { passphrase: PW })).status, 200);
+    const routes = ["/api/status", "/api/opportunities", "/api/approvals", "/api/backups", "/api/finance", "/api/documents", "/api/knowledge", "/api/research", "/api/sandbox", "/api/media", "/api/observations", "/api/brain", "/api/money-engine", "/api/money-jobs", "/api/money-agents", "/api/money-recurring", "/api/crm-inbox", "/api/owner-safety", "/api/inbox", "/api/voice", "/api/connectors", "/api/techwatch", "/api/evidence", "/api/brief", "/api/pcc", "/api/prefs", "/api/plugins", "/api/theme", "/api/doctor", "/api/updates"];
+    let seen = 0;
+    for (const r of routes) { const res = await c.get(r); if (res.status === 200) seen++; assert.ok(!res.body.includes(RT), r + " leaks the runtime token"); assert.ok(!res.body.includes(PW), r + " leaks the passphrase"); assert.ok(!res.body.includes(c.token), r + " leaks the control-center token"); assert.ok(!/BEGIN (EC |RSA |OPENSSH )?PRIVATE KEY/.test(res.body), r + " leaks key material"); }
+    assert.ok(seen >= 20, "most routes must actually answer (" + seen + ")");
+  } finally { await c.close(); }
+});
