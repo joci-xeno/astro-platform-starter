@@ -21,7 +21,7 @@ export function stripHtml(h) { return h.replace(/<script[\s\S]*?<\/script>/gi, "
 /** Amount candidates are UNVERIFIED hints for a human/QA; they never become revenue/cost on their own. */
 export function candidateAmounts(text) { return [...text.matchAll(/(?:total|amount|sum|due|összesen|végösszeg)\D{0,15}\$?\s?(\d{1,3}(?:[ ,]\d{3})*(?:\.\d{1,2})?)/gi)].slice(0, 5).map(m => ({ raw: m[0].trim().slice(0, 60), value: Number(m[1].replace(/[ ,]/g, "")), status: "UNVERIFIED_CANDIDATE" })); }
 
-export function createDocumentCenter({ dir, extractors = {}, security = null, graph = null, tenantGraphId = null, now = () => new Date().toISOString() } = {}) {
+export function createDocumentCenter({ dir, extractors = {}, media = null, security = null, graph = null, tenantGraphId = null, now = () => new Date().toISOString() } = {}) {
   if (!dir) throw new Error("DIR_REQUIRED");
   fs.mkdirSync(path.join(dir, "files"), { recursive: true });
   const indexFile = path.join(dir, "index.json");
@@ -51,7 +51,12 @@ export function createDocumentCenter({ dir, extractors = {}, security = null, gr
       else extraction = { status: r.code === "PDF_NO_TEXT_LAYER" ? "NO_TEXT_LAYER" : "EXTRACTOR_FAILED", code: r.code, note: r.note };
     } else if (typeof extractors[ext] === "function") {
       try { text = String(await extractors[ext](stored)); extraction = { status: "EXTRACTED", method: "ADAPTER:" + ext, chars: text.length }; } catch (e) { extraction = { status: "EXTRACTOR_FAILED", note: String(e.message).slice(0, 120) }; }
-    } else extraction = { status: "UNSUPPORTED_FORMAT", note: (BINARY_KNOWN.has(ext) ? ext : "unknown") + " needs an extractor adapter; not pretending to read it" };
+    } else {
+      // Media fabric (images/audio/video): built-in metadata only. There is NO text, so nothing becomes searchable and no content is claimed; OCR/STT/vision are external providers.
+      const md = media && typeof media.describe === "function" ? media.describe(buf, { name: base }) : null;
+      extraction = md && md.status === "OK" && ["image", "audio", "video"].includes(md.kind) ? { status: "METADATA_ONLY", method: "MEDIA_FABRIC", meta: { format: md.format, kind: md.kind, ...md.metadata, privacy: md.privacy, ...(md.extensionMismatch ? { extensionMismatch: true } : {}) }, note: "Built-in metadata only. Content understanding (OCR / speech-to-text / vision) needs an external provider that is not connected." }
+        : { status: "UNSUPPORTED_FORMAT", note: (BINARY_KNOWN.has(ext) ? ext : "unknown") + " needs an extractor adapter; not pretending to read it" };
+    }
     // untrusted until screened: the Security Brain looks at the extracted text BEFORE it becomes searchable or readable by an agent
     const hasSecret = !!(text && SECRET.some(r => r.test(text))); // detected on the raw extraction, before screening can withhold the text
     let screening = { decision: "NOT_SCREENED", reasons: ["NO_SECURITY_BRAIN_ATTACHED"] };
@@ -78,6 +83,8 @@ export function createDocumentCenter({ dir, extractors = {}, security = null, gr
       .map(({ d, hit }) => { let snippet = null; if (d.classification !== "SECRET" && d.textFile) { const txt = fs.readFileSync(d.textFile, "utf8"), i = txt.toLowerCase().indexOf(q.find(t => d.tokens.includes(t))); snippet = txt.slice(Math.max(0, i - 40), i + 120).replace(/\s+/g, " "); }
         return { ...pub(d), score: hit / q.length, snippet: snippet ?? (d.classification === "SECRET" ? "[hidden: SECRET]" : null) }; });
   }
+  /** Raw bytes of a stored file, for built-in analysis only. Same gates as get(): tenant, role, never SECRET. For agents the file must not be SECRET and must be role-visible (metadata analysis discloses no content). */
+  function readBytes(id, { tenantId, role = "OWNER" } = {}) { const d = docs[id]; if (!d || d.tenantId !== tenantId || !roleOk(d, role) || d.classification === "SECRET" || !d.stored) return null; try { return fs.readFileSync(d.stored); } catch { return null; } }
   /** forAgent:true is the read path for agents/models: the text is returned only when the Security Brain screened it ALLOW. The owner view (default) can read any non-SECRET stored text. */
   function get(id, { tenantId, role = "OWNER", forAgent = false } = {}) { const d = docs[id]; if (!d || d.tenantId !== tenantId || !roleOk(d, role)) return null; const screened = !forAgent || d.screening?.decision === "ALLOW"; return { ...pub(d), text: d.textFile && d.classification !== "SECRET" && screened ? fs.readFileSync(d.textFile, "utf8") : null, withheldFromAgent: forAgent && !screened ? "NOT_SCREENED_ALLOW" : null }; }
   function associate(id, { tenantId, jobId = undefined, evidenceRef = undefined } = {}) {
@@ -85,5 +92,5 @@ export function createDocumentCenter({ dir, extractors = {}, security = null, gr
     if (jobId !== undefined) d.jobId = jobId; if (evidenceRef) d.evidenceRefs = [...new Set([...d.evidenceRefs, evidenceRef])]; save(); return pub(d);
   }
   const summary = () => { const all = Object.values(docs); return { total: all.length, byType: Object.fromEntries(DOC_TYPES.map(t => [t, all.filter(d => d.type === t).length])), unsupported: all.filter(d => d.extraction.status === "UNSUPPORTED_FORMAT").length, secret: all.filter(d => d.classification === "SECRET").length }; };
-  return { ingest, list, search, get, versions, associate, summary };
+  return { ingest, list, search, get, versions, associate, summary, readBytes };
 }

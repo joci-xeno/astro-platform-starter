@@ -27,6 +27,7 @@ import { createDocumentCenter } from "../atlasz-addons/document-center.mjs";
 import { createKnowledgeProjects } from "../atlasz-addons/knowledge-projects.mjs";
 import { createResearchLedger } from "../atlasz-addons/research-ledger.mjs";
 import { createCodeSandbox, registerSandboxTools } from "../atlasz-addons/code-sandbox.mjs";
+import { createModalityFabric, registerModalityTools } from "../atlasz-addons/modality-fabric.mjs";
 import { createToolRegistry } from "../atlasz-addons/typed-tools.mjs";
 import { createInboxPipeline } from "../atlasz-addons/business/inbox-pipeline.mjs";
 import { createOwnerControlSystem } from "../atlasz-addons/owner-control/owner-control-system.mjs";
@@ -142,7 +143,10 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
   // Knowledge Projects over the Document Center. Tool callers are AGENTS: they always read as role AGENT with forAgent:true (Security-Brain ALLOW text only, SECRET hidden);
   // tenant is fixed to the owner's tenant and is never an argument. Retrieval is keyword-based, answers are extractive + cited (see knowledge-projects.mjs).
   const KP_TENANT = "JOCI", kpWho = { tenantId: KP_TENANT, role: "AGENT", forAgent: true };
-  const documents = createDocumentCenter({ dir: path.join(dataDir, "documents"), security: brain.security, graph: brain.entityGraph });
+  // Multimodal fabric: built-in metadata for images/audio/video + document text; OCR / speech-to-text / vision slots exist but NO provider is attached (external).
+  const modality = createModalityFabric({ security: brain.security, blackBox: brain.blackBox, now });
+  const documents = createDocumentCenter({ dir: path.join(dataDir, "documents"), security: brain.security, graph: brain.entityGraph, media: modality });
+  registerModalityTools(tools, modality, documents, { tenantId: KP_TENANT, role: "AGENT" });
   const knowledge = createKnowledgeProjects({ file: path.join(dataDir, "knowledge", "projects.json"), documents, security: brain.security, blackBox: brain.blackBox, now });
   const anyObj = { type: "object", additionalProperties: true, properties: {} }, KP_ID = { type: "string", minLength: 1, maxLength: 80 };
   tools.register({ name: "kp.list", description: "List knowledge projects the agent role may use.", operation: "READ_STATUS", input: { type: "object", properties: {} }, output: { type: "object", required: ["projects"], properties: { projects: { type: "array" } } }, handler: () => ({ projects: knowledge.list({ tenantId: KP_TENANT, role: "AGENT" }) }) });
@@ -376,7 +380,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
       agents: state.agents, blockers, sourceErrors: state.sourceErrors, emergency: emergencyStatus(), safeMode: safeMode.status(), pendingApprovals: approvalRequests.pending().length, queue: queue.stats(), watchdog: watchdog.status(),
       selfCheck: { level: selfCheck.level, problems: selfCheck.checks.filter(c => c.status !== "OK").map(c => ({ id: c.id, status: c.status, detail: c.detail })) },
       vault: vault.status(), internalAddons: addonSnapshot(),
-      brain: brainSafe(() => brain.summary()) ?? { state: "ERROR" }, models: brainSafe(() => modelGateway.summary()) ?? { state: "ERROR" }, sandbox: brainSafe(() => { const x = sandbox.summary(); return { level: x.level, languages: x.languages, runs: x.runs, audit: x.audit, label: x.label }; }) ?? { state: "ERROR" }, research: brainSafe(() => research.summary({ tenantId: KP_TENANT, role: "OWNER" })) ?? { state: "ERROR" }, knowledge: brainSafe(() => ({ projects: knowledge.list({ tenantId: KP_TENANT }).length, documents: documents.summary().total, method: "KEYWORD_BM25_NOT_SEMANTIC" })) ?? { state: "ERROR" }, scheduler: brainSafe(() => scheduler.summary()) ?? { state: "ERROR" }, pcc: brainSafe(() => pcc.summary()) ?? { state: "ERROR" }, moneyEngine: brainSafe(() => moneyEngine.panel()) ?? { state: "ERROR" }, behavior: brainSafe(() => brain.behavior.summary()) ?? { state: "ERROR" }, inbox: brainSafe(() => ({ ...inbox.counts(), pipeline: inboxPipeline.summary() })) ?? { state: "ERROR" }, ownerControl: brainSafe(() => ownerControl.status()) ?? { state: "ERROR" }, ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
+      brain: brainSafe(() => brain.summary()) ?? { state: "ERROR" }, models: brainSafe(() => modelGateway.summary()) ?? { state: "ERROR" }, modality: brainSafe(() => { const m = modality.summary(); return { builtIn: m.builtIn.length, externalSlotsNotLive: m.external, note: m.note }; }) ?? { state: "ERROR" }, sandbox: brainSafe(() => { const x = sandbox.summary(); return { level: x.level, languages: x.languages, runs: x.runs, audit: x.audit, label: x.label }; }) ?? { state: "ERROR" }, research: brainSafe(() => research.summary({ tenantId: KP_TENANT, role: "OWNER" })) ?? { state: "ERROR" }, knowledge: brainSafe(() => ({ projects: knowledge.list({ tenantId: KP_TENANT }).length, documents: documents.summary().total, method: "KEYWORD_BM25_NOT_SEMANTIC" })) ?? { state: "ERROR" }, scheduler: brainSafe(() => scheduler.summary()) ?? { state: "ERROR" }, pcc: brainSafe(() => pcc.summary()) ?? { state: "ERROR" }, moneyEngine: brainSafe(() => moneyEngine.panel()) ?? { state: "ERROR" }, behavior: brainSafe(() => brain.behavior.summary()) ?? { state: "ERROR" }, inbox: brainSafe(() => ({ ...inbox.counts(), pipeline: inboxPipeline.summary() })) ?? { state: "ERROR" }, ownerControl: brainSafe(() => ownerControl.status()) ?? { state: "ERROR" }, ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
     };
   }
   const watchdog = createWatchdog({ onEscalate: e => safeMode.enter("WATCHDOG:" + e.id, { detail: e.detail }) });
@@ -405,7 +409,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
     schedule(() => brainSafe(() => brain.behavior.scan()), 60000);          // behaviour anomaly scan over the tamper-evident Black Box (detect + recommend only)
   }
   function stop() { stopping = true; watchdog.stop(); for (const t of timers) clearTimeout(t); save(); }
-  return { tools, modelGateway, knowledge, research, sandbox, documents, pcc, scheduler, inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
+  return { tools, modelGateway, knowledge, research, sandbox, modality, documents, pcc, scheduler, inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
 }
 
 if (process.env.ATLASZ_TEST_MODE !== "1") {

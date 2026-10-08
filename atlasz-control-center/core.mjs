@@ -20,6 +20,7 @@ import { buildDailyBrief, answerQuery, DEFAULT_PREFS, briefDue, markBriefShown }
 import { assessImpact } from "../atlasz-addons/human-core.mjs";
 import { createMobileApi } from "../atlasz-addons/mobile-api.mjs";
 import { createApprovalRequests } from "../atlasz-addons/approval-requests.mjs";
+import { createModalityFabric } from "../atlasz-addons/modality-fabric.mjs";
 import { createCodeSandbox } from "../atlasz-addons/code-sandbox.mjs";
 import { createResearchLedger } from "../atlasz-addons/research-ledger.mjs";
 import { createKnowledgeProjects } from "../atlasz-addons/knowledge-projects.mjs";
@@ -278,8 +279,10 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
     return layer.handle(text, { ownerApproval: approval });
   }
   // ---- Documents / Inbox / Voice / Connectors / Tech Watch (read-mostly views over the durable modules) ----
-  const docCenter = () => createDocumentCenter({ dir: path.join(stateDir, "documents") });
+  const modalityFabric = createModalityFabric(), docCenter = () => createDocumentCenter({ dir: path.join(stateDir, "documents"), media: modalityFabric });
   const documents = () => { const d = docCenter(); return { summary: d.summary(), items: d.list({ tenantId: "JOCI", role: "OWNER" }).slice(0, 100) }; };
+  // Multimodal view: built-in capability, provider slots (all external), and the media documents the Document Center already holds (metadata only).
+  const media = () => { try { const d = docCenter().list({ tenantId: "JOCI", role: "OWNER" }).filter(x => x.extraction?.status === "METADATA_ONLY"); return { state: "CONNECTED", ...modalityFabric.summary(), documents: d.map(x => ({ id: x.id, name: x.name, ingestedAt: x.ingestedAt, classification: x.classification, ...x.extraction.meta })) }; } catch (e) { return { state: "UNREADABLE", error: String(e.message) }; } };
   // Knowledge Projects (owner view): same files the runtime uses. Owner reads as OWNER (not forAgent); SECRET stays hidden even from the owner view.
   const KP_T = "JOCI", kpInst = () => createKnowledgeProjects({ file: path.join(stateDir, "knowledge", "projects.json"), documents: docCenter() });
   const knowledge = () => { try { const k = kpInst(); return { state: "CONNECTED", method: "KEYWORD_BM25_NOT_SEMANTIC", projects: k.list({ tenantId: KP_T }).map(p => ({ ...p, ...k.summary(p.id, { tenantId: KP_T }) })) }; } catch (e) { return { state: "UNREADABLE", error: String(e.message) }; } };
@@ -415,6 +418,6 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   };
 
   const moneyViews = createMoneyViews({ stateDir });
-  return { pcc, pccAction, knowledge, knowledgeAction, research, researchAction, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { pcc, pccAction, knowledge, knowledgeAction, research, researchAction, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }
