@@ -78,8 +78,8 @@
   "registry_items": 930,
   "registry_gaps": 738,
   "capabilities_with_gaps": 82,
-  "modules_total": 163,
-  "modules_reachable_from_entrypoints": 160,
+  "modules_total": 165,
+  "modules_reachable_from_entrypoints": 162,
   "orphan_modules": [
    "atlasz-addons/digital-twin.mjs",
    "atlasz-addons/evidence-record.mjs",
@@ -197,8 +197,11 @@
     "/api/plugins",
     "/api/plugins/disable",
     "/api/plugins/enable",
+    "/api/plugins/install",
     "/api/plugins/reset",
-    "/api/plugins/theme"
+    "/api/plugins/rollback",
+    "/api/plugins/theme",
+    "/api/plugins/uninstall"
    ],
    "status": "CONNECTED"
   },

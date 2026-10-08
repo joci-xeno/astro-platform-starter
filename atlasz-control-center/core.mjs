@@ -17,6 +17,7 @@ import { readAuditFile, verifyChain } from "../atlasz-addons/audit-chain.mjs";
 import { createFinancialLedger } from "../atlasz-addons/financial-ledger.mjs";
 import { createLocalUpdateAdapters, SELFTEST } from "../atlasz-addons/local-update-adapters.mjs";
 import { createPluginManager } from "../atlasz-addons/plugin-manager.mjs";
+import { createPluginInstaller } from "../atlasz-addons/plugin-installer.mjs";
 import { createPersonalCommandCenter } from "../atlasz-addons/personal-command-center.mjs";
 import { buildDailyBrief, answerQuery, DEFAULT_PREFS, briefDue, markBriefShown } from "../atlasz-addons/master-brief.mjs";
 import { assessImpact } from "../atlasz-addons/human-core.mjs";
@@ -356,14 +357,14 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   // "complete" honestly answers NO_ELIGIBLE_PROVIDER; nothing is fabricated, nothing is spent, and every call is gated by the kill switch.
   const wbGateway = () => createModelGateway({ resilience: createProviderResilience({ gate: x => emergency().gate(x), clock: () => Date.now(), timeoutMs: 15000 }), models: createModelIntelligence({ graph: createCapabilityGraph(), clockMs: () => Date.now() }) });
   let wbCache = null;                                   // ONE workbench per Control Center: workflow run-guards and batch state must be shared across requests
-  const wbInst = () => (wbCache ??= createWorkbench({ conversationFile: path.join(stateDir, "workbench", "conversations.json"), memoryFile: path.join(stateDir, "workbench", "project-memory.json"), notesFile: path.join(stateDir, "workbench", "notes.json"), workflowFile: path.join(stateDir, "workbench", "workflows.json"),
+  const wbInst = () => (wbCache ??= createWorkbench({ conversationFile: path.join(stateDir, "workbench", "conversations.json"), memoryFile: path.join(stateDir, "workbench", "project-memory.json"), notesFile: path.join(stateDir, "workbench", "notes.json"), workflowFile: path.join(stateDir, "workbench", "workflows.json"), skillsFile: path.join(stateDir, "workbench", "skills.json"),
     gateway: wbGateway(), tenantId: KP_T, isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL" }));
   async function workbench() {
     try { const w = wbInst(), g = wbGateway(); return { state: "CONNECTED", ops: w.ops, conversations: (await w.run("conv.list")).conversations, providers: g.summary(), note: "No model provider is attached: asking a model returns NO_ELIGIBLE_PROVIDER. Analysis, rendering, chunking and policy tools run locally and spend nothing." }; }
     catch (e) { return { state: "UNREADABLE", error: String(e.message) }; }
   }
   async function workbenchAction({ op, args } = {}) {
-    if (emergency().status().mode !== "RUNNING" && /^(conv\.complete|workflow\.(run|resume|batchRun|tick))$/.test(String(op))) throw new Error("EMERGENCY_STOP_ACTIVE");
+    if (emergency().status().mode !== "RUNNING" && /^(conv\.complete|(workflow\.(run|resume|batchRun|tick)|skill\.run))$/.test(String(op))) throw new Error("EMERGENCY_STOP_ACTIVE");
     const r = await wbInst().run(String(op), args ?? {});
     if (!r || r.ok === false) throw new Error(String(r?.reason ?? "FAILED"));
     return r;
@@ -388,7 +389,19 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   const techWatch = () => createTechWatch({ feedDir: path.join(configDir, "tech-watch"), installed: () => uc().viewModel().components.map(c => ({ componentId: c.id, version: c.version })) }).scan();
   // ---- Update Center (same flow as the CLI/tests; no real detector adapters yet => honest BLOCKED) ----
   const plugins = () => createPluginManager({ roots: [path.join(configDir, "plugins"), path.join(packDir, "plugins")], stateDir: path.join(stateDir, "plugins"), ownerAuth: ownerAuth() });
+  // Installer (M05): packages are read ONLY from <configDir>/plugin-inbox/<name> (a fixed folder; no arbitrary paths from the UI). Always owner-signed; installs DISABLED.
+  const pluginInbox = path.join(configDir, "plugin-inbox");
+  const installer = () => createPluginInstaller({ pluginRoot: path.join(configDir, "plugins"), stateDir: path.join(stateDir, "plugin-installer"), ownerAuth: ownerAuth(), pluginManager: plugins(), isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL" });
+  const inboxPkg = name => { const ins = installer(); if (!ins.nameOk(name)) throw new Error("PACKAGE_NAME_INVALID"); return { ins, dir: path.join(pluginInbox, String(name)) }; };
+  const pluginView = () => {
+    const base = plugins().list(), ins = installer(); let names = [];
+    try { names = fs.readdirSync(pluginInbox, { withFileTypes: true }).filter(e => e.isDirectory() && ins.nameOk(e.name)).map(e => e.name).slice(0, 50); } catch { /* no inbox yet */ }
+    return { ...base, inbox: names.map(name => { const r = ins.inspectPackage(path.join(pluginInbox, name)); return r.ok ? { name, ok: true, id: r.manifest.id, version: r.manifest.version, kind: r.manifest.kind, permissions: r.manifest.permissions, files: r.fileCount, hash: r.hash } : { name, ok: false, problems: r.problems.slice(0, 5) }; }), installed: base.plugins.map(x => ({ id: x.id, ...installer().versions(x.id) })) };
+  };
   const pluginActions = {
+    install: ({ name, passphrase }) => act(() => { const { ins, dir } = inboxPkg(name), p = ins.inspectPackage(dir); if (!p.ok) return { ok: false, reason: "PACKAGE_REJECTED", problems: p.problems.slice(0, 10) }; return ins.install(dir, { ownerApproval: passphrase ? sign(passphrase, "PLUGIN_INSTALL", p.subject) : null }); }),
+    rollback: ({ id, version, passphrase }) => act(() => { const ins = installer(), s = ins.rollbackSubject(id, version); return ins.rollback(id, version, { ownerApproval: passphrase && s ? sign(passphrase, "PLUGIN_ROLLBACK", s) : null }); }),
+    uninstall: ({ id, passphrase }) => act(() => installer().uninstall(id, { ownerApproval: passphrase ? sign(passphrase, "PLUGIN_UNINSTALL", id) : null })),
     enable: ({ id, passphrase }) => act(() => plugins().enable(id, { ownerApproval: passphrase ? sign(passphrase, "PLUGIN_ENABLE", id) : null })),
     disable: ({ id }) => act(() => plugins().disable(id)),
     setTheme: ({ id = null }) => act(() => plugins().setTheme(id)),
@@ -483,6 +496,6 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   };
 
   const moneyViews = createMoneyViews({ stateDir });
-  return { pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, workbench, workbenchAction, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, workbench, workbenchAction, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => pluginView(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }

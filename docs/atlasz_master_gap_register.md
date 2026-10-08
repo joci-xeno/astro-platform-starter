@@ -48,7 +48,7 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - LIVE_VOICE: 2
 
 ## Reachability
-- Modules in atlasz-addons: 163; reachable from entry points: 160
+- Modules in atlasz-addons: 165; reachable from entry points: 162
 - ORPHAN: atlasz-addons/digital-twin.mjs
 - ORPHAN: atlasz-addons/evidence-record.mjs
 - ORPHAN: atlasz-addons/tenant-isolation.mjs

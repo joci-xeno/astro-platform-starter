@@ -78,7 +78,7 @@ Started with **211** EXISTS_AND_WORKING registry rows (all items).
 
 Remaining flags on retained items (reviewed, none changes status): TESTS_DO_NOT_EXERCISE_MODULE×6, NO_MODULE_FILE×12, LOCATION_FILE_NOT_FOUND×2, NO_TEST_LISTED×4, LISTED_TEST_MISSING×1, MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW×1. These are meta items (tests/registry/audit-task rows with no code module), a `*.test.mjs` glob mistaken for a missing file (ATLASZ-CR-003), or heuristic misses where the test drives a real process (S14-001, S35-008).
 
-**Independent probes (20):** 35/35 pass.
+**Independent probes (20):** 38/38 pass.
 
 | Probe | Claim | Result |
 |---|---|---|
@@ -117,6 +117,9 @@ Remaining flags on retained items (reviewed, none changes status): TESTS_DO_NOT_
 | P33 | B1: notes/ideas of one tenant are invisible to another (get, search, export) | PASS |
 | P34 | B1: a stopped system (kill switch / Safe Mode) runs no workflow step; a throwing stop check fails closed | PASS |
 | P35 | B1: hostile page markup (script, style, comments, event handlers) never reaches the comparison text | PASS |
+| P36 | B1: plugin install without a matching signed owner approval installs nothing; an approval for other content (another hash) is refused | PASS |
+| P37 | B1: a package containing a symlink or a forbidden permission is rejected before any approval is considered | PASS |
+| P38 | B1: no agent id can activate a skill; only pure computation actions are usable in a skill; an untested version cannot be activated | PASS |
 
 **Live boot of runtime + Control Center:** 30 agents (SEARCH 5, EXECUTION 25); 31 typed tools registered; 60 Control Center routes (30 GET, 30 POST): every GET returns 200 with a token and is refused without one, every POST is refused without/with a wrong token, a foreign Host header gets 403. 
 
@@ -189,7 +192,7 @@ These categories are derived from each row's own blocker/evidence text and the m
 
 ## 7. Test results and coverage limits
 
-- Full suite (`npm test --prefix atlasz-runtime`): **701 tests, 701 pass, 0 fail, 0 skipped, 0 cancelled** (see recorded note in full_suite_result.json).
+- Full suite (`npm test --prefix atlasz-runtime`): **722 tests, 722 pass, 0 fail, 0 skipped, 0 cancelled** (see recorded note in full_suite_result.json).
 - Per-file run (`docs/audit/run_tests_per_file.py`): 86 files, 568 tests, 568 pass, 0 fail, 0 skipped.
 - Line coverage (node --experimental-test-coverage, full suite, 527/527): **98.8% lines / 84.5% branches** over 151 loaded source files; lowest-covered: atlasz-addons/negotiation-engine.mjs 30%; atlasz-addons/tracing-evals.mjs 61%; atlasz-addons/enterprise-knowledge-agentic-rag.mjs 78%; atlasz-control-center/server.mjs 83%; atlasz-addons/tool-fabric.mjs 89%; atlasz-addons/personal-command-center.mjs 93%. Absent from the coverage report (not loaded, or not attributed by the collector - e.g. supervisor-safe.mjs is exercised through real-process tests): atlasz-control-center/public/app.js, atlasz-runtime/agent-child.js, atlasz-runtime/owner-cli.mjs, atlasz-runtime/supervisor-safe.mjs, atlasz-runtime/supervisor.js, atlasz-runtime/worker.js. Caveat: coverage counts executed lines, not asserted behaviour, so it supports but does not prove the 'working' claims (e.g. `negotiation-engine.mjs` is the least covered module and is hub-bag only).
 - Limits: tests run against temp dirs with fake providers, so they show logic and failure handling, not provider behaviour; Windows-only branches (env scrubbing, junctions, process limits) cannot run on this Linux host; the Electron shell and installer are untested here; timing/robustness tests use short real timeouts and can be load-sensitive; mutation testing was done per module by hand-written mutants, not for the whole code base; the registry/gap-register generators have their own tests, so some of the suite verifies tooling rather than product behaviour.

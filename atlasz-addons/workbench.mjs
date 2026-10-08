@@ -11,13 +11,14 @@ import { chooseDetail } from "./detail-level.mjs";
 import { createProjectMemory } from "./project-memory.mjs";
 import { createNotesOrganizer } from "./notes-organizer.mjs";
 import { createWorkflowEngine } from "./workflow-engine.mjs";
+import { createSkillRegistry } from "./skill-registry.mjs";
 import { comparePages } from "./text-compare.mjs";
 import { analyzeTranscript } from "./transcript-actions.mjs";
 
 export const WB_LIMITS = Object.freeze({ csvChars: 400_000, textChars: 400_000, maxChartsReturned: 6 });
 const isObj = v => v && typeof v === "object" && !Array.isArray(v);
 
-export function createWorkbench({ conversationFile = null, memoryFile = null, notesFile = null, workflowFile = null, gateway = null, tenantId = "JOCI", now, isStopped = () => false } = {}) {
+export function createWorkbench({ conversationFile = null, memoryFile = null, notesFile = null, workflowFile = null, skillsFile = null, gateway = null, tenantId = "JOCI", now, isStopped = () => false } = {}) {
   const conv = createConversationStore({ file: conversationFile, ...(now ? { now } : {}) });
   const T = { tenantId };
   const memory = createProjectMemory({ file: memoryFile, ...(now ? { now } : {}) }), notes = createNotesOrganizer({ file: notesFile, ...(now ? { now } : {}) });
@@ -32,6 +33,7 @@ export function createWorkbench({ conversationFile = null, memoryFile = null, no
     "memory.propose": { run: a => { const r = memory.propose(a.projectId, { ...T, actor: "SYSTEM", title: a.title, decision: a.decision, rationale: a.rationale ?? "", session: "workflow" }); if (!r.ok) throw new Error(r.reason); return { id: r.id }; }, idempotent: false, rewindable: false },
   };
   const wf = createWorkflowEngine({ file: workflowFile, actions: wfActions, isStopped, ...(now ? { now } : {}) });
+  const skills = createSkillRegistry({ file: skillsFile, actions: wfActions, isStopped });       // declarative skills; only pure wfActions; the console is the OWNER
   const OPS = {
     "conv.create": a => conv.create({ ...T, title: a.title, systemPrompt: a.systemPrompt, model: a.model ?? null }),
     "conv.list": () => ({ ok: true, conversations: conv.list(T) }),
@@ -104,6 +106,16 @@ export function createWorkbench({ conversationFile = null, memoryFile = null, no
     "workflow.batchRequeue": a => wf.requeueFailed(a.id, T),
     "workflow.batch": a => wf.getBatch(a.id, T),
     "workflow.tick": () => wf.tick(T).then(r => ({ ok: true, started: r })),
+    // ---- skills (C05): drafts are tested in a throwaway engine, activated only by the owner for exactly the tested content
+    "skill.actions": () => ({ ok: true, actions: skills.pureActions() }),
+    "skill.submit": a => skills.submit({ ...T, id: a.id, name: a.name, description: a.description, params: a.params, steps: a.steps, permissions: a.permissions, tests: a.tests, submittedBy: "OWNER" }),
+    "skill.gate": a => skills.runGate(T.tenantId, a.id, a.version),
+    "skill.activate": a => skills.activate(T.tenantId, a.id, a.version, { actor: "OWNER" }),
+    "skill.rollback": a => skills.rollback(T.tenantId, a.id, a.version, { actor: "OWNER" }),
+    "skill.deactivate": a => skills.deactivate(T.tenantId, a.id, { actor: "OWNER" }),
+    "skill.run": a => skills.run(T.tenantId, a.id, a.params ?? {}),
+    "skill.list": () => ({ ok: true, skills: skills.list(T.tenantId) }),
+    "skill.get": a => skills.get(T.tenantId, a.id),
     // ---- comparison (P13) and transcript analysis (P02): both work on text the owner supplies; nothing is fetched
     "compare.pages": a => comparePages(a.pages),
     "transcript.analyze": a => analyzeTranscript(a.transcript, { summarySentences: a.summarySentences }),

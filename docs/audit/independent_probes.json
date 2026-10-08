@@ -211,6 +211,24 @@
    "claim": "B1: hostile page markup (script, style, comments, event handlers) never reaches the comparison text",
    "ok": true,
    "note": "\"Hi\\nok\""
+  },
+  {
+   "id": "P36",
+   "claim": "B1: plugin install without a matching signed owner approval installs nothing; an approval for other content (another hash) is refused",
+   "ok": true,
+   "note": "OWNER_APPROVAL_REQUIRED:APPROVAL_OBJECT_REQUIRED | OWNER_APPROVAL_REQUIRED:SUBJECT_MISMATCH"
+  },
+  {
+   "id": "P37",
+   "claim": "B1: a package containing a symlink or a forbidden permission is rejected before any approval is considered",
+   "ok": true,
+   "note": "SYMLINK_REFUSED:l | FORBIDDEN_PERMISSION:SECRETS"
+  },
+  {
+   "id": "P38",
+   "claim": "B1: no agent id can activate a skill; only pure computation actions are usable in a skill; an untested version cannot be activated",
+   "ok": true,
+   "note": "TEST_GATE_NOT_PASSED_FOR_THIS_CONTENT | ACTION_NOT_PURE_COMPUTATION:wr"
   }
  ]
 }

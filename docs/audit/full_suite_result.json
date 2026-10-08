@@ -1,9 +1,9 @@
 {
  "command": "npm test --prefix atlasz-runtime",
- "tests": 701,
- "pass_": 701,
+ "tests": 722,
+ "pass_": 722,
  "fail": 0,
  "cancelled": 0,
  "skipped": 0,
- "recorded": "2026-10-07 B0+B1 follow-up: 701/701 in one process (npm test --prefix atlasz-runtime); independent probes 35/35; mutation checks on B0/B1 modules: 0 surviving non-equivalent mutants (1 documented equivalent in render.mjs); the coverage-instrumented run was NOT repeated"
+ "recorded": "2026-10-07 B1 plugin installer + skill registry: 722/722 in one process; independent probes 38/38; mutation checks on plugin-installer (2 documented equivalent survivors) and skill-registry (0, 2 documented equivalent); the coverage-instrumented run was NOT repeated"
 }
