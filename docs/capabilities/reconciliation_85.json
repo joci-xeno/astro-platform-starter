@@ -1,0 +1,2097 @@
+[
+ {
+  "id": "M01",
+  "name": "Universal AI Browser Sidebar",
+  "status": "MISSING",
+  "module_files": [
+   "atlasz-addons/computer-use-fabric.mjs",
+   "atlasz-addons/tool-fabric.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "gated-modules.test.mjs",
+   "probe-evidence.test.mjs",
+   "stop-enforcement.test.mjs"
+  ],
+  "tests_passing": 3,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/computer-use-fabric.mjs",
+   "atlasz-addons/tool-fabric.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "M02",
+  "name": "Intelligent Knowledge Projects",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/brain/knowledge-brain.mjs",
+   "atlasz-addons/brain/memory-fabric.mjs",
+   "atlasz-addons/business/entity-graph.mjs",
+   "atlasz-addons/document-center.mjs",
+   "atlasz-addons/knowledge-projects.mjs",
+   "atlasz-addons/shared-project-registry.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "brain-intelligence.test.mjs",
+   "contract-memory-control.test.mjs",
+   "control-center-systems.test.mjs",
+   "crm.test.mjs",
+   "document-center.test.mjs",
+   "document-intelligence.test.mjs",
+   "entity-graph.test.mjs",
+   "inbox-pipeline.test.mjs",
+   "knowledge-projects.test.mjs",
+   "memory-fabric.test.mjs",
+   "modality-fabric-hosted.test.mjs",
+   "observation-memory-hosted.test.mjs",
+   "regression-repairs.test.mjs",
+   "research-ledger.test.mjs"
+  ],
+  "tests_passing": 14,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/brain/knowledge-brain.mjs",
+   "atlasz-addons/brain/memory-fabric.mjs",
+   "atlasz-addons/business/entity-graph.mjs",
+   "atlasz-addons/document-center.mjs",
+   "atlasz-addons/knowledge-projects.mjs",
+   "atlasz-addons/shared-project-registry.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "M03",
+  "name": "Multi-Model Conversation Interface",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/model-gateway.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "model-gateway.test.mjs"
+  ],
+  "tests_passing": 1,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/model-gateway.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "M04",
+  "name": "Autonomous Task Agent",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/brain/governed-dispatch.mjs",
+   "atlasz-addons/brain/orchestrator.mjs",
+   "atlasz-addons/brain/planning-brain.mjs",
+   "atlasz-addons/master-planner-orchestrator.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "brain-core.test.mjs",
+   "brain-intelligence.test.mjs",
+   "brain-orchestration.test.mjs",
+   "brain-systems.test.mjs",
+   "contract-core-engine.test.mjs",
+   "contract-existing-modules.test.mjs",
+   "governed-dispatch.test.mjs"
+  ],
+  "tests_passing": 7,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/brain/governed-dispatch.mjs",
+   "atlasz-addons/brain/orchestrator.mjs",
+   "atlasz-addons/brain/planning-brain.mjs"
+  ],
+  "hub_bag_only": [
+   "atlasz-addons/master-planner-orchestrator.mjs"
+  ]
+ },
+ {
+  "id": "M05",
+  "name": "Skills and Plugin Framework",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/capability-registry.mjs",
+   "atlasz-addons/plugin-manager.mjs",
+   "atlasz-addons/skill-factory.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "contract-core-engine.test.mjs",
+   "contract-factories.test.mjs",
+   "plugin-manager.test.mjs"
+  ],
+  "tests_passing": 3,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/capability-registry.mjs",
+   "atlasz-addons/plugin-manager.mjs",
+   "atlasz-addons/skill-factory.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "M06",
+  "name": "Isolated Sandbox Workspace",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/code-sandbox.mjs",
+   "atlasz-addons/computer-use-fabric.mjs",
+   "atlasz-addons/plugin-manager.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "code-sandbox-hosted.test.mjs",
+   "code-sandbox.test.mjs",
+   "gated-modules.test.mjs",
+   "plugin-manager.test.mjs",
+   "probe-evidence.test.mjs",
+   "stop-enforcement.test.mjs"
+  ],
+  "tests_passing": 6,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/code-sandbox.mjs",
+   "atlasz-addons/computer-use-fabric.mjs",
+   "atlasz-addons/plugin-manager.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "M07",
+  "name": "Advanced Analyst Mode",
+  "status": "MISSING",
+  "module_files": [
+   "atlasz-addons/code-sandbox.mjs",
+   "atlasz-addons/doc-extractors.mjs",
+   "atlasz-addons/tool-fabric.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "code-sandbox-hosted.test.mjs",
+   "code-sandbox.test.mjs",
+   "doc-extractors.test.mjs",
+   "probe-evidence.test.mjs"
+  ],
+  "tests_passing": 4,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/code-sandbox.mjs",
+   "atlasz-addons/doc-extractors.mjs",
+   "atlasz-addons/tool-fabric.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "M08",
+  "name": "Deep Research",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/brain/evidence-sources.mjs",
+   "atlasz-addons/brain/verifier.mjs",
+   "atlasz-addons/enterprise-knowledge-agentic-rag.mjs",
+   "atlasz-addons/knowledge-projects.mjs",
+   "atlasz-addons/market-intelligence-engine.mjs",
+   "atlasz-addons/research-ledger.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "brain-intelligence.test.mjs",
+   "brain-orchestration.test.mjs",
+   "brain-systems.test.mjs",
+   "contract-existing-modules.test.mjs",
+   "contract-factories.test.mjs",
+   "evidence-sources.test.mjs",
+   "knowledge-projects.test.mjs",
+   "research-ledger.test.mjs"
+  ],
+  "tests_passing": 8,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/brain/evidence-sources.mjs",
+   "atlasz-addons/brain/verifier.mjs",
+   "atlasz-addons/knowledge-projects.mjs",
+   "atlasz-addons/research-ledger.mjs"
+  ],
+  "hub_bag_only": [
+   "atlasz-addons/enterprise-knowledge-agentic-rag.mjs",
+   "atlasz-addons/market-intelligence-engine.mjs"
+  ]
+ },
+ {
+  "id": "M09",
+  "name": "Video Intelligence",
+  "status": "EXTERNAL_BLOCKER",
+  "module_files": [
+   "atlasz-addons/voice-session.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "voice-conversation-hosted.test.mjs",
+   "voice-conversation.test.mjs",
+   "voice-session.test.mjs"
+  ],
+  "tests_passing": 3,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/voice-session.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "M10",
+  "name": "Creative Studio",
+  "status": "EXTERNAL_BLOCKER",
+  "module_files": [
+   "atlasz-addons/tool-fabric.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "probe-evidence.test.mjs"
+  ],
+  "tests_passing": 1,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/tool-fabric.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "M11",
+  "name": "Intelligent Communication Assistant",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/business/communication-center.mjs",
+   "atlasz-addons/business/inbox-pipeline.mjs",
+   "atlasz-addons/human-core.mjs",
+   "atlasz-addons/universal-inbox.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "business-engines.test.mjs",
+   "control-center-systems.test.mjs",
+   "human-core.test.mjs",
+   "inbox-pipeline.test.mjs",
+   "universal-inbox.test.mjs"
+  ],
+  "tests_passing": 5,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/business/communication-center.mjs",
+   "atlasz-addons/business/inbox-pipeline.mjs",
+   "atlasz-addons/human-core.mjs",
+   "atlasz-addons/universal-inbox.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "M12",
+  "name": "Custom AI Assistants",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/agent-factory.mjs",
+   "atlasz-addons/brain/capability-graph.mjs",
+   "atlasz-addons/owner-control/agent-governor.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "agent-factory-governor.test.mjs",
+   "brain-core.test.mjs",
+   "brain-intelligence.test.mjs",
+   "brain-orchestration.test.mjs",
+   "brain-systems.test.mjs",
+   "contract-factories.test.mjs",
+   "model-gateway.test.mjs"
+  ],
+  "tests_passing": 7,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/brain/capability-graph.mjs",
+   "atlasz-addons/owner-control/agent-governor.mjs"
+  ],
+  "hub_bag_only": [
+   "atlasz-addons/agent-factory.mjs"
+  ]
+ },
+ {
+  "id": "M13",
+  "name": "Interactive Artifacts and Prototypes",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/business/artifact-registry.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "business-engines.test.mjs"
+  ],
+  "tests_passing": 1,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/business/artifact-registry.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "C01",
+  "name": "Advanced Software Engineering Agent",
+  "status": "MISSING",
+  "module_files": [
+   "atlasz-addons/code-sandbox.mjs",
+   "atlasz-addons/regression-eval-suite.mjs",
+   "atlasz-addons/skill-factory.mjs",
+   "atlasz-addons/tool-fabric.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "code-sandbox-hosted.test.mjs",
+   "code-sandbox.test.mjs",
+   "contract-core-engine.test.mjs",
+   "contract-factories.test.mjs",
+   "probe-evidence.test.mjs"
+  ],
+  "tests_passing": 5,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/code-sandbox.mjs",
+   "atlasz-addons/skill-factory.mjs",
+   "atlasz-addons/tool-fabric.mjs"
+  ],
+  "hub_bag_only": [
+   "atlasz-addons/regression-eval-suite.mjs"
+  ]
+ },
+ {
+  "id": "C02",
+  "name": "Computer-Based Task Execution",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/computer-use-fabric.mjs",
+   "atlasz-addons/tool-fabric.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "gated-modules.test.mjs",
+   "probe-evidence.test.mjs",
+   "stop-enforcement.test.mjs"
+  ],
+  "tests_passing": 3,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/computer-use-fabric.mjs",
+   "atlasz-addons/tool-fabric.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "C03",
+  "name": "Multi-Agent Coordination",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/brain/capability-graph.mjs",
+   "atlasz-addons/brain/governed-dispatch.mjs",
+   "atlasz-addons/brain/orchestrator.mjs",
+   "atlasz-addons/durable-queue.mjs",
+   "atlasz-addons/owner-control/agent-governor.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "brain-core.test.mjs",
+   "brain-intelligence.test.mjs",
+   "brain-orchestration.test.mjs",
+   "brain-systems.test.mjs",
+   "durable-queue.test.mjs",
+   "governed-dispatch.test.mjs",
+   "model-gateway.test.mjs",
+   "safety-modules.test.mjs"
+  ],
+  "tests_passing": 8,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/brain/capability-graph.mjs",
+   "atlasz-addons/brain/governed-dispatch.mjs",
+   "atlasz-addons/brain/orchestrator.mjs",
+   "atlasz-addons/durable-queue.mjs",
+   "atlasz-addons/owner-control/agent-governor.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "C04",
+  "name": "Computer Use",
+  "status": "EXTERNAL_BLOCKER",
+  "module_files": [
+   "atlasz-addons/computer-use-fabric.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "gated-modules.test.mjs",
+   "probe-evidence.test.mjs",
+   "stop-enforcement.test.mjs"
+  ],
+  "tests_passing": 3,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/computer-use-fabric.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "C05",
+  "name": "Reusable Agent Skills",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/brain/capability-graph.mjs",
+   "atlasz-addons/plugin-manager.mjs",
+   "atlasz-addons/skill-factory.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "brain-core.test.mjs",
+   "brain-intelligence.test.mjs",
+   "brain-orchestration.test.mjs",
+   "brain-systems.test.mjs",
+   "contract-factories.test.mjs",
+   "model-gateway.test.mjs",
+   "plugin-manager.test.mjs"
+  ],
+  "tests_passing": 7,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/brain/capability-graph.mjs",
+   "atlasz-addons/plugin-manager.mjs",
+   "atlasz-addons/skill-factory.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "C06",
+  "name": "MCP Integration Framework",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/connector-catalog.mjs",
+   "atlasz-addons/secret-vault.mjs",
+   "atlasz-addons/tool-bridge.mjs",
+   "atlasz-addons/universal-connector-layer.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "connector-catalog.test.mjs",
+   "gap-register-modules.test.mjs",
+   "probe-evidence.test.mjs",
+   "safety-modules.test.mjs"
+  ],
+  "tests_passing": 4,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/connector-catalog.mjs",
+   "atlasz-addons/secret-vault.mjs",
+   "atlasz-addons/tool-bridge.mjs",
+   "atlasz-addons/universal-connector-layer.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "C07",
+  "name": "Project Memory",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/brain/knowledge-brain.mjs",
+   "atlasz-addons/brain/memory-fabric.mjs",
+   "atlasz-addons/business-memory.mjs",
+   "atlasz-addons/experience-learning-engine.mjs",
+   "atlasz-addons/knowledge-projects.mjs",
+   "atlasz-addons/shared-project-registry.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "brain-intelligence.test.mjs",
+   "contract-memory-control.test.mjs",
+   "knowledge-projects.test.mjs",
+   "memory-fabric.test.mjs",
+   "regression-repairs.test.mjs",
+   "research-ledger.test.mjs"
+  ],
+  "tests_passing": 6,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/brain/knowledge-brain.mjs",
+   "atlasz-addons/brain/memory-fabric.mjs",
+   "atlasz-addons/business-memory.mjs",
+   "atlasz-addons/experience-learning-engine.mjs",
+   "atlasz-addons/knowledge-projects.mjs",
+   "atlasz-addons/shared-project-registry.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "C08",
+  "name": "Advanced Research",
+  "status": "PARTIAL",
+  "module_files": [],
+  "tokens_without_file": [],
+  "tests": [],
+  "tests_passing": 0,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [],
+  "hub_bag_only": []
+ },
+ {
+  "id": "C09",
+  "name": "Interactive Artifact Generation",
+  "status": "PARTIAL",
+  "module_files": [],
+  "tokens_without_file": [],
+  "tests": [],
+  "tests_passing": 0,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [],
+  "hub_bag_only": []
+ },
+ {
+  "id": "C10",
+  "name": "Adaptive Reasoning Allocation",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/brain/model-intelligence.mjs",
+   "atlasz-addons/budget-consumption-governor.mjs",
+   "atlasz-addons/cost-model-router.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "brain-systems.test.mjs",
+   "contract-core-engine.test.mjs",
+   "contract-existing-modules.test.mjs",
+   "model-gateway.test.mjs"
+  ],
+  "tests_passing": 4,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/brain/model-intelligence.mjs",
+   "atlasz-addons/budget-consumption-governor.mjs"
+  ],
+  "hub_bag_only": [
+   "atlasz-addons/cost-model-router.mjs"
+  ]
+ },
+ {
+  "id": "C11",
+  "name": "Permission-Aware Knowledge Search",
+  "status": "VERIFIED_WORKING",
+  "module_files": [
+   "atlasz-addons/document-center.mjs",
+   "atlasz-addons/enterprise-knowledge-agentic-rag.mjs",
+   "atlasz-addons/knowledge-projects.mjs",
+   "atlasz-addons/observation-memory.mjs",
+   "atlasz-addons/tenant-isolation.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "contract-existing-modules.test.mjs",
+   "control-center-systems.test.mjs",
+   "document-center.test.mjs",
+   "document-intelligence.test.mjs",
+   "knowledge-projects.test.mjs",
+   "modality-fabric-hosted.test.mjs",
+   "observation-memory-hosted.test.mjs",
+   "observation-memory.test.mjs",
+   "research-ledger.test.mjs",
+   "tenant-isolation.test.mjs"
+  ],
+  "tests_passing": 10,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/document-center.mjs",
+   "atlasz-addons/knowledge-projects.mjs",
+   "atlasz-addons/observation-memory.mjs",
+   "atlasz-addons/tenant-isolation.mjs"
+  ],
+  "hub_bag_only": [
+   "atlasz-addons/enterprise-knowledge-agentic-rag.mjs"
+  ]
+ },
+ {
+  "id": "C12",
+  "name": "Scheduled and Recurring Tasks",
+  "status": "VERIFIED_WORKING",
+  "module_files": [
+   "atlasz-addons/business/recurring-billing.mjs",
+   "atlasz-addons/personal-command-center.mjs",
+   "atlasz-addons/scheduler.mjs",
+   "atlasz-addons/typed-tools.mjs",
+   "atlasz-runtime/supervisor-safe.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "agent-factory-governor.test.mjs",
+   "brain-runtime-wiring.test.mjs",
+   "canonical-queue-safety.test.mjs",
+   "canonical-runtime.test.mjs",
+   "code-sandbox-hosted.test.mjs",
+   "control-center-finance.test.mjs",
+   "evidence-sources.test.mjs",
+   "knowledge-projects-hosted.test.mjs",
+   "m2-proposal-consistency.test.mjs",
+   "modality-fabric-hosted.test.mjs",
+   "money-engine-hosted.test.mjs",
+   "money-engine-sandbox.test.mjs",
+   "observation-memory-hosted.test.mjs",
+   "personal-command-center.test.mjs",
+   "recurring-billing.test.mjs",
+   "research-ledger-hosted.test.mjs",
+   "scheduler.test.mjs",
+   "typed-tools.test.mjs",
+   "voice-conversation-hosted.test.mjs",
+   "voice-conversation.test.mjs"
+  ],
+  "tests_passing": 20,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/business/recurring-billing.mjs",
+   "atlasz-addons/personal-command-center.mjs",
+   "atlasz-addons/scheduler.mjs",
+   "atlasz-addons/typed-tools.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "C13",
+  "name": "Advanced Administration and Security",
+  "status": "VERIFIED_WORKING",
+  "module_files": [
+   "atlasz-addons/audit-chain.mjs",
+   "atlasz-addons/brain/security-brain.mjs",
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-addons/safe-mode.mjs",
+   "atlasz-addons/secret-vault.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "approval-requests.test.mjs",
+   "backup-recovery.test.mjs",
+   "brain-core.test.mjs",
+   "brain-intelligence.test.mjs",
+   "brain-orchestration.test.mjs",
+   "brain-systems.test.mjs",
+   "business-engines.test.mjs",
+   "connector-catalog.test.mjs",
+   "control-center-brain.test.mjs",
+   "control-center.test.mjs",
+   "digital-twin.test.mjs",
+   "document-intelligence.test.mjs",
+   "emergency-stop.test.mjs",
+   "gap-register-modules.test.mjs",
+   "gated-modules.test.mjs",
+   "inbox-pipeline.test.mjs",
+   "local-update-adapters.test.mjs",
+   "owner-auth.test.mjs",
+   "owner-control-core.test.mjs",
+   "plugin-manager.test.mjs",
+   "safety-modules.test.mjs",
+   "stop-enforcement.test.mjs",
+   "tenant-isolation.test.mjs",
+   "universal-inbox.test.mjs",
+   "update-center.test.mjs"
+  ],
+  "tests_passing": 25,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/audit-chain.mjs",
+   "atlasz-addons/brain/security-brain.mjs",
+   "atlasz-addons/owner-auth.mjs",
+   "atlasz-addons/safe-mode.mjs",
+   "atlasz-addons/secret-vault.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "G01",
+  "name": "Social Information Search",
+  "status": "EXTERNAL_BLOCKER",
+  "module_files": [
+   "atlasz-addons/market-intelligence-engine.mjs",
+   "atlasz-addons/tech-watch.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "contract-factories.test.mjs",
+   "tech-watch.test.mjs"
+  ],
+  "tests_passing": 2,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/tech-watch.mjs"
+  ],
+  "hub_bag_only": [
+   "atlasz-addons/market-intelligence-engine.mjs"
+  ]
+ },
+ {
+  "id": "G02",
+  "name": "Live Web Research",
+  "status": "EXTERNAL_BLOCKER",
+  "module_files": [
+   "atlasz-addons/tool-fabric.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "probe-evidence.test.mjs"
+  ],
+  "tests_passing": 1,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/tool-fabric.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "G03",
+  "name": "Multi-Agent Analysis",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/anti-collusion-guard.mjs",
+   "atlasz-addons/brain/orchestrator.mjs",
+   "atlasz-addons/brain/verifier.mjs",
+   "atlasz-addons/business/judge.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "brain-intelligence.test.mjs",
+   "brain-orchestration.test.mjs",
+   "brain-systems.test.mjs",
+   "business-engines.test.mjs",
+   "contract-core-engine.test.mjs",
+   "evidence-sources.test.mjs"
+  ],
+  "tests_passing": 6,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/brain/orchestrator.mjs",
+   "atlasz-addons/brain/verifier.mjs",
+   "atlasz-addons/business/judge.mjs"
+  ],
+  "hub_bag_only": [
+   "atlasz-addons/anti-collusion-guard.mjs"
+  ]
+ },
+ {
+  "id": "G04",
+  "name": "Advanced Reasoning",
+  "status": "EXTERNAL_BLOCKER",
+  "module_files": [
+   "atlasz-addons/brain/model-intelligence.mjs",
+   "atlasz-addons/business/judge.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "brain-systems.test.mjs",
+   "business-engines.test.mjs",
+   "model-gateway.test.mjs"
+  ],
+  "tests_passing": 3,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/brain/model-intelligence.mjs",
+   "atlasz-addons/business/judge.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "G05",
+  "name": "Secure Code Execution",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/code-sandbox.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "code-sandbox-hosted.test.mjs",
+   "code-sandbox.test.mjs"
+  ],
+  "tests_passing": 2,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/code-sandbox.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "G06",
+  "name": "Function Calling",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/capability-registry.mjs",
+   "atlasz-addons/executor-toolbox-registry.mjs",
+   "atlasz-addons/tool-bridge.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "contract-core-engine.test.mjs",
+   "gap-register-modules.test.mjs",
+   "probe-evidence.test.mjs"
+  ],
+  "tests_passing": 3,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/capability-registry.mjs",
+   "atlasz-addons/executor-toolbox-registry.mjs",
+   "atlasz-addons/tool-bridge.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "G07",
+  "name": "Collections and Knowledge Search",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/document-center.mjs",
+   "atlasz-addons/enterprise-knowledge-agentic-rag.mjs",
+   "atlasz-addons/knowledge-projects.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "contract-existing-modules.test.mjs",
+   "control-center-systems.test.mjs",
+   "document-center.test.mjs",
+   "document-intelligence.test.mjs",
+   "knowledge-projects.test.mjs",
+   "modality-fabric-hosted.test.mjs",
+   "observation-memory-hosted.test.mjs",
+   "research-ledger.test.mjs"
+  ],
+  "tests_passing": 8,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/document-center.mjs",
+   "atlasz-addons/knowledge-projects.mjs"
+  ],
+  "hub_bag_only": [
+   "atlasz-addons/enterprise-knowledge-agentic-rag.mjs"
+  ]
+ },
+ {
+  "id": "G08",
+  "name": "Image Understanding",
+  "status": "EXTERNAL_BLOCKER",
+  "module_files": [
+   "atlasz-addons/doc-extractors.mjs",
+   "atlasz-addons/modality-fabric.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "doc-extractors.test.mjs",
+   "modality-fabric-hosted.test.mjs",
+   "modality-fabric.test.mjs",
+   "observation-memory-hosted.test.mjs",
+   "observation-memory.test.mjs"
+  ],
+  "tests_passing": 5,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/doc-extractors.mjs",
+   "atlasz-addons/modality-fabric.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "G09",
+  "name": "Video Understanding",
+  "status": "EXTERNAL_BLOCKER",
+  "module_files": [
+   "atlasz-addons/modality-fabric.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "modality-fabric-hosted.test.mjs",
+   "modality-fabric.test.mjs",
+   "observation-memory-hosted.test.mjs",
+   "observation-memory.test.mjs"
+  ],
+  "tests_passing": 4,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/modality-fabric.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "G10",
+  "name": "Voice Intelligence",
+  "status": "EXTERNAL_BLOCKER",
+  "module_files": [
+   "atlasz-addons/voice-interface.mjs",
+   "atlasz-addons/voice-session.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "probe-evidence.test.mjs",
+   "voice-conversation-hosted.test.mjs",
+   "voice-conversation.test.mjs",
+   "voice-session.test.mjs"
+  ],
+  "tests_passing": 4,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/voice-interface.mjs",
+   "atlasz-addons/voice-session.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "G11",
+  "name": "Image and Video Generation",
+  "status": "EXTERNAL_BLOCKER",
+  "module_files": [
+   "atlasz-addons/modality-fabric.mjs",
+   "atlasz-addons/tool-fabric.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "modality-fabric-hosted.test.mjs",
+   "modality-fabric.test.mjs",
+   "observation-memory-hosted.test.mjs",
+   "observation-memory.test.mjs",
+   "probe-evidence.test.mjs"
+  ],
+  "tests_passing": 5,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/modality-fabric.mjs",
+   "atlasz-addons/tool-fabric.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "G12",
+  "name": "Streaming Tool Observability",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/brain/black-box.mjs",
+   "atlasz-addons/event-bus.mjs",
+   "atlasz-addons/progress-ledger.mjs",
+   "atlasz-addons/task-ledger.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "behavior-monitor.test.mjs",
+   "brain-core.test.mjs",
+   "brain-intelligence.test.mjs",
+   "brain-orchestration.test.mjs",
+   "brain-systems.test.mjs",
+   "contract-core-engine.test.mjs"
+  ],
+  "tests_passing": 6,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/brain/black-box.mjs",
+   "atlasz-addons/event-bus.mjs"
+  ],
+  "hub_bag_only": [
+   "atlasz-addons/progress-ledger.mjs",
+   "atlasz-addons/task-ledger.mjs"
+  ]
+ },
+ {
+  "id": "G13",
+  "name": "Context and Cost Optimization",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/budget-consumption-governor.mjs",
+   "atlasz-addons/financial-ledger.mjs",
+   "atlasz-addons/provider-resilience.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "business-engines.test.mjs",
+   "contract-existing-modules.test.mjs",
+   "control-center-finance.test.mjs",
+   "evidence-sources.test.mjs",
+   "financial-ledger.test.mjs",
+   "model-gateway.test.mjs",
+   "money-engine-sandbox.test.mjs",
+   "provider-resilience.test.mjs"
+  ],
+  "tests_passing": 8,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/budget-consumption-governor.mjs",
+   "atlasz-addons/financial-ledger.mjs",
+   "atlasz-addons/provider-resilience.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "GE01",
+  "name": "Long-Context Intelligence",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/doc-extractors.mjs",
+   "atlasz-addons/document-center.mjs",
+   "atlasz-addons/knowledge-projects.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "control-center-systems.test.mjs",
+   "doc-extractors.test.mjs",
+   "document-center.test.mjs",
+   "document-intelligence.test.mjs",
+   "knowledge-projects.test.mjs",
+   "modality-fabric-hosted.test.mjs",
+   "observation-memory-hosted.test.mjs",
+   "research-ledger.test.mjs"
+  ],
+  "tests_passing": 8,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/doc-extractors.mjs",
+   "atlasz-addons/document-center.mjs",
+   "atlasz-addons/knowledge-projects.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "GE02",
+  "name": "Unified Multimodal Understanding",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/document-center.mjs",
+   "atlasz-addons/modality-fabric.mjs",
+   "atlasz-addons/observation-memory.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "control-center-systems.test.mjs",
+   "document-center.test.mjs",
+   "document-intelligence.test.mjs",
+   "knowledge-projects.test.mjs",
+   "modality-fabric-hosted.test.mjs",
+   "modality-fabric.test.mjs",
+   "observation-memory-hosted.test.mjs",
+   "observation-memory.test.mjs",
+   "research-ledger.test.mjs"
+  ],
+  "tests_passing": 9,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/document-center.mjs",
+   "atlasz-addons/modality-fabric.mjs",
+   "atlasz-addons/observation-memory.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "GE03",
+  "name": "Real-Time Voice Interaction",
+  "status": "EXTERNAL_BLOCKER",
+  "module_files": [
+   "atlasz-addons/voice-session.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "voice-conversation-hosted.test.mjs",
+   "voice-conversation.test.mjs",
+   "voice-session.test.mjs"
+  ],
+  "tests_passing": 3,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/voice-session.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "GE04",
+  "name": "Grounded Search",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/knowledge-projects.mjs",
+   "atlasz-addons/research-ledger.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "knowledge-projects.test.mjs",
+   "research-ledger.test.mjs"
+  ],
+  "tests_passing": 2,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/knowledge-projects.mjs",
+   "atlasz-addons/research-ledger.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "GE05",
+  "name": "Productivity Suite Integration",
+  "status": "EXTERNAL_BLOCKER",
+  "module_files": [
+   "atlasz-addons/connector-catalog.mjs",
+   "atlasz-addons/universal-inbox.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "connector-catalog.test.mjs",
+   "control-center-systems.test.mjs",
+   "inbox-pipeline.test.mjs",
+   "universal-inbox.test.mjs"
+  ],
+  "tests_passing": 4,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/connector-catalog.mjs",
+   "atlasz-addons/universal-inbox.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "GE06",
+  "name": "Browser and Computer Interaction",
+  "status": "EXTERNAL_BLOCKER",
+  "module_files": [
+   "atlasz-addons/computer-use-fabric.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "gated-modules.test.mjs",
+   "probe-evidence.test.mjs",
+   "stop-enforcement.test.mjs"
+  ],
+  "tests_passing": 3,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/computer-use-fabric.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "GE07",
+  "name": "Analytical Code Execution",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/code-sandbox.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "code-sandbox-hosted.test.mjs",
+   "code-sandbox.test.mjs"
+  ],
+  "tests_passing": 2,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/code-sandbox.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "GE08",
+  "name": "Structured Tool Invocation",
+  "status": "PARTIAL",
+  "module_files": [],
+  "tokens_without_file": [],
+  "tests": [],
+  "tests_passing": 0,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [],
+  "hub_bag_only": []
+ },
+ {
+  "id": "GE09",
+  "name": "File Search and RAG",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/document-center.mjs",
+   "atlasz-addons/enterprise-knowledge-agentic-rag.mjs",
+   "atlasz-addons/knowledge-projects.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "contract-existing-modules.test.mjs",
+   "control-center-systems.test.mjs",
+   "document-center.test.mjs",
+   "document-intelligence.test.mjs",
+   "knowledge-projects.test.mjs",
+   "modality-fabric-hosted.test.mjs",
+   "observation-memory-hosted.test.mjs",
+   "research-ledger.test.mjs"
+  ],
+  "tests_passing": 8,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/document-center.mjs",
+   "atlasz-addons/knowledge-projects.mjs"
+  ],
+  "hub_bag_only": [
+   "atlasz-addons/enterprise-knowledge-agentic-rag.mjs"
+  ]
+ },
+ {
+  "id": "GE10",
+  "name": "Geographic Intelligence",
+  "status": "EXTERNAL_BLOCKER",
+  "module_files": [],
+  "tokens_without_file": [],
+  "tests": [],
+  "tests_passing": 0,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [],
+  "hub_bag_only": []
+ },
+ {
+  "id": "GE11",
+  "name": "Agent Development Architecture",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/agent-factory.mjs",
+   "atlasz-addons/brain/orchestrator.mjs",
+   "atlasz-addons/brain/planning-brain.mjs",
+   "atlasz-addons/team-lead-workflows.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "agent-factory-governor.test.mjs",
+   "brain-core.test.mjs",
+   "brain-intelligence.test.mjs",
+   "brain-orchestration.test.mjs",
+   "brain-systems.test.mjs",
+   "contract-factories.test.mjs"
+  ],
+  "tests_passing": 6,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/brain/orchestrator.mjs",
+   "atlasz-addons/brain/planning-brain.mjs"
+  ],
+  "hub_bag_only": [
+   "atlasz-addons/agent-factory.mjs",
+   "atlasz-addons/team-lead-workflows.mjs"
+  ]
+ },
+ {
+  "id": "GE12",
+  "name": "Multimodal Content Generation",
+  "status": "EXTERNAL_BLOCKER",
+  "module_files": [
+   "atlasz-addons/modality-fabric.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "modality-fabric-hosted.test.mjs",
+   "modality-fabric.test.mjs",
+   "observation-memory-hosted.test.mjs",
+   "observation-memory.test.mjs"
+  ],
+  "tests_passing": 4,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/modality-fabric.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "GE13",
+  "name": "Scalable Deployment Architecture",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/startup-self-check.mjs",
+   "atlasz-addons/tenant-isolation.mjs",
+   "atlasz-addons/update-center.mjs",
+   "atlasz-addons/watchdog.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "agent-factory-governor.test.mjs",
+   "local-update-adapters.test.mjs",
+   "owner-control-bypass.test.mjs",
+   "safety-modules.test.mjs",
+   "tenant-isolation.test.mjs",
+   "update-center.test.mjs"
+  ],
+  "tests_passing": 6,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/startup-self-check.mjs",
+   "atlasz-addons/tenant-isolation.mjs",
+   "atlasz-addons/update-center.mjs",
+   "atlasz-addons/watchdog.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "A01",
+  "name": "Live Visual Understanding",
+  "status": "EXTERNAL_BLOCKER",
+  "module_files": [
+   "atlasz-addons/modality-fabric.mjs",
+   "atlasz-addons/observation-memory.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "modality-fabric-hosted.test.mjs",
+   "modality-fabric.test.mjs",
+   "observation-memory-hosted.test.mjs",
+   "observation-memory.test.mjs"
+  ],
+  "tests_passing": 4,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/modality-fabric.mjs",
+   "atlasz-addons/observation-memory.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "A02",
+  "name": "Screen Awareness",
+  "status": "EXTERNAL_BLOCKER",
+  "module_files": [
+   "atlasz-addons/computer-use-fabric.mjs",
+   "atlasz-addons/observation-memory.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "gated-modules.test.mjs",
+   "observation-memory.test.mjs",
+   "probe-evidence.test.mjs",
+   "stop-enforcement.test.mjs"
+  ],
+  "tests_passing": 4,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/computer-use-fabric.mjs",
+   "atlasz-addons/observation-memory.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "A03",
+  "name": "Natural Real-Time Conversation",
+  "status": "EXTERNAL_BLOCKER",
+  "module_files": [
+   "atlasz-addons/human-core.mjs",
+   "atlasz-addons/voice-conversation.mjs",
+   "atlasz-addons/voice-session.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "human-core.test.mjs",
+   "voice-conversation-hosted.test.mjs",
+   "voice-conversation.test.mjs",
+   "voice-session.test.mjs"
+  ],
+  "tests_passing": 4,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/human-core.mjs",
+   "atlasz-addons/voice-conversation.mjs",
+   "atlasz-addons/voice-session.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "A04",
+  "name": "Multilingual Live Communication",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/brain/owner-command.mjs",
+   "atlasz-addons/master-brief.mjs",
+   "atlasz-addons/voice-conversation.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "brain-intelligence.test.mjs",
+   "human-core.test.mjs",
+   "personal-command-center.test.mjs",
+   "voice-conversation-hosted.test.mjs",
+   "voice-conversation.test.mjs"
+  ],
+  "tests_passing": 5,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/brain/owner-command.mjs",
+   "atlasz-addons/master-brief.mjs",
+   "atlasz-addons/voice-conversation.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "A05",
+  "name": "Multimodal Memory",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/brain/memory-fabric.mjs",
+   "atlasz-addons/observation-memory.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "memory-fabric.test.mjs",
+   "observation-memory.test.mjs"
+  ],
+  "tests_passing": 2,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/brain/memory-fabric.mjs",
+   "atlasz-addons/observation-memory.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "A06",
+  "name": "Object and Equipment Recognition",
+  "status": "EXTERNAL_BLOCKER",
+  "module_files": [],
+  "tokens_without_file": [],
+  "tests": [],
+  "tests_passing": 0,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [],
+  "hub_bag_only": []
+ },
+ {
+  "id": "A07",
+  "name": "Visual Guidance",
+  "status": "MISSING",
+  "module_files": [],
+  "tokens_without_file": [],
+  "tests": [],
+  "tests_passing": 0,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [],
+  "hub_bag_only": []
+ },
+ {
+  "id": "A08",
+  "name": "Contextual Proactive Assistance",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/brain/central-brain.mjs",
+   "atlasz-addons/human-core.mjs",
+   "atlasz-addons/master-brief.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "brain-systems.test.mjs",
+   "human-core.test.mjs",
+   "personal-command-center.test.mjs"
+  ],
+  "tests_passing": 3,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/brain/central-brain.mjs",
+   "atlasz-addons/human-core.mjs",
+   "atlasz-addons/master-brief.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "A09",
+  "name": "Environmental Context Awareness",
+  "status": "EXTERNAL_BLOCKER",
+  "module_files": [],
+  "tokens_without_file": [],
+  "tests": [],
+  "tests_passing": 0,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [],
+  "hub_bag_only": []
+ },
+ {
+  "id": "A10",
+  "name": "Application Assistance",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/computer-use-fabric.mjs",
+   "atlasz-addons/tool-bridge.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "gap-register-modules.test.mjs",
+   "gated-modules.test.mjs",
+   "probe-evidence.test.mjs",
+   "stop-enforcement.test.mjs"
+  ],
+  "tests_passing": 4,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/computer-use-fabric.mjs",
+   "atlasz-addons/tool-bridge.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "A11",
+  "name": "Personalized Assistance",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/human-core.mjs",
+   "atlasz-addons/master-brief.mjs",
+   "atlasz-addons/owner-keystore.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "approval-requests.test.mjs",
+   "control-center.test.mjs",
+   "human-core.test.mjs",
+   "mobile-api.test.mjs",
+   "personal-command-center.test.mjs"
+  ],
+  "tests_passing": 5,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/human-core.mjs",
+   "atlasz-addons/master-brief.mjs",
+   "atlasz-addons/owner-keystore.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "A12",
+  "name": "Cross-Device Continuity",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/mobile-api.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "mobile-api.test.mjs"
+  ],
+  "tests_passing": 1,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/mobile-api.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "A13",
+  "name": "Visual Accessibility and Guidance",
+  "status": "PARTIAL",
+  "module_files": [],
+  "tokens_without_file": [],
+  "tests": [],
+  "tests_passing": 0,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [],
+  "hub_bag_only": []
+ },
+ {
+  "id": "P01",
+  "name": "Personal Learning Tutor",
+  "status": "MISSING",
+  "module_files": [],
+  "tokens_without_file": [],
+  "tests": [],
+  "tests_passing": 0,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [],
+  "hub_bag_only": []
+ },
+ {
+  "id": "P02",
+  "name": "Video-to-Action Workflow",
+  "status": "MISSING",
+  "module_files": [],
+  "tokens_without_file": [],
+  "tests": [],
+  "tests_passing": 0,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [],
+  "hub_bag_only": []
+ },
+ {
+  "id": "P03",
+  "name": "Personal Knowledge Organizer",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/brain/knowledge-brain.mjs",
+   "atlasz-addons/document-center.mjs",
+   "atlasz-addons/knowledge-projects.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "brain-intelligence.test.mjs",
+   "control-center-systems.test.mjs",
+   "document-center.test.mjs",
+   "document-intelligence.test.mjs",
+   "knowledge-projects.test.mjs",
+   "memory-fabric.test.mjs",
+   "modality-fabric-hosted.test.mjs",
+   "observation-memory-hosted.test.mjs",
+   "research-ledger.test.mjs"
+  ],
+  "tests_passing": 9,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/brain/knowledge-brain.mjs",
+   "atlasz-addons/document-center.mjs",
+   "atlasz-addons/knowledge-projects.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "P04",
+  "name": "Rapid Prototype Builder",
+  "status": "MISSING",
+  "module_files": [
+   "atlasz-addons/code-sandbox.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "code-sandbox-hosted.test.mjs",
+   "code-sandbox.test.mjs"
+  ],
+  "tests_passing": 2,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/code-sandbox.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "P05",
+  "name": "Task State Rewind",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/backup-recovery.mjs",
+   "atlasz-addons/checkpoint-engine.mjs",
+   "atlasz-addons/durable-queue.mjs",
+   "atlasz-addons/owner-control/recovery-points.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "backup-recovery.test.mjs",
+   "contract-core-engine.test.mjs",
+   "durable-queue.test.mjs",
+   "local-update-adapters.test.mjs",
+   "safety-modules.test.mjs",
+   "update-center.test.mjs"
+  ],
+  "tests_passing": 6,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/backup-recovery.mjs",
+   "atlasz-addons/durable-queue.mjs",
+   "atlasz-addons/owner-control/recovery-points.mjs"
+  ],
+  "hub_bag_only": [
+   "atlasz-addons/checkpoint-engine.mjs"
+  ]
+ },
+ {
+  "id": "P06",
+  "name": "Reusable Personal Workflows",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/brain/planning-brain.mjs",
+   "atlasz-addons/team-lead-workflows.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "brain-core.test.mjs",
+   "brain-intelligence.test.mjs",
+   "brain-orchestration.test.mjs",
+   "brain-systems.test.mjs",
+   "contract-factories.test.mjs"
+  ],
+  "tests_passing": 5,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/brain/planning-brain.mjs"
+  ],
+  "hub_bag_only": [
+   "atlasz-addons/team-lead-workflows.mjs"
+  ]
+ },
+ {
+  "id": "P07",
+  "name": "Independent Code Reviewer",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/business/judge.mjs",
+   "atlasz-addons/business/qa-factory.mjs",
+   "atlasz-addons/qa-reviewer.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "business-engines.test.mjs",
+   "contract-existing-modules.test.mjs"
+  ],
+  "tests_passing": 2,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/business/judge.mjs",
+   "atlasz-addons/business/qa-factory.mjs"
+  ],
+  "hub_bag_only": [
+   "atlasz-addons/qa-reviewer.mjs"
+  ]
+ },
+ {
+  "id": "P08",
+  "name": "Interrupted Task Continuation",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/brain/planning-brain.mjs",
+   "atlasz-addons/checkpoint-engine.mjs",
+   "atlasz-addons/durable-queue.mjs",
+   "atlasz-addons/startup-self-check.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "brain-core.test.mjs",
+   "brain-intelligence.test.mjs",
+   "brain-orchestration.test.mjs",
+   "brain-systems.test.mjs",
+   "contract-core-engine.test.mjs",
+   "durable-queue.test.mjs",
+   "safety-modules.test.mjs"
+  ],
+  "tests_passing": 7,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/brain/planning-brain.mjs",
+   "atlasz-addons/durable-queue.mjs",
+   "atlasz-addons/startup-self-check.mjs"
+  ],
+  "hub_bag_only": [
+   "atlasz-addons/checkpoint-engine.mjs"
+  ]
+ },
+ {
+  "id": "P09",
+  "name": "Social Signal Monitoring",
+  "status": "EXTERNAL_BLOCKER",
+  "module_files": [
+   "atlasz-addons/market-intelligence-engine.mjs",
+   "atlasz-addons/tech-watch.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "contract-factories.test.mjs",
+   "tech-watch.test.mjs"
+  ],
+  "tests_passing": 2,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/tech-watch.mjs"
+  ],
+  "hub_bag_only": [
+   "atlasz-addons/market-intelligence-engine.mjs"
+  ]
+ },
+ {
+  "id": "P10",
+  "name": "Independent Multi-Model Verification",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/brain/model-intelligence.mjs",
+   "atlasz-addons/brain/verifier.mjs",
+   "atlasz-addons/business/judge.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "brain-intelligence.test.mjs",
+   "brain-orchestration.test.mjs",
+   "brain-systems.test.mjs",
+   "business-engines.test.mjs",
+   "evidence-sources.test.mjs",
+   "model-gateway.test.mjs"
+  ],
+  "tests_passing": 6,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/brain/model-intelligence.mjs",
+   "atlasz-addons/brain/verifier.mjs",
+   "atlasz-addons/business/judge.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "P11",
+  "name": "Batch Processing Engine",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/dead-letter-queue.mjs",
+   "atlasz-addons/durable-queue.mjs",
+   "atlasz-addons/priority-queue-rate-limit-governor.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "contract-core-engine.test.mjs",
+   "contract-existing-modules.test.mjs",
+   "durable-queue.test.mjs",
+   "safety-modules.test.mjs"
+  ],
+  "tests_passing": 4,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/durable-queue.mjs",
+   "atlasz-addons/priority-queue-rate-limit-governor.mjs"
+  ],
+  "hub_bag_only": [
+   "atlasz-addons/dead-letter-queue.mjs"
+  ]
+ },
+ {
+  "id": "P12",
+  "name": "Personal Media Organizer",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/document-center.mjs",
+   "atlasz-addons/modality-fabric.mjs",
+   "atlasz-addons/observation-memory.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "control-center-systems.test.mjs",
+   "document-center.test.mjs",
+   "document-intelligence.test.mjs",
+   "knowledge-projects.test.mjs",
+   "modality-fabric-hosted.test.mjs",
+   "modality-fabric.test.mjs",
+   "observation-memory-hosted.test.mjs",
+   "observation-memory.test.mjs",
+   "research-ledger.test.mjs"
+  ],
+  "tests_passing": 9,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/document-center.mjs",
+   "atlasz-addons/modality-fabric.mjs",
+   "atlasz-addons/observation-memory.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "P13",
+  "name": "Multi-Website Comparison",
+  "status": "MISSING",
+  "module_files": [],
+  "tokens_without_file": [],
+  "tests": [],
+  "tests_passing": 0,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [],
+  "hub_bag_only": []
+ },
+ {
+  "id": "P14",
+  "name": "Strict Structured Output Engine",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/business/qa-factory.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "business-engines.test.mjs"
+  ],
+  "tests_passing": 1,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/business/qa-factory.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "P15",
+  "name": "Adaptive Multimodal Processing",
+  "status": "MISSING",
+  "module_files": [],
+  "tokens_without_file": [],
+  "tests": [],
+  "tests_passing": 0,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [],
+  "hub_bag_only": []
+ },
+ {
+  "id": "P16",
+  "name": "Long-Session Continuity",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/brain/memory-fabric.mjs",
+   "atlasz-addons/brain/planning-brain.mjs",
+   "atlasz-addons/checkpoint-engine.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "brain-core.test.mjs",
+   "brain-intelligence.test.mjs",
+   "brain-orchestration.test.mjs",
+   "brain-systems.test.mjs",
+   "contract-core-engine.test.mjs",
+   "memory-fabric.test.mjs"
+  ],
+  "tests_passing": 6,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/brain/memory-fabric.mjs",
+   "atlasz-addons/brain/planning-brain.mjs"
+  ],
+  "hub_bag_only": [
+   "atlasz-addons/checkpoint-engine.mjs"
+  ]
+ },
+ {
+  "id": "P17",
+  "name": "Voice Focus and Noise Handling",
+  "status": "EXTERNAL_BLOCKER",
+  "module_files": [
+   "atlasz-addons/voice-session.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "voice-conversation-hosted.test.mjs",
+   "voice-conversation.test.mjs",
+   "voice-session.test.mjs"
+  ],
+  "tests_passing": 3,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/voice-session.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "P18",
+  "name": "Visual Highlighting",
+  "status": "MISSING",
+  "module_files": [],
+  "tokens_without_file": [],
+  "tests": [],
+  "tests_passing": 0,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [],
+  "hub_bag_only": []
+ },
+ {
+  "id": "P19",
+  "name": "Personal Object and Information Recall",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/brain/memory-fabric.mjs",
+   "atlasz-addons/observation-memory.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "memory-fabric.test.mjs",
+   "observation-memory.test.mjs"
+  ],
+  "tests_passing": 2,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/brain/memory-fabric.mjs",
+   "atlasz-addons/observation-memory.mjs"
+  ],
+  "hub_bag_only": []
+ },
+ {
+  "id": "P20",
+  "name": "Situational Assistance",
+  "status": "PARTIAL",
+  "module_files": [
+   "atlasz-addons/human-core.mjs",
+   "atlasz-addons/master-brief.mjs"
+  ],
+  "tokens_without_file": [],
+  "tests": [
+   "human-core.test.mjs",
+   "personal-command-center.test.mjs"
+  ],
+  "tests_passing": 2,
+  "tests_failing": [],
+  "tests_not_run": [],
+  "invoked_by_workflow": [
+   "atlasz-addons/human-core.mjs",
+   "atlasz-addons/master-brief.mjs"
+  ],
+  "hub_bag_only": []
+ }
+]

@@ -1,0 +1,70 @@
+// Multi-model conversation object (85-capability programme: M03 Multi-Model Conversation Interface, P16 Long-Session Continuity; uses G13 context-manager).
+// A conversation is a durable, tenant-scoped list of turns. The model can be switched between turns; every assistant turn records WHICH model produced it.
+// Model output and tool results are UNTRUSTED text: stored flagged untrusted and fenced when put back into a prompt. Secrets are redacted before storage.
+// With no live provider, complete() answers the gateway's honest NO_ELIGIBLE_PROVIDER and adds NO turn - nothing is ever fabricated. No spending: budget is 0 unless
+// the caller passes an owner-approved figure (the conversation never raises it). Another tenant's conversation looks exactly like a missing one.
+import crypto from "node:crypto";
+import { createStore, clone } from "./business/store.mjs";
+import { packContext, estimateTokens, createUsageLedger } from "./context-manager.mjs";
+
+export const LIMITS = Object.freeze({ maxConversations: 200, maxTurns: 500, maxTextChars: 20000, maxTitleChars: 120, maxSystemChars: 4000 });
+const SECRET = /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)|\bsk-[A-Za-z0-9_-]{20,}|\bAKIA[0-9A-Z]{16}\b|\bghp_[A-Za-z0-9]{30,}/g;
+const redact = s => { SECRET.lastIndex = 0; const out = String(s ?? "").replace(SECRET, "[redacted]"); return { text: out, redacted: out !== String(s ?? "") }; };
+const rid = p => p + crypto.randomBytes(8).toString("hex");
+const ROLES = new Set(["user", "assistant", "tool"]);
+
+export function createConversationStore({ file = null, now = () => new Date().toISOString() } = {}) {
+  const store = createStore({ file, init: () => ({ conversations: {}, usage: [] }) });
+  const d = store.data, usage = createUsageLedger({ now }); usage.load(d.usage);
+  const find = (id, tenantId) => { const c = d.conversations[id]; return c && c.tenantId === tenantId ? c : null; };
+  const pub = c => ({ id: c.id, title: c.title, model: c.model, turns: c.turns.length, createdAt: c.createdAt, updatedAt: c.updatedAt, switches: c.switches.length });
+  const persist = () => { d.usage = usage.rows(); store.save(); };
+
+  function create({ tenantId, title = "Conversation", systemPrompt = "", model = null } = {}) {
+    if (!tenantId || typeof tenantId !== "string") return { ok: false, reason: "TENANT_REQUIRED" };
+    if (Object.keys(d.conversations).length >= LIMITS.maxConversations) return { ok: false, reason: "TOO_MANY_CONVERSATIONS" };
+    const sp = redact(String(systemPrompt).slice(0, LIMITS.maxSystemChars)), c = { id: rid("cv_"), tenantId, title: redact(String(title).slice(0, LIMITS.maxTitleChars)).text || "Conversation", systemPrompt: sp.text, model, switches: [], turns: [], createdAt: now(), updatedAt: now() };
+    d.conversations[c.id] = c; persist(); return { ok: true, id: c.id, conversation: pub(c) };
+  }
+  function addTurn(id, { tenantId, role, text, modelId = null } = {}) {
+    const c = find(id, tenantId); if (!c) return { ok: false, reason: "NOT_FOUND" };
+    if (!ROLES.has(role)) return { ok: false, reason: "ROLE_INVALID" };
+    if (typeof text !== "string" || !text.trim()) return { ok: false, reason: "TEXT_REQUIRED" };
+    if (text.length > LIMITS.maxTextChars) return { ok: false, reason: "TEXT_TOO_LONG" };
+    if (c.turns.length >= LIMITS.maxTurns) return { ok: false, reason: "TOO_MANY_TURNS" };
+    const r = redact(text), turn = { id: rid("t_"), role, text: r.text, redacted: r.redacted, untrusted: role !== "user", modelId: role === "assistant" ? (modelId ?? c.model) : null, at: now(), tokens: estimateTokens(r.text) };
+    c.turns.push(turn); c.updatedAt = now(); persist(); return { ok: true, turn: clone(turn) };
+  }
+  function setModel(id, { tenantId, model } = {}) {
+    const c = find(id, tenantId); if (!c) return { ok: false, reason: "NOT_FOUND" };
+    if (typeof model !== "string" || !model.trim() || model.length > 80) return { ok: false, reason: "MODEL_INVALID" };
+    if (c.model !== model) { c.switches.push({ at: now(), from: c.model, to: model, afterTurn: c.turns.length }); c.model = model; c.updatedAt = now(); persist(); }
+    return { ok: true, model: c.model, switches: c.switches.length };
+  }
+  const fence = t => t.role === "user" ? t.text : `<<${t.role === "tool" ? "UNTRUSTED TOOL RESULT" : "ASSISTANT (model " + (t.modelId ?? "?") + ")"}>>\n${t.text}\n<<END>>`;
+  function context(id, { tenantId, maxTokens = 4000, reserveOutput = 500 } = {}) {
+    const c = find(id, tenantId); if (!c) return { ok: false, reason: "NOT_FOUND" };
+    const pinned = c.systemPrompt ? [{ id: "system", role: "system", text: c.systemPrompt, pinned: true }] : [];
+    const p = packContext({ pinned, turns: c.turns.map(t => ({ id: t.id, role: t.role, text: fence(t) })), maxTokens, reserveOutput });
+    return p.ok ? { ...p, conversationId: id, model: c.model } : p;
+  }
+  /** Ask the gateway for the next assistant turn. Adds a turn only on a real, non-quarantined answer. */
+  async function complete(id, { tenantId, gateway, capability = "text", maxTokens = 4000, budgetUsd = 0 } = {}) {
+    const c = find(id, tenantId); if (!c) return { ok: false, reason: "NOT_FOUND" };
+    if (!gateway || typeof gateway.complete !== "function") return { ok: false, reason: "GATEWAY_REQUIRED" };
+    if (!c.turns.length || c.turns.at(-1).role !== "user") return { ok: false, reason: "LAST_TURN_MUST_BE_USER" };
+    const ctx = context(id, { tenantId, maxTokens, reserveOutput: Math.min(500, Math.floor(maxTokens / 4)) }); if (!ctx.ok) return ctx;
+    const prompt = ctx.items.map(i => (i.role === "system" ? "[SYSTEM] " : "") + i.text).join("\n\n");
+    const r = await gateway.complete({ capability, prompt, budgetUsd });
+    if (!r.ok || r.output == null) { return { ok: false, reason: r.reason ?? (r.quarantined ? "OUTPUT_QUARANTINED" : "NO_OUTPUT"), turnAdded: false, quarantined: Boolean(r.quarantined) }; }
+    const t = addTurn(id, { tenantId, role: "assistant", text: r.output, modelId: r.providerId ?? c.model });
+    if (!t.ok) return { ok: false, reason: t.reason, turnAdded: false };
+    const u = usage.record({ conversationId: id, modelId: r.providerId ?? "unknown", promptTokens: ctx.tokens, completionTokens: estimateTokens(r.output), source: r.costUsd > 0 ? "PROVIDER" : "ESTIMATE", costUsd: r.costUsd ?? 0, budgetUsd }); persist();
+    return { ok: true, turn: t.turn, providerId: r.providerId, untrusted: true, droppedTurns: ctx.droppedIds.length, usageRecorded: u.ok };
+  }
+  const get = (id, { tenantId } = {}) => { const c = find(id, tenantId); return c ? { ok: true, conversation: { ...pub(c), systemPrompt: c.systemPrompt, switchLog: clone(c.switches), turns: clone(c.turns) } } : { ok: false, reason: "NOT_FOUND" }; };
+  const list = ({ tenantId } = {}) => Object.values(d.conversations).filter(c => c.tenantId === tenantId).map(pub);
+  function remove(id, { tenantId } = {}) { const c = find(id, tenantId); if (!c) return { ok: false, reason: "NOT_FOUND" }; delete d.conversations[id]; usage.load(usage.rows().filter(x => x.conversationId !== id)); persist(); return { ok: true }; }
+  const usageSummary = (id, { tenantId } = {}) => find(id, tenantId) ? { ok: true, ...usage.summary(id) } : { ok: false, reason: "NOT_FOUND" };
+  return { create, addTurn, setModel, context, complete, get, list, remove, usageSummary };
+}

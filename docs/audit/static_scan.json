@@ -3,6 +3,7 @@
   "atlasz-addons/outcome-compiler.mjs": [
    "atlasz-addons/owner-auth.mjs"
   ],
+  "atlasz-addons/restricted-node.mjs": [],
   "atlasz-addons/qa-reviewer.mjs": [],
   "atlasz-addons/observation-memory.mjs": [
    "atlasz-addons/business/store.mjs",
@@ -150,6 +151,7 @@
   ],
   "atlasz-addons/plugin-manager.mjs": [
    "atlasz-addons/audit-chain.mjs",
+   "atlasz-addons/restricted-node.mjs",
    "atlasz-addons/update-center.mjs"
   ],
   "atlasz-addons/priority-queue-rate-limit-governor.mjs": [],
@@ -176,6 +178,7 @@
   "atlasz-addons/durable-queue.mjs": [],
   "atlasz-addons/model-gateway.mjs": [],
   "atlasz-addons/local-update-adapters.mjs": [
+   "atlasz-addons/restricted-node.mjs",
    "atlasz-addons/update-center.mjs"
   ],
   "atlasz-addons/unified-entity-graph.mjs": [],
@@ -462,8 +465,10 @@
    "atlasz-addons/universal-inbox.mjs",
    "atlasz-addons/voice-conversation.mjs",
    "atlasz-addons/voice-session.mjs",
-   "atlasz-addons/watchdog.mjs"
+   "atlasz-addons/watchdog.mjs",
+   "atlasz-runtime/runtime-http.mjs"
   ],
+  "atlasz-runtime/runtime-http.mjs": [],
   "atlasz-runtime/agent-child.js": [],
   "atlasz-control-center/money-views.mjs": [],
   "atlasz-control-center/core.mjs": [
@@ -490,6 +495,7 @@
    "atlasz-addons/personal-command-center.mjs",
    "atlasz-addons/plugin-manager.mjs",
    "atlasz-addons/research-ledger.mjs",
+   "atlasz-addons/restricted-node.mjs",
    "atlasz-addons/safe-mode.mjs",
    "atlasz-addons/secret-vault.mjs",
    "atlasz-addons/startup-self-check.mjs",
@@ -743,12 +749,17 @@
    "atlasz-tests/helpers.mjs"
   ],
   "control-center-ownersafety.test.mjs": [
+   "atlasz-addons/restricted-node.mjs",
    "atlasz-control-center/core.mjs",
    "atlasz-control-center/server.mjs",
    "atlasz-tests/helpers.mjs"
   ],
   "control-center-plugins.test.mjs": [
    "atlasz-control-center/core.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "control-center-routes-m1.test.mjs": [
+   "atlasz-control-center/server.mjs",
    "atlasz-tests/helpers.mjs"
   ],
   "control-center-systems.test.mjs": [
@@ -873,6 +884,10 @@
    "atlasz-addons/update-center.mjs",
    "atlasz-tests/helpers.mjs"
   ],
+  "m2-proposal-consistency.test.mjs": [
+   "atlasz-runtime/supervisor-safe.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
   "memory-fabric.test.mjs": [
    "atlasz-addons/brain/brain-system.mjs",
    "atlasz-addons/brain/knowledge-brain.mjs",
@@ -926,6 +941,9 @@
    "atlasz-runtime/supervisor-safe.mjs",
    "atlasz-tests/helpers.mjs",
    "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "no-weak-random.test.mjs": [
+   "atlasz-addons/tracing-evals.mjs"
   ],
   "observation-memory-hosted.test.mjs": [
    "atlasz-addons/document-center.mjs",
@@ -982,6 +1000,7 @@
   "plugin-manager.test.mjs": [
    "atlasz-addons/owner-auth.mjs",
    "atlasz-addons/plugin-manager.mjs",
+   "atlasz-addons/restricted-node.mjs",
    "atlasz-tests/helpers.mjs"
   ],
   "policy-guards.test.mjs": [],
@@ -1022,6 +1041,14 @@
    "atlasz-addons/research-ledger.mjs",
    "atlasz-tests/helpers.mjs",
    "atlasz-tests/owner-control-rig.mjs"
+  ],
+  "restricted-node.test.mjs": [
+   "atlasz-addons/restricted-node.mjs",
+   "atlasz-tests/helpers.mjs"
+  ],
+  "runtime-http.test.mjs": [
+   "atlasz-runtime/runtime-http.mjs",
+   "atlasz-tests/helpers.mjs"
   ],
   "safety-modules.test.mjs": [
    "atlasz-addons/durable-queue.mjs",
@@ -1092,8 +1119,8 @@
    "atlasz-tests/helpers.mjs"
   ]
  },
- "files": 163,
- "tests": 81,
+ "files": 165,
+ "tests": 86,
  "modules": [
   {
    "file": "atlasz-addons/outcome-compiler.mjs",
@@ -1111,6 +1138,31 @@
    "reach": "RUNTIME",
    "invocation": "HUB_ADAPTER_BAG_ONLY",
    "invoked_by": []
+  },
+  {
+   "file": "atlasz-addons/restricted-node.mjs",
+   "loc": 49,
+   "runtime": false,
+   "control_center": true,
+   "cli": true,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-addons/local-update-adapters.mjs",
+    "atlasz-addons/plugin-manager.mjs",
+    "atlasz-control-center/core.mjs"
+   ],
+   "tests": [
+    "control-center-ownersafety.test.mjs",
+    "plugin-manager.test.mjs",
+    "restricted-node.test.mjs"
+   ],
+   "reach": "CONTROL_CENTER",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-addons/local-update-adapters.mjs",
+    "atlasz-addons/plugin-manager.mjs",
+    "atlasz-control-center/core.mjs"
+   ]
   },
   {
    "file": "atlasz-addons/qa-reviewer.mjs",
@@ -1443,7 +1495,8 @@
     "atlasz-addons/internal-integration-hub.mjs"
    ],
    "tests": [
-    "contract-core-engine.test.mjs"
+    "contract-core-engine.test.mjs",
+    "no-weak-random.test.mjs"
    ],
    "reach": "RUNTIME",
    "invocation": "HUB_ADAPTER_BAG_ONLY",
@@ -1778,7 +1831,7 @@
   },
   {
    "file": "atlasz-addons/enterprise-knowledge-agentic-rag.mjs",
-   "loc": 28,
+   "loc": 29,
    "runtime": true,
    "control_center": false,
    "cli": false,
@@ -2490,7 +2543,7 @@
   },
   {
    "file": "atlasz-addons/plugin-manager.mjs",
-   "loc": 128,
+   "loc": 134,
    "runtime": false,
    "control_center": true,
    "cli": true,
@@ -2741,7 +2794,7 @@
   },
   {
    "file": "atlasz-addons/local-update-adapters.mjs",
-   "loc": 138,
+   "loc": 143,
    "runtime": false,
    "control_center": true,
    "cli": true,
@@ -2985,7 +3038,7 @@
   },
   {
    "file": "atlasz-addons/agent-factory.mjs",
-   "loc": 39,
+   "loc": 40,
    "runtime": true,
    "control_center": false,
    "cli": false,
@@ -4072,7 +4125,7 @@
   },
   {
    "file": "atlasz-runtime/supervisor-safe.mjs",
-   "loc": 447,
+   "loc": 433,
    "runtime": true,
    "control_center": false,
    "cli": false,
@@ -4087,6 +4140,7 @@
     "control-center-finance.test.mjs",
     "evidence-sources.test.mjs",
     "knowledge-projects-hosted.test.mjs",
+    "m2-proposal-consistency.test.mjs",
     "modality-fabric-hosted.test.mjs",
     "money-engine-hosted.test.mjs",
     "money-engine-sandbox.test.mjs",
@@ -4097,6 +4151,25 @@
    "reach": "RUNTIME",
    "invocation": "NOT_INVOKED",
    "invoked_by": []
+  },
+  {
+   "file": "atlasz-runtime/runtime-http.mjs",
+   "loc": 41,
+   "runtime": true,
+   "control_center": false,
+   "cli": false,
+   "legacy": false,
+   "imported_by": [
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [
+    "runtime-http.test.mjs"
+   ],
+   "reach": "RUNTIME",
+   "invocation": "INVOKED_BY_PRODUCTION_CODE",
+   "invoked_by": [
+    "atlasz-runtime/supervisor-safe.mjs"
+   ]
   },
   {
    "file": "atlasz-runtime/agent-child.js",
@@ -4134,7 +4207,7 @@
   },
   {
    "file": "atlasz-control-center/core.mjs",
-   "loc": 460,
+   "loc": 468,
    "runtime": false,
    "control_center": true,
    "cli": true,
@@ -4192,6 +4265,7 @@
     "control-center-brain.test.mjs",
     "control-center-money-views.test.mjs",
     "control-center-ownersafety.test.mjs",
+    "control-center-routes-m1.test.mjs",
     "control-center.test.mjs",
     "knowledge-projects-hosted.test.mjs",
     "modality-fabric-hosted.test.mjs",
@@ -4247,9 +4321,9 @@
   }
  ],
  "reach_counts": {
-  "RUNTIME": 136,
-  "CONTROL_CENTER": 44,
-  "CLI_AND_SCRIPTS": 51,
+  "RUNTIME": 137,
+  "CONTROL_CENTER": 45,
+  "CLI_AND_SCRIPTS": 52,
   "LEGACY_START": 3
  },
  "tools": {
@@ -4329,6 +4403,7 @@
    "file": "atlasz-addons/personal-command-center.mjs",
    "operation": "READ_STATUS",
    "tests": [
+    "m2-proposal-consistency.test.mjs",
     "money-engine-hosted.test.mjs",
     "personal-command-center.test.mjs"
    ],
@@ -4338,6 +4413,7 @@
    "file": "atlasz-addons/personal-command-center.mjs",
    "operation": "INTERNAL_COMPUTE",
    "tests": [
+    "m2-proposal-consistency.test.mjs",
     "money-engine-hosted.test.mjs",
     "personal-command-center.test.mjs"
    ],
@@ -4347,6 +4423,7 @@
    "file": "atlasz-addons/personal-command-center.mjs",
    "operation": "INTERNAL_COMPUTE",
    "tests": [
+    "m2-proposal-consistency.test.mjs",
     "money-engine-hosted.test.mjs",
     "personal-command-center.test.mjs"
    ],
@@ -4356,6 +4433,7 @@
    "file": "atlasz-addons/personal-command-center.mjs",
    "operation": "READ_STATUS",
    "tests": [
+    "m2-proposal-consistency.test.mjs",
     "money-engine-hosted.test.mjs",
     "personal-command-center.test.mjs"
    ],
@@ -4375,6 +4453,7 @@
    "operation": "HIGH_RISK_CHANGE",
    "tests": [
     "code-sandbox-hosted.test.mjs",
+    "m2-proposal-consistency.test.mjs",
     "money-engine-hosted.test.mjs"
    ],
    "registered_in_runtime": true
@@ -4392,6 +4471,7 @@
    "file": "atlasz-addons/voice-conversation.mjs",
    "operation": "READ_STATUS",
    "tests": [
+    "m2-proposal-consistency.test.mjs",
     "money-engine-hosted.test.mjs",
     "voice-conversation-hosted.test.mjs",
     "voice-conversation.test.mjs"
@@ -4470,7 +4550,7 @@
  "routes": {
   "/api/approvals": {
    "used_by_ui": true,
-   "in_tests": false
+   "in_tests": true
   },
   "/api/approvals/decide": {
    "used_by_ui": true,
@@ -4478,7 +4558,7 @@
   },
   "/api/backup": {
    "used_by_ui": true,
-   "in_tests": false
+   "in_tests": true
   },
   "/api/backup/drill": {
    "used_by_ui": true,
@@ -4490,7 +4570,7 @@
   },
   "/api/backups": {
    "used_by_ui": true,
-   "in_tests": false
+   "in_tests": true
   },
   "/api/brain": {
    "used_by_ui": true,
@@ -4510,19 +4590,19 @@
   },
   "/api/connectors": {
    "used_by_ui": true,
-   "in_tests": false
+   "in_tests": true
   },
   "/api/crm-inbox": {
    "used_by_ui": true,
-   "in_tests": false
+   "in_tests": true
   },
   "/api/doctor": {
    "used_by_ui": true,
-   "in_tests": false
+   "in_tests": true
   },
   "/api/documents": {
    "used_by_ui": true,
-   "in_tests": false
+   "in_tests": true
   },
   "/api/emergency": {
    "used_by_ui": true,
@@ -4530,15 +4610,15 @@
   },
   "/api/evidence": {
    "used_by_ui": true,
-   "in_tests": false
+   "in_tests": true
   },
   "/api/finance": {
    "used_by_ui": true,
-   "in_tests": false
+   "in_tests": true
   },
   "/api/inbox": {
    "used_by_ui": true,
-   "in_tests": false
+   "in_tests": true
   },
   "/api/knowledge": {
    "used_by_ui": true,
@@ -4566,7 +4646,7 @@
   },
   "/api/money-recurring": {
    "used_by_ui": true,
-   "in_tests": false
+   "in_tests": true
   },
   "/api/observations": {
    "used_by_ui": true,
@@ -4578,7 +4658,7 @@
   },
   "/api/opportunities": {
    "used_by_ui": true,
-   "in_tests": false
+   "in_tests": true
   },
   "/api/owner-key": {
    "used_by_ui": true,
@@ -4602,7 +4682,7 @@
   },
   "/api/plugins": {
    "used_by_ui": true,
-   "in_tests": false
+   "in_tests": true
   },
   "/api/plugins/disable": {
    "used_by_ui": true,
@@ -4622,7 +4702,7 @@
   },
   "/api/prefs": {
    "used_by_ui": true,
-   "in_tests": false
+   "in_tests": true
   },
   "/api/research": {
    "used_by_ui": true,
@@ -4634,7 +4714,7 @@
   },
   "/api/restore/backup": {
    "used_by_ui": false,
-   "in_tests": false
+   "in_tests": true
   },
   "/api/restore/lkg": {
    "used_by_ui": true,
@@ -4666,19 +4746,19 @@
   },
   "/api/techwatch": {
    "used_by_ui": true,
-   "in_tests": false
+   "in_tests": true
   },
   "/api/theme": {
    "used_by_ui": true,
-   "in_tests": false
+   "in_tests": true
   },
   "/api/updates": {
    "used_by_ui": true,
-   "in_tests": false
+   "in_tests": true
   },
   "/api/updates/auto": {
    "used_by_ui": true,
-   "in_tests": false
+   "in_tests": true
   },
   "/api/updates/check": {
    "used_by_ui": true,
@@ -5120,18 +5200,11 @@
  ],
  "security": [
   {
-   "kind": "WEAK_RANDOM_FOR_ID_OR_TOKEN",
-   "file": "atlasz-addons/tracing-evals.mjs",
-   "line": 6,
+   "kind": "CHILD_PROCESS",
+   "file": "atlasz-addons/restricted-node.mjs",
+   "line": 12,
    "severity": "REVIEW",
-   "note": "const id=traceId||createHash(\"sha256\").update(at+Math.random()).digest(\"hex\").slice(0,16);"
-  },
-  {
-   "kind": "WEAK_RANDOM_FOR_ID_OR_TOKEN",
-   "file": "atlasz-addons/enterprise-knowledge-agentic-rag.mjs",
-   "line": 3,
-   "severity": "REVIEW",
-   "note": "const uid=()=>globalThis.crypto?.randomUUID?.()||(\"knowledge-\"+Date.now()+\"-\"+Math.random().toString(16).slice(2));"
+   "note": "import { spawnSync } from \"node:child_process\";"
   },
   {
    "kind": "CHILD_PROCESS",
@@ -5148,16 +5221,9 @@
    "note": "import { spawnSync } from \"node:child_process\";"
   },
   {
-   "kind": "WEAK_RANDOM_FOR_ID_OR_TOKEN",
-   "file": "atlasz-addons/agent-factory.mjs",
-   "line": 4,
-   "severity": "REVIEW",
-   "note": "const uid=()=>globalThis.crypto?.randomUUID?.()||(\"agent-\"+Date.now()+\"-\"+Math.random().toString(16).slice(2));"
-  },
-  {
    "kind": "BIND_ALL_INTERFACES",
    "file": "atlasz-runtime/supervisor-safe.mjs",
-   "line": 444,
+   "line": 430,
    "severity": "REVIEW",
    "note": "server.listen(Number(process.env.PORT || 8080), \"0.0.0.0\", () => runtime.start());"
   },
