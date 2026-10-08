@@ -1,0 +1,227 @@
+{
+ "status": "PROPOSED - NOT LOADED BY ANY RUNTIME CODE - needs owner approval (docs/M2_AUTHORIZATION_PACKAGE.md)",
+ "roles": {
+  "SEARCH": [
+   "SEARCH-1",
+   "SEARCH-2",
+   "SEARCH-3",
+   "SEARCH-4",
+   "SEARCH-5"
+  ],
+  "EXECUTION": [
+   "EXECUTION-1",
+   "EXECUTION-2",
+   "EXECUTION-3",
+   "EXECUTION-4",
+   "EXECUTION-5",
+   "EXECUTION-6",
+   "EXECUTION-7",
+   "EXECUTION-8",
+   "EXECUTION-9",
+   "EXECUTION-10",
+   "EXECUTION-11",
+   "EXECUTION-12",
+   "EXECUTION-13",
+   "EXECUTION-14",
+   "EXECUTION-15",
+   "EXECUTION-16",
+   "EXECUTION-17",
+   "EXECUTION-18",
+   "EXECUTION-19",
+   "EXECUTION-20",
+   "EXECUTION-21",
+   "EXECUTION-22",
+   "EXECUTION-23",
+   "EXECUTION-24",
+   "EXECUTION-25"
+  ]
+ },
+ "tools": {
+  "atlasz.queue": {
+   "SEARCH": "ALLOW",
+   "EXECUTION": "ALLOW",
+   "dataRisk": "LOW",
+   "rationale": "queue pressure counts; needed for backpressure awareness"
+  },
+  "money.panel": {
+   "SEARCH": "DENY",
+   "EXECUTION": "ALLOW",
+   "dataRisk": "MEDIUM",
+   "rationale": "revenue aggregates; SEARCH has no need; EXECUTION reads it to avoid claiming unverified money"
+  },
+  "inbox.summary": {
+   "SEARCH": "DENY",
+   "EXECUTION": "ALLOW",
+   "dataRisk": "MEDIUM",
+   "rationale": "counts only, no message bodies"
+  },
+  "model.complete": {
+   "SEARCH": "ALLOW",
+   "EXECUTION": "ALLOW",
+   "dataRisk": "MEDIUM",
+   "rationale": "EXTERNAL_READ; no-spend, free providers only; output UNTRUSTED. Ships DISABLED until the owner picks providers (decision D5)"
+  },
+  "pcc.agenda": {
+   "SEARCH": "DENY",
+   "EXECUTION": "DENY",
+   "dataRisk": "HIGH",
+   "rationale": "owner's personal tasks/reminders; no identified agent need"
+  },
+  "pcc.add": {
+   "SEARCH": "DENY",
+   "EXECUTION": "DENY",
+   "dataRisk": "HIGH",
+   "rationale": "writes to the owner's personal command center; no identified agent need"
+  },
+  "pcc.complete": {
+   "SEARCH": "DENY",
+   "EXECUTION": "DENY",
+   "dataRisk": "HIGH",
+   "rationale": "closes owner's items; no identified agent need"
+  },
+  "pcc.summary": {
+   "SEARCH": "DENY",
+   "EXECUTION": "DENY",
+   "dataRisk": "HIGH",
+   "rationale": "counts only, but personal data; denied with the rest of pcc.*"
+  },
+  "media.inspect_document": {
+   "SEARCH": "DENY",
+   "EXECUTION": "ALLOW",
+   "dataRisk": "MEDIUM",
+   "rationale": "metadata/privacy flags of stored documents; customer material"
+  },
+  "media.status": {
+   "SEARCH": "ALLOW",
+   "EXECUTION": "ALLOW",
+   "dataRisk": "LOW",
+   "rationale": "capability/status only"
+  },
+  "kp.list": {
+   "SEARCH": "ALLOW",
+   "EXECUTION": "ALLOW",
+   "dataRisk": "LOW",
+   "rationale": "tool itself limits to projects the role may use"
+  },
+  "kp.search": {
+   "SEARCH": "ALLOW",
+   "EXECUTION": "ALLOW",
+   "dataRisk": "LOW",
+   "rationale": "cited passages from permitted knowledge projects"
+  },
+  "kp.answer": {
+   "SEARCH": "ALLOW",
+   "EXECUTION": "ALLOW",
+   "dataRisk": "LOW",
+   "rationale": "extractive, cited, or NO_SUPPORTING_EVIDENCE"
+  },
+  "kp.verify": {
+   "SEARCH": "ALLOW",
+   "EXECUTION": "ALLOW",
+   "dataRisk": "LOW",
+   "rationale": "re-check a citation"
+  },
+  "research.open_question": {
+   "SEARCH": "ALLOW",
+   "EXECUTION": "DENY",
+   "dataRisk": "LOW",
+   "rationale": "research writes belong to SEARCH only"
+  },
+  "research.add_source": {
+   "SEARCH": "ALLOW",
+   "EXECUTION": "DENY",
+   "dataRisk": "MEDIUM",
+   "rationale": "records already-retrieved web text; untrusted content, size-capped by policy"
+  },
+  "research.add_finding": {
+   "SEARCH": "ALLOW",
+   "EXECUTION": "DENY",
+   "dataRisk": "LOW",
+   "rationale": "status is computed, never author-set"
+  },
+  "research.attach_evidence": {
+   "SEARCH": "ALLOW",
+   "EXECUTION": "DENY",
+   "dataRisk": "LOW",
+   "rationale": "citation must verify now"
+  },
+  "research.declare_contradiction": {
+   "SEARCH": "ALLOW",
+   "EXECUTION": "DENY",
+   "dataRisk": "LOW",
+   "rationale": "only the owner can resolve it"
+  },
+  "research.report": {
+   "SEARCH": "ALLOW",
+   "EXECUTION": "ALLOW",
+   "dataRisk": "LOW",
+   "rationale": "read-only report"
+  },
+  "research.unresolved": {
+   "SEARCH": "ALLOW",
+   "EXECUTION": "ALLOW",
+   "dataRisk": "LOW",
+   "rationale": "read-only list"
+  },
+  "sandbox.run": {
+   "SEARCH": "DENY",
+   "EXECUTION": "ALLOW",
+   "dataRisk": "MEDIUM",
+   "rationale": "isolated sandbox (no network, private dir); refuses when OS isolation is unavailable"
+  },
+  "sandbox.run_process_only": {
+   "SEARCH": "DENY",
+   "EXECUTION": "APPROVAL",
+   "dataRisk": "HIGH",
+   "rationale": "no OS isolation; EXECUTION may only ask; each call needs a signed owner approval bound to the exact arguments"
+  },
+  "sandbox.status": {
+   "SEARCH": "ALLOW",
+   "EXECUTION": "ALLOW",
+   "dataRisk": "LOW",
+   "rationale": "isolation level and counts"
+  },
+  "obs.observe": {
+   "SEARCH": "ALLOW",
+   "EXECUTION": "ALLOW",
+   "dataRisk": "MEDIUM",
+   "rationale": "text only, never secrets/raw media; screened; tenant/consent cannot be injected"
+  },
+  "obs.recall": {
+   "SEARCH": "ALLOW",
+   "EXECUTION": "ALLOW",
+   "dataRisk": "MEDIUM",
+   "rationale": "PUBLIC/PERSONAL only, screened ALLOW; CONFIDENTIAL never visible"
+  },
+  "obs.correct": {
+   "SEARCH": "ALLOW",
+   "EXECUTION": "ALLOW",
+   "dataRisk": "LOW",
+   "rationale": "only agent-created observations; old text stays owner-only history"
+  },
+  "obs.forget": {
+   "SEARCH": "ALLOW",
+   "EXECUTION": "ALLOW",
+   "dataRisk": "LOW",
+   "rationale": "only agent-created observations"
+  },
+  "obs.summary": {
+   "SEARCH": "ALLOW",
+   "EXECUTION": "ALLOW",
+   "dataRisk": "LOW",
+   "rationale": "counts only"
+  },
+  "obs.capture_research": {
+   "SEARCH": "ALLOW",
+   "EXECUTION": "DENY",
+   "dataRisk": "LOW",
+   "rationale": "stores VERIFIED findings as memory; research-side tool"
+  },
+  "voice.status": {
+   "SEARCH": "DENY",
+   "EXECUTION": "DENY",
+   "dataRisk": "LOW",
+   "rationale": "no agent workflow needs it; agents can never speak, listen or approve"
+  }
+ }
+}

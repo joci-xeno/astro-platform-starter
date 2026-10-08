@@ -99,3 +99,14 @@ test("nodeFlags are passed to node before the script (and after the permission f
   const rc = restrictedNodeCommand({ script: "/s/h.mjs", nodeFlags: ["--max-old-space-size=64"], caps: { permission: true, namespace: false } });
   const i = rc.args.indexOf("--max-old-space-size=64"); assert.ok(i > rc.args.indexOf("--permission") && i < rc.args.indexOf("/s/h.mjs", i));
 });
+test("simulated hosts: Windows-like (permission, no namespace) is honest about the missing network block; Electron host adds ELECTRON_RUN_AS_NODE; old-Node/Electron-without-flag host refuses to run anything", () => {
+  const win = restrictedNodeCommand({ script: "C:\\app\\h.mjs", readDirs: ["C:\\app"], caps: { permission: true, namespace: false, platform: "win32" } });
+  assert.equal(win.ok, true); assert.equal(win.networkBlocked, false); assert.equal(win.level, "PERMISSION"); assert.equal(win.cmd, process.execPath);
+  assert.equal(restrictedNodeCommand({ script: "C:\\app\\h.mjs", requireNoNetwork: true, caps: { permission: true, namespace: false } }).reason, "NETWORK_ISOLATION_UNAVAILABLE");
+  const had = Object.getOwnPropertyDescriptor(process.versions, "electron");
+  Object.defineProperty(process.versions, "electron", { value: "33.2.0", configurable: true, enumerable: true });
+  try { assert.equal(baseEnv({}).ELECTRON_RUN_AS_NODE, "1"); }
+  finally { if (had) Object.defineProperty(process.versions, "electron", had); else delete process.versions.electron; }
+  assert.equal(baseEnv({}).ELECTRON_RUN_AS_NODE, undefined);
+  assert.deepEqual(restrictedNodeCommand({ script: "C:\\app\\h.mjs", caps: { permission: false, namespace: false, platform: "win32" } }), { ok: false, reason: "SANDBOX_UNAVAILABLE" });
+});
