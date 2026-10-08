@@ -17,7 +17,7 @@ export function createVoiceSession({ sttChain = [], ttsChain = [], transcriptDir
   const sttP = () => pick(sttChain), ttsP = () => pick(ttsChain);
   const log = (kind, data) => { if (transcriptDir) { fs.mkdirSync(transcriptDir, { recursive: true }); fs.appendFileSync(path.join(transcriptDir, "voice-transcript.jsonl"), JSON.stringify({ seq: ++seq, at: now(), kind, ...data }) + "\n", { mode: 0o600 }); } };
   const status = () => ({ state: state === "IDLE" && enabled && !(sttP() && ttsP()) ? "BLOCKED_NO_PROVIDER" : state, enabled, mode, live: Boolean(enabled && sttP() && ttsP()),
-    stt: sttP()?.name ?? null, tts: ttsP()?.name ?? null, providers: Object.fromEntries([...sttChain, ...ttsChain].map(p => [p.name, !isTested(p.tested, p.probeEvidence) ? "UNPROVEN" : (health[p.name] ?? "HEALTHY")])),
+    stt: sttP()?.name ?? null, tts: ttsP()?.name ?? null, sttMock: sttP()?.mock === true, ttsMock: ttsP()?.mock === true, providers: Object.fromEntries([...sttChain, ...ttsChain].map(p => [p.name, !isTested(p.tested, p.probeEvidence) ? "UNPROVEN" : (health[p.name] ?? "HEALTHY")])),
     blocker: sttP() && ttsP() ? null : "No STT+TTS provider with probe evidence is attached (EXTERNAL: provider credentials).", latency: summarize() });
   function summarize() { if (!metrics.length) return { turns: 0 }; const t = metrics.map(m => m.totalMs).sort((a, b) => a - b); return { turns: t.length, medianMs: t[Math.floor(t.length / 2)], maxMs: t[t.length - 1] }; }
   function setEnabled(on) { enabled = Boolean(on); if (!enabled) { state = "IDLE"; turn = null; } return status(); }

@@ -28,6 +28,7 @@ import { createKnowledgeProjects } from "../atlasz-addons/knowledge-projects.mjs
 import { createDocumentCenter } from "../atlasz-addons/document-center.mjs";
 import { createUniversalInbox } from "../atlasz-addons/universal-inbox.mjs";
 import { createVoiceSession } from "../atlasz-addons/voice-session.mjs";
+import { createVoiceConversation } from "../atlasz-addons/voice-conversation.mjs";
 import { createConnectorCatalog } from "../atlasz-addons/connector-catalog.mjs";
 import { createSecretVault } from "../atlasz-addons/secret-vault.mjs";
 import { createTechWatch } from "../atlasz-addons/tech-watch.mjs";
@@ -342,7 +343,18 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   async function sandboxRun({ language, code, stdin } = {}) { const r = await sandboxInst().run({ language, code, stdin }, { actor: "OWNER" }); if (/^INVALID/.test(r.status)) throw new Error(r.status); return r; }
   const inboxMod = () => createUniversalInbox({ dir: path.join(stateDir, "inbox"), ownerAuth: ownerAuth() });
   const inbox = () => { const i = inboxMod(); return { counts: i.counts(), chain: i.verify(), items: i.list().slice(0, 100), note: "Drafts are never sent from here. Sending needs a proven connector, an open kill switch and your signed approval." }; };
-  const voice = () => { const v = createVoiceSession({}); const st = v.status(); return { ...st, note: st.live ? null : "BLOCKED: no tested speech-to-text and text-to-speech provider is attached, so voice is not live. Voice can never approve anything." }; };
+  // Live Voice (owner view of the same conversation file as the runtime). No provider is attached by ATLASZ, so voice is never reported live here; owners can read and delete transcripts.
+  const voiceInst = () => createVoiceConversation({ session: createVoiceSession({}), file: path.join(stateDir, "memory", "voice-conversations.json") });
+  const voice = () => { const v = createVoiceSession({}); const st = v.status(); try { const c = voiceInst(); return { ...st, state: st.state, conversationStore: "CONNECTED", summary: c.summary({ tenantId: KP_T }), conversations: c.list({ tenantId: KP_T }).reverse().slice(0, 50), note: st.live ? null : "BLOCKED: no tested speech-to-text and text-to-speech provider is attached, so voice is not live. Voice can never approve anything. Transcripts are text only; raw audio is never stored." }; } catch (e) { return { ...st, conversationStore: "UNREADABLE", error: String(e.message), conversations: [], note: "Voice conversation store is unreadable and will not be replaced." }; } };
+  function voiceAction({ op, id, ...a } = {}) {
+    const c = voiceInst();
+    switch (op) {
+      case "get": { const g = c.get(id, { tenantId: KP_T }); if (!g) throw new Error("CONVERSATION_NOT_FOUND"); return g; }
+      case "delete": return c.remove(id, { tenantId: KP_T });
+      case "purge": return c.purgeExpired({ tenantId: KP_T });
+      default: throw new Error("UNKNOWN_VOICE_OP");
+    }
+  }
   const connectors = () => { let vault; try { vault = createSecretVault({ dir: path.join(stateDir, "vault") }); } catch (e) { return { error: String(e.message), connectors: [] }; } return createConnectorCatalog({ vault }).health(); };
   const techWatch = () => createTechWatch({ feedDir: path.join(configDir, "tech-watch"), installed: () => uc().viewModel().components.map(c => ({ componentId: c.id, version: c.version })) }).scan();
   // ---- Update Center (same flow as the CLI/tests; no real detector adapters yet => honest BLOCKED) ----
@@ -438,6 +450,6 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   };
 
   const moneyViews = createMoneyViews({ stateDir });
-  return { pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => plugins().list(), theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }

@@ -89,13 +89,13 @@ export function createObservationMemory({ file = null, security = null, blackBox
     w = need(w); reload(); const i = mine(id, w); if (!i || expired(i)) throw new Error("UNKNOWN_OBSERVATION"); if (!canTouch(i, w)) throw new Error("NOT_PERMITTED");
     const t = String(text ?? "").trim(); if (!t) throw new Error("TEXT_REQUIRED"); if (t.length > LIMITS.textChars) throw new Error("TEXT_TOO_LONG"); if (SECRET.test(t)) throw new Error("SECRET_NOT_STORED");
     if (security && w.forAgent) { const a = security.assess({ kind: "EXTERNAL_INSTRUCTION", agentId: null, source: "observation:correct", text: t }); if (a.allowed === false) throw new Error("BLOCKED_BY_SECURITY"); i.screening = a.decision; }
-    i.history.push({ version: i.version, text: i.text, textSha256: i.textSha256, replacedAt: now(), by: by(w), reason: String(reason).slice(0, 300) }); i.text = t; i.textSha256 = sha(t); i.version++; i.correctedAt = now(); if (i.verification !== "UNVERIFIED") i.verification = "UNVERIFIED_AFTER_CORRECTION";
+    i.history.push({ version: i.version, text: i.text, textSha256: i.textSha256, replacedAt: now(), by: by(w), reason: String(reason).slice(0, 280) }); i.text = t; i.textSha256 = sha(t); i.version++; i.correctedAt = now(); if (i.verification !== "UNVERIFIED") i.verification = "UNVERIFIED_AFTER_CORRECTION";
     event("CORRECTED", by(w), { id, version: i.version }); store.save(); return pub(i, w);
   }
   /** Real deletion: text, tags and history are removed. A tombstone with no content (id, time, who, reason) stays for the audit. */
   function forget(id, { reason = "" } = {}, w) {
     w = need(w); reload(); const i = mine(id, w); if (!i) throw new Error("UNKNOWN_OBSERVATION"); if (!canTouch(i, w)) throw new Error("NOT_PERMITTED");
-    S.tombstones[id] = { id, tenantId: w.tenantId, deletedAt: now(), by: by(w), reason: String(reason).slice(0, 300), kind: i.kind, modality: i.modality }; delete S.items[id];
+    S.tombstones[id] = { id, tenantId: w.tenantId, deletedAt: now(), by: by(w), reason: String(reason).slice(0, 280), kind: i.kind, modality: i.modality }; delete S.items[id];
     event("DELETED", by(w), { id, tenantId: w.tenantId }); store.save(); return { deleted: true, id };
   }
   /** Owner-only bulk deletion by filter. Returns the number removed. */
@@ -132,8 +132,8 @@ export function registerObservationTools(registry, mem, { tenantId }) {
     input: { type: "object", required: ["text"], properties: { text: { type: "string", minLength: 1, maxLength: LIMITS.textChars }, kind: { enum: [...KINDS] }, modality: { enum: [...MODALITIES] }, scope: { enum: [...SCOPES] }, classification: { enum: ["PUBLIC", "PERSONAL", "CONFIDENTIAL"] }, tags: { type: "array", maxItems: LIMITS.tags, items: { type: "string", maxLength: 40 } }, retentionDays: { type: "integer", minimum: 1, maximum: LIMITS.maxRetentionDays } } }, output: obj, handler: a => mem.observe(a, agentW({ actor: "AGENT" })) });
   registry.register({ name: "obs.recall", description: "Recall observations visible to agents (PUBLIC/PERSONAL, screened ALLOW, not expired) with provenance. Keyword search, not semantic.", operation: "READ_STATUS",
     input: { type: "object", properties: { query: { type: "string", maxLength: 500 }, scopes: { type: "array", maxItems: 4, items: { enum: [...SCOPES] } }, kinds: { type: "array", maxItems: 5, items: { enum: [...KINDS] } }, tag: { type: "string", maxLength: 40 }, limit: { type: "integer", minimum: 1, maximum: 50 } } }, output: obj, handler: a => mem.recall(a, agentW({})) });
-  registry.register({ name: "obs.correct", description: "Correct an agent-created observation (new version; old text is owner-only history).", operation: "INTERNAL_COMPUTE", input: { type: "object", required: ["id", "text"], properties: { id: ID, text: { type: "string", minLength: 1, maxLength: LIMITS.textChars }, reason: { type: "string", maxLength: 300 } } }, output: obj, handler: a => mem.correct(a.id, a, agentW({ actor: "AGENT" })) });
-  registry.register({ name: "obs.forget", description: "Delete an agent-created observation.", operation: "INTERNAL_COMPUTE", input: { type: "object", required: ["id"], properties: { id: ID, reason: { type: "string", maxLength: 300 } } }, output: obj, handler: a => mem.forget(a.id, a, agentW({ actor: "AGENT" })) });
+  registry.register({ name: "obs.correct", description: "Correct an agent-created observation (new version; old text is owner-only history).", operation: "INTERNAL_COMPUTE", input: { type: "object", required: ["id", "text"], properties: { id: ID, text: { type: "string", minLength: 1, maxLength: LIMITS.textChars }, reason: { type: "string", maxLength: 280 } } }, output: obj, handler: a => mem.correct(a.id, a, agentW({ actor: "AGENT" })) });
+  registry.register({ name: "obs.forget", description: "Delete an agent-created observation.", operation: "INTERNAL_COMPUTE", input: { type: "object", required: ["id"], properties: { id: ID, reason: { type: "string", maxLength: 280 } } }, output: obj, handler: a => mem.forget(a.id, a, agentW({ actor: "AGENT" })) });
   registry.register({ name: "obs.summary", description: "Counts only.", operation: "READ_STATUS", input: { type: "object", properties: {} }, output: obj, handler: () => mem.summary({ tenantId, role: "AGENT", forAgent: true }) });
 }
 

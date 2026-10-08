@@ -219,8 +219,13 @@ const views = {
         h("button", { class: "btn", disabled: !x.actions.rollback, onclick: async () => { const r = await ask({ title: "Rollback " + x.id, fields: [PASS] }); if (r) act("Rollback", "/api/updates/rollback", { id: x.id, passphrase: r.passphrase }); } }, "Rollback"))])));
     return out;
   },
-  async voice() { const v = await api("/api/voice"); return [h("h2", {}, "Speak-to-Speak / Live Voice"), note(v.note ?? "Voice providers are attached.", v.live ? "" : "warn"),
-    table(["State", "Enabled", "Mode", "Live"], [[pill(v.state), String(v.enabled), v.mode, pill(v.live ? "LIVE" : "NOT LIVE")]])]; },
+  async voice() { const v = await api("/api/voice"); if (v.conversationStore === "UNREADABLE") return [h("h2", {}, "Speak-to-Speak / Live Voice"), note(v.note, "bad")];
+    const row = c => [c.startedAt.slice(0, 16), c.status + (c.endReason ? " (" + c.endReason + ")" : ""), c.providerMode, String(c.turnCount), c.purpose, h("span", {}, h("button", { class: "btn", onclick: async () => { const r = await api("/api/voice/action", { op: "get", id: c.id }); alert(r.result.turns.map(t => "YOU: " + (t.userText ?? "(ignored)") + "\nATLASZ: " + (t.replyText ?? "")).join("\n\n") || "(no turns)"); } }, "Read"), h("button", { class: "btn", onclick: async () => { if (confirm("Delete this transcript permanently?")) { await act("Delete transcript", "/api/voice/action", { op: "delete", id: c.id }); render(); } } }, "Delete"))];
+    return [h("h2", {}, "Speak-to-Speak / Live Voice"), note(v.note ?? "Voice providers are attached.", v.live ? "" : "warn"),
+      table(["State", "Enabled", "Mode", "Live"], [[pill(v.state), String(v.enabled), v.mode, pill(v.live ? "LIVE" : "NOT LIVE")]]),
+      note("Voice can only request - it cannot approve, spend, send or change anything. Kill switch and Safe Mode stop every conversation. Mock providers are for tests and are labelled MOCK."),
+      h("h3", {}, "Conversations (text transcripts only)"), table(["Started", "Status", "Providers", "Turns", "Purpose", ""], (v.conversations ?? []).map(row)),
+      h("div", { class: "row" }, h("button", { class: "btn", onclick: async () => { await act("Purge expired transcripts", "/api/voice/action", { op: "purge" }); render(); } }, "Purge expired transcripts"))]; },
   async documents() { const d = await api("/api/documents");
     return [h("h2", {}, "Document Center"), note("Total " + d.summary.total + " · unsupported formats " + d.summary.unsupported + " · secret " + d.summary.secret),
       table(["Name", "Type", "Class", "Extraction", "Job"], d.items.map(x => [x.name, x.type, pill(x.classification), pill(x.extraction?.status), x.jobId ?? "—"]))]; },
