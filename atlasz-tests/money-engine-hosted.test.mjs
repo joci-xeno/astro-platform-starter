@@ -46,13 +46,17 @@ test("hosted typed tools: read-only built-ins work through the control chain; ba
   const dir = tmp("tt-");
   try {
     const rt = createRuntime({ dataDir: dir, retryBaseMs: 0, fetchImpl: async () => ({ ok: false, status: 500, json: async () => ({}), text: async () => "" }) });
-    const names = rt.tools.describe().map(t => t.name).sort(); assert.deepEqual(names, ["atlasz.queue", "inbox.summary", "money.panel", "pcc.add", "pcc.agenda", "pcc.complete", "pcc.summary"]);
+    const names = rt.tools.describe().map(t => t.name).sort(); assert.deepEqual(names, ["atlasz.queue", "inbox.summary", "model.complete", "money.panel", "pcc.add", "pcc.agenda", "pcc.complete", "pcc.summary"]);
     const A = { actor: { type: "AGENT", id: "E1" } };
     const q = await rt.tools.invoke("atlasz.queue", {}, A); assert.equal(q.status, "OK"); assert.equal(typeof q.result.full, "boolean");
     const mp = await rt.tools.invoke("money.panel", {}, A); assert.equal(mp.status, "OK"); assert.equal(mp.result.money.verifiedRevenueUsd, 0);
     assert.equal((await rt.tools.invoke("money.panel", { x: 1 }, A)).status, "INVALID_ARGUMENTS");
     assert.equal((await rt.tools.invoke("inbox.send_all", {}, A)).status, "UNKNOWN_TOOL");
-    assert.equal(rt.tools.stats().tools, 7);
+    assert.equal(rt.tools.stats().tools, 8);
+    // model gateway is hosted but empty: no credentials => honest NO_ELIGIBLE_PROVIDER, never a fabricated answer; the call is typed + chain-classified + marked untrusted
+    const mc = await rt.tools.invoke("model.complete", { prompt: "hello" }, A); assert.equal(mc.status, "OK"); assert.equal(mc.result.ok, false); assert.equal(mc.result.reason, "NO_ELIGIBLE_PROVIDER"); assert.equal(mc.result.untrusted, true);
+    assert.equal((await rt.tools.invoke("model.complete", { prompt: "" }, A)).status, "INVALID_ARGUMENTS"); assert.equal((await rt.tools.invoke("model.complete", { prompt: "x", capability: "magic" }, A)).status, "INVALID_ARGUMENTS");
+    assert.equal(rt.dashboard().models.live, 0); assert.match(rt.dashboard().models.note, /No provider is LIVE/);
     // hosted scheduler: a due job calls a typed tool through the chain and the PCC item shows in the dashboard summary
     const job = rt.scheduler.create({ name: "hosted", kind: "ONCE", spec: { at: new Date(Date.now() + 1000).toISOString() }, tool: "pcc.add", args: { type: "TASK", title: "hosted-created" } });
     assert.equal(rt.dashboard().scheduler.total, 1); assert.equal(rt.dashboard().pcc.openTotal, 0);

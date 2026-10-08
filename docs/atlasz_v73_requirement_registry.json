@@ -95,7 +95,7 @@
     52
    ]
   },
-  "item_verified_count": 913
+  "item_verified_count": 915
  },
  "requirements": [
   {
@@ -22923,6 +22923,60 @@
    "test_status": "TESTED_SANDBOX",
    "classification": "SANDBOX",
    "next_action": "Calendar/email connectors (EXTERNAL); recurring-task templates; suggestion engine (A08)"
+  },
+  {
+   "id": "ATLASZ-PKG84-024",
+   "title": "Model Gateway: one path to language models composing provider-resilience (breaker, no-spend cost router, fallback, independent judge, cost ledger) with the Brain model graph; one real probe feeds both registries; untrusted-output screening; typed tool model.complete; hosted with NO provider registered; fixes a provider-resilience bug where a ledger-write failure triggered a second (possibly paid) call",
+   "level": "item",
+   "section": 77,
+   "description": "Model Gateway: one path to language models composing provider-resilience (breaker, no-spend cost router, fallback, independent judge, cost ledger) with the Brain model graph; one real probe feeds both registries; untrusted-output screening; typed tool model.complete; hosted with NO provider registered; fixes a provider-resilience bug where a ledger-write failure triggered a second (possibly paid) call",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P0",
+   "dependencies": [],
+   "implementation_location": "atlasz-addons/model-gateway.mjs; atlasz-addons/provider-resilience.mjs; atlasz-runtime/supervisor-safe.mjs; atlasz-control-center/public/app.js",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/model-gateway.test.mjs",
+    "atlasz-tests/provider-resilience.test.mjs",
+    "atlasz-tests/money-engine-hosted.test.mjs"
+   ],
+   "evidence": [
+    "6+1 tests; 9 mutation checks caught; tested with fake providers only - no live provider exists"
+   ],
+   "blocker": "No provider credentials / adapters (EXTERNAL); spending path needs owner approval",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Attach owner-approved adapters via the connector path; conversation/context manager (M03)"
+  },
+  {
+   "id": "ATLASZ-PKG84-025",
+   "title": "Unified Master Gap Register generator: registry gaps + 85-capability gaps + import-reachability scan + test-reference scan + TODO scan + Control Center panel/route scan; reality classes keep sandbox/unconnected/external/owner-decision apart; LIVE_VERIFIED is zero by construction; plus direct tests for 6 previously unreferenced modules (audit-chain, money-supervisor, claim-distinctions, safe-mode-scope, proposal-quote-engine, tool-bridge)",
+   "level": "item",
+   "section": 77,
+   "description": "Unified Master Gap Register generator: registry gaps + 85-capability gaps + import-reachability scan + test-reference scan + TODO scan + Control Center panel/route scan; reality classes keep sandbox/unconnected/external/owner-decision apart; LIVE_VERIFIED is zero by construction; plus direct tests for 6 previously unreferenced modules (audit-chain, money-supervisor, claim-distinctions, safe-mode-scope, proposal-quote-engine, tool-bridge)",
+   "source": "Joci next continuous build package",
+   "priority_proposed": "P1",
+   "dependencies": [],
+   "implementation_location": "docs/master_gap_register.py; atlasz-tests/gap-register-modules.test.mjs",
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/gap-register-modules.test.mjs"
+   ],
+   "evidence": [
+    "6 tests, 10 mutation checks caught; scans are static (basename/regex based), so they find disconnects but cannot prove runtime paths"
+   ],
+   "blocker": "None",
+   "owner_decision": null,
+   "strategy": "BUILD",
+   "status_basis": "ITEM_VERIFIED",
+   "integration_status": "CONNECTED_SANDBOX",
+   "test_status": "TESTED_SANDBOX",
+   "classification": "SANDBOX",
+   "next_action": "Run the generator at every milestone; connect or retire digital-twin and evidence-record (still unreachable)"
   }
  ]
 }

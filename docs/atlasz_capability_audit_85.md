@@ -24,10 +24,10 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 
 ## M03 — Multi-Model Conversation Interface — **PARTIAL**
 - Registry links (candidates): V73-S02-002, V73-S03-007, V73-S03-010, V73-S08-001, V73-S08-002, V73-S08-003
-- Modules: multi-model-brain.mjs; provider-resilience.mjs; brain/model-intelligence.mjs; cost-model-router.mjs
-- Evidence: provider-resilience.test, brain-systems.test (deterministic clock), contract tests
-- Missing: Shared conversation object, per-turn model switching, context windows, per-conversation cost
-- Integration gaps / blockers: No provider is LIVE; no conversation/context manager
+- Modules: atlasz-addons/model-gateway.mjs (composes provider-resilience + brain/model-intelligence); typed tool model.complete; Control Center providers panel
+- Evidence: model-gateway.test (6: no-provider honesty, single real probe feeds both registries with measured latency, no-spend routing + fallback + breaker, untrusted-output quarantine, independent judge needs another family, ledger failure never triggers a second call); 8+1 mutation checks caught; hosted in money-engine-hosted.test
+- Missing: Shared multi-model CONVERSATION object (turns, per-turn switching, context window management); any live provider (EXTERNAL)
+- Integration gaps / blockers: No provider registered (no credentials); conversation/context manager not built
 - Security: Keys server-side only; LIVE only from our own probe
 - Plan: Conversation manager with context budget + token/cost accounting over existing router; providers stay blocked
 - Tests required: context trimming, switch audit, cost accrual, no-LIVE-without-probe
@@ -295,12 +295,12 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 ## G04 — Advanced Reasoning — **EXTERNAL_BLOCKER**
 - Registry links (candidates): V73-S03-001
 - Modules: brain/model-intelligence.mjs; business/judge.mjs
-- Evidence: Routing exists; no reasoning provider live
+- Evidence: Routing + gateway exist and are tested with fakes; no reasoning provider is live
 - Missing: Reasoning model + validation
 - Integration gaps / blockers: No provider
 - Security: Independent validation for important conclusions
 - Plan: Covered by C10 + judge; provider blocked
-- Tests required: No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.
+- Tests required: NOPROV
 
 ## G05 — Secure Code Execution — **PARTIAL**
 - Registry links (candidates): V73-S02-003, V73-S09-002, V73-S09-013, V73-S09-014, V73-S09-029, V73-S10-001
@@ -745,8 +745,8 @@ Statuses: MISSING 14, PARTIAL 42, EXTERNAL_BLOCKER 23, VERIFIED_WORKING 6, total
 ## P10 — Independent Multi-Model Verification — **PARTIAL**
 - Registry links (candidates): V73-S02-002, V73-S03-007, V73-S03-010, V73-S04-008, V73-S08-001, V73-S08-002
 - Modules: business/judge.mjs; brain/verifier.mjs; brain/model-intelligence.mjs (different families required)
-- Evidence: judge + verifier tests (8+8); different-family rule tested
-- Missing: Disagreement escalation with real models
+- Evidence: judge + verifier tests; model-gateway.test (independent judge requires a different family and says plainly when it cannot be independent)
+- Missing: Disagreement escalation with real models (EXTERNAL: only one or zero live providers)
 - Integration gaps / blockers: No live second provider
 - Security: Single-provider limit reported truthfully
 - Plan: Disagreement escalation path (exists) + live providers blocked

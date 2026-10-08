@@ -92,7 +92,7 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
       agents: d ? { search: d.agents.filter(a => a.role === "SEARCH"), execution: d.agents.filter(a => a.role === "EXECUTION") } : { search: [], execution: [] },
       topology: { expectedSearch: 5, expectedExecution: 25, actualSearch: d ? d.agents.filter(a => a.role === "SEARCH").length : 0, actualExecution: d ? d.agents.filter(a => a.role === "EXECUTION").length : 0 },
       uptime: d?.uptime ?? null, metrics: d?.metrics ?? null, queue: d?.queue ?? null, blockers: d?.blockers ?? [], sourceErrors: d?.sourceErrors ?? {},
-      providers: d?.internalAddons ?? null, capabilities: d?.capabilities ?? null,
+      providers: d?.internalAddons ?? null, models: d?.models ?? null, scheduler: d?.scheduler ?? null, capabilities: d?.capabilities ?? null,
       money: { note: "Verified revenue counts ONLY with authoritative payment evidence recorded in the ledger.", confirmedPaidUsd: finance().revenue.verifiedReceivedUsd, outreachSent: d?.metrics?.outreachSent ?? 0, won: d?.metrics?.won ?? 0 }
     };
   }

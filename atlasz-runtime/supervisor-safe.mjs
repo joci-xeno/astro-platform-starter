@@ -19,6 +19,8 @@ import { createBrainSystem } from "../atlasz-addons/brain/brain-system.mjs";
 import { createSearchPipeline } from "../atlasz-addons/brain/search-pipeline.mjs";
 import { createMoneyEngine } from "../atlasz-addons/business/money-engine.mjs";
 import { createUniversalInbox } from "../atlasz-addons/universal-inbox.mjs";
+import { createProviderResilience } from "../atlasz-addons/provider-resilience.mjs";
+import { createModelGateway } from "../atlasz-addons/model-gateway.mjs";
 import { createScheduler } from "../atlasz-addons/scheduler.mjs";
 import { createPersonalCommandCenter, registerPccTools } from "../atlasz-addons/personal-command-center.mjs";
 import { createToolRegistry } from "../atlasz-addons/typed-tools.mjs";
@@ -124,6 +126,12 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
   tools.register({ name: "atlasz.queue", description: "Durable queue pressure (ready/leased/dead counts).", operation: "READ_STATUS", input: EMPTY, output: { type: "object", properties: { full: { type: "boolean" } }, additionalProperties: true }, handler: () => queue.pressure() });
   tools.register({ name: "money.panel", description: "Money Engine panel (LIVE vs SANDBOX separate; verified vs claimed).", operation: "READ_STATUS", input: EMPTY, output: { type: "object", properties: {}, additionalProperties: true }, handler: () => moneyEngine.panel() });
   tools.register({ name: "inbox.summary", description: "Inbox pipeline summary (counts only, no message bodies).", operation: "READ_STATUS", input: EMPTY, output: { type: "object", properties: {}, additionalProperties: true }, handler: () => inboxPipeline.summary() });
+  // Model gateway: provider-resilience (breaker, no-spend cost router, fallback, independent judge, cost ledger) over the Brain's measured model graph.
+  // NO provider is registered here: credentials/adapters are attached by the owner-approved connector path, and LIVE comes only from our own probe.
+  const modelGateway = createModelGateway({ resilience: createProviderResilience({ gate: emergencyGate, ledger }), models: brain.models, security: brain.security, blackBox: brain.blackBox });
+  tools.register({ name: "model.complete", description: "Ask a language model (no-spend, free providers only; output is UNTRUSTED text screened by the Security Brain).", operation: "EXTERNAL_READ",
+    input: { type: "object", required: ["prompt"], properties: { prompt: { type: "string", minLength: 1, maxLength: 20000 }, capability: { enum: ["text", "code", "reasoning", "judge"] } } },
+    output: { type: "object", required: ["ok", "untrusted"], properties: { ok: { type: "boolean" }, untrusted: { type: "boolean" } }, additionalProperties: true }, handler: a => modelGateway.complete({ prompt: a.prompt, capability: a.capability ?? "text", budgetUsd: 0 }) });
   // Personal Command Center + durable scheduler: schedules call ONLY registered typed tools (control chain on every run, actor SCHEDULER). Emergency stop / Safe Mode halt the whole tick.
   const pcc = createPersonalCommandCenter({ file: path.join(dataDir, "pcc", "items.json"), now, blackBox: brain.blackBox });
   registerPccTools(tools, pcc);
@@ -338,7 +346,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
       agents: state.agents, blockers, sourceErrors: state.sourceErrors, emergency: emergencyStatus(), safeMode: safeMode.status(), pendingApprovals: approvalRequests.pending().length, queue: queue.stats(), watchdog: watchdog.status(),
       selfCheck: { level: selfCheck.level, problems: selfCheck.checks.filter(c => c.status !== "OK").map(c => ({ id: c.id, status: c.status, detail: c.detail })) },
       vault: vault.status(), internalAddons: addonSnapshot(),
-      brain: brainSafe(() => brain.summary()) ?? { state: "ERROR" }, scheduler: brainSafe(() => scheduler.summary()) ?? { state: "ERROR" }, pcc: brainSafe(() => pcc.summary()) ?? { state: "ERROR" }, moneyEngine: brainSafe(() => moneyEngine.panel()) ?? { state: "ERROR" }, behavior: brainSafe(() => brain.behavior.summary()) ?? { state: "ERROR" }, inbox: brainSafe(() => ({ ...inbox.counts(), pipeline: inboxPipeline.summary() })) ?? { state: "ERROR" }, ownerControl: brainSafe(() => ownerControl.status()) ?? { state: "ERROR" }, ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
+      brain: brainSafe(() => brain.summary()) ?? { state: "ERROR" }, models: brainSafe(() => modelGateway.summary()) ?? { state: "ERROR" }, scheduler: brainSafe(() => scheduler.summary()) ?? { state: "ERROR" }, pcc: brainSafe(() => pcc.summary()) ?? { state: "ERROR" }, moneyEngine: brainSafe(() => moneyEngine.panel()) ?? { state: "ERROR" }, behavior: brainSafe(() => brain.behavior.summary()) ?? { state: "ERROR" }, inbox: brainSafe(() => ({ ...inbox.counts(), pipeline: inboxPipeline.summary() })) ?? { state: "ERROR" }, ownerControl: brainSafe(() => ownerControl.status()) ?? { state: "ERROR" }, ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
     };
   }
   const watchdog = createWatchdog({ onEscalate: e => safeMode.enter("WATCHDOG:" + e.id, { detail: e.detail }) });
@@ -367,7 +375,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
     schedule(() => brainSafe(() => brain.behavior.scan()), 60000);          // behaviour anomaly scan over the tamper-evident Black Box (detect + recommend only)
   }
   function stop() { stopping = true; watchdog.stop(); for (const t of timers) clearTimeout(t); save(); }
-  return { tools, pcc, scheduler, inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
+  return { tools, modelGateway, pcc, scheduler, inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
 }
 
 if (process.env.ATLASZ_TEST_MODE !== "1") {

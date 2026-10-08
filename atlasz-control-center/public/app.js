@@ -133,6 +133,7 @@ const views = {
   async providers() {
     const s = await api("/api/status"), p = s.providers ?? {};
     const rows = Object.entries(p).filter(([, v]) => v && typeof v === "object").map(([k, v]) => [k, pill(v.state ?? (v.live ? "LIVE" : "—")), JSON.stringify(v).slice(0, 180)]);
+    if (s.models) rows.unshift(["model-gateway", pill(s.models.live > 0 ? "LIVE" : "NO_PROVIDER_LIVE"), `registered ${s.models.registered} · live ${s.models.live} · degraded ${s.models.degraded} · untested ${s.models.untested} · no-spend default · ${s.models.note ?? ""}`]);
     return [h("h2", {}, "Model / tool / provider health"), h("p", { class: "sub" }, "LIVE requires probe evidence. Placeholders are shown as such."), table(["Component", "State", "Detail"], rows)];
   },
   async errors() {

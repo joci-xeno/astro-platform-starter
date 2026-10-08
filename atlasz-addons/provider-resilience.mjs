@@ -30,11 +30,17 @@ export function createProviderResilience({ gate = emergencyGate, ledger = null, 
   }
   const stateOf = p => !p.probeEvidence ? "CONNECTED_UNTESTED" : p.breaker.state() === "OPEN" ? "DEGRADED_BREAKER_OPEN" : "LIVE";
   /** API health monitor: runs each provider's real probe; evidence is recorded only on a passing probe. Probes must not spend money. */
+  /** Record the outcome of ONE real probe (made by the caller, e.g. the model gateway, which also measures latency). Evidence exists only for ok===true. */
+  function recordProbe(id, ok, error = null) {
+    const p = P.get(id); if (!p) throw new Error("UNKNOWN_PROVIDER");
+    if (ok === true) { p.probeEvidence = { probeId: p.id + "@" + now(), outcome: "PASS", at: now(), target: p.id }; p.breaker.success(); p.lastError = null; return "PASS"; }
+    p.probeEvidence = null; p.breaker.failure(); p.lastError = String(error ?? "PROBE_NOT_OK").slice(0, 120); return "FAIL";
+  }
   async function probeAll() {
     const out = {};
     for (const p of P.values()) {
-      try { const r = await withTimeout(p.probe(), timeoutMs, "PROBE"); if (r?.ok === true) { p.probeEvidence = { probeId: p.id + "@" + now(), outcome: "PASS", at: now(), target: p.id }; p.breaker.success(); p.lastError = null; out[p.id] = "PASS"; } else throw new Error(r?.error ?? "PROBE_REPORTED_FAILURE"); }
-      catch (e) { p.probeEvidence = null; p.breaker.failure(); p.lastError = String(e.message).slice(0, 120); out[p.id] = "FAIL"; }
+      try { const r = await withTimeout(p.probe(), timeoutMs, "PROBE"); out[p.id] = recordProbe(p.id, r?.ok === true, r?.ok === true ? null : "PROBE_NOT_OK"); }
+      catch (e) { out[p.id] = recordProbe(p.id, false, e.message); }
     }
     return out;
   }
@@ -57,8 +63,8 @@ export function createProviderResilience({ gate = emergencyGate, ledger = null, 
       try {
         const r = await withTimeout(p.invoke(request), timeoutMs, "INVOKE"); p.breaker.success(); p.latencies.push(clock() - t0); if (p.latencies.length > 50) p.latencies.shift();
         const cost = Number(r?.costUsd ?? 0);
-        if (ledger) ledger.recordCost({ jobId, provider: p.id, category: "API", amountUsd: cost, tokensIn: r?.tokensIn ?? 0, tokensOut: r?.tokensOut ?? 0, evidence: cost > 0 ? { source: "PROVIDER_RESPONSE", reference: r.providerRef ?? "", verifiedAt: now() } : null });
-        return { ok: true, providerId: p.id, family: p.family, output: r?.output, costUsd: cost, attempts, skipped };
+        let ledgerError = null; if (ledger) try { ledger.recordCost({ jobId, provider: p.id, category: "API", amountUsd: cost, tokensIn: r?.tokensIn ?? 0, tokensOut: r?.tokensOut ?? 0, evidence: cost > 0 ? { source: "PROVIDER_RESPONSE", reference: r.providerRef ?? "", verifiedAt: now() } : null }); } catch (le) { ledgerError = String(le.message).slice(0, 120); }   // a bookkeeping failure must NEVER look like a provider failure (it would trigger a second, possibly paid, call)
+        return { ok: true, providerId: p.id, family: p.family, output: r?.output, costUsd: cost, attempts, skipped, ...(ledgerError ? { ledgerError } : {}) };
       } catch (e) { p.failures++; p.breaker.failure(); p.lastError = String(e.message).slice(0, 120); attempts.push({ id: p.id, error: p.lastError }); }
     }
     return { ok: false, reason: candidates.length ? "ALL_PROVIDERS_FAILED" : "NO_ELIGIBLE_PROVIDER", attempts, skipped };
@@ -69,5 +75,5 @@ export function createProviderResilience({ gate = emergencyGate, ledger = null, 
     const r = await invoke({ capability: "judge", request: prompt, exclude: [...P.values()].filter(p => p.family === worker.family).map(p => p.id), budgetUsd, estimateCostUsd: 0 });
     return r.ok ? { independent: true, judgeProvider: r.providerId, output: r.output } : { independent: false, reason: "INDEPENDENT_JUDGE_UNAVAILABLE:" + r.reason };
   }
-  return { register, probeAll, invoke, judge, health, summary: () => { const h = health(); return { registered: h.length, live: h.filter(x => x.state === "LIVE").length, degraded: h.filter(x => x.state.startsWith("DEGRADED")).length, untested: h.filter(x => x.state === "CONNECTED_UNTESTED").length }; } };
+  return { register, probeAll, recordProbe, invoke, judge, health, summary: () => { const h = health(); return { registered: h.length, live: h.filter(x => x.state === "LIVE").length, degraded: h.filter(x => x.state.startsWith("DEGRADED")).length, untested: h.filter(x => x.state === "CONNECTED_UNTESTED").length }; } };
 }
