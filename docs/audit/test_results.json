@@ -6,7 +6,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 1.5
+  "seconds": 0.8
  },
  "approval-requests.test.mjs": {
   "tests": 4,
@@ -15,7 +15,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 1.1
+  "seconds": 0.3
  },
  "backup-recovery.test.mjs": {
   "tests": 6,
@@ -24,7 +24,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 1.1
+  "seconds": 0.4
  },
  "behavior-monitor.test.mjs": {
   "tests": 7,
@@ -33,7 +33,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 0.4
+  "seconds": 0.3
  },
  "brain-core.test.mjs": {
   "tests": 11,
@@ -42,7 +42,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 0.4
+  "seconds": 0.3
  },
  "brain-intelligence.test.mjs": {
   "tests": 13,
@@ -51,7 +51,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 0.5
+  "seconds": 0.4
  },
  "brain-orchestration.test.mjs": {
   "tests": 12,
@@ -69,7 +69,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 1.1
+  "seconds": 1.0
  },
  "brain-systems.test.mjs": {
   "tests": 7,
@@ -78,7 +78,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 15.3
+  "seconds": 15.2
  },
  "business-engines.test.mjs": {
   "tests": 10,
@@ -87,7 +87,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 0.4
+  "seconds": 0.3
  },
  "canonical-queue-safety.test.mjs": {
   "tests": 7,
@@ -96,7 +96,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 1.0
+  "seconds": 0.8
  },
  "canonical-runtime.test.mjs": {
   "tests": 7,
@@ -105,7 +105,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 11.7
+  "seconds": 11.6
  },
  "code-sandbox-hosted.test.mjs": {
   "tests": 3,
@@ -114,7 +114,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 60.8
+  "seconds": 60.7
  },
  "code-sandbox.test.mjs": {
   "tests": 9,
@@ -123,7 +123,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 4.2
+  "seconds": 4.4
  },
  "connector-catalog.test.mjs": {
   "tests": 4,
@@ -186,7 +186,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 0.4
+  "seconds": 0.5
  },
  "control-center-finance.test.mjs": {
   "tests": 2,
@@ -195,7 +195,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 0.4
+  "seconds": 0.5
  },
  "control-center-home.test.mjs": {
   "tests": 1,
@@ -231,7 +231,16 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 0.3
+  "seconds": 0.2
+ },
+ "control-center-routes-m1.test.mjs": {
+  "tests": 5,
+  "pass_": 5,
+  "fail": 0,
+  "skipped": 0,
+  "cancelled": 0,
+  "exit": 0,
+  "seconds": 0.4
  },
  "control-center-systems.test.mjs": {
   "tests": 1,
@@ -240,7 +249,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 0.3
+  "seconds": 0.2
  },
  "control-center.test.mjs": {
   "tests": 10,
@@ -276,7 +285,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 0.7
+  "seconds": 0.6
  },
  "document-center.test.mjs": {
   "tests": 3,
@@ -339,7 +348,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 0.6
+  "seconds": 0.5
  },
  "financial-ledger.test.mjs": {
   "tests": 5,
@@ -357,7 +366,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 0.3
+  "seconds": 0.2
  },
  "gated-modules.test.mjs": {
   "tests": 9,
@@ -375,7 +384,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 0.8
+  "seconds": 0.9
  },
  "human-core.test.mjs": {
   "tests": 7,
@@ -402,7 +411,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 10.4
+  "seconds": 10.3
  },
  "knowledge-projects.test.mjs": {
   "tests": 8,
@@ -414,13 +423,13 @@
   "seconds": 0.3
  },
  "local-update-adapters.test.mjs": {
-  "tests": 7,
-  "pass_": 7,
+  "tests": 9,
+  "pass_": 9,
   "fail": 0,
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 1.1
+  "seconds": 1.2
  },
  "memory-fabric.test.mjs": {
   "tests": 8,
@@ -447,7 +456,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 10.3
+  "seconds": 10.4
  },
  "modality-fabric.test.mjs": {
   "tests": 8,
@@ -474,7 +483,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 11.6
+  "seconds": 11.7
  },
  "money-engine-sandbox.test.mjs": {
   "tests": 9,
@@ -484,6 +493,15 @@
   "cancelled": 0,
   "exit": 0,
   "seconds": 1.5
+ },
+ "no-weak-random.test.mjs": {
+  "tests": 3,
+  "pass_": 3,
+  "fail": 0,
+  "skipped": 0,
+  "cancelled": 0,
+  "exit": 0,
+  "seconds": 0.2
  },
  "observation-memory-hosted.test.mjs": {
   "tests": 2,
@@ -501,7 +519,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 0.4
+  "seconds": 0.3
  },
  "owner-auth.test.mjs": {
   "tests": 11,
@@ -519,7 +537,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 0.5
+  "seconds": 0.4
  },
  "owner-control-core.test.mjs": {
   "tests": 7,
@@ -528,7 +546,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 0.3
+  "seconds": 0.4
  },
  "owner-control-extra.test.mjs": {
   "tests": 3,
@@ -549,13 +567,13 @@
   "seconds": 10.3
  },
  "plugin-manager.test.mjs": {
-  "tests": 5,
-  "pass_": 5,
+  "tests": 8,
+  "pass_": 8,
   "fail": 0,
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 1.9
+  "seconds": 2.0
  },
  "policy-guards.test.mjs": {
   "tests": 5,
@@ -582,7 +600,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 0.2
+  "seconds": 0.3
  },
  "recurring-billing.test.mjs": {
   "tests": 9,
@@ -591,7 +609,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 0.3
+  "seconds": 0.4
  },
  "registry-integrity.test.mjs": {
   "tests": 5,
@@ -609,7 +627,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 0.3
+  "seconds": 0.4
  },
  "research-ledger-hosted.test.mjs": {
   "tests": 2,
@@ -618,7 +636,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 10.4
+  "seconds": 10.5
  },
  "research-ledger.test.mjs": {
   "tests": 9,
@@ -627,7 +645,25 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
+  "seconds": 0.6
+ },
+ "restricted-node.test.mjs": {
+  "tests": 6,
+  "pass_": 6,
+  "fail": 0,
+  "skipped": 0,
+  "cancelled": 0,
+  "exit": 0,
   "seconds": 0.4
+ },
+ "runtime-http.test.mjs": {
+  "tests": 8,
+  "pass_": 8,
+  "fail": 0,
+  "skipped": 0,
+  "cancelled": 0,
+  "exit": 0,
+  "seconds": 1.1
  },
  "safety-modules.test.mjs": {
   "tests": 9,
@@ -654,7 +690,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 0.3
+  "seconds": 0.2
  },
  "tech-watch.test.mjs": {
   "tests": 3,
@@ -699,7 +735,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 0.9
+  "seconds": 0.8
  },
  "voice-conversation-hosted.test.mjs": {
   "tests": 3,
@@ -708,7 +744,7 @@
   "skipped": 0,
   "cancelled": 0,
   "exit": 0,
-  "seconds": 10.4
+  "seconds": 10.3
  },
  "voice-conversation.test.mjs": {
   "tests": 14,

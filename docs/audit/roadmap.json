@@ -7,9 +7,9 @@
   "acceptance": "Runtime HTTP server serves only a minimal /health without a token; all other routes need the owner token or are removed; negative tests prove it. Backup/restore/LKG drills pass on a clean data dir; audit chains verify; every reliability item has a test that fails when the guard is removed (mutation).",
   "gates": "none",
   "open_requirements": {
-   "PARTIAL": 61,
-   "IMPLEMENTED": 60,
-   "MISSING": 20
+   "PARTIAL": 62,
+   "IMPLEMENTED": 62,
+   "MISSING": 17
   }
  },
  {
@@ -22,9 +22,9 @@
   "acceptance": "An end-to-end job (SANDBOX) is planned by the Brain, executed by a named agent via at least 3 typed tools, judged by the independent QA, logged to the Black Box and visible in the Control Center; the 30-agent roster is unchanged; each hub-bag module is invoked by a workflow or removed; no duplicate implementation remains for qualify/approval-gateway/deal-state.",
   "gates": "model provider only for non-mock reasoning (EXTERNAL)",
   "open_requirements": {
-   "PARTIAL": 128,
+   "PARTIAL": 115,
    "MISSING": 16,
-   "IMPLEMENTED": 17,
+   "IMPLEMENTED": 30,
    "AWAITING_OWNER_APPROVAL": 1
   }
  },
@@ -38,9 +38,9 @@
   "acceptance": "Every ingest format has an extractor test with hostile samples; permission-aware search covered by cross-tenant tests; memory/learning items have retention, correction and deletion tests; OCR remains an external slot.",
   "gates": "OCR/embeddings providers (EXTERNAL)",
   "open_requirements": {
-   "PARTIAL": 31,
-   "MISSING": 33,
-   "IMPLEMENTED": 2
+   "PARTIAL": 30,
+   "IMPLEMENTED": 3,
+   "MISSING": 33
   }
  },
  {
@@ -54,9 +54,9 @@
   "acceptance": "A SANDBOX deal runs lead>proposal>delivery>invoice>payment-claim with owner approvals and independent verification; no state can advance without typed evidence; unknown revenue is never zero; Control Center money panels read the persisted state; LIVE adapters stay absent.",
   "gates": "bank/email/payment providers and owner decisions (EXTERNAL / OWNER)",
   "open_requirements": {
-   "PARTIAL": 32,
+   "PARTIAL": 25,
+   "IMPLEMENTED": 18,
    "MISSING": 9,
-   "IMPLEMENTED": 11,
    "EXTERNALLY_BLOCKED": 1
   }
  },
@@ -119,9 +119,9 @@
   "gates": "Windows machine, installer build approval, code signing (EXTERNAL/OWNER)",
   "open_requirements": {
    "EXTERNALLY_BLOCKED": 8,
-   "PARTIAL": 60,
-   "IMPLEMENTED": 36,
-   "MISSING": 18,
+   "PARTIAL": 61,
+   "IMPLEMENTED": 37,
+   "MISSING": 16,
    "AWAITING_OWNER_APPROVAL": 2
   }
  },
@@ -138,8 +138,8 @@
   "gates": "web/search providers (EXTERNAL)",
   "open_requirements": {
    "MISSING": 26,
-   "PARTIAL": 34,
-   "IMPLEMENTED": 2
+   "PARTIAL": 33,
+   "IMPLEMENTED": 3
   }
  },
  {

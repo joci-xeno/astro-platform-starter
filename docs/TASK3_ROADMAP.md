@@ -6,15 +6,15 @@ Generated from `docs/audit/roadmap.json` and `docs/audit/open_items_detail.csv`.
 
 | Milestone | Name | Depends on | Open reqs | Partial | Missing | Ext. blocked | Owner decision | Gated by |
 |---|---|---|---|---|---|---|---|---|
-| M1 | Safety & reliability baseline | — | 81 | 61 | 20 | 0 | 0 | none |
-| M2 | Agent runtime integration (30 agents, Brain, tools) | M1 | 145 | 128 | 16 | 0 | 1 | model provider only for non-mock reasoning (EXTERNAL) |
-| M3 | Knowledge, memory and documents | M2 | 64 | 31 | 33 | 0 | 0 | OCR/embeddings providers (EXTERNAL) |
-| M4 | Money & business workflow (no real money) | M2, M3 | 42 | 32 | 9 | 1 | 0 | bank/email/payment providers and owner decisions (EXTERNAL / OWNER) |
+| M1 | Safety & reliability baseline | — | 79 | 62 | 17 | 0 | 0 | none |
+| M2 | Agent runtime integration (30 agents, Brain, tools) | M1 | 132 | 115 | 16 | 0 | 1 | model provider only for non-mock reasoning (EXTERNAL) |
+| M3 | Knowledge, memory and documents | M2 | 63 | 30 | 33 | 0 | 0 | OCR/embeddings providers (EXTERNAL) |
+| M4 | Money & business workflow (no real money) | M2, M3 | 35 | 25 | 9 | 1 | 0 | bank/email/payment providers and owner decisions (EXTERNAL / OWNER) |
 | M5 | Models, multimodal and live voice providers | M2 | 48 | 23 | 16 | 9 | 0 | ALL providers EXTERNAL; spending needs owner approval |
 | M6 | Tools, connectors, computer use and office/web automation | M2, M1 | 59 | 23 | 25 | 11 | 0 | browser host, credentials (EXTERNAL) |
 | M7 | Personal ATLASZ, Human Core, modes and mobile | M2, M3 | 44 | 27 | 17 | 0 | 0 | mobile client (EXTERNAL) |
-| M8 | Windows desktop / Control Center completion | M1 | 88 | 60 | 18 | 8 | 2 | Windows machine, installer build approval, code signing (EXTERNAL/OWNER) |
-| M9 | Intelligence, performance and software/automation factories | M2, M3, M6 | 60 | 34 | 26 | 0 | 0 | web/search providers (EXTERNAL) |
+| M8 | Windows desktop / Control Center completion | M1 | 87 | 61 | 16 | 8 | 2 | Windows machine, installer build approval, code signing (EXTERNAL/OWNER) |
+| M9 | Intelligence, performance and software/automation factories | M2, M3, M6 | 59 | 33 | 26 | 0 | 0 | web/search providers (EXTERNAL) |
 | M10 | Process, registry, acceptance and commercial track | M1, M2, M3, M4, M5, M6, M7, M8, M9 | 48 | 33 | 8 | 7 | 0 | owner decisions |
 
 Recommended execution order: **M1 → M2 → (M3, M6, M8 in parallel) → M4 → M5 → M7 → M9 → M10.** M1 comes first because it removes the only unresolved security exposure and the reliability gaps; M2 comes second because agents currently cannot use any tool, which limits the value of everything built since.
@@ -27,7 +27,7 @@ Recommended execution order: **M1 → M2 → (M3, M6, M8 in parallel) → M4 →
 
 **Acceptance criteria.** Runtime HTTP server serves only a minimal /health without a token; all other routes need the owner token or are removed; negative tests prove it. Backup/restore/LKG drills pass on a clean data dir; audit chains verify; every reliability item has a test that fails when the guard is removed (mutation).
 
-**Open requirements:** 81 (priority mix: P0×35, P1×45, P3×1). Highest-priority items (P0/P1 first):
+**Open requirements:** 79 (priority mix: P0×34, P1×45). Highest-priority items (P0/P1 first):
 
 | Id | Class | Title | Needs |
 |---|---|---|---|
@@ -39,10 +39,10 @@ Recommended execution order: **M1 → M2 → (M3, M6, M8 in parallel) → M4 →
 | ATLASZ-OSC-020 | PARTIAL | Money Engine safety: every transition needs typed evidence and indepen | code; integration; tests |
 | ATLASZ-OSC-023 | PARTIAL | Control Center Owner Safety/Control area with real status for OWNER AU | code; security; tests; EXTERNAL |
 | ATLASZ-OSC-024 | PARTIAL | Owner controls EMERGENCY STOP, PAUSE EXTERNAL ACTIONS, RESUME, RUN SYS | code; security; tests; OWNER |
-| ATLASZ-T3-001 | MISSING | Runtime HTTP server (supervisor-safe, binds 0.0.0.0) must not serve th | code; security; tests; EXTERNAL; OWNER |
 | V73-S02-001 | PARTIAL | Authority chain: JOCI/OWNER -> STRONG OWNER AUTH -> MASTER -> AGENTS - | code; security; tests; EXTERNAL; OWNER |
 | V73-S02-002 | PARTIAL | No agent/model/plugin/connector/workflow/external service may override | code; security; tests |
 | V73-S14-005 | PARTIAL | nincs új outreach/send/submission/deploy/computer-use action | code; security; tests; OWNER |
+| V73-S14-006 | PARTIAL | nincs új költség/pénzügyi commitment | code; security; tests |
 
 All rows: filter `open_items_detail.csv` on `milestone == M1`.
 
@@ -54,7 +54,7 @@ All rows: filter `open_items_detail.csv` on `milestone == M1`.
 
 **Acceptance criteria.** An end-to-end job (SANDBOX) is planned by the Brain, executed by a named agent via at least 3 typed tools, judged by the independent QA, logged to the Black Box and visible in the Control Center; the 30-agent roster is unchanged; each hub-bag module is invoked by a workflow or removed; no duplicate implementation remains for qualify/approval-gateway/deal-state.
 
-**Open requirements:** 145 (priority mix: P0×96, P1×41, P2×2, P4×6). Highest-priority items (P0/P1 first):
+**Open requirements:** 132 (priority mix: P0×93, P1×35, P2×2, P4×2). Highest-priority items (P0/P1 first):
 
 | Id | Class | Title | Needs |
 |---|---|---|---|
@@ -81,7 +81,7 @@ All rows: filter `open_items_detail.csv` on `milestone == M2`.
 
 **Acceptance criteria.** Every ingest format has an extractor test with hostile samples; permission-aware search covered by cross-tenant tests; memory/learning items have retention, correction and deletion tests; OCR remains an external slot.
 
-**Open requirements:** 64 (priority mix: P1×47, P3×17). Highest-priority items (P0/P1 first):
+**Open requirements:** 63 (priority mix: P1×47, P3×16). Highest-priority items (P0/P1 first):
 
 | Id | Class | Title | Needs |
 |---|---|---|---|
@@ -108,7 +108,7 @@ All rows: filter `open_items_detail.csv` on `milestone == M3`.
 
 **Acceptance criteria.** A SANDBOX deal runs lead>proposal>delivery>invoice>payment-claim with owner approvals and independent verification; no state can advance without typed evidence; unknown revenue is never zero; Control Center money panels read the persisted state; LIVE adapters stay absent.
 
-**Open requirements:** 42 (priority mix: P0×5, P2×37). Highest-priority items (P0/P1 first):
+**Open requirements:** 35 (priority mix: P0×5, P2×30). Highest-priority items (P0/P1 first):
 
 | Id | Class | Title | Needs |
 |---|---|---|---|
@@ -120,10 +120,10 @@ All rows: filter `open_items_detail.csv` on `milestone == M3`.
 | ATLASZ-T3-009 | EXTERNALLY_BLOCKED | Real-source verification of lead discovery (Hacker News Algolia read)  | tests; EXTERNAL |
 | V73-S11-001 | PARTIAL | Revenue Engine | code; tests; EXTERNAL |
 | V73-S11-002 | PARTIAL | Opportunity Engine | code; tests |
-| V73-S11-003 | PARTIAL | Qualification Engine | code; tests |
 | V73-S11-004 | PARTIAL | Buyer Finder | code; integration; tests |
 | V73-S11-005 | PARTIAL | Decision-Maker Finder | code; tests |
 | V73-S11-006 | PARTIAL | Client DNA | code; tests |
+| V73-S11-008 | PARTIAL | Proposal / Quote Engine | tests |
 
 All rows: filter `open_items_detail.csv` on `milestone == M4`.
 
@@ -216,7 +216,7 @@ All rows: filter `open_items_detail.csv` on `milestone == M7`.
 
 **Acceptance criteria.** Every panel has a route test and a UI smoke; plugin permission tests pass; installer evidence recorded from a real Windows run (owner-approved build).
 
-**Open requirements:** 88 (priority mix: P0×3, P1×25, P2×3, P3×57). Highest-priority items (P0/P1 first):
+**Open requirements:** 87 (priority mix: P0×3, P1×25, P2×2, P3×57). Highest-priority items (P0/P1 first):
 
 | Id | Class | Title | Needs |
 |---|---|---|---|
@@ -243,7 +243,7 @@ All rows: filter `open_items_detail.csv` on `milestone == M8`.
 
 **Acceptance criteria.** Intelligence outputs carry source+retrievedAt and an ASSUMPTION/VERIFIED label; performance metrics come from measured data only; factories produce artifacts only inside the sandbox.
 
-**Open requirements:** 60 (priority mix: P4×60). Highest-priority items (P0/P1 first):
+**Open requirements:** 59 (priority mix: P4×59). Highest-priority items (P0/P1 first):
 
 | Id | Class | Title | Needs |
 |---|---|---|---|
@@ -258,7 +258,7 @@ All rows: filter `open_items_detail.csv` on `milestone == M8`.
 | V73-S29-009 | MISSING | deployment preparation; | code; tests |
 | V73-S29-010 | PARTIAL | code review; | code; tests |
 | V73-S29-011 | PARTIAL | security checks; | code; integration; tests |
-| V73-S29-012 | PARTIAL | regression; | code; tests |
+| V73-S29-013 | PARTIAL | rollback; | code; tests; OWNER |
 
 All rows: filter `open_items_detail.csv` on `milestone == M9`.
 

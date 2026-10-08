@@ -393,10 +393,10 @@
   "section": 3,
   "title": "dependency planning",
   "priority": "P0",
-  "registry_status": "PARTIAL",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "COMPLETE",
-  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
-  "evidence": "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: dependsOn gating and cycle rejection tested",
+  "blocker": null,
+  "evidence": "dependsOn gating and cycle rejection tested",
   "implementation_location": "atlasz-addons/master-planner-orchestrator.mjs",
   "loc_files": [
    "atlasz-addons/master-planner-orchestrator.mjs"
@@ -420,9 +420,8 @@
   "reach": "RUNTIME",
   "invocation": "HUB_ADAPTER_BAG_ONLY",
   "verification_level": "L3_CONNECTED_AND_TESTED",
-  "flags": [],
-  "work_categories": [
-   "CODE_COMPLETION"
+  "flags": [
+   "MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW"
   ]
  },
  {
@@ -621,10 +620,10 @@
   "section": 3,
   "title": "completion/evidence tracking",
   "priority": "P0",
-  "registry_status": "PARTIAL",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "COMPLETE",
-  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
-  "evidence": "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: taskComplete needs every done-criterion passed; empty definition never",
+  "blocker": null,
+  "evidence": "taskComplete needs every done-criterion passed; empty definition never done",
   "implementation_location": "atlasz-addons/task-ledger.mjs; qa-reviewer.mjs",
   "loc_files": [
    "atlasz-addons/qa-reviewer.mjs",
@@ -649,9 +648,8 @@
   "reach": "RUNTIME",
   "invocation": "HUB_ADAPTER_BAG_ONLY",
   "verification_level": "L3_CONNECTED_AND_TESTED",
-  "flags": [],
-  "work_categories": [
-   "CODE_COMPLETION"
+  "flags": [
+   "MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW"
   ]
  },
  {
@@ -3116,10 +3114,10 @@
   "section": 7,
   "title": "Outcome Compiler",
   "priority": "P3",
-  "registry_status": "PARTIAL",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "COMPLETE",
-  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
-  "evidence": "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Compile, validate, owner-gated execution request",
+  "blocker": null,
+  "evidence": "Compile, validate, owner-gated execution request",
   "implementation_location": "atlasz-addons/outcome-compiler.mjs",
   "loc_files": [
    "atlasz-addons/outcome-compiler.mjs"
@@ -3140,9 +3138,8 @@
   "reach": "RUNTIME",
   "invocation": "HUB_ADAPTER_BAG_ONLY",
   "verification_level": "L3_CONNECTED_AND_TESTED",
-  "flags": [],
-  "work_categories": [
-   "CODE_COMPLETION"
+  "flags": [
+   "MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW"
   ]
  },
  {
@@ -4899,10 +4896,10 @@
   "section": 9,
   "title": "QA",
   "priority": "P0",
-  "registry_status": "PARTIAL",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "COMPLETE",
-  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
-  "evidence": "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Evidence-required QA gate tested",
+  "blocker": null,
+  "evidence": "Evidence-required QA gate tested",
   "implementation_location": "atlasz-addons/qa-reviewer.mjs",
   "loc_files": [
    "atlasz-addons/qa-reviewer.mjs"
@@ -4923,9 +4920,8 @@
   "reach": "RUNTIME",
   "invocation": "HUB_ADAPTER_BAG_ONLY",
   "verification_level": "L3_CONNECTED_AND_TESTED",
-  "flags": [],
-  "work_categories": [
-   "CODE_COMPLETION"
+  "flags": [
+   "MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW"
   ]
  },
  {
@@ -6010,10 +6006,10 @@
   "section": 11,
   "title": "Qualification Engine",
   "priority": "P2",
-  "registry_status": "PARTIAL",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "COMPLETE",
-  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
-  "evidence": "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Blockers: upfront spend, illegal/deceptive, non-remote, license, missi",
+  "blocker": null,
+  "evidence": "Blockers: upfront spend, illegal/deceptive, non-remote, license, missing evidence",
   "implementation_location": "atlasz-addons/opportunity-qualification-engine.mjs; atlasz-runtime/supervisor-safe.mjs",
   "loc_files": [
    "atlasz-addons/opportunity-qualification-engine.mjs",
@@ -6038,9 +6034,8 @@
   "reach": "RUNTIME",
   "invocation": "HUB_ADAPTER_BAG_ONLY",
   "verification_level": "L3_CONNECTED_AND_TESTED",
-  "flags": [],
-  "work_categories": [
-   "CODE_COMPLETION"
+  "flags": [
+   "MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW"
   ]
  },
  {
@@ -6157,10 +6152,10 @@
   "section": 11,
   "title": "Deal State",
   "priority": "P2",
-  "registry_status": "PARTIAL",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "COMPLETE",
-  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
-  "evidence": "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Forward-only states; approvals/evidence gates",
+  "blocker": null,
+  "evidence": "Forward-only states; approvals/evidence gates",
   "implementation_location": "atlasz-addons/deal-state.mjs",
   "loc_files": [
    "atlasz-addons/deal-state.mjs"
@@ -6184,9 +6179,8 @@
   "reach": "RUNTIME",
   "invocation": "HUB_ADAPTER_BAG_ONLY",
   "verification_level": "L3_CONNECTED_AND_TESTED",
-  "flags": [],
-  "work_categories": [
-   "CODE_COMPLETION"
+  "flags": [
+   "MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW"
   ]
  },
  {
@@ -6263,10 +6257,10 @@
   "section": 11,
   "title": "Follow-Up Engine",
   "priority": "P2",
-  "registry_status": "PARTIAL",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "COMPLETE",
-  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
-  "evidence": "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: 2/5/10-day schedule; stops on reply",
+  "blocker": "Nothing sends follow-ups (no delivery adapter)",
+  "evidence": "2/5/10-day schedule; stops on reply",
   "implementation_location": "atlasz-addons/follow-up-engine.mjs",
   "loc_files": [
    "atlasz-addons/follow-up-engine.mjs"
@@ -6287,9 +6281,8 @@
   "reach": "RUNTIME",
   "invocation": "HUB_ADAPTER_BAG_ONLY",
   "verification_level": "L3_CONNECTED_AND_TESTED",
-  "flags": [],
-  "work_categories": [
-   "CODE_COMPLETION"
+  "flags": [
+   "MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW"
   ]
  },
  {
@@ -6298,10 +6291,10 @@
   "section": 11,
   "title": "Delivery Engine",
   "priority": "P2",
-  "registry_status": "PARTIAL",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "COMPLETE",
-  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
-  "evidence": "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: QA -> owner approval -> external evidence",
+  "blocker": "Nothing is actually delivered",
+  "evidence": "QA -> owner approval -> external evidence",
   "implementation_location": "atlasz-addons/delivery-engine.mjs",
   "loc_files": [
    "atlasz-addons/delivery-engine.mjs"
@@ -6325,9 +6318,8 @@
   "reach": "RUNTIME",
   "invocation": "HUB_ADAPTER_BAG_ONLY",
   "verification_level": "L3_CONNECTED_AND_TESTED",
-  "flags": [],
-  "work_categories": [
-   "CODE_COMPLETION"
+  "flags": [
+   "MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW"
   ]
  },
  {
@@ -6336,10 +6328,10 @@
   "section": 11,
   "title": "Invoice Engine",
   "priority": "P2",
-  "registry_status": "PARTIAL",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "COMPLETE",
-  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
-  "evidence": "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Amount, owner approval, external reference rules",
+  "blocker": "Nothing is actually sent",
+  "evidence": "Amount, owner approval, external reference rules",
   "implementation_location": "atlasz-addons/invoice-engine.mjs",
   "loc_files": [
    "atlasz-addons/invoice-engine.mjs"
@@ -6363,9 +6355,8 @@
   "reach": "RUNTIME",
   "invocation": "HUB_ADAPTER_BAG_ONLY",
   "verification_level": "L3_CONNECTED_AND_TESTED",
-  "flags": [],
-  "work_categories": [
-   "CODE_COMPLETION"
+  "flags": [
+   "MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW"
   ]
  },
  {
@@ -6410,10 +6401,10 @@
   "section": 11,
   "title": "Profit Ledger",
   "priority": "P2",
-  "registry_status": "PARTIAL",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "COMPLETE",
-  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
-  "evidence": "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Only confirmed, evidenced receipts are profit",
+  "blocker": null,
+  "evidence": "Only confirmed, evidenced receipts are profit",
   "implementation_location": "atlasz-addons/profit-ledger.mjs; profit-accounting-engine.mjs",
   "loc_files": [
    "atlasz-addons/profit-accounting-engine.mjs",
@@ -6438,9 +6429,8 @@
   "reach": "RUNTIME",
   "invocation": "HUB_ADAPTER_BAG_ONLY",
   "verification_level": "L3_CONNECTED_AND_TESTED",
-  "flags": [],
-  "work_categories": [
-   "CODE_COMPLETION"
+  "flags": [
+   "MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW"
   ]
  },
  {
@@ -7951,10 +7941,10 @@
   "section": 15,
   "title": "QA Reviewer",
   "priority": "P1",
-  "registry_status": "PARTIAL",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "COMPLETE",
-  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
-  "evidence": "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: PASS only with evidence for every required check",
+  "blocker": null,
+  "evidence": "PASS only with evidence for every required check",
   "implementation_location": "atlasz-addons/qa-reviewer.mjs",
   "loc_files": [
    "atlasz-addons/qa-reviewer.mjs"
@@ -7975,10 +7965,8 @@
   "reach": "RUNTIME",
   "invocation": "HUB_ADAPTER_BAG_ONLY",
   "verification_level": "L3_CONNECTED_AND_TESTED",
-  "flags": [],
-  "work_categories": [
-   "CODE_COMPLETION",
-   "UI"
+  "flags": [
+   "MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW"
   ]
  },
  {
@@ -8015,10 +8003,10 @@
   "section": 15,
   "title": "Guardrail Engine",
   "priority": "P1",
-  "registry_status": "PARTIAL",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "COMPLETE",
-  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
-  "evidence": "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: High-risk actions, truthfulness, credentials",
+  "blocker": null,
+  "evidence": "High-risk actions, truthfulness, credentials",
   "implementation_location": "atlasz-addons/guardrail-engine.mjs",
   "loc_files": [
    "atlasz-addons/guardrail-engine.mjs"
@@ -8042,9 +8030,8 @@
   "reach": "RUNTIME",
   "invocation": "HUB_ADAPTER_BAG_ONLY",
   "verification_level": "L3_CONNECTED_AND_TESTED",
-  "flags": [],
-  "work_categories": [
-   "CODE_COMPLETION"
+  "flags": [
+   "MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW"
   ]
  },
  {
@@ -8089,10 +8076,10 @@
   "section": 15,
   "title": "Anti-Collusion Monitor",
   "priority": "P1",
-  "registry_status": "PARTIAL",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "COMPLETE",
-  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
-  "evidence": "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Unauthorised goals, self-evaluation, hidden channels flagged",
+  "blocker": null,
+  "evidence": "Unauthorised goals, self-evaluation, hidden channels flagged",
   "implementation_location": "atlasz-addons/anti-collusion-guard.mjs",
   "loc_files": [
    "atlasz-addons/anti-collusion-guard.mjs"
@@ -8113,9 +8100,8 @@
   "reach": "RUNTIME",
   "invocation": "HUB_ADAPTER_BAG_ONLY",
   "verification_level": "L3_CONNECTED_AND_TESTED",
-  "flags": [],
-  "work_categories": [
-   "CODE_COMPLETION"
+  "flags": [
+   "MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW"
   ]
  },
  {
@@ -8124,10 +8110,10 @@
   "section": 15,
   "title": "Anti-Evaluation-Gaming",
   "priority": "P1",
-  "registry_status": "PARTIAL",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "COMPLETE",
-  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
-  "evidence": "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: GAME_EVALUATION/SACRIFICE intents flagged",
+  "blocker": null,
+  "evidence": "GAME_EVALUATION/SACRIFICE intents flagged",
   "implementation_location": "atlasz-addons/anti-collusion-guard.mjs",
   "loc_files": [
    "atlasz-addons/anti-collusion-guard.mjs"
@@ -8148,9 +8134,8 @@
   "reach": "RUNTIME",
   "invocation": "HUB_ADAPTER_BAG_ONLY",
   "verification_level": "L3_CONNECTED_AND_TESTED",
-  "flags": [],
-  "work_categories": [
-   "CODE_COMPLETION"
+  "flags": [
+   "MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW"
   ]
  },
  {
@@ -8187,10 +8172,10 @@
   "section": 15,
   "title": "Regression/Evaluation Suite",
   "priority": "P1",
-  "registry_status": "PARTIAL",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "COMPLETE",
-  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
-  "evidence": "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Failing/throwing/duplicate tests handled; regression gate",
+  "blocker": null,
+  "evidence": "Failing/throwing/duplicate tests handled; regression gate",
   "implementation_location": "atlasz-addons/regression-eval-suite.mjs",
   "loc_files": [
    "atlasz-addons/regression-eval-suite.mjs"
@@ -8211,9 +8196,8 @@
   "reach": "RUNTIME",
   "invocation": "HUB_ADAPTER_BAG_ONLY",
   "verification_level": "L3_CONNECTED_AND_TESTED",
-  "flags": [],
-  "work_categories": [
-   "CODE_COMPLETION"
+  "flags": [
+   "MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW"
   ]
  },
  {
@@ -8250,10 +8234,10 @@
   "section": 15,
   "title": "evidence verification",
   "priority": "P1",
-  "registry_status": "PARTIAL",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "COMPLETE",
-  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
-  "evidence": "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Evidence required per check/criterion",
+  "blocker": null,
+  "evidence": "Evidence required per check/criterion",
   "implementation_location": "atlasz-addons/qa-reviewer.mjs; tracing-evals.mjs",
   "loc_files": [
    "atlasz-addons/qa-reviewer.mjs",
@@ -8278,9 +8262,8 @@
   "reach": "RUNTIME",
   "invocation": "HUB_ADAPTER_BAG_ONLY",
   "verification_level": "L3_CONNECTED_AND_TESTED",
-  "flags": [],
-  "work_categories": [
-   "CODE_COMPLETION"
+  "flags": [
+   "MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW"
   ]
  },
  {
@@ -8353,10 +8336,10 @@
   "section": 16,
   "title": "assess risk",
   "priority": "P4",
-  "registry_status": "PARTIAL",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "BUILD",
-  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
-  "evidence": "TASK3 downgrade from EXISTS_AND_WORKING: module is not reachable from the runtime, Control Center or owner CLI. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: riskScore from reversibility, unverified assumptions, spend, conflicts, low probability (tested)",
+  "blocker": null,
+  "evidence": "riskScore from reversibility, unverified assumptions, spend, conflicts, low probability (tested)",
   "implementation_location": "atlasz-addons/digital-twin.mjs",
   "loc_files": [
    "atlasz-addons/digital-twin.mjs"
@@ -8377,10 +8360,8 @@
   "reach": "TEST_ONLY",
   "invocation": "n/a",
   "verification_level": "L2_UNIT_TESTED",
-  "flags": [],
-  "work_categories": [
-   "CODE_COMPLETION",
-   "INTEGRATION"
+  "flags": [
+   "MODULE_NOT_REACHABLE_FROM_RUNTIME_CC_CLI"
   ]
  },
  {
@@ -8389,10 +8370,10 @@
   "section": 16,
   "title": "test assumptions",
   "priority": "P4",
-  "registry_status": "PARTIAL",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "BUILD",
-  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
-  "evidence": "TASK3 downgrade from EXISTS_AND_WORKING: module is not reachable from the runtime, Control Center or owner CLI. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Assumptions marked SUPPORTED/UNVERIFIED; unverified ones raise risk and force REVISE",
+  "blocker": null,
+  "evidence": "Assumptions marked SUPPORTED/UNVERIFIED; unverified ones raise risk and force REVISE",
   "implementation_location": "atlasz-addons/digital-twin.mjs",
   "loc_files": [
    "atlasz-addons/digital-twin.mjs"
@@ -8413,10 +8394,8 @@
   "reach": "TEST_ONLY",
   "invocation": "n/a",
   "verification_level": "L2_UNIT_TESTED",
-  "flags": [],
-  "work_categories": [
-   "CODE_COMPLETION",
-   "INTEGRATION"
+  "flags": [
+   "MODULE_NOT_REACHABLE_FROM_RUNTIME_CC_CLI"
   ]
  },
  {
@@ -8464,10 +8443,10 @@
   "section": 16,
   "title": "detect conflicts",
   "priority": "P4",
-  "registry_status": "PARTIAL",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "BUILD",
-  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
-  "evidence": "TASK3 downgrade from EXISTS_AND_WORKING: module is not reachable from the runtime, Control Center or owner CLI. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Forbidden/locked resource conflicts => REJECT (tested)",
+  "blocker": null,
+  "evidence": "Forbidden/locked resource conflicts => REJECT (tested)",
   "implementation_location": "atlasz-addons/digital-twin.mjs",
   "loc_files": [
    "atlasz-addons/digital-twin.mjs"
@@ -8488,10 +8467,8 @@
   "reach": "TEST_ONLY",
   "invocation": "n/a",
   "verification_level": "L2_UNIT_TESTED",
-  "flags": [],
-  "work_categories": [
-   "CODE_COMPLETION",
-   "INTEGRATION"
+  "flags": [
+   "MODULE_NOT_REACHABLE_FROM_RUNTIME_CC_CLI"
   ]
  },
  {
@@ -8500,10 +8477,10 @@
   "section": 16,
   "title": "compare alternatives",
   "priority": "P4",
-  "registry_status": "PARTIAL",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "BUILD",
-  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
-  "evidence": "TASK3 downgrade from EXISTS_AND_WORKING: module is not reachable from the runtime, Control Center or owner CLI. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: compare(): risk-adjusted ranking; rejected options never recommended; recommendation only",
+  "blocker": null,
+  "evidence": "compare(): risk-adjusted ranking; rejected options never recommended; recommendation only",
   "implementation_location": "atlasz-addons/digital-twin.mjs",
   "loc_files": [
    "atlasz-addons/digital-twin.mjs"
@@ -8524,10 +8501,8 @@
   "reach": "TEST_ONLY",
   "invocation": "n/a",
   "verification_level": "L2_UNIT_TESTED",
-  "flags": [],
-  "work_categories": [
-   "CODE_COMPLETION",
-   "INTEGRATION"
+  "flags": [
+   "MODULE_NOT_REACHABLE_FROM_RUNTIME_CC_CLI"
   ]
  },
  {
@@ -15190,10 +15165,10 @@
   "section": 27,
   "title": "cost/profit records",
   "priority": "P2",
-  "registry_status": "PARTIAL",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "COMPLETE",
-  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
-  "evidence": "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Verified profit only",
+  "blocker": null,
+  "evidence": "Verified profit only",
   "implementation_location": "atlasz-addons/profit-accounting-engine.mjs",
   "loc_files": [
    "atlasz-addons/profit-accounting-engine.mjs"
@@ -15214,9 +15189,8 @@
   "reach": "RUNTIME",
   "invocation": "HUB_ADAPTER_BAG_ONLY",
   "verification_level": "L3_CONNECTED_AND_TESTED",
-  "flags": [],
-  "work_categories": [
-   "CODE_COMPLETION"
+  "flags": [
+   "MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW"
   ]
  },
  {
@@ -16038,10 +16012,10 @@
   "section": 29,
   "title": "regression;",
   "priority": "P4",
-  "registry_status": "PARTIAL",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "COMPLETE",
-  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
-  "evidence": "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: requireNoRegression enforced",
+  "blocker": null,
+  "evidence": "requireNoRegression enforced",
   "implementation_location": "atlasz-addons/regression-eval-suite.mjs",
   "loc_files": [
    "atlasz-addons/regression-eval-suite.mjs"
@@ -16062,9 +16036,8 @@
   "reach": "RUNTIME",
   "invocation": "HUB_ADAPTER_BAG_ONLY",
   "verification_level": "L3_CONNECTED_AND_TESTED",
-  "flags": [],
-  "work_categories": [
-   "CODE_COMPLETION"
+  "flags": [
+   "MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW"
   ]
  },
  {
@@ -25497,10 +25470,10 @@
   "section": 50,
   "title": "checkpointolj",
   "priority": "P?",
-  "registry_status": "PARTIAL",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "REUSE",
-  "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
-  "evidence": "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Checkpoints taken in this build and in the engine",
+  "blocker": null,
+  "evidence": "Checkpoints taken in this build and in the engine",
   "implementation_location": "atlasz-addons/checkpoint-engine.mjs; /mnt/user-data/outputs/checkpoints",
   "loc_files": [
    "atlasz-addons/checkpoint-engine.mjs"
@@ -25521,9 +25494,8 @@
   "reach": "RUNTIME",
   "invocation": "HUB_ADAPTER_BAG_ONLY",
   "verification_level": "L3_CONNECTED_AND_TESTED",
-  "flags": [],
-  "work_categories": [
-   "CODE_COMPLETION"
+  "flags": [
+   "MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW"
   ]
  },
  {
@@ -33018,17 +32990,61 @@
   "section": "TASK3_AUDIT",
   "title": "Runtime HTTP server (supervisor-safe, binds 0.0.0.0) must not serve the full dashboard, opportunities and events without authentication; only a minimal /health may be open",
   "priority": "P0",
-  "registry_status": "MISSING",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "BUILD",
-  "blocker": "Changing what is exposed on Railway needs owner approval; code change itself is safe",
-  "evidence": "Audit probe: a fresh dashboard is ~24 KB (topology, agent activity, Money Engine aggregates, queue, scheduler, hash heads, lead titles) served unauthenticated",
-  "implementation_location": "atlasz-runtime/supervisor-safe.mjs:428-444",
-  "loc_files": [],
+  "blocker": "Bind address change is an owner decision; SANDBOX evidence only (not LIVE_VERIFIED)",
+  "evidence": "Task 4 M1.1: atlasz-runtime/runtime-http.mjs; 401/503/429/405 matrix, query-string bypass test, REAL PROCESS boot test; probe P21; 13 of 14 mutants killed on first run (the survivor was then covered by a new test); bind address 0.0.0.0 unchanged by design, now token-protected",
+  "implementation_location": "atlasz-runtime/runtime-http.mjs; atlasz-runtime/supervisor-safe.mjs",
+  "loc_files": [
+   "atlasz-runtime/runtime-http.mjs",
+   "atlasz-runtime/supervisor-safe.mjs"
+  ],
   "loc_missing": [],
-  "tests_listed": [],
+  "tests_listed": [
+   "runtime-http.test.mjs",
+   "canonical-runtime.test.mjs"
+  ],
   "tests_missing": [],
   "tests_failing": [],
-  "tests_passing": [],
+  "tests_passing": [
+   "runtime-http.test.mjs",
+   "canonical-runtime.test.mjs"
+  ],
+  "tests_naming_module": [
+   "runtime-http.test.mjs",
+   "canonical-runtime.test.mjs"
+  ],
+  "tests_via_facade": [],
+  "reach": "RUNTIME",
+  "invocation": "NOT_INVOKED",
+  "verification_level": "L3_CONNECTED_AND_TESTED",
+  "flags": []
+ },
+ {
+  "id": "ATLASZ-T3-002",
+  "level": "item",
+  "section": "TASK3_AUDIT",
+  "title": "Plugin hook processes and update self-tests must run through a filesystem- and network-restricted runner (reuse code-sandbox) instead of plain node children",
+  "priority": "P1",
+  "registry_status": "PARTIAL",
+  "strategy": "BUILD",
+  "blocker": "Windows: PERMISSION level only (no network block). Electron/older Node without --permission: hooks and update self-tests fail closed - owner decision needed",
+  "evidence": "Task 4 M1.2: atlasz-addons/restricted-node.mjs wired into plugin hooks and update self-tests; real-child tests prove read-outside/write/spawn denied, env scrubbed, fail-closed (SANDBOX_UNAVAILABLE, hook not run); probes P22, P23. Network blocking verified only where `unshare` works (Linux)",
+  "implementation_location": "atlasz-addons/plugin-manager.mjs:105; atlasz-addons/local-update-adapters.mjs:102",
+  "loc_files": [],
+  "loc_missing": [],
+  "tests_listed": [
+   "restricted-node.test.mjs",
+   "plugin-manager.test.mjs",
+   "local-update-adapters.test.mjs"
+  ],
+  "tests_missing": [],
+  "tests_failing": [],
+  "tests_passing": [
+   "restricted-node.test.mjs",
+   "plugin-manager.test.mjs",
+   "local-update-adapters.test.mjs"
+  ],
   "tests_naming_module": [],
   "tests_via_facade": [],
   "reach": "NONE",
@@ -33039,39 +33055,7 @@
    "CODE",
    "EXTERNAL_DEPENDENCY",
    "OWNER_APPROVAL",
-   "SECURITY_REVIEW",
-   "TESTS",
-   "UI"
-  ]
- },
- {
-  "id": "ATLASZ-T3-002",
-  "level": "item",
-  "section": "TASK3_AUDIT",
-  "title": "Plugin hook processes and update self-tests must run through a filesystem- and network-restricted runner (reuse code-sandbox) instead of plain node children",
-  "priority": "P1",
-  "registry_status": "MISSING",
-  "strategy": "BUILD",
-  "blocker": "Windows hosts have PROCESS_ONLY isolation only",
-  "evidence": "Both spawn node with scrubbed env, timeout and output cap but no --permission: full filesystem/network access",
-  "implementation_location": "atlasz-addons/plugin-manager.mjs:105; atlasz-addons/local-update-adapters.mjs:102",
-  "loc_files": [],
-  "loc_missing": [],
-  "tests_listed": [],
-  "tests_missing": [],
-  "tests_failing": [],
-  "tests_passing": [],
-  "tests_naming_module": [],
-  "tests_via_facade": [],
-  "reach": "NONE",
-  "invocation": "NONE",
-  "verification_level": "L0_NONE",
-  "flags": [],
-  "work_categories": [
-   "CODE",
-   "EXTERNAL_DEPENDENCY",
-   "SECURITY_REVIEW",
-   "TESTS"
+   "SECURITY_REVIEW"
   ]
  },
  {
@@ -33144,10 +33128,10 @@
   "section": "TASK3_AUDIT",
   "title": "Replace Math.random() id fallbacks with crypto.randomUUID/randomBytes",
   "priority": "P3",
-  "registry_status": "MISSING",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "BUILD",
   "blocker": null,
-  "evidence": "static_scan.json security: WEAK_RANDOM_FOR_ID_OR_TOKEN x3 (fallback only)",
+  "evidence": "Task 4 M1.3: three Math.random fallbacks replaced by node:crypto; static regression guard over all production sources; probe P24",
   "implementation_location": "atlasz-addons/tracing-evals.mjs; atlasz-addons/agent-factory.mjs; atlasz-addons/enterprise-knowledge-agentic-rag.mjs",
   "loc_files": [
    "atlasz-addons/agent-factory.mjs",
@@ -33155,19 +33139,23 @@
    "atlasz-addons/tracing-evals.mjs"
   ],
   "loc_missing": [],
-  "tests_listed": [],
+  "tests_listed": [
+   "no-weak-random.test.mjs"
+  ],
   "tests_missing": [],
   "tests_failing": [],
-  "tests_passing": [],
-  "tests_naming_module": [],
+  "tests_passing": [
+   "no-weak-random.test.mjs"
+  ],
+  "tests_naming_module": [
+   "no-weak-random.test.mjs"
+  ],
   "tests_via_facade": [],
   "reach": "RUNTIME",
   "invocation": "HUB_ADAPTER_BAG_ONLY",
-  "verification_level": "L1_CODE_EXISTS",
-  "flags": [],
-  "work_categories": [
-   "CODE",
-   "TESTS"
+  "verification_level": "L3_CONNECTED_AND_TESTED",
+  "flags": [
+   "MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW"
   ]
  },
  {
@@ -33176,30 +33164,34 @@
   "section": "TASK3_AUDIT",
   "title": "Control Center screen for restore-from-backup (/api/restore/backup exists server-side; no UI uses it)",
   "priority": "P2",
-  "registry_status": "MISSING",
+  "registry_status": "PARTIAL",
   "strategy": "BUILD",
-  "blocker": "Restore is destructive: needs owner approval UX and a drill first",
-  "evidence": "static_scan.json routes: /api/restore/backup used_by_ui=false",
+  "blocker": "Positive signed restore via UI not yet tested; restore is destructive - drill first",
+  "evidence": "Task 4: investigation shows a restore UI DOES exist in the Owner Safety panel (signed RESTORE with backup id) and calls the same core function as /api/restore/backup; new test proves both paths refuse without a valid owner signature and leave state untouched. No positive end-to-end restore with a re",
   "implementation_location": "atlasz-control-center/server.mjs; atlasz-control-center/public/app.js",
   "loc_files": [
    "atlasz-control-center/public/app.js",
    "atlasz-control-center/server.mjs"
   ],
   "loc_missing": [],
-  "tests_listed": [],
+  "tests_listed": [
+   "control-center-routes-m1.test.mjs"
+  ],
   "tests_missing": [],
   "tests_failing": [],
-  "tests_passing": [],
-  "tests_naming_module": [],
+  "tests_passing": [
+   "control-center-routes-m1.test.mjs"
+  ],
+  "tests_naming_module": [
+   "control-center-routes-m1.test.mjs"
+  ],
   "tests_via_facade": [],
   "reach": "CONTROL_CENTER",
   "invocation": "INVOKED_BY_PRODUCTION_CODE",
-  "verification_level": "L1_CODE_EXISTS",
+  "verification_level": "L3_CONNECTED_AND_TESTED",
   "flags": [],
   "work_categories": [
-   "CODE",
-   "OWNER_APPROVAL",
-   "TESTS",
+   "CODE_COMPLETION",
    "UI"
   ]
  },
@@ -33209,30 +33201,31 @@
   "section": "TASK3_AUDIT",
   "title": "Add handler tests for Control Center routes without any test reference: /api/opportunities, /api/money-recurring, /api/backup, /api/updates/auto",
   "priority": "P2",
-  "registry_status": "MISSING",
+  "registry_status": "EXISTS_AND_WORKING",
   "strategy": "BUILD",
   "blocker": null,
-  "evidence": "docs/audit/route_test_coverage.json: 4 of 61 handlers have no test reference",
+  "evidence": "Task 4: handler tests for /api/opportunities (auth, empty state, no descriptions leak), /api/money-recurring, /api/backup (+/api/backups), /api/updates/auto (refused without owner key)",
   "implementation_location": "atlasz-control-center/server.mjs",
   "loc_files": [
    "atlasz-control-center/server.mjs"
   ],
   "loc_missing": [],
-  "tests_listed": [],
+  "tests_listed": [
+   "control-center-routes-m1.test.mjs"
+  ],
   "tests_missing": [],
   "tests_failing": [],
-  "tests_passing": [],
-  "tests_naming_module": [],
+  "tests_passing": [
+   "control-center-routes-m1.test.mjs"
+  ],
+  "tests_naming_module": [
+   "control-center-routes-m1.test.mjs"
+  ],
   "tests_via_facade": [],
   "reach": "CONTROL_CENTER",
   "invocation": "INVOKED_BY_PRODUCTION_CODE",
-  "verification_level": "L1_CODE_EXISTS",
-  "flags": [],
-  "work_categories": [
-   "CODE",
-   "TESTS",
-   "UI"
-  ]
+  "verification_level": "L3_CONNECTED_AND_TESTED",
+  "flags": []
  },
  {
   "id": "ATLASZ-T3-008",

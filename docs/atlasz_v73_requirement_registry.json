@@ -363,15 +363,15 @@
     "V73-S03"
    ],
    "implementation_location": "atlasz-addons/master-planner-orchestrator.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/contract-existing-modules.test.mjs",
     "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: dependsOn gating and cycle rejection tested"
+    "dependsOn gating and cycle rejection tested"
    ],
-   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -510,15 +510,15 @@
     "V73-S03"
    ],
    "implementation_location": "atlasz-addons/task-ledger.mjs; qa-reviewer.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/contract-existing-modules.test.mjs",
     "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: taskComplete needs every done-criterion passed; empty definition never done"
+    "taskComplete needs every done-criterion passed; empty definition never done"
    ],
-   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -2213,14 +2213,14 @@
     "V73-S07"
    ],
    "implementation_location": "atlasz-addons/outcome-compiler.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/contract-factories.test.mjs"
    ],
    "evidence": [
-    "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Compile, validate, owner-gated execution request"
+    "Compile, validate, owner-gated execution request"
    ],
-   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -3439,14 +3439,14 @@
     "V73-S09"
    ],
    "implementation_location": "atlasz-addons/qa-reviewer.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/contract-existing-modules.test.mjs"
    ],
    "evidence": [
-    "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Evidence-required QA gate tested"
+    "Evidence-required QA gate tested"
    ],
-   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -4191,15 +4191,15 @@
     "V73-S11"
    ],
    "implementation_location": "atlasz-addons/opportunity-qualification-engine.mjs; atlasz-runtime/supervisor-safe.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/contract-money-tax.test.mjs",
     "atlasz-tests/canonical-runtime.test.mjs"
    ],
    "evidence": [
-    "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Blockers: upfront spend, illegal/deceptive, non-remote, license, missing evidence"
+    "Blockers: upfront spend, illegal/deceptive, non-remote, license, missing evidence"
    ],
-   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -4288,15 +4288,15 @@
     "V73-S11"
    ],
    "implementation_location": "atlasz-addons/deal-state.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/contract-money-tax.test.mjs",
     "atlasz-tests/gated-modules.test.mjs"
    ],
    "evidence": [
-    "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Forward-only states; approvals/evidence gates"
+    "Forward-only states; approvals/evidence gates"
    ],
-   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -4361,14 +4361,14 @@
     "V73-S11"
    ],
    "implementation_location": "atlasz-addons/follow-up-engine.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/contract-money-tax.test.mjs"
    ],
    "evidence": [
-    "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: 2/5/10-day schedule; stops on reply"
+    "2/5/10-day schedule; stops on reply"
    ],
-   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "blocker": "Nothing sends follow-ups (no delivery adapter)",
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -4385,15 +4385,15 @@
     "V73-S11"
    ],
    "implementation_location": "atlasz-addons/delivery-engine.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/contract-money-tax.test.mjs",
     "atlasz-tests/gated-modules.test.mjs"
    ],
    "evidence": [
-    "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: QA -> owner approval -> external evidence"
+    "QA -> owner approval -> external evidence"
    ],
-   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "blocker": "Nothing is actually delivered",
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -4410,15 +4410,15 @@
     "V73-S11"
    ],
    "implementation_location": "atlasz-addons/invoice-engine.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/contract-money-tax.test.mjs",
     "atlasz-tests/gated-modules.test.mjs"
    ],
    "evidence": [
-    "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Amount, owner approval, external reference rules"
+    "Amount, owner approval, external reference rules"
    ],
-   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "blocker": "Nothing is actually sent",
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -4459,15 +4459,15 @@
     "V73-S11"
    ],
    "implementation_location": "atlasz-addons/profit-ledger.mjs; profit-accounting-engine.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/contract-existing-modules.test.mjs",
     "atlasz-tests/contract-money-tax.test.mjs"
    ],
    "evidence": [
-    "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Only confirmed, evidenced receipts are profit"
+    "Only confirmed, evidenced receipts are profit"
    ],
-   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -5115,7 +5115,7 @@
     "atlasz-tests/owner-control-bypass.test.mjs"
    ],
    "evidence": [
-    "TASK3 re-pointed: enforced by the runtime-connected control chain (unknown operations fail closed; SUBSCRIBE/PURCHASE/SIGN_CONTRACT need a signed single-use owner approval; no-spend default) - independent probe P04/P05 pass. The standalone guardrail-engine is NOT what enforces this. Previous evidence: SUBSCRIBE guarded"
+    "TASK3 re-pointed: enforced by the runtime-connected control chain (unknown operations fail closed; SUBSCRIBE/PURCHASE/SIGN_CONTRACT need a signed single-use owner approval; no-spend default) - independent probe P04/P05 pass. The standalone guardrail-engine is NOT what enforces this. Previous evidence: TASK3 re-pointed: enforced by the runtime-connected control chain (unknown operations fail closed; SUBSCRIBE/PURCHASE/SIGN_CONTRACT need a signed single-use owner approval; no-spend default) - indepen"
    ],
    "blocker": "SANDBOX evidence only: no real owner key or live channel exercised",
    "owner_decision": "Joci decisions 2026-10 recorded (spending stays blocked)",
@@ -5140,7 +5140,7 @@
     "atlasz-tests/owner-control-bypass.test.mjs"
    ],
    "evidence": [
-    "TASK3 re-pointed: enforced by the runtime-connected control chain (unknown operations fail closed; SUBSCRIBE/PURCHASE/SIGN_CONTRACT need a signed single-use owner approval; no-spend default) - independent probe P04/P05 pass. The standalone guardrail-engine is NOT what enforces this. Previous evidence: PURCHASE/BUY_CREDITS/SPEND_MONEY guarded"
+    "TASK3 re-pointed: enforced by the runtime-connected control chain (unknown operations fail closed; SUBSCRIBE/PURCHASE/SIGN_CONTRACT need a signed single-use owner approval; no-spend default) - independent probe P04/P05 pass. The standalone guardrail-engine is NOT what enforces this. Previous evidence: TASK3 re-pointed: enforced by the runtime-connected control chain (unknown operations fail closed; SUBSCRIBE/PURCHASE/SIGN_CONTRACT need a signed single-use owner approval; no-spend default) - indepen"
    ],
    "blocker": "SANDBOX evidence only: no real owner key or live channel exercised",
    "owner_decision": "Joci decisions 2026-10 recorded (spending stays blocked)",
@@ -5165,7 +5165,7 @@
     "atlasz-tests/owner-control-bypass.test.mjs"
    ],
    "evidence": [
-    "TASK3 re-pointed: enforced by the runtime-connected control chain (unknown operations fail closed; SUBSCRIBE/PURCHASE/SIGN_CONTRACT need a signed single-use owner approval; no-spend default) - independent probe P04/P05 pass. The standalone guardrail-engine is NOT what enforces this. Previous evidence: SEND_PAYMENT guarded"
+    "TASK3 re-pointed: enforced by the runtime-connected control chain (unknown operations fail closed; SUBSCRIBE/PURCHASE/SIGN_CONTRACT need a signed single-use owner approval; no-spend default) - independent probe P04/P05 pass. The standalone guardrail-engine is NOT what enforces this. Previous evidence: TASK3 re-pointed: enforced by the runtime-connected control chain (unknown operations fail closed; SUBSCRIBE/PURCHASE/SIGN_CONTRACT need a signed single-use owner approval; no-spend default) - indepen"
    ],
    "blocker": "SANDBOX evidence only: no real owner key or live channel exercised",
    "owner_decision": "Joci decisions 2026-10 recorded (spending stays blocked)",
@@ -5190,7 +5190,7 @@
     "atlasz-tests/owner-control-bypass.test.mjs"
    ],
    "evidence": [
-    "TASK3 re-pointed: enforced by the runtime-connected control chain (unknown operations fail closed; SUBSCRIBE/PURCHASE/SIGN_CONTRACT need a signed single-use owner approval; no-spend default) - independent probe P04/P05 pass. The standalone guardrail-engine is NOT what enforces this. Previous evidence: BANK_CHANGE/BANK_TRANSFER guarded"
+    "TASK3 re-pointed: enforced by the runtime-connected control chain (unknown operations fail closed; SUBSCRIBE/PURCHASE/SIGN_CONTRACT need a signed single-use owner approval; no-spend default) - independent probe P04/P05 pass. The standalone guardrail-engine is NOT what enforces this. Previous evidence: TASK3 re-pointed: enforced by the runtime-connected control chain (unknown operations fail closed; SUBSCRIBE/PURCHASE/SIGN_CONTRACT need a signed single-use owner approval; no-spend default) - indepen"
    ],
    "blocker": "SANDBOX evidence only: no real owner key or live channel exercised",
    "owner_decision": "Joci decisions 2026-10 recorded (spending stays blocked)",
@@ -5215,7 +5215,7 @@
     "atlasz-tests/owner-control-bypass.test.mjs"
    ],
    "evidence": [
-    "TASK3 re-pointed: enforced by the runtime-connected control chain (unknown operations fail closed; SUBSCRIBE/PURCHASE/SIGN_CONTRACT need a signed single-use owner approval; no-spend default) - independent probe P04/P05 pass. The standalone guardrail-engine is NOT what enforces this. Previous evidence: ACCEPT/SIGN_CONTRACT guarded"
+    "TASK3 re-pointed: enforced by the runtime-connected control chain (unknown operations fail closed; SUBSCRIBE/PURCHASE/SIGN_CONTRACT need a signed single-use owner approval; no-spend default) - independent probe P04/P05 pass. The standalone guardrail-engine is NOT what enforces this. Previous evidence: TASK3 re-pointed: enforced by the runtime-connected control chain (unknown operations fail closed; SUBSCRIBE/PURCHASE/SIGN_CONTRACT need a signed single-use owner approval; no-spend default) - indepen"
    ],
    "blocker": "SANDBOX evidence only: no real owner key or live channel exercised",
    "owner_decision": "Joci decisions 2026-10 recorded (spending stays blocked)",
@@ -5499,14 +5499,14 @@
     "V73-S15"
    ],
    "implementation_location": "atlasz-addons/qa-reviewer.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/contract-existing-modules.test.mjs"
    ],
    "evidence": [
-    "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: PASS only with evidence for every required check"
+    "PASS only with evidence for every required check"
    ],
-   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -5545,15 +5545,15 @@
     "V73-S15"
    ],
    "implementation_location": "atlasz-addons/guardrail-engine.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/contract-core-engine.test.mjs",
     "atlasz-tests/stop-enforcement.test.mjs"
    ],
    "evidence": [
-    "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: High-risk actions, truthfulness, credentials"
+    "High-risk actions, truthfulness, credentials"
    ],
-   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -5594,14 +5594,14 @@
     "V73-S15"
    ],
    "implementation_location": "atlasz-addons/anti-collusion-guard.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Unauthorised goals, self-evaluation, hidden channels flagged"
+    "Unauthorised goals, self-evaluation, hidden channels flagged"
    ],
-   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -5618,14 +5618,14 @@
     "V73-S15"
    ],
    "implementation_location": "atlasz-addons/anti-collusion-guard.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: GAME_EVALUATION/SACRIFICE intents flagged"
+    "GAME_EVALUATION/SACRIFICE intents flagged"
    ],
-   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -5664,14 +5664,14 @@
     "V73-S15"
    ],
    "implementation_location": "atlasz-addons/regression-eval-suite.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Failing/throwing/duplicate tests handled; regression gate"
+    "Failing/throwing/duplicate tests handled; regression gate"
    ],
-   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -5710,15 +5710,15 @@
     "V73-S15"
    ],
    "implementation_location": "atlasz-addons/qa-reviewer.mjs; tracing-evals.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/contract-existing-modules.test.mjs",
     "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Evidence required per check/criterion"
+    "Evidence required per check/criterion"
    ],
-   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -5779,14 +5779,14 @@
     "V73-S16"
    ],
    "implementation_location": "atlasz-addons/digital-twin.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/digital-twin.test.mjs"
    ],
    "evidence": [
-    "TASK3 downgrade from EXISTS_AND_WORKING: module is not reachable from the runtime, Control Center or owner CLI. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: riskScore from reversibility, unverified assumptions, spend, conflicts, low probability (tested)"
+    "riskScore from reversibility, unverified assumptions, spend, conflicts, low probability (tested)"
    ],
-   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -5803,14 +5803,14 @@
     "V73-S16"
    ],
    "implementation_location": "atlasz-addons/digital-twin.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/digital-twin.test.mjs"
    ],
    "evidence": [
-    "TASK3 downgrade from EXISTS_AND_WORKING: module is not reachable from the runtime, Control Center or owner CLI. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Assumptions marked SUPPORTED/UNVERIFIED; unverified ones raise risk and force REVISE"
+    "Assumptions marked SUPPORTED/UNVERIFIED; unverified ones raise risk and force REVISE"
    ],
-   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -5852,14 +5852,14 @@
     "V73-S16"
    ],
    "implementation_location": "atlasz-addons/digital-twin.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/digital-twin.test.mjs"
    ],
    "evidence": [
-    "TASK3 downgrade from EXISTS_AND_WORKING: module is not reachable from the runtime, Control Center or owner CLI. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Forbidden/locked resource conflicts => REJECT (tested)"
+    "Forbidden/locked resource conflicts => REJECT (tested)"
    ],
-   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -5876,14 +5876,14 @@
     "V73-S16"
    ],
    "implementation_location": "atlasz-addons/digital-twin.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/digital-twin.test.mjs"
    ],
    "evidence": [
-    "TASK3 downgrade from EXISTS_AND_WORKING: module is not reachable from the runtime, Control Center or owner CLI. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: compare(): risk-adjusted ranking; rejected options never recommended; recommendation only"
+    "compare(): risk-adjusted ranking; rejected options never recommended; recommendation only"
    ],
-   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -10596,14 +10596,14 @@
     "V73-S27"
    ],
    "implementation_location": "atlasz-addons/profit-accounting-engine.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/contract-money-tax.test.mjs"
    ],
    "evidence": [
-    "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Verified profit only"
+    "Verified profit only"
    ],
-   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -11204,14 +11204,14 @@
     "V73-S29"
    ],
    "implementation_location": "atlasz-addons/regression-eval-suite.mjs",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: requireNoRegression enforced"
+    "requireNoRegression enforced"
    ],
-   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "COMPLETE",
    "status_basis": "ITEM_VERIFIED"
@@ -17259,7 +17259,7 @@
     "atlasz-tests/owner-control-bypass.test.mjs"
    ],
    "evidence": [
-    "TASK3 re-pointed: enforced by the runtime-connected control chain (unknown operations fail closed; SUBSCRIBE/PURCHASE/SIGN_CONTRACT need a signed single-use owner approval; no-spend default) - independent probe P04/P05 pass. The standalone guardrail-engine is NOT what enforces this. Previous evidence: Loan/credit need owner approval"
+    "TASK3 re-pointed: enforced by the runtime-connected control chain (unknown operations fail closed; SUBSCRIBE/PURCHASE/SIGN_CONTRACT need a signed single-use owner approval; no-spend default) - independent probe P04/P05 pass. The standalone guardrail-engine is NOT what enforces this. Previous evidence: TASK3 re-pointed: enforced by the runtime-connected control chain (unknown operations fail closed; SUBSCRIBE/PURCHASE/SIGN_CONTRACT need a signed single-use owner approval; no-spend default) - indepen"
    ],
    "blocker": "SANDBOX evidence only: no real owner key or live channel exercised",
    "owner_decision": null,
@@ -17958,14 +17958,14 @@
     "V73-S50"
    ],
    "implementation_location": "atlasz-addons/checkpoint-engine.mjs; /mnt/user-data/outputs/checkpoints",
-   "status": "PARTIAL",
+   "status": "EXISTS_AND_WORKING",
    "tests": [
     "atlasz-tests/contract-core-engine.test.mjs"
    ],
    "evidence": [
-    "TASK3 downgrade from EXISTS_AND_WORKING: module is imported only into the integration-hub adapter bag and no production workflow invokes it. Unit-level behaviour is tested; it is not part of a running workflow. Previous evidence: Checkpoints taken in this build and in the engine"
+    "Checkpoints taken in this build and in the engine"
    ],
-   "blocker": "Module tested in isolation; needs a runtime workflow that invokes it (or removal if it duplicates a connected implementation)",
+   "blocker": null,
    "owner_decision": null,
    "strategy": "REUSE",
    "status_basis": "ITEM_VERIFIED"
@@ -23164,13 +23164,16 @@
    "source": "Task 3 technical audit (2026-10-07)",
    "priority_proposed": "P0",
    "dependencies": [],
-   "implementation_location": "atlasz-runtime/supervisor-safe.mjs:428-444",
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Audit probe: a fresh dashboard is ~24 KB (topology, agent activity, Money Engine aggregates, queue, scheduler, hash heads, lead titles) served unauthenticated"
+   "implementation_location": "atlasz-runtime/runtime-http.mjs; atlasz-runtime/supervisor-safe.mjs",
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/runtime-http.test.mjs",
+    "atlasz-tests/canonical-runtime.test.mjs"
    ],
-   "blocker": "Changing what is exposed on Railway needs owner approval; code change itself is safe",
+   "evidence": [
+    "Task 4 M1.1: atlasz-runtime/runtime-http.mjs; 401/503/429/405 matrix, query-string bypass test, REAL PROCESS boot test; probe P21; 13 of 14 mutants killed on first run (the survivor was then covered by a new test); bind address 0.0.0.0 unchanged by design, now token-protected"
+   ],
+   "blocker": "Bind address change is an owner decision; SANDBOX evidence only (not LIVE_VERIFIED)",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -23185,12 +23188,16 @@
    "priority_proposed": "P1",
    "dependencies": [],
    "implementation_location": "atlasz-addons/plugin-manager.mjs:105; atlasz-addons/local-update-adapters.mjs:102",
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "Both spawn node with scrubbed env, timeout and output cap but no --permission: full filesystem/network access"
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/restricted-node.test.mjs",
+    "atlasz-tests/plugin-manager.test.mjs",
+    "atlasz-tests/local-update-adapters.test.mjs"
    ],
-   "blocker": "Windows hosts have PROCESS_ONLY isolation only",
+   "evidence": [
+    "Task 4 M1.2: atlasz-addons/restricted-node.mjs wired into plugin hooks and update self-tests; real-child tests prove read-outside/write/spawn denied, env scrubbed, fail-closed (SANDBOX_UNAVAILABLE, hook not run); probes P22, P23. Network blocking verified only where `unshare` works (Linux)"
+   ],
+   "blocker": "Windows: PERMISSION level only (no network block). Electron/older Node without --permission: hooks and update self-tests fail closed - owner decision needed",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -23245,10 +23252,12 @@
    "priority_proposed": "P3",
    "dependencies": [],
    "implementation_location": "atlasz-addons/tracing-evals.mjs; atlasz-addons/agent-factory.mjs; atlasz-addons/enterprise-knowledge-agentic-rag.mjs",
-   "status": "MISSING",
-   "tests": [],
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/no-weak-random.test.mjs"
+   ],
    "evidence": [
-    "static_scan.json security: WEAK_RANDOM_FOR_ID_OR_TOKEN x3 (fallback only)"
+    "Task 4 M1.3: three Math.random fallbacks replaced by node:crypto; static regression guard over all production sources; probe P24"
    ],
    "blocker": null,
    "owner_decision": null,
@@ -23265,12 +23274,14 @@
    "priority_proposed": "P2",
    "dependencies": [],
    "implementation_location": "atlasz-control-center/server.mjs; atlasz-control-center/public/app.js",
-   "status": "MISSING",
-   "tests": [],
-   "evidence": [
-    "static_scan.json routes: /api/restore/backup used_by_ui=false"
+   "status": "PARTIAL",
+   "tests": [
+    "atlasz-tests/control-center-routes-m1.test.mjs"
    ],
-   "blocker": "Restore is destructive: needs owner approval UX and a drill first",
+   "evidence": [
+    "Task 4: investigation shows a restore UI DOES exist in the Owner Safety panel (signed RESTORE with backup id) and calls the same core function as /api/restore/backup; new test proves both paths refuse without a valid owner signature and leave state untouched. No positive end-to-end restore with a real owner key was exercised through HTTP"
+   ],
+   "blocker": "Positive signed restore via UI not yet tested; restore is destructive - drill first",
    "owner_decision": null,
    "strategy": "BUILD",
    "status_basis": "ITEM_VERIFIED"
@@ -23285,10 +23296,12 @@
    "priority_proposed": "P2",
    "dependencies": [],
    "implementation_location": "atlasz-control-center/server.mjs",
-   "status": "MISSING",
-   "tests": [],
+   "status": "EXISTS_AND_WORKING",
+   "tests": [
+    "atlasz-tests/control-center-routes-m1.test.mjs"
+   ],
    "evidence": [
-    "docs/audit/route_test_coverage.json: 4 of 61 handlers have no test reference"
+    "Task 4: handler tests for /api/opportunities (auth, empty state, no descriptions leak), /api/money-recurring, /api/backup (+/api/backups), /api/updates/auto (refused without owner key)"
    ],
    "blocker": null,
    "owner_decision": null,

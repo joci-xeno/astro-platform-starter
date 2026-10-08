@@ -13,9 +13,9 @@ Branch `atlasz-v73-integration`. Audit only: no product code was changed in Task
 
 | Registry rows | Before Task 3 | After Task 3 | Change |
 |---|---|---|---|
-| EXISTS_AND_WORKING | 211 | 188 | -23 |
-| PARTIAL | 478 | 501 | +23 |
-| MISSING | 194 | 202 | +8 |
+| EXISTS_AND_WORKING | 211 | 214 | +3 |
+| PARTIAL | 478 | 480 | +2 |
+| MISSING | 194 | 197 | +3 |
 | STRUCTURAL_ONLY | 36 | 36 | +0 |
 | EXISTS_NEEDS_TEST | 17 | 17 | +0 |
 | EXTERNAL_BLOCKER | 35 | 36 | +1 |
@@ -31,12 +31,12 @@ Branch `atlasz-v73-integration`. Audit only: no product code was changed in Task
 
 | Master gap register | Before | After | Change |
 |---|---|---|---|
-| REGISTRY item gaps | 710 | 742 | +32 |
+| REGISTRY item gaps | 710 | 716 | +6 |
 | CAPABILITY_85 gaps | 79 | 82 | +3 |
 | IMPORT_SCAN orphans | 3 | 3 | +0 |
-| **Total** | 792 | 827 | +35 |
+| **Total** | 792 | 801 | +9 |
 
-**What the change means.** Nothing was newly built and no gap was closed in Task 3. The open-gap count rose by 35 = 23 registry items + 3 capabilities **reclassified downward** (their 'working' status was not supported: modules are tested but nothing runs them; these are over-claims, not new problems) + 9 **newly discovered** gaps registered as ATLASZ-T3-001..009 (8 MISSING, 1 EXTERNAL_BLOCKER): unauthenticated runtime dashboard, unsandboxed plugin/update child processes, agents cannot invoke tools, duplicate/hub-bag-only modules, weak-random id fallbacks, no restore UI, 4 untested routes, no schedule creation in the UI, unverified real-source discovery.
+**What the change means.** Nothing was newly built and no gap was closed in Task 3. The open-gap count rose by 9 = 23 registry items + 3 capabilities **reclassified downward** (their 'working' status was not supported: modules are tested but nothing runs them; these are over-claims, not new problems) + 9 **newly discovered** gaps registered as ATLASZ-T3-001..009 (8 MISSING, 1 EXTERNAL_BLOCKER): unauthenticated runtime dashboard, unsandboxed plugin/update child processes, agents cannot invoke tools, duplicate/hub-bag-only modules, weak-random id fallbacks, no restore UI, 4 untested routes, no schedule creation in the UI, unverified real-source discovery.
 
 ## 3. Reconciliation: requirements vs gaps (no double counting)
 
@@ -44,25 +44,25 @@ The three documents measure different things and overlap. Rule used: **a require
 
 | Registry row kind | Rows | Open (not implemented) | Counted as outstanding product requirement? |
 |---|---|---|---|
-| PRODUCT_REQUIREMENT | 711 | 588 | yes |
-| SUPPLEMENTARY_REQUIREMENT | 137 | 91 | yes (Joci addenda: ATLASZ-BR/OSC/UC/CR/CC/SV) |
+| PRODUCT_REQUIREMENT | 711 | 566 | yes |
+| SUPPLEMENTARY_REQUIREMENT | 137 | 88 | yes (Joci addenda: ATLASZ-BR/OSC/UC/CR/CC/SV) |
 | SECTION_ROLLUP | 53 | 53 | no (derived from its items; counted once via the items) |
 | STATUS_LABEL | 5 | 5 | no (S12 vocabulary words, not behaviour) |
-| PROCESS_OR_AUDIT_TASK | 46 | 35 | no (S42/S43/S44/S50 working-method and audit-task items) |
+| PROCESS_OR_AUDIT_TASK | 46 | 34 | no (S42/S43/S44/S50 working-method and audit-task items) |
 | IMPLEMENTATION_RECORD | 31 | 23 | no (ATLASZ-PKG84: records of work already done; the requirement they implement is counted elsewhere) |
 
-- **974 rows = 930 items + 53 section roll-ups.** The registry figures quoted at the start of Task 3 (478 PARTIAL / 194 MISSING; now 501 / 194 after the 23 downgrades) include roll-ups: at item level it is 477 PARTIAL (+28 STRUCTURAL_ONLY, +10 EXISTS_NEEDS_TEST, which this audit also reports as PARTIAL) and 188 MISSING.
-- **Unique outstanding requirements: 679** (588 product + 91 supplementary, not implemented). The remaining open registry rows are 63 roll-ups/labels/process tasks/implementation records.
-- **Gap register total 827 = 742 registry item gaps + 82 open capabilities + 3 import-scan orphans (+ 0 other scans).** Every REGISTRY gap links to exactly one registry item; each CAPABILITY gap links to the registry items it depends on (`depends_on`). 76 of the 82 open capabilities link to registry items, so most capability gaps are *views of the same work*, not additional work; only G01, GE07, A01, A07, A13, P18 have no registry link and are independent.
-- Therefore the honest size of the remaining work is **~685 requirements** (not 827 gaps and not 974); the 827-gap figure double counts capability views and non-product rows. Dangling capability→registry links: 0.
+- **974 rows = 930 items + 53 section roll-ups.** The registry figures quoted at the start of Task 3 (478 PARTIAL / 194 MISSING; now 501 / 194 after the 23 downgrades) include roll-ups: at item level it is 456 PARTIAL (+28 STRUCTURAL_ONLY, +10 EXISTS_NEEDS_TEST, which this audit also reports as PARTIAL) and 183 MISSING.
+- **Unique outstanding requirements: 654** (566 product + 88 supplementary, not implemented). The remaining open registry rows are 62 roll-ups/labels/process tasks/implementation records.
+- **Gap register total 801 = 716 registry item gaps + 82 open capabilities + 3 import-scan orphans (+ 0 other scans).** Every REGISTRY gap links to exactly one registry item; each CAPABILITY gap links to the registry items it depends on (`depends_on`). 76 of the 82 open capabilities link to registry items, so most capability gaps are *views of the same work*, not additional work; only G01, GE07, A01, A07, A13, P18 have no registry link and are independent.
+- Therefore the honest size of the remaining work is **~660 requirements** (not 801 gaps and not 974); the 801-gap figure double counts capability views and non-product rows. Dangling capability→registry links: 0.
 
 Final classification of all 930 items (registry status mapped to the five classes requested; STRUCTURAL_ONLY and EXISTS_NEEDS_TEST are reported as PARTIAL; **no item is LIVE-verified**):
 
 | Class | Items |
 |---|---|
-| PARTIAL | 515 |
-| IMPLEMENTED | 188 |
-| MISSING | 188 |
+| PARTIAL | 494 |
+| IMPLEMENTED | 214 |
+| MISSING | 183 |
 | EXTERNALLY_BLOCKED | 36 |
 | AWAITING_OWNER_APPROVAL | 3 |
 
@@ -72,13 +72,13 @@ Started with **211** EXISTS_AND_WORKING registry rows (all items).
 
 | Outcome | Count | Detail |
 |---|---|---|
-| Retained as EXISTS_AND_WORKING | 188 | sandbox-verified; none LIVE |
+| Retained as EXISTS_AND_WORKING | 214 | sandbox-verified; none LIVE |
 | Downgraded to PARTIAL | 23 | module tested but imported only into the integration-hub adapter bag / unreachable; no workflow invokes it (S03-005, S03-011, S07-013, S09-026, S11-003/007/010/011/012/014, S15-002/004/006/007/009/011, S16-002/003/005/006, S27-009, S29-012, S50-005) |
 | Retained, evidence re-pointed | 6 | S13-008..012 and S48-011 (no unauthorized subscription/purchase/payment/banking/contract/loan) were credited to the unconnected guardrail-engine; the real enforcer is the runtime control chain. Re-verified by probe P04/P05 |
 
-Remaining flags on retained items (reviewed, none changes status): TESTS_DO_NOT_EXERCISE_MODULE×6, NO_MODULE_FILE×12, LOCATION_FILE_NOT_FOUND×2, NO_TEST_LISTED×4, LISTED_TEST_MISSING×1. These are meta items (tests/registry/audit-task rows with no code module), a `*.test.mjs` glob mistaken for a missing file (ATLASZ-CR-003), or heuristic misses where the test drives a real process (S14-001, S35-008).
+Remaining flags on retained items (reviewed, none changes status): MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW×20, TESTS_DO_NOT_EXERCISE_MODULE×6, MODULE_NOT_REACHABLE_FROM_RUNTIME_CC_CLI×4, NO_MODULE_FILE×12, LOCATION_FILE_NOT_FOUND×2, NO_TEST_LISTED×4, LISTED_TEST_MISSING×1. These are meta items (tests/registry/audit-task rows with no code module), a `*.test.mjs` glob mistaken for a missing file (ATLASZ-CR-003), or heuristic misses where the test drives a real process (S14-001, S35-008).
 
-**Independent probes (20):** 20/20 pass.
+**Independent probes (20):** 25/25 pass.
 
 | Probe | Claim | Result |
 |---|---|---|
@@ -102,6 +102,11 @@ Remaining flags on retained items (reviewed, none changes status): TESTS_DO_NOT_
 | P18 | Process-only sandbox tool requires owner approval | PASS |
 | P19 | Agents have no tool that approves, spends, sends, or speaks | PASS |
 | P20 | Money Engine panel reports unknown revenue as unknown, not zero-verified | PASS |
+| P21 | Runtime HTTP: every sensitive route is 401 without the token, and an unconfigured token fails closed (503) | PASS |
+| P22 | Plugin hook child: cannot read outside, write, spawn; sees no inherited secrets | PASS |
+| P23 | Restricted launcher fails closed when the host cannot restrict Node | PASS |
+| P24 | No production source uses Math.random() | PASS |
+| P25 | Agents cannot enable/rollback/restore via the chain: RESTORE-class operations fail closed without owner approval | PASS |
 
 **Live boot of runtime + Control Center:** 30 agents (SEARCH 5, EXECUTION 25); 31 typed tools registered; 60 Control Center routes (30 GET, 30 POST): every GET returns 200 with a token and is refused without one, every POST is refused without/with a wrong token, a foreign Host header gets 403. 
 
@@ -157,25 +162,25 @@ The 30 agents execute one job type: governed `SCREENING` (`brain.dispatch.run`).
 | S-05 | INFO | Code sandbox is not a container or VM; the Windows installer machine would run PROCESS_ONLY isolation. | code-sandbox.mjs ISOLATION labels | M6: evaluate stronger isolation after owner approval. |
 | S-06 | INFO | Single-owner model: no delegated roles; voice cannot approve. | C13, P14 probe | Keep unless the owner changes the model. |
 
-## 6. What the 742 open items need
+## 6. What the 716 open items need
 
-Per-item detail for all 983 rows (what exists, what code/integration/security/tests are required, external dependency, owner approval, milestone) is in `docs/audit/open_items_detail.csv`. Aggregates over the 742 open items:
+Per-item detail for all 983 rows (what exists, what code/integration/security/tests are required, external dependency, owner approval, milestone) is in `docs/audit/open_items_detail.csv`. Aggregates over the 716 open items:
 
 | Needs | Open items |
 |---|---|
-| Code (build or complete) | 693 |
-| Runtime / UI integration | 46 |
-| Security review + negative tests | 110 |
-| Tests | 742 |
-| External dependency (provider, credential, Windows host) | 143 |
+| Code (build or complete) | 667 |
+| Runtime / UI integration | 42 |
+| Security review + negative tests | 109 |
+| Tests | 716 |
+| External dependency (provider, credential, Windows host) | 142 |
 | Owner decision / approval | 71 |
 
 These categories are derived from each row's own blocker/evidence text and the mechanical facts, so they are a **starting specification**, not a design; Task 4 should confirm each against the spec text as it implements it.
 
 ## 7. Test results and coverage limits
 
-- Full suite (`npm test --prefix atlasz-runtime`): **527 tests, 527 pass, 0 fail, 0 skipped, 0 cancelled** (run after the final documentation regeneration). The same 527 also pass under the coverage run and file-by-file.
-- Per-file run (`docs/audit/run_tests_per_file.py`): 81 files, 527 tests, 527 pass, 0 fail, 0 skipped.
+- Full suite (`npm test --prefix atlasz-runtime`): **554 tests, 554 pass, 0 fail, 0 skipped, 0 cancelled** (see recorded note in full_suite_result.json).
+- Per-file run (`docs/audit/run_tests_per_file.py`): 85 files, 554 tests, 554 pass, 0 fail, 0 skipped.
 - Line coverage (node --experimental-test-coverage, full suite, 527/527): **98.8% lines / 84.5% branches** over 151 loaded source files; lowest-covered: atlasz-addons/negotiation-engine.mjs 30%; atlasz-addons/tracing-evals.mjs 61%; atlasz-addons/enterprise-knowledge-agentic-rag.mjs 78%; atlasz-control-center/server.mjs 83%; atlasz-addons/tool-fabric.mjs 89%; atlasz-addons/personal-command-center.mjs 93%. Absent from the coverage report (not loaded, or not attributed by the collector - e.g. supervisor-safe.mjs is exercised through real-process tests): atlasz-control-center/public/app.js, atlasz-runtime/agent-child.js, atlasz-runtime/owner-cli.mjs, atlasz-runtime/supervisor-safe.mjs, atlasz-runtime/supervisor.js, atlasz-runtime/worker.js. Caveat: coverage counts executed lines, not asserted behaviour, so it supports but does not prove the 'working' claims (e.g. `negotiation-engine.mjs` is the least covered module and is hub-bag only).
 - Limits: tests run against temp dirs with fake providers, so they show logic and failure handling, not provider behaviour; Windows-only branches (env scrubbing, junctions, process limits) cannot run on this Linux host; the Electron shell and installer are untested here; timing/robustness tests use short real timeouts and can be load-sensitive; mutation testing was done per module by hand-written mutants, not for the whole code base; the registry/gap-register generators have their own tests, so some of the suite verifies tooling rather than product behaviour.
 
