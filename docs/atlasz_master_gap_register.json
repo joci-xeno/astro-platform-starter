@@ -78,8 +78,8 @@
   "registry_items": 930,
   "registry_gaps": 738,
   "capabilities_with_gaps": 82,
-  "modules_total": 158,
-  "modules_reachable_from_entrypoints": 155,
+  "modules_total": 163,
+  "modules_reachable_from_entrypoints": 160,
   "orphan_modules": [
    "atlasz-addons/digital-twin.mjs",
    "atlasz-addons/evidence-record.mjs",
@@ -97,7 +97,7 @@
   ],
   "todo_markers": 0,
   "panels": {
-   "CONNECTED": 44
+   "CONNECTED": 45
   },
   "live_verified_items": 0,
   "note": "LIVE_VERIFIED is intentionally zero: no live provider, payment, delivery or Windows-run evidence exists in this workspace."
@@ -147,6 +147,13 @@
    "panel": "workbench",
    "apis": [
     "/api/workbench",
+    "/api/workbench/action"
+   ],
+   "status": "CONNECTED"
+  },
+  {
+   "panel": "projects",
+   "apis": [
     "/api/workbench/action"
    ],
    "status": "CONNECTED"

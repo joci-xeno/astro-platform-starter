@@ -20,7 +20,6 @@ export function chunkText(text, { maxTokens = 800, overlapTokens = 80 } = {}) {
       const lo = pos + Math.floor(maxChars / 2), win = text.slice(lo, end);
       for (const re of BOUNDARIES) { re.lastIndex = 0; let m, last = -1; while ((m = re.exec(win))) last = m.index + m[0].length; if (last > 0) { end = lo + last; break; } }
     }
-    if (end <= pos) end = Math.min(text.length, pos + maxChars);              // giant unbroken token: hard split
     chunks.push({ index: chunks.length, start: pos, end, text: text.slice(pos, end), tokens: estimateTokens(text.slice(pos, end)) });
     if (chunks.length > LIMITS.maxChunks) return { ok: false, reason: "TOO_MANY_CHUNKS" };
     if (end >= text.length) break;
@@ -41,5 +40,5 @@ export function mapReducePlan(chunkCount, { fanIn = 8 } = {}) {
   if (!Number.isInteger(fanIn) || fanIn < 2 || fanIn > 64) return { ok: false, reason: "FAN_IN_INVALID" };
   const stages = [{ stage: "MAP", tasks: chunkCount }]; let n = chunkCount;
   while (n > 1) { n = Math.ceil(n / fanIn); stages.push({ stage: "REDUCE", tasks: n }); }
-  return { ok: true, stages, totalTasks: stages.reduce((a, s) => a + s.tasks, 0), levels: stages.length - 1, finalTasks: Math.max(n, chunkCount ? 1 : 0) };
+  return { ok: true, stages, totalTasks: stages.reduce((a, s) => a + s.tasks, 0), levels: stages.length - 1, finalTasks: n };
 }

@@ -33,7 +33,7 @@ export function toCsv(headers, rows) {
     return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
   return [headers, ...rows].map(r => r.map(esc).join(",")).join("\n") + "\n";
 }
-const isNum = v => v !== null && v !== "" && v !== undefined && Number.isFinite(Number(v)) && /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/.test(String(v).trim());
+const isNum = v => Number.isFinite(Number(v)) && /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/.test(String(v).trim());
 const isDate = v => { const t = String(v).trim(); if (!/^\d{4}-\d{2}-\d{2}$/.test(t)) return false; const d = new Date(t + "T00:00:00Z"); return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === t; };   // round trip: rejects 2024-02-30
 export function profile({ headers, rows }) {
   return headers.map((h, c) => {

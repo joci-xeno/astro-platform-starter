@@ -48,7 +48,7 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - LIVE_VOICE: 2
 
 ## Reachability
-- Modules in atlasz-addons: 158; reachable from entry points: 155
+- Modules in atlasz-addons: 163; reachable from entry points: 160
 - ORPHAN: atlasz-addons/digital-twin.mjs
 - ORPHAN: atlasz-addons/evidence-record.mjs
 - ORPHAN: atlasz-addons/tenant-isolation.mjs
@@ -65,7 +65,7 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - atlasz-addons/voice-interface.mjs
 
 ## Control Center panels
-- connected: 44 of 44
+- connected: 45 of 45
 
 ## Highest-priority open gaps (P0, not external/owner)
 - GAP-V73-S02-001 [SANDBOX_TESTED_PARTIAL] Authority chain: JOCI/OWNER -> STRONG OWNER AUTH -> MASTER -> AGENTS -> TOOLS/CONNECTORS/COMPUTER USE/EXTERNAL

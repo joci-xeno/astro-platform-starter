@@ -355,13 +355,15 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   // Workbench (85-capability programme B0): conversations, analyst, previews, annotations, guidance, effort, chunking, detail policy. ATLASZ attaches NO model provider, so a conversation
   // "complete" honestly answers NO_ELIGIBLE_PROVIDER; nothing is fabricated, nothing is spent, and every call is gated by the kill switch.
   const wbGateway = () => createModelGateway({ resilience: createProviderResilience({ gate: x => emergency().gate(x), clock: () => Date.now(), timeoutMs: 15000 }), models: createModelIntelligence({ graph: createCapabilityGraph(), clockMs: () => Date.now() }) });
-  const wbInst = () => createWorkbench({ conversationFile: path.join(stateDir, "workbench", "conversations.json"), gateway: wbGateway(), tenantId: KP_T });
+  let wbCache = null;                                   // ONE workbench per Control Center: workflow run-guards and batch state must be shared across requests
+  const wbInst = () => (wbCache ??= createWorkbench({ conversationFile: path.join(stateDir, "workbench", "conversations.json"), memoryFile: path.join(stateDir, "workbench", "project-memory.json"), notesFile: path.join(stateDir, "workbench", "notes.json"), workflowFile: path.join(stateDir, "workbench", "workflows.json"),
+    gateway: wbGateway(), tenantId: KP_T, isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL" }));
   async function workbench() {
     try { const w = wbInst(), g = wbGateway(); return { state: "CONNECTED", ops: w.ops, conversations: (await w.run("conv.list")).conversations, providers: g.summary(), note: "No model provider is attached: asking a model returns NO_ELIGIBLE_PROVIDER. Analysis, rendering, chunking and policy tools run locally and spend nothing." }; }
     catch (e) { return { state: "UNREADABLE", error: String(e.message) }; }
   }
   async function workbenchAction({ op, args } = {}) {
-    if (emergency().status().mode !== "RUNNING" && /^conv\.complete$/.test(String(op))) throw new Error("EMERGENCY_STOP_ACTIVE");
+    if (emergency().status().mode !== "RUNNING" && /^(conv\.complete|workflow\.(run|resume|batchRun|tick))$/.test(String(op))) throw new Error("EMERGENCY_STOP_ACTIVE");
     const r = await wbInst().run(String(op), args ?? {});
     if (!r || r.ok === false) throw new Error(String(r?.reason ?? "FAILED"));
     return r;
