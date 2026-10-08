@@ -71,7 +71,7 @@ export function createConversationStore({ file = null, now = () => new Date().to
     const t = typeof r.output === "string" ? addTurn(id, { tenantId, role: "assistant", text: r.output, modelId: mid === "unknown" ? c.model : mid }) : { ok: false, reason: "OUTPUT_NOT_TEXT" };
     const u = usage.record({ conversationId: id, modelId: mid, promptTokens: ctx.tokens, completionTokens: estimateTokens(typeof r.output === "string" ? r.output : ""), source: Number.isFinite(r.costUsd) && r.costUsd >= 0 ? "PROVIDER" : "ESTIMATE", costUsd: Number.isFinite(r.costUsd) && r.costUsd >= 0 ? r.costUsd : null, budgetUsd }); persist();      // spend is recorded even when the answer cannot be stored
     if (!t.ok) return { ok: false, reason: t.reason, turnAdded: false, usageRecorded: u.ok };
-    return { ok: true, turn: t.turn, providerId: r.providerId, untrusted: true, droppedTurns: ctx.droppedIds.length, usageRecorded: u.ok };
+    return { ok: true, turn: t.turn, providerId: mid, untrusted: true, droppedTurns: ctx.droppedIds.length, usageRecorded: u.ok };
   }
   const get = (id, { tenantId } = {}) => { const c = find(id, tenantId); return c ? { ok: true, conversation: { ...pub(c), systemPrompt: c.systemPrompt, switchLog: clone(c.switches), turns: clone(c.turns) } } : { ok: false, reason: "NOT_FOUND" }; };
   const list = ({ tenantId } = {}) => Object.values(d.conversations).filter(c => c.tenantId === tenantId).map(pub);

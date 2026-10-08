@@ -144,3 +144,11 @@ test("verification fix C-1: a full ledger archives the oldest verified-done, unr
   const r = reg(l, "new", { payload: { n: 1 } }); assert.equal(r.ok, true, JSON.stringify(r)); assert.equal(l.get("t", "base").ok, true, "a task another task depends on is never archived"); assert.equal(l.get("t", "dep").ok, true, "an unfinished task is never archived");
   const l2 = createHandoffLedger({ limits: { ...LIMITS, maxTasks: 2 } }); reg(l2, "x", { payload: 1 }); reg(l2, "y", { payload: 2 }); assert.equal(reg(l2, "z", { payload: 3 }).reason, "TOO_MANY_TASKS", "nothing finished to archive: still refused");
 });
+
+test("verification fixes: artifact check is element-wise; zero-width characters do not make duplicate work look different", () => {
+  const m = mk(); reg(m, "a"); m.start("t", "a", { agent: E(1) });
+  m.handoff("t", "a", { from: E(1), to: E(2), artifacts: [{ name: "a", sha256: H("1") }, { name: "b", sha256: H("2") }] });
+  const forged = [{ name: "a:" + H("1") + "|b", sha256: H("2") }]; assert.equal(m.accept("t", "a", { agent: E(2), received: forged }).reason, "HANDOFF_CONTENT_MISMATCH", "one artifact whose name imitates two");
+  assert.equal(m.accept("t", "a", { agent: E(2), received: [{ name: "b", sha256: H("2") }, { name: "a", sha256: H("1") }] }).ok, true, "order does not matter");
+  const l = mk(); assert.equal(reg(l, "x", { payload: "delete user" }).ok, true); assert.equal(reg(l, "y", { payload: "dele\u200bte user" }).reason, "DUPLICATE_WORK"); assert.equal(fingerprint("k", "a\u00adb"), fingerprint("k", "ab"));
+});

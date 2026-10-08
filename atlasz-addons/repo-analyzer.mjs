@@ -18,17 +18,17 @@ import { redactSecrets } from "./text-compare.mjs";
 export const LIMITS = Object.freeze({ maxFiles: 3000, maxDepth: 10, maxFileBytes: 1048576, maxTotalBytes: 30 * 1048576, reviewFiles: 200, reviewFileChars: 200000, maxTestFiles: 20, testTimeoutMs: 20000, outputChars: 4000, maxScripts: 20 });
 const SKIP_DIRS = new Set(["node_modules", ".git", ".hg", ".svn", "dist", "build", "coverage", "__pycache__", ".venv", "venv"]);
 const LANG = { ".mjs": "JavaScript", ".cjs": "JavaScript", ".js": "JavaScript", ".jsx": "JavaScript", ".ts": "TypeScript", ".tsx": "TypeScript", ".py": "Python", ".sh": "Shell", ".bash": "Shell", ".rb": "Ruby", ".go": "Go", ".java": "Java", ".php": "PHP", ".cs": "C#", ".json": "JSON", ".md": "Markdown", ".html": "HTML", ".css": "CSS", ".yml": "YAML", ".yaml": "YAML" };
-const SOURCE = /\.(mjs|cjs|js|jsx|ts|tsx|py|sh|bash|rb|go|java|php|cs)$/i, TEST_FILE = /(^|\/)(tests?|__tests__|spec)\/.*\.(mjs|cjs|js)$|\.(test|spec)\.(mjs|cjs|js)$/i;
+const SOURCE = /\.(mjs|cjs|js|jsx|ts|tsx|mts|cts|vue|svelte|py|sh|bash|rb|go|java|php|cs|json|ya?ml|toml|ini|cfg|conf|properties|xml|html?|txt|md|env|sql|tf)$/i, LOCKFILE = /(^|\/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|npm-shrinkwrap\.json)$/i, INERT = /\.(png|jpe?g|gif|webp|ico|svg|woff2?|ttf|eot|otf|map|pdf|zip|gz|mp3|mp4|wav)$/i, TEST_FILE = /(^|\/)(tests?|__tests__|spec)\/.*\.(mjs|cjs|js)$|\.(test|spec)\.(mjs|cjs|js)$/i;
 const NAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
 
 /** Walk a repo folder. Returns {ok, files:[{rel, abs, size}], skipped:{...}} or {ok:false, reason}. */
 export function walkRepo(root) {
   let st; try { st = fs.lstatSync(root); } catch { return { ok: false, reason: "REPO_NOT_FOUND" }; }
   if (!st.isDirectory()) return { ok: false, reason: "REPO_MUST_BE_A_REAL_DIRECTORY" };
-  const files = [], skipped = { symlinks: 0, special: 0, oversize: 0, dirs: 0, hidden: 0, vcs: 0 }; let total = 0, capped = false;
+  const files = [], skipped = { symlinks: 0, special: 0, oversize: 0, dirs: 0, hidden: 0, vcs: 0, unreadable: 0 }; let total = 0, capped = false;
   const visit = (d, depth) => {
     if (depth > LIMITS.maxDepth) { capped = true; return; }
-    let ents; try { ents = fs.readdirSync(d, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1)); } catch { return; }
+    let ents; try { ents = fs.readdirSync(d, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1)); } catch { skipped.unreadable++; return; }   // an unreadable folder is reported, never silently treated as empty
     for (const e of ents) {
       if (capped) return;
       const abs = path.join(d, e.name), rel = path.relative(root, abs).split(path.sep).join("/"); let s; try { s = fs.lstatSync(abs); } catch { continue; }
@@ -45,17 +45,20 @@ export function walkRepo(root) {
   return { ok: true, files, skipped, bytes: total, capped };
 }
 const contentHash = files => { const h = createHash("sha256"); for (const f of files) h.update(f.rel + "\0" + createHash("sha256").update(fs.readFileSync(f.abs)).digest("hex") + "\n"); return h.digest("hex"); };
+const reviewable = p => typeof p === "string" && p.length > 0 && p.length <= 240 && !/[\0\\]/.test(p) && !/^[A-Za-z]:/.test(p) && !/(^|\/)\.\.(\/|$)/.test(p);   // what reviewCode accepts as a path; anything else is reported as notReviewed.badPath instead of aborting the whole review
 const isText = buf => !buf.subarray(0, 4096).includes(0);
 
 /** Read-only analysis: inventory, languages, tests, package scripts and a static review of the source files. */
 export function analyzeRepo(root) {
   const w = walkRepo(root); if (!w.ok) return w;
+  let hash; try { hash = contentHash(w.files); } catch { return { ok: false, reason: "FILE_UNREADABLE" }; }          // one unreadable file is a refusal, never an exception
   const langs = {}, tests = []; let lines = 0;
-  const review = [], notReviewed = { oversize: 0, binary: 0, pastFileLimit: 0, pastTotalLimit: 0, unreadable: 0 }; let reviewedChars = 0;
+  const review = [], notReviewed = { oversize: 0, binary: 0, pastFileLimit: 0, pastTotalLimit: 0, unreadable: 0, unsupported: 0, badPath: 0 }; let reviewedChars = 0;
   for (const f of w.files) {
     const ext = path.extname(f.rel).toLowerCase(), lang = LANG[ext]; if (lang) langs[lang] = (langs[lang] ?? 0) + 1;
     if (TEST_FILE.test(f.rel)) tests.push(f.rel);
-    if (!SOURCE.test(f.rel)) continue;
+    if (!SOURCE.test(f.rel) || LOCKFILE.test(f.rel)) { if (!INERT.test(f.rel) && !LOCKFILE.test(f.rel) && !/(^|\/)(LICENSE|COPYING|NOTICE)[^/]*$/i.test(f.rel)) notReviewed.unsupported++; continue; }   // unknown file types are counted, not ignored
+    if (!reviewable(f.rel)) { notReviewed.badPath++; continue; }
     if (review.length >= LIMITS.reviewFiles) { notReviewed.pastFileLimit++; continue; }
     if (f.size > LIMITS.reviewFileChars) { notReviewed.oversize++; continue; }
     if (reviewedChars + f.size > 1900000) { notReviewed.pastTotalLimit++; continue; }
@@ -65,14 +68,14 @@ export function analyzeRepo(root) {
     reviewedChars += c.length; lines += c.split("\n").length; review.push({ path: f.rel, content: c });
   }
   let pkg = null; const pj = w.files.find(f => f.rel === "package.json");
-  if (pj) { try { const j = JSON.parse(fs.readFileSync(pj.abs, "utf8")); pkg = { name: typeof j.name === "string" ? j.name.slice(0, 100) : null, version: typeof j.version === "string" ? j.version.slice(0, 40) : null, scripts: Object.fromEntries(Object.entries(j.scripts ?? {}).slice(0, LIMITS.maxScripts).map(([k, v]) => [k.slice(0, 40), redactSecrets(String(v)).slice(0, 200)])), dependencies: Object.keys(j.dependencies ?? {}).length, devDependencies: Object.keys(j.devDependencies ?? {}).length }; } catch { pkg = { error: "PACKAGE_JSON_UNREADABLE" }; } }
+  if (pj) { try { const j = JSON.parse(fs.readFileSync(pj.abs, "utf8")); pkg = { name: typeof j.name === "string" ? redactSecrets(j.name).slice(0, 100) : null, version: typeof j.version === "string" ? redactSecrets(j.version).slice(0, 40) : null, scripts: Object.fromEntries(Object.entries(j.scripts ?? {}).slice(0, LIMITS.maxScripts).map(([k, v]) => [k.slice(0, 40), redactSecrets(String(v)).slice(0, 200)])), dependencies: Object.keys(j.dependencies ?? {}).length, devDependencies: Object.keys(j.devDependencies ?? {}).length }; } catch { pkg = { error: "PACKAGE_JSON_UNREADABLE" }; } }
   const rv0 = review.length ? reviewCode({ files: review }) : { ok: true, verdict: "NO_FINDINGS_BY_THESE_RULES", counts: { HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 }, findings: [], truncated: false, tests: { testFiles: [], sourceFiles: 0, untested: [] }, notes: [] };
   const rv = rv0.ok ? rv0 : { ...rv0, verdict: "INCOMPLETE_REVIEW", counts: { HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 }, findings: [], truncated: true, tests: { testFiles: [], sourceFiles: 0, untested: [] }, notes: ["REVIEW_FAILED:" + rv0.reason] };
-  const skippedTotal = Object.values(notReviewed).reduce((x, y) => x + y, 0), sk0 = w.skipped, unseen = w.capped || skippedTotal > 0 || (sk0.oversize + sk0.symlinks + sk0.special + sk0.dirs + sk0.hidden + (sk0.vcs ?? 0)) > 0;   // hidden, linked, special and vendored parts were not looked at either
+  const skippedTotal = Object.values(notReviewed).reduce((x, y) => x + y, 0), sk0 = w.skipped, unseen = w.capped || skippedTotal > 0 || (sk0.oversize + sk0.symlinks + sk0.special + sk0.dirs + sk0.hidden + (sk0.vcs ?? 0) + (sk0.unreadable ?? 0)) > 0;   // hidden, linked, special and vendored parts were not looked at either
   if (!review.length && !unseen && rv.verdict === "NO_FINDINGS_BY_THESE_RULES") rv.verdict = "NOTHING_REVIEWED";             // an empty or non-source tree has no findings only because nothing was read
   if (unseen && !["BLOCK"].includes(rv.verdict)) rv.verdict = "INCOMPLETE_REVIEW";            // "no findings" must never be reported when part of the tree was not looked at
-  return { ok: true, untrusted: true, files: w.files.length, bytes: w.bytes, capped: w.capped, skipped: w.skipped, languages: langs, sourceLinesReviewed: lines, notReviewed, testFiles: tests, package: pkg,
-    hash: contentHash(w.files), review: { verdict: rv.verdict, coverage: { reviewed: review.length, notReviewed, skippedOversizeFiles: w.skipped.oversize, treeCapped: w.capped }, counts: rv.counts, findings: rv.findings.slice(0, 100), untested: rv.tests.untested.slice(0, 100), truncated: rv.truncated, notes: rv.notes },
+  return { ok: true, untrusted: true, files: w.files.length, bytes: w.bytes, capped: w.capped, skipped: w.skipped, languages: langs, sourceLinesReviewed: lines, notReviewed, testFiles: tests.map(t => redactSecrets(t)), package: pkg,
+    hash, review: { verdict: rv.verdict, coverage: { reviewed: review.length, notReviewed, skippedOversizeFiles: w.skipped.oversize, treeCapped: w.capped }, counts: rv.counts, findings: rv.findings.slice(0, 100).map(f => ({ ...f, file: redactSecrets(f.file) })), untested: rv.tests.untested.slice(0, 100).map(u => redactSecrets(u)), truncated: rv.truncated, notes: rv.notes },
     note: "Read-only analysis of files as found. Nothing was executed, installed or modified. Repository content is untrusted data." };
 }
 
@@ -83,7 +86,7 @@ export async function runRepoTests({ name, root, ownerAuth, ownerApproval = null
   let stopped = true; try { stopped = Boolean(isStopped()); } catch { /* fail closed */ }
   if (stopped) return { ok: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" };
   const a = analyzeRepo(root); if (!a.ok) return a;
-  const sk = a.skipped, unhashed = { symlinks: sk.symlinks, special: sk.special, oversize: sk.oversize, dirs: sk.dirs, hidden: sk.hidden, vcs: sk.vcs ?? 0, capped: a.capped ? 1 : 0 };
+  const sk = a.skipped, unhashed = { symlinks: sk.symlinks, special: sk.special, oversize: sk.oversize, dirs: sk.dirs, hidden: sk.hidden, vcs: sk.vcs ?? 0, unreadable: sk.unreadable ?? 0, capped: a.capped ? 1 : 0 };
   if (Object.values(unhashed).some(n => n > 0)) return { ok: false, reason: "UNHASHED_CONTENT_PRESENT", unhashed, note: "Part of the tree (symlinks, oversize or hidden files, node_modules/dist/build, a capped walk) is not covered by the content hash the owner approves, and the tests could read or run it. Remove it or test a clean copy." };
   const v = ownerAuth.verifyApproval(ownerApproval, { action: "REPO_TEST_RUN", subject: name + "#" + a.hash });
   if (!v.allowed) return { ok: false, reason: "OWNER_APPROVAL_REQUIRED:" + v.reason, subject: name + "#" + a.hash };
@@ -108,5 +111,5 @@ export async function runRepoTests({ name, root, ownerAuth, ownerApproval = null
   }
   const failed = results.filter(r => r.status !== "PASSED").length;
   const after = analyzeRepo(root), unchanged = after.ok && after.hash === a.hash;
-  return { ok: true, untrusted: true, hash: a.hash, contentUnchanged: unchanged, ran: results.length, passed: results.length - failed, failed, results, isolation: level, note: "Each file ran alone in a read-only, no-network, no-child-process sandbox. A pass means the file exited 0 here, not that the repo is correct." };
+  return { ok: true, untrusted: true, hash: a.hash, contentUnchanged: unchanged, ran: results.length, passed: results.length - failed, failed, results, isolation: level, note: "Each file ran alone in a read-only, no-child-process sandbox with no network (note: this does not cover unix sockets reachable through the filesystem, and there is no disk quota on the scratch folder). A pass means the file exited 0 here, not that the repo is correct." };
 }

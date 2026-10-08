@@ -3,6 +3,7 @@
 // (stdin JSON -> stdout JSON, minimal env with NO secrets, timeout). A crash/timeout/garbage output is contained, counted,
 // and after N consecutive failures the plugin is QUARANTINED. This is process isolation, not an OS sandbox.
 // Themes/skins are DATA ONLY (whitelisted CSS variables), never code or raw CSS.
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
@@ -38,6 +39,19 @@ export function validateManifest(m, { atlaszVersion = "7.3.0" } = {}) {
   return { ok: problems.length === 0, problems };
 }
 
+/** Content hash of a plugin folder (names + bytes, symlinks hashed as links). null = too large or unreadable: such a plugin is never run. */
+function dirHash(dir) {
+  const h = crypto.createHash("sha256"); let files = 0, bytes = 0;
+  const walkDir = (d, rel) => { for (const e of fs.readdirSync(d, { withFileTypes: true }).sort((x, y) => (x.name < y.name ? -1 : 1))) {
+    const abs = path.join(d, e.name), r = rel + "/" + e.name;
+    if (e.isSymbolicLink()) { h.update("L:" + r + "\0"); continue; }
+    if (e.isDirectory()) { h.update("D:" + r + "\0"); walkDir(abs, r); continue; }
+    if (!e.isFile()) { h.update("S:" + r + "\0"); continue; }
+    if (++files > 500) throw new Error("TOO_MANY"); const b = fs.readFileSync(abs); bytes += b.length; if (bytes > 20 * 1024 * 1024) throw new Error("TOO_BIG");
+    h.update("F:" + r + "\0" + b.length + "\0"); h.update(b);
+  } };
+  try { walkDir(dir, ""); return h.digest("hex"); } catch { return null; }
+}
 export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVersion = "7.3.0", nodeBin = process.execPath, hookTimeoutMs = 5000, quarantineAfter = 3, now = () => new Date().toISOString() } = {}) {
   if (!stateDir || !ownerAuth) throw new Error("STATE_DIR_AND_OWNER_AUTH_REQUIRED");
   fs.mkdirSync(stateDir, { recursive: true });
@@ -87,7 +101,8 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
     if (own(S.health, id)?.quarantined) return { ok: false, reason: "QUARANTINED_RESET_REQUIRES_OWNER_APPROVAL" };
     const codeLess = p.manifest.kind === "THEME" || p.manifest.kind === "SKIN";
     if (!codeLess) { const v = approve(ownerApproval, "PLUGIN_ENABLE", id); if (!v.allowed) return { ok: false, reason: "OWNER_APPROVAL_REQUIRED:" + v.reason }; }
-    S.enabled[id] = { since: now(), version: p.manifest.version, permissions: p.manifest.permissions }; S.health[id] = { failures: 0 };
+    const hash = codeLess ? null : dirHash(p.dir); if (!codeLess && !hash) return { ok: false, reason: "PLUGIN_FOLDER_UNHASHABLE" };
+    S.enabled[id] = { since: now(), version: p.manifest.version, permissions: p.manifest.permissions, ...(hash ? { hash } : {}) }; S.health[id] = { failures: 0 };
     audit.append("PLUGIN_ENABLED", { id, version: p.manifest.version, permissions: p.manifest.permissions }); save(); return { ok: true };
   }
   function disable(id) { if (!own(S.enabled, id)) return { ok: true, already: true }; delete S.enabled[id]; if (S.theme === id) S.theme = null; audit.append("PLUGIN_DISABLED", { id }); save(); return { ok: true }; }
@@ -108,6 +123,7 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
       const p = scan().found.get(id);
       if (!p || !own(S.enabled, id) || own(S.health, id)?.quarantined) return resolve({ ok: false, reason: !p ? "UNKNOWN_PLUGIN" : "NOT_ENABLED" });
       if (!p.manifest.entry) return resolve({ ok: false, reason: "NO_CODE_ENTRY" });
+      { const en = own(S.enabled, id), now0 = dirHash(p.dir); if (!en?.hash || now0 !== en.hash) { audit.append("PLUGIN_HOOK_NOT_RUN", { id, reason: "CODE_CHANGED_SINCE_ENABLE" }); return resolve({ ok: false, reason: "CODE_CHANGED_SINCE_ENABLE" }); } }   // only the exact code the owner enabled ever runs
       let out = "", err = "", done = false, timer = null;
       const finish = r => { if (done) return; done = true; clearTimeout(timer); resolve(r); };
       let child;

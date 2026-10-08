@@ -127,3 +127,9 @@ test("durability: values, proposals, counters and history survive a restart; a c
     createPreferences({ file }).forgetAll("t", { actor: "OWNER" }); assert.equal(createPreferences({ file }).get("t", "ui.language").isDefault, true);
   } finally { rm(dir); }
 });
+
+test("verification fix: an actor must be a string (arrays and objects that stringify to an agent id are refused)", () => {
+  const p = createPreferences();
+  for (const actor of [["SEARCH-1"], { toString: () => "EXECUTION-2" }, 5, null]) { const r = p.propose("t1", "ui.language", "en", { actor }); assert.equal(r.ok, false, String(actor)); }
+  assert.equal(p.propose("t1", "ui.language", "en", { actor: "SEARCH-1" }).ok !== undefined, true);
+});

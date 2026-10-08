@@ -98,3 +98,10 @@ test("verification fix R-1: near-identical, huge and tiny values never hang or e
     const t0 = Date.now(); const r = renderChart(spec); assert.ok(Date.now() - t0 < 500, `${type} ${a} ${b} took too long`); if (!r.ok) { assert.match(r.reason, /INVALID|RANGE|SELF_CHECK/, `${type} ${a} ${b} refused cleanly`); continue; } assert.ok(r.svg.length < 100000); assert.equal(checkSvgSafe(r.svg).safe, true);
   }
 });
+
+test("verification fixes R-4/R-5: sparse arrays are refused; palette names are own properties only", () => {
+  for (const spec of [{ type: "bar", labels: new Array(3), values: new Array(3) }, { type: "line", values: new Array(3) }, { type: "line", values: [1, 2, 3], x: new Array(3) }, { type: "scatter", points: new Array(2) }, { type: "scatter", points: [new Array(2), [1, 2]] }, { type: "histogram", values: new Array(5) }]) assert.equal(renderChart(spec).ok, false, JSON.stringify(spec));
+  assert.equal(renderChart({ type: "bar", labels: ["a"], values: [1] }).ok, true);
+  for (const color of ["constructor", "__proto__", "toString", 5, {}]) assert.equal(validateAnnotations([{ type: "rect", x: 0.1, y: 0.1, w: 0.2, h: 0.2, color }]).ok, false, String(color));
+  assert.equal(validateAnnotations([{ type: "rect", x: 0.1, y: 0.1, w: 0.2, h: 0.2, color: "red" }]).ok, true);
+});

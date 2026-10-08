@@ -15,6 +15,8 @@ export function packContext({ pinned = [], turns = [], maxTokens, reserveOutput 
   if (!Number.isInteger(maxTokens) || maxTokens < 16) return { ok: false, reason: "MAX_TOKENS_INVALID" };
   if (!Number.isInteger(reserveOutput) || reserveOutput < 0) return { ok: false, reason: "RESERVE_INVALID" };
   const budget = maxTokens - reserveOutput; if (budget < 16) return { ok: false, reason: "BUDGET_TOO_SMALL" };
+  const itemOk = x => x && typeof x === "object" && typeof x.text === "string";
+  if (!Array.isArray(pinned) || !Array.isArray(turns) || !pinned.every(itemOk) || !turns.every(itemOk)) return { ok: false, reason: "ITEMS_INVALID" };   // null rows, non-arrays and non-string text are refused, never thrown on
   const t = x => estimateTokens(x.text) + 4;                                  // +4: role/formatting overhead per item
   const pinTokens = pinned.reduce((a, x) => a + t(x), 0);
   if (pinTokens > budget) return { ok: false, reason: "PINNED_EXCEEDS_BUDGET", pinnedTokens: pinTokens, budget };
@@ -26,7 +28,8 @@ export function packContext({ pinned = [], turns = [], maxTokens, reserveOutput 
     const x = turns[i], c = t(x);
     if (c <= left) { keptRev.push(x); keptIdx.add(i); left -= c; continue; }
     if (keptRev.length === 0 && left > 8) {                                   // the newest turn is never dropped: keep its head
-      const chars = Math.max(1, (left - 4 - 4) * 4); let head = String(x.text).slice(0, chars); if (/[\ud800-\udbff]$/.test(head)) head = head.slice(0, -1);   // never end on half a surrogate pair
+      const chars = Math.max(1, (left - 4 - 4 - 2) * 4);   // 2 tokens held back for the closing fence that may be re-added below
+      let head = String(x.text).slice(0, chars); if (/[\ud800-\udbff]$/.test(head)) head = head.slice(0, -1);   // never end on half a surrogate pair
       const open = /^<</.test(head) && !/<<END>>\s*$/.test(head);              // a cut fence is closed again so the rest of the context cannot be read as part of it
       keptRev.push({ ...x, text: head + " [truncated]" + (open ? "\n<<END>>" : ""), truncated: true }); keptIdx.add(i); truncatedIds.push(idOf(x, i)); left = 0;
     }
@@ -50,7 +53,7 @@ export function createUsageLedger({ now = () => new Date().toISOString() } = {})
     if (typeof modelId !== "string" || !MODEL_ID.test(modelId)) modelId = "unknown";                       // free text never becomes a ledger key
     if (!["ESTIMATE", "PROVIDER"].includes(source)) return { ok: false, reason: "SOURCE_INVALID" };
     const costKnown = costUsd !== null; if (!costKnown) costUsd = 0;                  // null = the provider did not report a cost: recorded as UNKNOWN, never as a real zero
-    if (![promptTokens, completionTokens, costUsd, budgetUsd].every(num)) return { ok: false, reason: "NUMBERS_INVALID" };
+    if (![promptTokens, completionTokens, costUsd, budgetUsd].every(num) || [promptTokens, completionTokens].some(v => v > 1e9) || costUsd > 1e7 || budgetUsd > 1e7) return { ok: false, reason: "NUMBERS_INVALID" };   // absurd magnitudes cannot overflow the sums to Infinity
     if (source === "ESTIMATE" && costUsd > 0) return { ok: false, reason: "COST_ONLY_FROM_PROVIDER_REPORT" };
     const unapprovedSpend = costUsd > budgetUsd;                               // flagged, never hidden
     const row = { at: now(), conversationId, modelId, promptTokens, completionTokens, source, costUsd, costKnown, unapprovedSpend }; rows.push(row); return { ok: true, row };

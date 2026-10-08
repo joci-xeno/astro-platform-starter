@@ -183,3 +183,11 @@ test("contradictions only between findings of one question; a store corrupted wh
     assert.throws(() => w.rl.report(q1.id, OWNER), /STORE_UNREADABLE/);
   } finally { w.done(); }
 });
+
+test("verification fix: an agent cannot name itself OWNER (or anyone) through `by`", async () => {
+  const w = await world();
+  try {
+    const q = w.rl.openQuestion({ projectId: w.p.id, text: "What is the monthly rent?", by: "OWNER" }, AGENT); assert.equal(q.createdBy, "AGENT");
+    const o = w.rl.openQuestion({ projectId: w.p.id, text: "Owner question", by: "Alex" }, OWNER); assert.equal(o.createdBy, "Alex");
+  } finally { w.done(); }
+});

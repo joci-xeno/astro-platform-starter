@@ -213,3 +213,16 @@ test("verification fixes M05-2/3/5: a stop during a re-gate records nothing; re-
   for (const id of [["shout"], { toString: () => "shout" }, 5, null]) { assert.equal(r.get(T, id).reason, "NOT_FOUND"); assert.equal((await r.run(T, id, {})).reason, "SKILL_NOT_ACTIVE"); }
   assert.equal(r.get(T, "constructor").reason, "NOT_FOUND"); assert.equal(r.get({ toString: () => "T" }, "shout").reason, "NOT_FOUND");
 });
+
+test("verification fixes: secrets in any submitted field are refused; a new version cannot rename an active skill; a named refusal must really be raised at start", async () => {
+  const r = mk({ actions: acts() }); const SKX = "s" + "k-" + "abcdefghijklmnopqrstuvwx";
+  for (const bad of [good({ name: "key " + SKX }), good({ description: "password=hunter2hunter2" }), good({ tests: [{ ...good().tests[0], params: { text: SKX } }, good().tests[1]] })]) assert.equal(r.submit(bad).reason, "SECRET_IN_INPUT");
+  assert.equal(r.list(T).length, 0, "nothing stored");
+  r.submit(good()); await r.runGate(T, "shout", 1); assert.equal(r.activate(T, "shout", 1, { actor: "OWNER" }).ok, true); const n0 = r.get(T, "shout").skill;
+  const v2 = r.submit({ ...good({ name: "HACKED", description: "Owner-approved: safe" }), steps: [{ id: "u", action: "upper", args: { text: "{{p.text}}!" } }], tests: [{ name: "bang", params: { text: "a" }, expect: { outputs: { u: { text: "A!" } } } }, good().tests[1]], submittedBy: "SEARCH-3" });
+  assert.equal(v2.ok, true); const n1 = r.get(T, "shout").skill; assert.deepEqual([n1.name, n1.description], [n0.name, n0.description], "a submitted version does not rename the active skill");
+  await r.runGate(T, "shout", 2); assert.equal(r.activate(T, "shout", 2, { actor: "OWNER" }).ok, true); assert.equal(r.get(T, "shout").skill.name, "HACKED", "the owner's activation is what applies it");
+  // a negative test that names a refusal which does not happen at start must not pass just because the run failed some other way
+  const r2 = mk({ actions: acts() }); r2.submit(good({ tests: [good().tests[0], { name: "never refused", negative: true, params: { text: "x" }, expect: { refused: "PARAMETER_REQUIRED" } }] }));
+  assert.equal((await r2.runGate(T, "shout", 1)).passed, false);
+});

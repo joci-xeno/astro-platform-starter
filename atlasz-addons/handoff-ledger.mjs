@@ -17,7 +17,8 @@ const KIND = /^[a-z][a-z0-9._-]{0,39}$/, TASK = /^[A-Za-z0-9][A-Za-z0-9._-]{0,59
 const rosterOk = a => typeof a === "string" && AGENT_ID_RE.test(a);
 const canon = v => (Array.isArray(v) ? "[" + v.map(canon).join(",") + "]" : v && typeof v === "object" ? "{" + Object.keys(v).sort().map(k => JSON.stringify(k) + ":" + canon(v[k])).join(",") + "}" : JSON.stringify(v));
 // Duplicate detection compares MEANING, not spelling: strings are NFKC-normalised, trimmed, whitespace-collapsed and case-folded; undefined/NaN/Infinity fields count as absent/null; key order is irrelevant.
-const norm = v => (typeof v === "string" ? v.normalize("NFKC").replace(/\s+/g, " ").trim().toLowerCase() : typeof v === "number" ? (Number.isFinite(v) ? v : null) : Array.isArray(v) ? v.map(x => norm(x === undefined ? null : x)) : v && typeof v === "object" ? Object.fromEntries(Object.keys(v).filter(k => v[k] !== undefined).map(k => [k.normalize("NFKC").trim().toLowerCase(), norm(v[k])])) : v);
+const cmp = (x, y) => (x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : x[1] < y[1] ? -1 : x[1] > y[1] ? 1 : 0);
+const norm = v => (typeof v === "string" ? v.normalize("NFKC").replace(/[\p{Cf}\u00ad]/gu, "").replace(/\s+/g, " ").trim().toLowerCase() : typeof v === "number" ? (Number.isFinite(v) ? v : null) : Array.isArray(v) ? v.map(x => norm(x === undefined ? null : x)) : v && typeof v === "object" ? Object.fromEntries(Object.keys(v).filter(k => v[k] !== undefined).map(k => [k.normalize("NFKC").trim().toLowerCase(), norm(v[k])])) : v);
 export const fingerprint = (kind, payload) => crypto.createHash("sha256").update(kind + "\0" + canon(norm(payload ?? null))).digest("hex");
 
 export function createHandoffLedger({ file = null, isStopped = () => false, now = () => Date.now(), limits = {} } = {}) {
@@ -68,8 +69,8 @@ export function createHandoffLedger({ file = null, isStopped = () => false, now 
   function accept(tenantId, id, { agent, received = [] } = {}) {
     const g = guard(); if (g) return g; const k = find(tenantId, id); if (!k) return { ok: false, reason: "TASK_NOT_FOUND" }; const h = pending(k); if (!h) return { ok: false, reason: "NO_PENDING_HANDOFF" };
     if (agent !== h.to) return { ok: false, reason: "NOT_THE_RECEIVER" }; const t = peek(tenantId);
-    const got = Array.isArray(received) ? received.filter(a => a && typeof a.name === "string" && typeof a.sha256 === "string").map(a => a.name + ":" + a.sha256).sort() : [], want = h.artifacts.map(a => a.name + ":" + a.sha256).sort();
-    if (!Array.isArray(received) || got.length !== received.length || got.join("|") !== want.join("|")) return { ok: false, reason: "HANDOFF_CONTENT_MISMATCH" };
+    const got = Array.isArray(received) ? received.filter(a => a && typeof a.name === "string" && typeof a.sha256 === "string").map(a => [a.name, a.sha256]).sort(cmp) : [], want = h.artifacts.map(a => [a.name, a.sha256]).sort(cmp);   // element-wise: a name containing ":" or "|" cannot imitate two artifacts
+    if (!Array.isArray(received) || got.length !== received.length || JSON.stringify(got) !== JSON.stringify(want)) return { ok: false, reason: "HANDOFF_CONTENT_MISMATCH" };
     if (openOf(t, agent) >= L.perAgentOpen) return { ok: false, reason: "AGENT_AT_CONCURRENCY_LIMIT" };
     h.status = "ACCEPTED"; k.owner = agent; if (!k.owners.includes(agent)) k.owners.push(agent); k.status = "IN_PROGRESS"; k.handoff = null; ev(t, id, "HANDOFF_ACCEPTED", agent, { from: h.from, contract: h.contract }); store.save(); return { ok: true, id, owner: agent };
   }

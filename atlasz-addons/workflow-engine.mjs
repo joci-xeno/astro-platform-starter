@@ -12,8 +12,11 @@ import { createStore, clone } from "./business/store.mjs";
 export const LIMITS = Object.freeze({ maxTemplates: 200, maxSteps: 50, maxParams: 20, maxParamChars: 10000, maxInstances: 2000, maxBatchItems: 500, maxBatches: 100, stepTimeoutMs: 10000, maxRetries: 3, maxOutputChars: 20000 });
 import { scrub, containsSecret } from "./secret-patterns.mjs";
 const redactStr = s => scrub(s, "[redacted]");
-const redactDeep = v => typeof v === "string" ? redactStr(v) : Array.isArray(v) ? v.map(redactDeep) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, redactDeep(x)])) : v;
-const hasSecret = v => { if (typeof v === "string") return containsSecret(v); if (Array.isArray(v)) return v.some(hasSecret); if (v && typeof v === "object") return Object.keys(v).some(k => containsSecret(k)) || Object.values(v).some(hasSecret); return false; };
+import { SECRET_KEY } from "./secret-patterns.mjs";
+const secretKeyed = (k, x) => SECRET_KEY.test(k) && ((typeof x === "string" && x.trim() !== "" && !/^\{\{.*\}\}$/.test(x.trim())) || typeof x === "number");   // a credential-NAMED field holding a value (a pure {{placeholder}} is only a reference)
+const redactDeep = v => typeof v === "string" ? redactStr(v) : Array.isArray(v) ? v.map(redactDeep) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([k, x]) => [redactStr(k), secretKeyed(k, x) ? "[redacted]" : redactDeep(x)])) : v;
+const credentialPlaceholder = v => Array.isArray(v) ? v.some(credentialPlaceholder) : v && typeof v === "object" ? Object.entries(v).some(([k, x]) => (SECRET_KEY.test(k) && typeof x === "string" && /\{\{/.test(x)) || credentialPlaceholder(x)) : false;
+const hasSecret = v => { if (typeof v === "string") return containsSecret(v); if (Array.isArray(v)) return v.some(hasSecret); if (v && typeof v === "object") return Object.entries(v).some(([k, x]) => containsSecret(k) || secretKeyed(k, x) || hasSecret(x)); return false; };
 const rid = p => p + crypto.randomBytes(6).toString("hex");
 const ID = /^[a-z][a-z0-9_-]{0,39}$/, PARAM_TYPES = new Set(["string", "number", "boolean", "enum"]);
 const PLACE = /\{\{\s*(p|s)\.([A-Za-z0-9_.-]+)\s*\}\}/g, ONLY = /^\{\{\s*(p|s)\.([A-Za-z0-9_.-]+)\s*\}\}$/;
@@ -55,6 +58,7 @@ export function createWorkflowEngine({ file = null, actions = {}, now = () => ne
       if (s.onError !== undefined && !["stop", "continue"].includes(s.onError)) return { ok: false, reason: "ON_ERROR_INVALID:" + s.id };
       if (s.retries !== undefined && !(Number.isInteger(s.retries) && s.retries >= 0 && s.retries <= L.maxRetries)) return { ok: false, reason: "RETRIES_INVALID:" + s.id };
       if (hasSecret(s.args ?? {})) return { ok: false, reason: "SECRET_IN_INPUT:step " + s.id };
+      if (credentialPlaceholder(s.args ?? {})) return { ok: false, reason: "SECRET_REFERENCE_FORBIDDEN:step " + s.id };   // a credential-named argument may not be fed from a parameter or earlier step: the engine never carries credentials
       if ((s.retries ?? 0) > 0 && act(s.action).idempotent !== true) return { ok: false, reason: "RETRIES_NOT_ALLOWED_FOR_NON_IDEMPOTENT:" + s.id };       // an automatic retry could repeat a side effect
       for (const r of refs(s.args ?? {})) {
         if (r.kind === "p" && !Object.hasOwn(pc.params, r.path)) return { ok: false, reason: "UNKNOWN_PARAMETER:" + r.path };
@@ -66,12 +70,13 @@ export function createWorkflowEngine({ file = null, actions = {}, now = () => ne
     if (schedule !== null && !(schedule && Number.isInteger(schedule.everyMinutes) && schedule.everyMinutes >= 5 && schedule.everyMinutes <= 10080 && schedule.params && typeof schedule.params === "object" && !Array.isArray(schedule.params))) return { ok: false, reason: "SCHEDULE_INVALID" };
     if (schedule !== null) { if (hasSecret(schedule.params)) return { ok: false, reason: "SECRET_IN_INPUT:schedule" }; const sb = bindParams({ params: pc.params }, schedule.params); if (!sb.ok) return { ok: false, reason: "SCHEDULE_PARAMS_INVALID:" + sb.reason }; }       // a schedule that could never start is refused when it is saved
     const key = tenantId + ":" + id, prev = d.templates[key];
-    if (!prev && Object.keys(d.templates).length >= L.maxTemplates) return { ok: false, reason: "TOO_MANY_TEMPLATES" };
+    if (!prev && Object.values(d.templates).filter(x => x.tenantId === tenantId).length >= L.maxTemplates) return { ok: false, reason: "TOO_MANY_TEMPLATES" };
     const t = { tenantId, id, name: redactStr(name).slice(0, 120), version: (prev?.version ?? 0) + 1, params: pc.params, steps: clone(steps.map(s => ({ id: s.id, action: s.action, args: s.args ?? {}, onError: s.onError ?? "stop", retries: s.retries ?? 0 }))), schedule: schedule ? { everyMinutes: schedule.everyMinutes, params: clone(schedule.params), lastRunAt: prev?.schedule?.lastRunAt ?? null } : null, updatedAt: now() };
     d.templates[key] = t; save(); return { ok: true, id, version: t.version };
   }
   const listTemplates = ({ tenantId } = {}) => Object.values(d.templates).filter(t => t.tenantId === tenantId).map(t => ({ id: t.id, name: t.name, version: t.version, steps: t.steps.length, params: Object.keys(t.params), scheduled: Boolean(t.schedule) }));
-  const getTemplate = (id, { tenantId } = {}) => { const t = d.templates[tenantId + ":" + id]; return t ? { ok: true, template: clone(t) } : { ok: false, reason: "NOT_FOUND" }; };
+  const tpl = (tenantId, id) => { const k = typeof tenantId === "string" && typeof id === "string" ? tenantId + ":" + id : null, t = k && Object.hasOwn(d.templates, k) ? d.templates[k] : null; return t && t.tenantId === tenantId && t.id === id ? t : null; };   // the stored owner and id must match exactly: a ":" inside a tenant or template id can never reach another tenant
+  const getTemplate = (id, { tenantId } = {}) => { const t = tpl(tenantId, id); return t ? { ok: true, template: clone(t) } : { ok: false, reason: "NOT_FOUND" }; };
 
   // ---------------- instances
   const inst = (id, tenantId) => { const i = typeof id === "string" && Object.hasOwn(d.instances, id) ? d.instances[id] : null; return i && i.tenantId === tenantId ? i : null; };
@@ -90,13 +95,14 @@ export function createWorkflowEngine({ file = null, actions = {}, now = () => ne
     return { ok: true, params: out };
   }
   function start({ tenantId, templateId, params } = {}) {
-    const t = d.templates[tenantId + ":" + templateId]; if (!t) return { ok: false, reason: "TEMPLATE_NOT_FOUND" };
+    const t = tpl(tenantId, templateId); if (!t) return { ok: false, reason: "TEMPLATE_NOT_FOUND" };
     const b = bindParams(t, params); if (!b.ok) return b;
-    if (Object.keys(d.instances).length >= L.maxInstances) {                                     // make room by archiving the oldest FINISHED instances that no batch item points at; unfinished work is never dropped
+    const mine = () => Object.values(d.instances).filter(x => x.tenantId === tenantId);          // caps and archiving are per tenant: one tenant can neither fill the engine nor evict another tenant's history
+    if (mine().length >= L.maxInstances) {                                     // make room by archiving the oldest FINISHED instances that no batch item points at; unfinished work is never dropped
       const used = new Set(Object.values(d.batches).flatMap(b => (b.items ?? []).map(x => x.instanceId)));
-      const old = Object.values(d.instances).filter(x => ["DONE", "DONE_WITH_ERRORS", "CANCELLED", "FAILED"].includes(x.status) && !used.has(x.id) && !running.has(x.id)).sort((a, b) => (a.updatedAt < b.updatedAt ? -1 : 1));
+      const old = mine().filter(x => ["DONE", "DONE_WITH_ERRORS", "CANCELLED", "FAILED"].includes(x.status) && !used.has(x.id) && !running.has(x.id)).sort((a, b) => (a.updatedAt < b.updatedAt ? -1 : 1));
       for (const x of old.slice(0, Math.max(1, Math.ceil(L.maxInstances / 10)))) delete d.instances[x.id];
-      if (Object.keys(d.instances).length >= L.maxInstances) return { ok: false, reason: "TOO_MANY_INSTANCES" };
+      if (mine().length >= L.maxInstances) return { ok: false, reason: "TOO_MANY_INSTANCES" };
     }
     const i = { id: rid("wf_"), tenantId, templateId, templateVersion: t.version, params: b.params, status: "PENDING", reason: null, createdAt: now(), updatedAt: now(), checkpoints: 0,
       steps: t.steps.map(s => ({ id: s.id, action: s.action, args: clone(s.args), onError: s.onError, retries: s.retries, status: "PENDING", attempts: 0, output: null, error: null, startedAt: null, finishedAt: null })) };
@@ -189,7 +195,7 @@ export function createWorkflowEngine({ file = null, actions = {}, now = () => ne
     }
     if (n) save(); return n;
   }
-  const shapeOk = () => Object.values(d.instances).every(i => i && typeof i === "object" && typeof i.id === "string" && Array.isArray(i.steps) && i.steps.every(s => s && typeof s === "object" && typeof s.id === "string" && typeof s.status === "string") && typeof i.status === "string")
+  const shapeOk = () => Object.values(d.templates).every(t => t && typeof t === "object" && typeof t.tenantId === "string" && typeof t.id === "string" && Array.isArray(t.steps) && t.steps.every(s => s && typeof s === "object" && typeof s.id === "string" && typeof s.action === "string")) && Object.values(d.instances).every(i => i && typeof i === "object" && typeof i.id === "string" && Array.isArray(i.steps) && i.steps.every(s => s && typeof s === "object" && typeof s.id === "string" && typeof s.status === "string") && typeof i.status === "string")
     && Object.values(d.batches).every(b => b && typeof b === "object" && Array.isArray(b.items) && b.items.every(x => x && typeof x === "object" && typeof x.status === "string")) && Object.values(d.templates).every(t => t && typeof t === "object" && Array.isArray(t.steps));
   if (!shapeOk()) throw new Error("STORE_UNREADABLE:workflow");                                 // a malformed file is refused as a whole and never rewritten
   const recovered = recover();
@@ -202,7 +208,7 @@ export function createWorkflowEngine({ file = null, actions = {}, now = () => ne
     const undo = i.steps.slice(at + 1).filter(s => s.status !== "PENDING");
     for (const s of undo) { if (act(s.action)?.rewindable !== true) return { ok: false, reason: "REWIND_BLOCKED:" + s.id }; }
     if (!undo.length) return { ok: true, reset: [] };                                          // nothing to undo: nothing changes
-    for (const s of undo) { s.status = "PENDING"; s.output = null; s.error = null; s.attempts = 0; s.startedAt = null; s.finishedAt = null; }
+    for (const s of undo) { s.status = "PENDING"; s.output = null; s.resolvedArgs = undefined; s.error = null; s.attempts = 0; s.startedAt = null; s.finishedAt = null; }
     touch(i, "PAUSED", "REWOUND_TO:" + (toStepId ?? "START")); return { ok: true, reset: undo.map(s => s.id) };
   }
   const pubInst = i => { const { tenantId: _t, ...x } = i; return clone(x); };
@@ -211,10 +217,10 @@ export function createWorkflowEngine({ file = null, actions = {}, now = () => ne
 
   // ---------------- batches (P11)
   function createBatch({ tenantId, templateId, items, ratePerMinute = 30 } = {}) {
-    const t = d.templates[tenantId + ":" + templateId]; if (!t) return { ok: false, reason: "TEMPLATE_NOT_FOUND" };
+    const t = tpl(tenantId, templateId); if (!t) return { ok: false, reason: "TEMPLATE_NOT_FOUND" };
     if (!Array.isArray(items) || !items.length || items.length > L.maxBatchItems) return { ok: false, reason: "ITEMS_INVALID" };
     if (!(Number.isInteger(ratePerMinute) && ratePerMinute >= 1 && ratePerMinute <= 600)) return { ok: false, reason: "RATE_INVALID" };
-    if (Object.keys(d.batches).length >= L.maxBatches) return { ok: false, reason: "TOO_MANY_BATCHES" };
+    if (Object.values(d.batches).filter(x => x.tenantId === tenantId).length >= L.maxBatches) return { ok: false, reason: "TOO_MANY_BATCHES" };
     const bound = []; for (const [k, it] of items.entries()) { const b = bindParams(t, it); if (!b.ok) return { ok: false, reason: `ITEM_${k}_${b.reason}` }; bound.push(b.params); }   // validate ALL items before anything starts
     const b = { id: rid("bt_"), tenantId, templateId, ratePerMinute, status: "PENDING", createdAt: now(), items: bound.map((params, index) => ({ index, params, status: "PENDING", instanceId: null, error: null })) };
     d.batches[b.id] = b; save(); return { ok: true, id: b.id, items: b.items.length };
@@ -266,7 +272,7 @@ export function createWorkflowEngine({ file = null, actions = {}, now = () => ne
     for (const tid of due({ tenantId })) {
       if (stoppedNow()) break;                                                                    // checked before EVERY start: while stopped nothing starts and no period is consumed
       if (!due({ tenantId }).includes(tid)) continue;                                             // another tick (concurrent caller) already took this period
-      const t = d.templates[tenantId + ":" + tid];
+      const t = tpl(tenantId, tid);
       const s = start({ tenantId, templateId: tid, params: t.schedule.params }); if (s.ok) { t.schedule.lastRunAt = now(); save(); }
       out.push({ templateId: tid, started: s.ok, ...(s.ok ? { instanceId: s.id, result: (await execute(s.id, { tenantId })).status } : { reason: s.reason }) });
     }

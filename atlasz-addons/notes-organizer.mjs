@@ -34,9 +34,9 @@ export function createNotesOrganizer({ file = null, now = () => new Date().toISO
   function base(kind, tenantId, tags, title) {
     if (!tenantId || typeof tenantId !== "string") return { ok: false, reason: "TENANT_REQUIRED" };
     if (typeof title !== "string" || !title.trim()) return { ok: false, reason: "TITLE_REQUIRED" };
-    if (count() >= LIMITS.maxItems) return { ok: false, reason: "TOO_MANY_ITEMS" };
+    if (tenantItems(tenantId).length >= LIMITS.maxItems) return { ok: false, reason: "TOO_MANY_ITEMS" };
     const t = normTags(tags ?? []); if (!t.ok) return t;
-    return { ok: true, item: { id: rid(kind[0] + "_"), kind, tenantId, title: redact(title).trim().slice(0, LIMITS.maxTitle), tags: t.tags, createdAt: now(), updatedAt: now() } };
+    return { ok: true, item: { id: rid(kind[0] + "_"), kind, tenantId, title: redact(title).replace(/\s+/g, " ").trim().slice(0, LIMITS.maxTitle), tags: t.tags, createdAt: now(), updatedAt: now() } };
   }
   function addNote({ tenantId, title, text = "", tags = [] } = {}) {
     const b = base("note", tenantId, tags, title); if (!b.ok) return b;

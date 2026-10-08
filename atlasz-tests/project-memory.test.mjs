@@ -121,7 +121,7 @@ test("verification fixes: tail truncation is caught by the head anchor; a forged
     const f2 = path.join(d, "pm2.json"), m2 = mk(f2), p2 = m2.createProject({ tenantId: "T", name: "Q" }).project, x = m2.propose(p2.id, { tenantId: "T", actor: "EXECUTION-2", title: "t", decision: "d" }).id;
     const raw2 = JSON.parse(fs.readFileSync(f2, "utf8")); const last = raw2.log.at(-1);
     const { createHash } = await_free_import(); const e = { seq: last.seq + 1, at: last.at, type: "ADOPT", projectId: p2.id, decisionId: x, actor: "EXECUTION-2", prev: last.hash }; e.hash = createHash("sha256").update(JSON.stringify({ ...e, hash: undefined })).digest("hex");
-    raw2.log.push(e); fs.writeFileSync(f2, JSON.stringify(raw2)); fs.rmSync(f2 + ".head", { force: true });
+    raw2.log.push(e); fs.writeFileSync(f2, JSON.stringify(raw2)); fs.writeFileSync(f2 + ".head", JSON.stringify({ seq: e.seq, hash: e.hash }));   // an attacker who can rewrite BOTH files (so the anchor matches): only the actor rule is left
     const r2 = mk(f2); assert.equal(r2.verify().ok, true, "the forged line is chain-valid, so only the actor rule can stop it"); assert.equal(r2.decisions(p2.id, { tenantId: "T" }).decisions.find(y => y.id === x).status, "PROPOSED", "forged adopt ignored");
   } finally { rm(d); }
 });
@@ -147,5 +147,17 @@ test("verification fixes: a fully re-hashed rewrite is still caught (seq continu
     fs.writeFileSync(f, JSON.stringify(raw)); fs.rmSync(f + ".head", { force: true });
     const b = structuredClone(raw); b.log.splice(1, 1); { let prev = genesis; for (const e of b.log) { e.prev = prev; e.hash = createHashSync("sha256").update(JSON.stringify({ ...e, hash: undefined })).digest("hex"); prev = e.hash; } }
     fs.writeFileSync(f, JSON.stringify(b)); assert.equal(mk(f).verify().ok, false, "seq gap detected without any head file");
+  } finally { rm(d); }
+});
+test("verification fixes: an appended-only forged entry, a deleted anchor and a null log row all fail closed", () => {
+  const d = tmp("pm11-"), f = path.join(d, "pm.json");
+  try {
+    const m = mk(f), p = m.createProject({ tenantId: "T", name: "P" }).project, x = m.propose(p.id, { tenantId: "T", actor: "EXECUTION-3", title: "t", decision: "d" }).id;
+    const raw = JSON.parse(fs.readFileSync(f, "utf8")), last = raw.log.at(-1), e = { seq: last.seq + 1, at: last.at, type: "ADOPT", projectId: p.id, decisionId: x, actor: "OWNER", prev: last.hash };
+    e.hash = createHashSync("sha256").update(JSON.stringify({ ...e, hash: undefined })).digest("hex"); raw.log.push(e); fs.writeFileSync(f, JSON.stringify(raw));   // .head untouched
+    const r = mk(f); assert.deepEqual([r.verify().ok, r.verify().reason], [false, "HEAD_ANCHOR_MISMATCH"]); assert.equal(r.contextFor(p.id, { tenantId: "T" }).reason, "CHAIN_BROKEN");
+    // deleting the anchor does not re-enable truncation
+    fs.writeFileSync(f, JSON.stringify({ ...raw, log: raw.log.slice(0, -1) })); const keep = fs.readFileSync(f + ".head", "utf8"); fs.rmSync(f + ".head"); assert.equal(mk(f).verify().reason, "HEAD_ANCHOR_MISSING"); fs.writeFileSync(f + ".head", keep);
+    fs.writeFileSync(f, JSON.stringify({ ...raw, log: [null] })); assert.equal(mk(f).verify().ok, false);
   } finally { rm(d); }
 });

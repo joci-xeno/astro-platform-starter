@@ -41,7 +41,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
     return { ok: true, events: S.events.length };
   }
   const who = w => ({ tenantId: w?.tenantId, role: w?.role ?? "OWNER", forAgent: Boolean(w?.forAgent) });
-  const byOf = (w, by) => by ?? (who(w).forAgent ? "AGENT" : "OWNER");
+  const byOf = (w, by) => (who(w).forAgent ? "AGENT" : (typeof by === "string" && by ? by : "OWNER"));   // an agent can never name itself OWNER (or anyone else)
   function access(projectId, w) {                                   // the caller must be allowed to use the project (tenant + role), else it does not exist for them
     if (!w?.tenantId) throw new Error("TENANT_REQUIRED");
     if (!knowledge.list({ tenantId: w.tenantId, role: who(w).role }).some(p => p.id === projectId)) throw new Error("PROJECT_NOT_PERMITTED");

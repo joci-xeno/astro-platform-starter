@@ -270,3 +270,33 @@ test("instance cap: archiving never deletes instances a batch still points at", 
   const item = e.getBatch(b.id, T).batch.items[0].instanceId; assert.ok(item && e.getInstance(item, T).ok);
   assert.equal(e.start({ ...T, templateId: "w" }).reason, "TOO_MANY_INSTANCES"); assert.ok(e.getInstance(item, T).ok, "batch-referenced instance survived");
 });
+
+test("verification fixes: a ':' in a tenant id never reaches another tenant's template; credential-named fields are redacted and refused; caps are per tenant; malformed template steps fail closed; rewind clears resolved args", async () => {
+  const e = createWorkflowEngine({ actions: mkActions() });
+  assert.equal(e.saveTemplate({ tenantId: "acme:prod", id: "secret", name: "s", params: {}, steps: [{ id: "a", action: "count", args: { value: 1 } }] }).ok, true);
+  assert.equal(e.getTemplate("prod:secret", { tenantId: "acme" }).ok, false); assert.equal(e.start({ tenantId: "acme", templateId: "prod:secret" }).reason, "TEMPLATE_NOT_FOUND"); assert.equal(e.getTemplate("secret", { tenantId: "acme:prod" }).ok, true);
+  // credential-NAMED fields: refused on the way in (inputs/args), redacted if an action returns them
+  assert.match(e.saveTemplate({ ...T, id: "bad", name: "b", params: {}, steps: [{ id: "a", action: "count", args: { password: "hunter2hunter2" } }] }).reason, /^SECRET_IN_INPUT/);
+  assert.match(e.saveTemplate({ ...T, id: "ref", name: "r", params: { pw: { type: "string", required: true } }, steps: [{ id: "a", action: "count", args: { password: "{{p.pw}}" } }] }).reason, /^SECRET_REFERENCE_FORBIDDEN/, "credentials are never fed through parameters");
+  assert.equal(e.saveTemplate({ ...T, id: "ok", name: "o", params: { pw: { type: "string", required: true } }, steps: [{ id: "a", action: "count", args: { value: "{{p.pw}}" } }] }).ok, true, "ordinary placeholders are fine");
+  const e2 = createWorkflowEngine({ actions: { leak: { run: async () => ({ nested: { password: "hunter2hunter2" }, ["s" + "k-abcdefghijklmnopqrstuvwx"]: 1 }) } } });
+  e2.saveTemplate({ ...T, id: "l", name: "l", params: {}, steps: [{ id: "a", action: "leak" }] }); const x = e2.start({ ...T, templateId: "l" }); await e2.execute(x.id, T); const out = JSON.stringify(e2.getInstance(x.id, T)); assert.ok(!out.includes("hunter2hunter2") && !out.includes("abcdefghijklmnopqrstuvwx"), out);
+  // per-tenant caps
+  const c = createWorkflowEngine({ actions: mkActions(), limits: { ...LIMITS, maxInstances: 2, maxTemplates: 1 } });
+  for (const tn of ["A", "B"]) c.saveTemplate({ tenantId: tn, id: "t", name: "t", params: {}, steps: [{ id: "a", action: "count", args: { value: 1 } }] });
+  const b1 = c.start({ tenantId: "B", templateId: "t" }); await c.execute(b1.id, { tenantId: "B" });
+  for (let i = 0; i < 4; i++) { const a = c.start({ tenantId: "A", templateId: "t" }); if (a.ok) await c.execute(a.id, { tenantId: "A" }); }
+  assert.equal(c.getInstance(b1.id, { tenantId: "B" }).ok, true, "tenant A's activity did not evict tenant B's history");
+  const p1 = c.start({ tenantId: "A", templateId: "t" }), p2 = c.start({ tenantId: "A", templateId: "t" }); assert.equal(p2.ok || p1.ok, true); assert.equal(c.start({ tenantId: "B", templateId: "t" }).ok, true, "B can still start while A is full");
+  // malformed template steps in the file are refused as a whole
+  const d = tmp("wfs-"); try { const f = path.join(d, "w.json"); fs.writeFileSync(f, JSON.stringify({ templates: { "A:t": { tenantId: "A", id: "t", steps: [1] } }, instances: {}, batches: {} })); assert.throws(() => createWorkflowEngine({ file: f, actions: mkActions() }), /STORE_UNREADABLE/); } finally { rm(d); }
+  // rewind clears resolved args
+  const w = createWorkflowEngine({ actions: mkActions() }); w.saveTemplate({ ...T, id: "rw", name: "r", params: { v: { type: "string", default: "v" } }, steps: [{ id: "a", action: "count", args: { value: 1 } }, { id: "b", action: "upper", args: { text: "{{p.v}}" } }] });
+  const rw = w.start({ ...T, templateId: "rw" }); await w.execute(rw.id, T); const rr = w.rewind(rw.id, "a", T); assert.equal(rr.ok, true, JSON.stringify(rr)); assert.equal(w.getInstance(rw.id, T).instance.steps[1].resolvedArgs, undefined);
+});
+
+test("verification fix: the batch cap is per tenant", () => {
+  const e = createWorkflowEngine({ actions: mkActions(), limits: { ...LIMITS, maxBatches: 1 } });
+  for (const tn of ["A", "B"]) e.saveTemplate({ tenantId: tn, id: "t", name: "t", params: {}, steps: [{ id: "a", action: "count", args: { value: 1 } }] });
+  assert.equal(e.createBatch({ tenantId: "A", templateId: "t", items: [{}] }).ok, true); assert.equal(e.createBatch({ tenantId: "A", templateId: "t", items: [{}] }).reason, "TOO_MANY_BATCHES"); assert.equal(e.createBatch({ tenantId: "B", templateId: "t", items: [{}] }).ok, true);
+});

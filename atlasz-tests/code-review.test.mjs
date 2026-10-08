@@ -83,3 +83,10 @@ test("hardening: a secret straddling a scan-window boundary is still found; a ba
   for (const pad of [1980, 1990, 1995]) { const line = "a".repeat(pad - 3) + ' "' + SK2 + '" ' + "b".repeat(2200); const r = reviewCode({ files: [{ path: "m.js", content: line }] }); assert.ok(r.findings.some(f => f.rule === "SECRET_LITERAL"), "pad " + pad); }
   const u = reviewCode({ files: [{ path: "src/pay.mjs", content: "export const pay = 1;\n" }, { path: "tests/x.test.mjs", content: "import { a } from '../src/my_pay.mjs';\n" }] }); assert.deepEqual(u.tests.untested, ["src/pay.mjs"]);
 });
+
+test("verification fixes: test-coverage matching is linear (no ReDoS); a flood of LOW findings cannot push a HIGH one out of the returned list", () => {
+  const t0 = Date.now(); const r = reviewCode({ files: [{ path: "x.js", content: "1" }, { path: "a.test.js", content: "import ".repeat(28000) }] }); assert.equal(r.ok, true); assert.ok(Date.now() - t0 < 1500, "took " + (Date.now() - t0) + " ms");
+  const big = "debugger;\n".repeat(20000), f = reviewCode({ files: [{ path: "a.js", content: big }, { path: "b.js", content: big }, { path: "c.js", content: "eval(x)" }] });
+  assert.equal(f.verdict, "BLOCK"); assert.ok(f.findings.some(x => x.severity === "HIGH"), "the HIGH finding is in the returned list"); assert.equal(f.truncated, true);
+  const covered = reviewCode({ files: [{ path: "src/pay.js", content: "x" }, { path: "tests/pay.test.js", content: "import { pay } from '../src/pay.js';\n" + "z".repeat(5000) }] }); assert.deepEqual(covered.tests.untested, [], "a normal import line is still recognised");
+});

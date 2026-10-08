@@ -11,6 +11,8 @@
 import crypto from "node:crypto";
 import { createStore, clone } from "./business/store.mjs";
 import { createWorkflowEngine } from "./workflow-engine.mjs";
+import { scrub } from "./secret-patterns.mjs";
+const looksSecret = v => { try { const t = JSON.stringify(v) ?? ""; return scrub(t, "[r]") !== t; } catch { return true; } };
 import { AGENT_ID_RE } from "./agent-tool-policy.mjs";
 
 export const LIMITS = Object.freeze({ maxSkills: 200, maxVersions: 20, maxTests: 20, maxTestSteps: 50, maxText: 2000, testTimeoutMs: 5000 });
@@ -65,13 +67,13 @@ export function createSkillRegistry({ file = null, actions = {}, isStopped = () 
     if (!(submittedBy === "OWNER" || submittedBy === "SYSTEM" || AGENT_ID_RE.test(submittedBy))) return { ok: false, reason: "SUBMITTER_INVALID" };
     if (!Array.isArray(tests) || !tests.length || tests.length > LIMITS.maxTests) return { ok: false, reason: "TESTS_INVALID" };
     const c = checkDefinition({ params, steps, permissions }); if (!c.ok) return c;
+    if (looksSecret({ name, description, params, steps, permissions, tests })) return { ok: false, reason: "SECRET_IN_INPUT" };   // the whole submission, tests and descriptions included, is stored and shown back
     let s = rec(tenantId, id);
     if (!s) { if (Object.keys(d.skills).length >= LIMITS.maxSkills) return { ok: false, reason: "TOO_MANY_SKILLS" }; s = d.skills[key(tenantId, id)] = { tenantId, id, name: name.trim(), description, versions: [], active: null, createdAt: now() }; }
     if (s.versions.length >= LIMITS.maxVersions) return { ok: false, reason: "TOO_MANY_VERSIONS" };
     const def = clone({ params: params ?? {}, steps, permissions, tests }), hash = hashOf(def);
     if (s.versions.some(v => v.hash === hash)) return { ok: false, reason: "IDENTICAL_VERSION_EXISTS" };
-    s.name = name.trim(); s.description = description;
-    const v = { id, version: (s.versions.at(-1)?.version ?? 0) + 1, hash, definition: def, status: "SUBMITTED", submittedBy, submittedAt: now(), gate: null, history: [{ at: now(), status: "SUBMITTED", by: submittedBy }] };
+    const v = { meta: { name: name.trim(), description }, id, version: (s.versions.at(-1)?.version ?? 0) + 1, hash, definition: def, status: "SUBMITTED", submittedBy, submittedAt: now(), gate: null, history: [{ at: now(), status: "SUBMITTED", by: submittedBy }] };
     s.versions.push(v); store.save(); return { ok: true, id, version: v.version, hash, status: v.status };
   }
 
@@ -103,7 +105,7 @@ export function createSkillRegistry({ file = null, actions = {}, isStopped = () 
         else {
           const r = await Promise.race([e.execute(st.id, { tenantId: T }), new Promise(res => setTimeout(() => res({ status: "TIMEOUT" }), LIMITS.testTimeoutMs))]);
           const inst = e.getInstance(st.id, { tenantId: T }).instance, want = t.expect ?? {};
-          if (t.negative === true) { passed = r.status !== "DONE" && (want.status === undefined || r.status === want.status); why = passed ? "" : "NEGATIVE_TEST_DID_NOT_FAIL:" + r.status; }
+          if (t.negative === true) { passed = r.status !== "DONE" && want.refused === undefined && (want.status === undefined || r.status === want.status); why = passed ? "" : "NEGATIVE_TEST_DID_NOT_FAIL:" + r.status; }
           else { const outputs = Object.fromEntries(inst.steps.map(s2 => [s2.id, s2.output])); passed = r.status === (want.status ?? "DONE") && subset(want.outputs ?? {}, outputs) && (want.outputs !== undefined || want.status !== undefined); why = passed ? "" : (want.outputs === undefined && want.status === undefined ? "EXPECTATION_REQUIRED" : "EXPECTATION_NOT_MET:" + r.status); }
         }
       } catch (err) { why = "THREW:" + String(err.message).slice(0, 80); }
@@ -124,6 +126,7 @@ export function createSkillRegistry({ file = null, actions = {}, isStopped = () 
     if (s.active === version) return { ok: false, reason: "ALREADY_ACTIVE" };
     const need = approved(verb, tenantId, id, version, ownerApproval); if (need) return need;
     const prev = s.versions.find(x => x.version === s.active); if (prev) { prev.status = "SUPERSEDED"; prev.history.push({ at: now(), status: "SUPERSEDED", by: actor }); }
+    if (v.meta) { s.name = v.meta.name; s.description = v.meta.description; }                  // name and description change only when the OWNER activates the version that carries them
     s.active = version; v.status = "ACTIVE"; v.history.push({ at: now(), status: "ACTIVE", by: actor }); store.save(); return { ok: true, active: version };
   }
   const activate = (tenantId, id, version, { actor, ownerApproval = null } = {}) => switchTo(tenantId, id, version, actor, "ACTIVATE", ownerApproval);

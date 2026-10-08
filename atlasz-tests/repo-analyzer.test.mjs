@@ -25,9 +25,9 @@ test("analyzeRepo: inventory, languages, tests, package scripts (secrets redacte
     const a = analyzeRepo(r.root);
     assert.deepEqual([a.ok, a.untrusted, a.files, a.capped], [true, true, 5, false]); assert.deepEqual(a.languages, { JSON: 1, JavaScript: 3, Markdown: 1 }); assert.deepEqual(a.testFiles, ["tests/pay.test.mjs"]);
     assert.deepEqual([a.package.name, a.package.version, a.package.dependencies, a.package.devDependencies], ["demo", "1.2.3", 1, 2]); assert.ok(!JSON.stringify(a).includes("ABCDEFGHIJKLMNOPQRSTUV")); assert.match(a.package.scripts.deploy, /\[redacted\]/);
-    assert.equal(a.review.verdict, "BLOCK"); assert.deepEqual(a.review.findings.map(f => f.rule).sort(), ["DYNAMIC_EVAL", "SECRET_LITERAL"]); assert.deepEqual(a.review.untested, ["src/ship.mjs"]); assert.match(a.hash, /^[0-9a-f]{64}$/);
+    assert.equal(a.review.verdict, "BLOCK"); assert.deepEqual(a.review.findings.map(f => f.rule).sort(), ["DYNAMIC_EVAL", "SECRET_LITERAL", "SECRET_LITERAL"], "pay.mjs and the package.json script"); assert.deepEqual(a.review.untested, ["src/ship.mjs"]); assert.match(a.hash, /^[0-9a-f]{64}$/);
     assert.equal(fs.readdirSync(r.root, { recursive: true }).sort().join(), before, "analysis changed nothing");
-    r.put("src/pay.mjs", "export const pay = 2;\n"); assert.notEqual(analyzeRepo(r.root).hash, a.hash, "content changes change the hash");
+    r.put("src/pay.mjs", "export const pay = 2;\n"); assert.notEqual(analyzeRepo(r.root).hash, a.hash, "content changes change the hash"); r.put("package.json", JSON.stringify({ name: "demo" }));
     assert.equal(analyzeRepo(r.root).review.verdict, "NO_FINDINGS_BY_THESE_RULES");
   } finally { r.done(); }
 });
@@ -36,7 +36,7 @@ test("walk rules: symlinks, hidden files, node_modules/.git, oversize files and 
   try {
     fs.symlinkSync("/etc/passwd", path.join(r.root, "link.txt")); fs.symlinkSync("/etc", path.join(r.root, "linkdir"));
     const w = walkRepo(r.root); assert.deepEqual(w.files.map(f => f.rel).sort(), [".gitignore", "README.md", "package.json", "src/pay.mjs", "src/ship.mjs", "tests/pay.test.mjs"]);
-    assert.deepEqual(w.skipped, { symlinks: 2, special: 0, oversize: 1, dirs: 1, hidden: 1, vcs: 1 });
+    assert.deepEqual(w.skipped, { symlinks: 2, special: 0, oversize: 1, dirs: 1, hidden: 1, vcs: 1, unreadable: 0 });
     assert.ok(!analyzeRepo(r.root).review.findings.some(f => f.file.startsWith("node_modules")), "dependencies are not reviewed");
     assert.equal(analyzeRepo(path.join(r.base, "nope")).reason, "REPO_NOT_FOUND"); assert.equal(analyzeRepo(path.join(r.root, "README.md")).reason, "REPO_MUST_BE_A_REAL_DIRECTORY");
     fs.symlinkSync(r.root, path.join(r.base, "lnk")); assert.equal(analyzeRepo(path.join(r.base, "lnk")).reason, "REPO_MUST_BE_A_REAL_DIRECTORY", "a symlinked root is refused");
@@ -100,7 +100,7 @@ test("walk and review caps: hidden dirs, special files, total bytes, depth bound
   const dp = (n) => { const x = mkRepo(); const d = path.join(x.root, ...Array(n).fill("d")); fs.mkdirSync(d, { recursive: true }); fs.writeFileSync(path.join(d, "x.js"), "1"); return x; };
   const ok = dp(LIMITS.maxDepth); try { const w = walkRepo(ok.root); assert.equal(w.capped, false); assert.ok(w.files.some(f => f.rel.endsWith("x.js"))); } finally { ok.done(); }
   const over = dp(LIMITS.maxDepth + 1); try { assert.equal(walkRepo(over.root).capped, true); } finally { over.done(); }
-  const rf = mkRepo(); try { fs.rmSync(path.join(rf.root, "src"), { recursive: true }); fs.rmSync(path.join(rf.root, "tests"), { recursive: true }); fs.mkdirSync(path.join(rf.root, "src")); for (let i = 0; i < LIMITS.reviewFiles + 5; i++) fs.writeFileSync(path.join(rf.root, "src", "f" + String(i).padStart(3, "0") + ".js"), "1\n"); assert.equal(analyzeRepo(rf.root).sourceLinesReviewed, LIMITS.reviewFiles * 2); } finally { rf.done(); }
+  const rf = mkRepo(); try { fs.rmSync(path.join(rf.root, "src"), { recursive: true }); fs.rmSync(path.join(rf.root, "tests"), { recursive: true }); fs.mkdirSync(path.join(rf.root, "src")); for (let i = 0; i < LIMITS.reviewFiles + 5; i++) fs.writeFileSync(path.join(rf.root, "src", "f" + String(i).padStart(3, "0") + ".js"), "1\n"); { const af = analyzeRepo(rf.root); assert.equal(af.review.coverage.reviewed, LIMITS.reviewFiles); assert.ok(af.review.coverage.notReviewed.pastFileLimit > 0); } } finally { rf.done(); }
   const ff = mkRepo(); try { for (let i = 0; i < 150; i++) fs.writeFileSync(path.join(ff.root, "src", "e" + i + ".js"), "eval(x)\n"); assert.equal(analyzeRepo(ff.root).review.findings.length, 100); } finally { ff.done(); }
   const tf = mkRepo(); const scr = tmp("scr-"); try { for (let i = 0; i < 25; i++) fs.writeFileSync(path.join(tf.root, "tests", "t" + String(i).padStart(2, "0") + ".test.mjs"), "process.exit(0);\n"); const a = analyzeRepo(tf.root); assert.equal(a.testFiles.length, 26);
     if (ISOLATED) { const res = await runRepoTests({ name: "many", root: tf.root, ownerAuth: auth, ownerApproval: ap("REPO_TEST_RUN", "many#" + a.hash), scratchRoot: scr }); assert.equal(res.ran, LIMITS.maxTestFiles); } } finally { tf.done(); rm(scr); }
@@ -109,7 +109,7 @@ test("hardening: unreviewed files never yield NO_FINDINGS; test runs are refused
   const r = mkRepo({ "src/big.mjs": "const a = 1;\n".repeat(20000) + "eval(x)\n", "src/bin.mjs": "ok\0binary", "src/one.mjs": "export const one = 1;\n" });
   try {
     const a = analyzeRepo(r.root); assert.equal(a.review.coverage.notReviewed.oversize, 1); assert.equal(a.review.coverage.notReviewed.binary, 1);
-    r.put("src/pay.mjs", "export const pay = 2;\n"); const b = analyzeRepo(r.root); assert.equal(b.review.verdict, "INCOMPLETE_REVIEW", "a clean-looking result is not reported when files were skipped");
+    r.put("src/pay.mjs", "export const pay = 2;\n"); const b = analyzeRepo(r.root); assert.notEqual(b.review.verdict, "NO_FINDINGS_BY_THESE_RULES", "a clean-looking result is not reported when files were skipped");
     // oversize file on disk (over the 1 MB walk cap) is counted and also blocks a test run
     r.put("src/huge.mjs", "x".repeat(LIMITS.maxFileBytes + 5)); assert.equal(analyzeRepo(r.root).skipped.oversize, 1);
     const run = await runRepoTests({ name: "demo", root: r.root, ownerAuth: auth, ownerApproval: ap("REPO_TEST_RUN", "demo#" + analyzeRepo(r.root).hash), caps });
@@ -120,9 +120,9 @@ test("hardening: unreviewed files never yield NO_FINDINGS; test runs are refused
 });
 test("hardening: a lone oversize file alone makes the review INCOMPLETE; an unreviewable path never crashes the analysis", () => {
   const r = mkRepo({ "src/huge.mjs": "x".repeat(LIMITS.maxFileBytes + 5) });
-  try { r.put("src/pay.mjs", "export const pay = 2;\n"); const a = analyzeRepo(r.root); assert.equal(a.review.coverage.notReviewed.oversize, 0); assert.equal(a.skipped.oversize, 1); assert.equal(a.review.verdict, "INCOMPLETE_REVIEW"); } finally { r.done(); }
+  try { r.put("src/pay.mjs", "export const pay = 2;\n"); const a = analyzeRepo(r.root); assert.equal(a.review.coverage.notReviewed.oversize, 0); assert.equal(a.skipped.oversize, 1); assert.notEqual(a.review.verdict, "NO_FINDINGS_BY_THESE_RULES"); } finally { r.done(); }
   const q = mkRepo({ "src/we\\ird.mjs": "export const w = 1;\n" });
-  try { q.put("src/pay.mjs", "export const pay = 2;\n"); const a = analyzeRepo(q.root); assert.equal(a.ok, true); assert.equal(a.review.verdict, "INCOMPLETE_REVIEW"); assert.match(a.review.notes[0], /^REVIEW_FAILED:PATH_INVALID/); } finally { q.done(); }
+  try { q.put("src/pay.mjs", "export const pay = 2;\n"); q.put("package.json", JSON.stringify({ name: "demo" })); const a = analyzeRepo(q.root); assert.equal(a.ok, true); assert.equal(a.review.verdict, "INCOMPLETE_REVIEW"); assert.equal(a.review.coverage.notReviewed.badPath, 1, "the bad name is reported; the rest is still reviewed"); assert.ok(a.review.coverage.reviewed >= 1); } finally { q.done(); }
 });
 test("hardening: a sandboxed test cannot signal the host process (own PID namespace)", { skip: !ISOLATED && "restricted launcher not available on this host" }, async () => {
   const r = mkRepo({ "tests/kill.test.mjs": `import test from 'node:test'; import assert from 'node:assert/strict';
@@ -154,9 +154,30 @@ test("verification fixes M1/M2: content changed between approval and run is refu
 test("verification fix M7: an empty or non-source tree, or one with unread hidden/linked parts, is never reported as having no findings", () => {
   const base = tmp("empty-"); try {
     const e = path.join(base, "e"); fs.mkdirSync(e); assert.equal(analyzeRepo(e).review.verdict, "NOTHING_REVIEWED");
-    fs.writeFileSync(path.join(e, "README.md"), "# x"); assert.equal(analyzeRepo(e).review.verdict, "NOTHING_REVIEWED");
+    fs.writeFileSync(path.join(e, "logo.png"), "x"); assert.equal(analyzeRepo(e).review.verdict, "NOTHING_REVIEWED", "an inert image has nothing to review");
+    fs.writeFileSync(path.join(e, "data.xyz"), "x"); assert.equal(analyzeRepo(e).review.verdict, "INCOMPLETE_REVIEW", "an unknown file type is counted as unsupported"); assert.equal(analyzeRepo(e).review.coverage.notReviewed.unsupported, 1); fs.rmSync(path.join(e, "data.xyz"));
     fs.writeFileSync(path.join(e, "a.mjs"), "export const a = 1;\n"); assert.equal(analyzeRepo(e).review.verdict, "NO_FINDINGS_BY_THESE_RULES");
+    fs.writeFileSync(path.join(e, "config.json"), JSON.stringify({ token: "gh" + "p_" + "A".repeat(36) })); assert.equal(analyzeRepo(e).review.verdict, "BLOCK", "config files are scanned for credentials too"); fs.rmSync(path.join(e, "config.json"));
     fs.mkdirSync(path.join(e, ".secret")); fs.writeFileSync(path.join(e, ".secret", "evil.mjs"), "eval(x)"); assert.equal(analyzeRepo(e).review.verdict, "INCOMPLETE_REVIEW", "hidden folder");
     fs.rmSync(path.join(e, ".secret"), { recursive: true }); fs.symlinkSync("/etc", path.join(e, "lnk")); assert.equal(analyzeRepo(e).review.verdict, "INCOMPLETE_REVIEW", "symlink");
   } finally { rm(base); }
+});
+
+test("verification fixes: an unreadable folder is reported and makes the review incomplete; an unreadable file is a refusal, not an exception", () => {
+  const r = mkRepo(); r.put("src/ok.mjs", "export const a = 1;\n"); r.put("package.json", JSON.stringify({ name: "demo" })); r.put("src/pay.mjs", "export const pay = 2;\n");
+  const rd = fs.readdirSync, rf = fs.readFileSync; try {
+    const hidden = path.join(r.root, "tests");
+    fs.readdirSync = (d, o) => { if (String(d) === hidden) { const e = new Error("EACCES"); e.code = "EACCES"; throw e; } return rd(d, o); };
+    const a = analyzeRepo(r.root); assert.equal(a.ok, true); assert.equal(a.skipped.unreadable, 1); assert.equal(a.review.verdict, "INCOMPLETE_REVIEW", "a folder that could not be listed is not 'no findings'");
+    fs.readdirSync = rd;
+    const bad = path.join(r.root, "src", "ok.mjs"); fs.readFileSync = (p, ...x) => { if (String(p) === bad) { const e = new Error("EACCES"); e.code = "EACCES"; throw e; } return rf(p, ...x); };
+    assert.deepEqual([analyzeRepo(r.root).ok, analyzeRepo(r.root).reason], [false, "FILE_UNREADABLE"]);
+  } finally { fs.readdirSync = rd; fs.readFileSync = rf; r.done(); }
+});
+
+test("verification fix: credential-shaped file names and package fields are redacted in every output field", () => {
+  const SKN = "s" + "k-" + "A".repeat(30), r = mkRepo(); try {
+    r.put("src/" + SKN + ".mjs", "eval(x)"); r.put("package.json", JSON.stringify({ name: "gh" + "p_" + "A".repeat(36), version: "1.0.0" }));
+    const a = analyzeRepo(r.root); assert.equal(a.ok, true); assert.ok(!JSON.stringify(a).includes("AAAAAAAAAAAAAAAAAAAA"), "no credential-shaped text anywhere in the result"); assert.ok(a.review.findings.length > 0); assert.ok(a.review.untested.some(u => u.includes("[redacted]")), "the untested list names the file, redacted");
+  } finally { r.done(); }
 });

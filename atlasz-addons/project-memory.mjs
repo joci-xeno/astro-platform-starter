@@ -99,8 +99,9 @@ export function createProjectMemory({ file = null, now = () => new Date().toISOS
   /** Tamper evidence: every entry must hash to itself and point at its predecessor. */
   function verify() {
     let prev = GENESIS, n = 0;
-    for (const e of d.log) { n++; if (e.seq !== n || e.prev !== prev || sha(JSON.stringify({ ...e, hash: undefined })) !== e.hash) return { ok: false, brokenAt: e.seq ?? n }; prev = e.hash; }
-    const h = readHead(); if (h && (h.seq > d.log.length || (h.seq >= 0 && h.seq <= d.log.length && h.seq > 0 && d.log[h.seq - 1].hash !== h.hash) || h.seq < 0)) return { ok: false, brokenAt: d.log.length + 1, reason: "HEAD_ANCHOR_MISMATCH" };
+    for (const e of d.log) { n++; if (!e || typeof e !== "object" || e.seq !== n || e.prev !== prev || sha(JSON.stringify({ ...e, hash: undefined })) !== e.hash) return { ok: false, brokenAt: e?.seq ?? n }; prev = e.hash; }
+    const h = readHead(); if (headFile && d.log.length && !h) return { ok: false, brokenAt: d.log.length, reason: "HEAD_ANCHOR_MISSING" };   // a deleted anchor must not re-enable truncation
+    if (h && (h.seq !== d.log.length || h.seq < 1 || d.log[h.seq - 1].hash !== h.hash)) return { ok: false, brokenAt: d.log.length + 1, reason: "HEAD_ANCHOR_MISMATCH" };
     return { ok: true, entries: d.log.length, head: prev };
   }
   return { createProject, listProjects, propose, adopt, supersede, revoke, decisions, contextFor, verify };

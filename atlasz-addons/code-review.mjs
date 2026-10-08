@@ -46,7 +46,8 @@ export function reviewCode(input) {
   if (total > LIMITS.maxTotalChars) return { ok: false, reason: "TOTAL_TOO_LARGE" };
   const findings = [], counts = { HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 }; let truncated = false, longLines = 0;
   const KEEP = 20000;                                                           // everything is COUNTED (so the verdict is right); only the most severe 500 are returned
-  const add = f => { counts[f.severity]++; if (findings.length >= KEEP) { truncated = true; return; } findings.push(f); };
+  const kept = { HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 };                        // the cap is per severity: a flood of LOW findings can never push a HIGH one out of the returned list
+  const add = f => { counts[f.severity]++; if (kept[f.severity] >= KEEP / 4) { truncated = true; return; } kept[f.severity]++; findings.push(f); };
   for (const f of files) {
     const lines = f.content.split("\n");
     for (let i = 0; i < lines.length; i++) {
@@ -73,7 +74,8 @@ export function reviewCode(input) {
   const tests = files.filter(f => TEST_PATH.test(f.path)), sources = files.filter(f => SOURCE_EXT.test(f.path) && !TEST_PATH.test(f.path));
   const base = p => p.split("/").pop().replace(/\.[^.]+$/, "");
   const esc = x => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const covers = (t, b) => t.content.trim().length > 0 && (new RegExp("(?:from|require|import)[^\\n]*(?<![A-Za-z0-9_])" + esc(b) + "(?![A-Za-z0-9_])").test(t.content) || t.path.split("/").pop().replace(/\.(test|spec)\.[a-z]+$|^test_|_test\.[a-z]+$|\.[a-z]+$/gi, "") === b);
+  const importText = new Map(tests.map(t => [t, t.content.split("\n").filter(l => /from|require|import/.test(l)).slice(0, 5000).map(l => l.slice(0, 2000)).join("\n")]));   // only import-looking lines, each capped: the matching below is linear in what it is given
+  const covers = (t, b) => t.content.trim().length > 0 && (new RegExp("(?:from|require|import)[^\\n]*(?<![A-Za-z0-9_])" + esc(b) + "(?![A-Za-z0-9_])").test(importText.get(t)) || t.path.split("/").pop().replace(/\.(test|spec)\.[a-z]+$|^test_|_test\.[a-z]+$|\.[a-z]+$/gi, "") === b);
   const untested = sources.filter(s => !tests.some(t => covers(t, base(s.path)))).map(s => s.path);
   const verdict = counts.HIGH ? "BLOCK" : truncated || longLines ? "INCOMPLETE_REVIEW" : counts.MEDIUM || counts.LOW || counts.INFO ? "REVIEW" : "NO_FINDINGS_BY_THESE_RULES";
   return { ok: true, verdict, counts, findings, truncated, tests: { testFiles: tests.map(t => t.path), sourceFiles: sources.length, untested }, files: files.length,

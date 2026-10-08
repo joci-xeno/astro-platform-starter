@@ -133,3 +133,16 @@ test("persistence and audit: restart recovery, hash-chained content-free events,
     fs.writeFileSync(file, "{broken"); assert.throws(() => w.mk(), /STORE_UNREADABLE/); assert.throws(() => w.m.recall({ query: "x" }, OWNER), /STORE_UNREADABLE/); assert.equal(fs.readFileSync(file, "utf8"), "{broken");
   } finally { w.done(); }
 });
+
+test("verification fixes: NAME=value credentials and secret tags are refused (also after lowercasing); forgetWhere refuses a malformed age filter", () => {
+  const w = world();
+  try {
+    for (const text of ["OPENAI_API_KEY=abcd1234efgh5678", "password: hunter2222", "pw=zzzz9999"]) assert.throws(() => w.m.observe({ text }, OWNER), /SECRET_NOT_STORED/, text);
+    assert.throws(() => w.m.observe({ text: "fine note", tags: ["AKIA" + "IOSFODNN7EXAMPLE"] }, OWNER), /SECRET_NOT_STORED/, "tag checked before it is lowercased");
+    const a = w.m.observe({ text: "ordinary note about tokens of appreciation" }, OWNER).id ?? w.m.observe({ text: "another ordinary note" }, OWNER).id;
+    assert.throws(() => w.m.correct(a, { text: "api_key=SUPERSECRETVALUE99" }, OWNER), /SECRET_NOT_STORED/);
+    w.m.observe({ text: "one" }, OWNER); w.m.observe({ text: "two" }, OWNER);
+    for (const bad of ["abc", -1, NaN, Infinity, {}, "7"]) assert.throws(() => w.m.forgetWhere({ olderThanDays: bad }, OWNER), /OLDER_THAN_DAYS_INVALID/, String(bad));
+    assert.ok(w.m.recall({ query: "one" }, OWNER).results.length >= 1, "nothing was deleted");
+  } finally { w.done?.(); }
+});

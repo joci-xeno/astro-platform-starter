@@ -97,3 +97,17 @@ test("createChainTail: reads only appended lines, keeps the newest window, survi
     fs.writeFileSync(f, JSON.stringify(ent(1, { t: "é€😀" })) + "\n"); const t2 = createChainTail(f); assert.equal(t2.read()[0].data.t, "é€😀");
   } finally { rm(dir); }
 });
+
+test("verification fixes G12: a replaced (rotated) file is detected even when bigger; an endless line and huge entries are bounded", async () => {
+  const { createChainTail } = await import("../atlasz-addons/event-stream.mjs"); const fs = await import("node:fs"); const path = await import("node:path"); const { tmp, rm } = await import("./helpers.mjs");
+  const dir = tmp("tail2-"); const f = path.join(dir, "bb.jsonl"); try {
+    const line = (n, d) => JSON.stringify(ent(n, d)) + "\n";
+    fs.writeFileSync(f, line(1) + line(2) + line(3)); const tail = createChainTail(f); assert.deepEqual(tail.read().map(e => e.seq), [1, 2, 3]);
+    // rotation: a NEW file (different inode) that is already longer than the old offset, with a first line ending exactly at the old offset
+    fs.renameSync(f, f + ".1"); fs.writeFileSync(f, line(101, { pad: "x".repeat(2000) }) + line(102) + line(103) + line(104)); assert.deepEqual(tail.read().map(e => e.seq), [101, 102, 103, 104], "no stale entries from the old file");
+    // an endless line is refused instead of buffered
+    const f2 = path.join(dir, "endless.jsonl"); fs.writeFileSync(f2, "x".repeat(2 * 1048576)); const t2 = createChainTail(f2); assert.throws(() => t2.read(), /LOG_CORRUPT/);
+    // a huge entry is kept at a bounded size
+    const f3 = path.join(dir, "big.jsonl"); fs.writeFileSync(f3, line(1, { blob: "y".repeat(300000) }) + line(2)); const t3 = createChainTail(f3), got = t3.read(); assert.deepEqual(got.map(e => e.seq), [1, 2]); assert.equal(got[0].oversize, true); assert.ok(JSON.stringify(got[0]).length < 500);
+  } finally { rm(dir); }
+});

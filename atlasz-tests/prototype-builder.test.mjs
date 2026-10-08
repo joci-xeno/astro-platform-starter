@@ -174,3 +174,16 @@ test("verification fix M1: the recorded hash is the one the run was approved for
     b.generate(SPECS["csv-to-json"], { actor: "OWNER" }); await b.test("csv", { ownerAuth: auth }); assert.equal(b.status("csv").status, "MODIFIED_AFTER_TEST");
   } finally { rm(base); }
 });
+
+test("verification fixes: the builder-level stop reaches the test run; unhashed content voids a pass; preview always puts the CSP first and drops meta refresh; sparse ops are refused", async () => {
+  let stopNow = false, ran = 0; const mkb = mk({ isStopped: () => stopNow, run: async o => { if (o.isStopped()) return { ok: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" }; ran++; return { ok: true, hash: analyzeRepo(o.root).hash, contentUnchanged: true, ran: 1, passed: 1, failed: 0, results: [] }; } });
+  try {
+    const { b, repoRoot } = mkb; b.generate(SPECS["static-page"], { actor: "OWNER" });
+    stopNow = true; assert.equal((await b.test("page", { ownerAuth: auth })).reason, "OWNER_STOP_OR_SAFE_MODE_ACTIVE", "the builder-level stop reaches the runner"); assert.equal(ran, 0); stopNow = false; assert.equal((await b.test("page", { ownerAuth: auth, isStopped: () => { throw new Error("x"); } })).reason, "OWNER_STOP_OR_SAFE_MODE_ACTIVE");
+    assert.equal(ran, 0); await b.test("page", { ownerAuth: auth }); assert.equal(b.status("page").status, "TESTS_PASSED_IN_SANDBOX");
+    fs.mkdirSync(path.join(repoRoot, "page", "node_modules")); assert.equal(b.status("page").status, "UNHASHED_CONTENT_PRESENT"); fs.rmSync(path.join(repoRoot, "page", "node_modules"), { recursive: true });
+    fs.writeFileSync(path.join(repoRoot, "page", "index.html"), "<!doctype html>\n<head lang=en><meta http-equiv=refresh content='0;url=https://evil.example'><!--<head>--><title>x</title></head><body>hi<link rel=stylesheet href=x.css><link rel=preload href=//evil/x></body>");
+    const p = b.previewPage("page"); assert.equal(p.ok, true); assert.ok(p.srcdoc.indexOf("Content-Security-Policy") < p.srcdoc.indexOf("<title>"), "policy first"); assert.ok(!/refresh/i.test(p.srcdoc)); assert.ok(!/evil/.test(p.srcdoc)); assert.equal((p.srcdoc.match(/<style>/g) || []).length, 1);
+    assert.equal(b.preview({ template: "text-transform", name: "tt", idea: "x", params: { ops: new Array(1) } }).reason, "OPS_INVALID");
+  } finally { rm(mkb.base); }
+});

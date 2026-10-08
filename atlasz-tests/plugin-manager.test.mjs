@@ -151,7 +151,7 @@ test("privilege escalation by editing the manifest AFTER enabling: granted permi
     assert.equal(r.pm.enable("esc", { ownerApproval: ap("PLUGIN_ENABLE", "esc") }).ok, true);
     fs.writeFileSync(path.join(dir, "plugin.json"), JSON.stringify({ ...base, id: "esc", name: "E", kind: "PLUGIN", entry: "m.mjs", permissions: ["READ_STATE", "FILESYSTEM_PLUGIN_DIR", "NETWORK"] }));
     const res = await r.pm.invoke("esc", "go");
-    assert.equal(res.ok, true, JSON.stringify(res)); assert.equal(res.result.writeOwn, "DENIED", "write granted from an un-approved manifest edit");
+    assert.deepEqual([res.ok, res.reason], [false, "CODE_CHANGED_SINCE_ENABLE"], "any edit after the owner enabled the plugin (manifest included) stops it from running at all");
     assert.ok(!fs.existsSync(path.join(dir, "o.txt")));
   } finally { r.done(); }
 });
@@ -178,5 +178,29 @@ test("a state file that cannot be read is kept as found: every plugin stays disa
     }
     fs.writeFileSync(sf, JSON.stringify({ enabled: {}, health: {}, theme: null }));
     const ok2 = createPluginManager({ roots: [path.join(r.root, "plugins")], stateDir: path.join(r.root, "state"), ownerAuth: createOwnerAuth({ publicKeyB64: key.publicKeyB64 }) }); assert.equal(ok2.list().stateProblem, undefined); assert.equal(ok2.enable("p-one", { ownerApproval: ap("PLUGIN_ENABLE", "p-one") }).ok, true);
+  } finally { r.done(); }
+});
+
+test("verification fix C05-2: only the exact bytes the owner enabled ever run; swapping the entry file, adding a file or losing the pinned hash stops the hook", async () => {
+  const r = rig(); try {
+    const dir = path.join(r.root, "plugins", "pin");
+    r.mk("pin", { ...base, id: "pin", name: "P", kind: "PLUGIN", entry: "m.mjs" }, { "m.mjs": "console.log(JSON.stringify({v:1}));" });
+    assert.equal(r.pm.enable("pin", { ownerApproval: ap("PLUGIN_ENABLE", "pin") }).ok, true); assert.equal((await r.pm.invoke("pin", "go")).ok, true);
+    fs.writeFileSync(path.join(dir, "m.mjs"), "console.log(JSON.stringify({v:'EVIL'}));"); assert.equal((await r.pm.invoke("pin", "go")).reason, "CODE_CHANGED_SINCE_ENABLE");
+    fs.writeFileSync(path.join(dir, "m.mjs"), "console.log(JSON.stringify({v:1}));"); assert.equal((await r.pm.invoke("pin", "go")).ok, true, "restoring the exact bytes works again");
+    fs.writeFileSync(path.join(dir, "extra.txt"), "x"); assert.equal((await r.pm.invoke("pin", "go")).reason, "CODE_CHANGED_SINCE_ENABLE", "an added file changes the pinned content too");
+  } finally { r.done(); }
+});
+test("verification fix C05-2 (edges): a symlink, a legacy enabled entry without a pinned hash and an unhashable folder all stop the plugin", async () => {
+  const r = rig(); try {
+    const dir = path.join(r.root, "plugins", "pin2");
+    r.mk("pin2", { ...base, id: "pin2", name: "P", kind: "PLUGIN", entry: "m.mjs" }, { "m.mjs": "console.log(JSON.stringify({v:1}));" });
+    assert.equal(r.pm.enable("pin2", { ownerApproval: ap("PLUGIN_ENABLE", "pin2") }).ok, true); assert.equal((await r.pm.invoke("pin2", "go")).ok, true);
+    fs.symlinkSync("/etc", path.join(dir, "lnk")); assert.equal((await r.pm.invoke("pin2", "go")).reason, "CODE_CHANGED_SINCE_ENABLE", "an added symlink is a change"); fs.rmSync(path.join(dir, "lnk"));
+    const sf = path.join(r.root, "state", "plugins-state.json"); const st = JSON.parse(fs.readFileSync(sf, "utf8")); delete st.enabled.pin2.hash; fs.writeFileSync(sf, JSON.stringify(st));
+    const legacy = createPluginManager({ roots: [path.join(r.root, "plugins")], stateDir: path.join(r.root, "state"), ownerAuth: createOwnerAuth({ publicKeyB64: key.publicKeyB64 }), hookTimeoutMs: 1500 });
+    assert.equal((await legacy.invoke("pin2", "go")).reason, "CODE_CHANGED_SINCE_ENABLE", "no pinned hash => re-enable required");
+    const big = path.join(r.root, "plugins", "big"); r.mk("big", { ...base, id: "big", name: "B", kind: "PLUGIN", entry: "m.mjs" }, { "m.mjs": "1" }); for (let i = 0; i < 510; i++) fs.writeFileSync(path.join(big, "f" + i), "x");
+    assert.equal(r.pm.enable("big", { ownerApproval: ap("PLUGIN_ENABLE", "big") }).reason, "PLUGIN_FOLDER_UNHASHABLE");
   } finally { r.done(); }
 });

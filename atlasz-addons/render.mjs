@@ -32,6 +32,7 @@ const tickLabel = v => Math.abs(v) >= 1e6 || (v !== 0 && Math.abs(v) < 1e-3) ? v
 
 function renderChart_(spec, { width = 640, height = 360 } = {}) {
   if (!spec || typeof spec !== "object") return { ok: false, reason: "SPEC_REQUIRED" };
+  for (const k of ["labels", "values", "x", "points"]) { const v = spec[k]; if (Array.isArray(v) && (Object.keys(v).length !== v.length || (k === "points" && v.some(q => Array.isArray(q) && Object.keys(q).length !== q.length)))) return { ok: false, reason: "SPARSE_ARRAY" }; }   // holes would be skipped by every(): a "3 point" chart with no data
   if (![width, height].every(n => Number.isInteger(n) && n >= 200 && n <= 2000)) return { ok: false, reason: "SIZE_INVALID" };
   const title = short(spec.title || "Chart", 80), M = { l: 56, r: 16, t: 36, b: 48 }, W = width - M.l - M.r, H = height - M.t - M.b;
   let series, xs = null, cats = null, kind = spec.type;
@@ -95,7 +96,7 @@ function validateAnnotations_(list) {
   list.forEach((a, i) => {
     const bad = r => problems.push({ index: i, reason: r });
     if (!a || !ANNOTATION_TYPES.includes(a.type)) return bad("TYPE_INVALID");
-    const color = a.color ?? "red"; if (!PALETTE[color]) return bad("COLOR_INVALID");
+    const color = a.color ?? "red"; if (typeof color !== "string" || !Object.hasOwn(PALETTE, color)) return bad("COLOR_INVALID");
     const label = a.label === undefined ? "" : str(a.label); if (label.length > 80) return bad("LABEL_TOO_LONG");
     if (a.type === "rect" || a.type === "ellipse") { if (![a.x, a.y, a.w, a.h].every(rel) || a.w <= 0 || a.h <= 0 || a.x + a.w > 1.0001 || a.y + a.h > 1.0001) return bad("REGION_INVALID"); out.push({ type: a.type, x: a.x, y: a.y, w: a.w, h: a.h, color, label }); }
     else if (a.type === "arrow") { if (![a.x1, a.y1, a.x2, a.y2].every(rel)) return bad("REGION_INVALID"); out.push({ type: "arrow", x1: a.x1, y1: a.y1, x2: a.x2, y2: a.y2, color, label }); }

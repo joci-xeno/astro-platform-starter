@@ -43,7 +43,7 @@ export function createPreferences({ file = null, now = () => Date.now() } = {}) 
   const store = createStore({ file, init: () => ({ tenants: {} }), mode: 0o600 }), d = store.data;
   const T = tenantId => { if (typeof tenantId !== "string" || !okName(TENANT, tenantId)) throw new Error("TENANT_INVALID"); return (d.tenants[tenantId] ??= { values: {}, history: [], proposals: [], counters: {} }); };
   const peek = tenantId => (typeof tenantId === "string" && okName(TENANT, tenantId) ? own(d.tenants, tenantId) ?? null : null);
-  const actorOk = a => a === "OWNER" || a === "SYSTEM" || AGENT_ID_RE.test(a);
+  const actorOk = a => typeof a === "string" && (a === "OWNER" || a === "SYSTEM" || AGENT_ID_RE.test(a));
   const log = (t, e) => { t.history.push({ at: new Date(now()).toISOString(), ...e }); if (t.history.length > LIMITS.maxHistory) t.history.splice(0, t.history.length - LIMITS.maxHistory); };
 
   const get = (tenantId, key) => { if (!Object.hasOwn(SCHEMA, key)) return { ok: false, reason: "UNKNOWN_PREFERENCE" }; const t = peek(tenantId); const set = t && Object.hasOwn(t.values, key); return { ok: true, key, value: clone(set ? t.values[key] : SCHEMA[key].default), isDefault: !set }; };

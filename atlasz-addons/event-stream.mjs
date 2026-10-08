@@ -60,17 +60,19 @@ export function createEventStream({ read, limits = {}, setTimer = setInterval, c
 /** Incremental tail of a hash-chained JSON-lines log: reads only appended bytes, keeps the newest `keep` entries, and re-reads from scratch if the file shrank (restart/rotation).
  *  A torn last line is left for the next poll; a corrupt complete line makes read() throw so the stream reports SOURCE_UNREADABLE instead of serving partial data. */
 export function createChainTail(file, { keep = 2000 } = {}) {
-  let offset = 0, buf = "", entries = [], sig = "", dec = new StringDecoder("utf8");
-  const reset = () => { offset = 0; buf = ""; entries = []; sig = ""; dec = new StringDecoder("utf8"); };
+  let offset = 0, buf = "", entries = [], sig = "", ident = "", dec = new StringDecoder("utf8");
+  const reset = () => { offset = 0; buf = ""; entries = []; sig = ""; ident = ""; dec = new StringDecoder("utf8"); };
   return {
     read() {
       let st; try { st = fs.statSync(file); } catch { reset(); return []; }
+      const id = st.dev + ":" + st.ino; if (ident && id !== ident) reset(); ident = id;      // a replaced file (rotation) is a different file even if it is bigger
       if (st.size < offset) reset();
       const s2 = st.size + ":" + st.mtimeMs; if (s2 === sig) return entries;
       if (st.size > offset) {
         const fd = fs.openSync(file, "r"); let chunk; try { const n = Math.min(st.size - offset, 8 * 1048576); chunk = Buffer.alloc(n); fs.readSync(fd, chunk, 0, n, offset); offset += n; } finally { fs.closeSync(fd); }
         buf += dec.write(chunk); const lines = buf.split("\n"); buf = lines.pop();
-        for (const line of lines) { if (!line) continue; let e; try { e = JSON.parse(line); } catch { reset(); throw new Error("LOG_CORRUPT"); } if (Number.isSafeInteger(e?.seq)) entries.push(e); }
+        if (buf.length > 1048576) { reset(); throw new Error("LOG_CORRUPT"); }                 // a "line" that never ends is not buffered without bound
+        for (const line of lines) { if (!line) continue; let e; try { e = JSON.parse(line); } catch { reset(); throw new Error("LOG_CORRUPT"); } if (Number.isSafeInteger(e?.seq)) entries.push(line.length > 65536 ? { seq: e.seq, event: typeof e.event === "string" ? e.event.slice(0, 80) : "EVENT", oversize: true } : e); }   // an entry is kept in memory at a bounded size
         if (entries.length > keep) entries = entries.slice(-keep);
       }
       sig = s2; return entries;

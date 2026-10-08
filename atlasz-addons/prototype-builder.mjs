@@ -32,7 +32,7 @@ const OP_CASES = { slugify: ["  Héllo,  World! 2026 ", "hello-world-2026"], tit
 const TEMPLATES = {
   "text-transform": {
     title: "Text transformer", describe: "Pure functions on text (slugify, titleCase, wordCount, reverseWords).", params: { ops: `subset of ${OPS.join(", ")} (default all)` },
-    check(p) { const ops = p.ops ?? OPS; if (!Array.isArray(ops) || !ops.length || ops.length > OPS.length || new Set(ops).size !== ops.length || !ops.every(o => OPS.includes(o))) return { ok: false, reason: "OPS_INVALID" }; return { ok: true, p: { ops: [...ops].sort() } }; },
+    check(p) { const ops0 = p.ops ?? OPS; if (!Array.isArray(ops0) || ops0.length > 50) return { ok: false, reason: "OPS_INVALID" }; const ops = Array.from(ops0); if ( !ops.length || ops.length > OPS.length || new Set(ops).size !== ops.length || !ops.every(o => OPS.includes(o))) return { ok: false, reason: "OPS_INVALID" }; return { ok: true, p: { ops: [...ops].sort() } }; },
     build: p => ({
       "src/index.mjs": `const OPS = {\n${p.ops.map(o => `  ${o}: ${OP_SRC[o]}`).join(",\n")}\n};\nexport const operations = Object.freeze(Object.keys(OPS));\nexport function transform(text, op) {\n  if (typeof text !== "string") throw new TypeError("text must be a string");\n  if (!Object.hasOwn(OPS, op)) throw new RangeError("unknown operation");\n  return OPS[op](text);\n}\n`,
       "tests/index.test.mjs": `import test from "node:test";\nimport assert from "node:assert/strict";\nimport { transform, operations } from "../src/index.mjs";\n\ntest("lists exactly the chosen operations", () => assert.deepEqual([...operations].sort(), ${J(p.ops)}));\n${p.ops.map(o => `test(${J(o + " works")}, () => assert.equal(transform(${J(OP_CASES[o][0])}, ${J(o)}), ${J(OP_CASES[o][1])}));`).join("\n")}\ntest("rejects unknown operations and non-strings", () => {\n  assert.throws(() => transform("x", "__proto__"), RangeError);\n  assert.throws(() => transform("x", "constructor"), RangeError);\n  assert.throws(() => transform(5, ${J(p.ops[0])}), TypeError);\n});\n`
@@ -116,7 +116,9 @@ export function createPrototypeBuilder({ repoRoot, file = null, now = () => Date
     let s = "GENERATED_UNTESTED";
     const testsChanged = m.files.filter(f => f.path.startsWith("tests/")).some(f => { try { return sha(fs.readFileSync(path.join(repoRoot, name, f.path), "utf8")) !== f.sha256; } catch { return true; } })
       || a.testFiles.some(t => !m.files.some(f => f.path === t));                              // a replaced, emptied or additional test file means "passed" no longer says what it used to
-    if (testsChanged) s = "TESTS_MODIFIED";
+    const unhashed = a.capped || Object.values(a.skipped ?? {}).some(n => n > 0);
+    if (unhashed) s = "UNHASHED_CONTENT_PRESENT";                                                // hidden, linked, vendored or unreadable parts are outside the content hash: no pass can describe them
+    else if (testsChanged) s = "TESTS_MODIFIED";
     else if (m.tested && m.tested.hash !== a.hash) s = "MODIFIED_AFTER_TEST";
     else if (m.generatedHash !== a.hash) s = m.tested ? "MODIFIED_AFTER_GENERATION" : "MODIFIED_BEFORE_TEST";   // a pass only describes the files as generated; any later change to any file voids it
     else if (m.tested) s = m.tested.passed ? "TESTS_PASSED_IN_SANDBOX" : "TESTS_FAILED";
@@ -124,9 +126,9 @@ export function createPrototypeBuilder({ repoRoot, file = null, now = () => Date
   }
 
   /** Run the prototype's own tests through the owner-approved gate; record the outcome bound to the exact content hash. */
-  async function test(name, { ownerAuth, ownerApproval = null, isStopped, nodeBin, caps, scratchRoot } = {}) {
+  async function test(name, { ownerAuth, ownerApproval = null, isStopped: callStop, nodeBin, caps, scratchRoot } = {}) {
     const m = Object.hasOwn(d.prototypes, name) ? d.prototypes[name] : null; if (!m) return { ok: false, reason: "PROTOTYPE_NOT_FOUND" };
-    const root = path.join(repoRoot, name), r = await run({ name, root, ownerAuth, ownerApproval, isStopped, nodeBin, caps, scratchRoot, ...{} }); if (!r.ok) return r;
+    const root = path.join(repoRoot, name), r = await run({ name, root, ownerAuth, ownerApproval, isStopped: () => { try { return Boolean(isStopped()) || Boolean(callStop?.()); } catch { return true; } }, nodeBin, caps, scratchRoot }); if (!r.ok) return r;   // the builder-level stop and the per-call stop both apply; a throwing check fails closed
     if (typeof r.hash !== "string") return { ok: false, reason: "RUN_HASH_MISSING" };            // the outcome is bound to the hash the owner approved and the tests ran against, never to a re-read afterwards
     const passed = r.ran > 0 && r.failed === 0 && r.contentUnchanged !== false;
     m.tested = { at: new Date(now()).toISOString(), hash: r.hash, passed, ran: r.ran, failed: r.failed }; store.save();
@@ -139,7 +141,9 @@ export function createPrototypeBuilder({ repoRoot, file = null, now = () => Date
     const root = path.join(repoRoot, name); let html, css;
     try { const st = fs.lstatSync(path.join(root, "index.html")); if (!st.isFile() || st.size > 100000) return { ok: false, reason: "PAGE_UNAVAILABLE" }; html = fs.readFileSync(path.join(root, "index.html"), "utf8"); const cs = fs.lstatSync(path.join(root, "style.css")); css = cs.isFile() && cs.size <= 20000 ? fs.readFileSync(path.join(root, "style.css"), "utf8") : ""; } catch { return { ok: false, reason: "PAGE_UNAVAILABLE" }; }
     const csp = '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src data:; base-uri \'none\'; form-action \'none\'">';
-    const doc = html.replace(/<link[^>]*rel=["']stylesheet["'][^>]*>/i, () => "<style>" + css.replace(/<\/style/gi, "<\\/style") + "</style>").replace(/<head>/i, () => "<head>" + csp);
+    let inlined = false;
+    const body = html.replace(/<!doctype[^>]{0,200}>/gi, "").replace(/<meta\b[^>]{0,500}http-equiv\s*=\s*["']?refresh[^>]{0,500}>/gi, "").replace(/<link\b[^>]{0,500}>/gi, tag => { if (!inlined && /rel\s*=\s*["']?stylesheet/i.test(tag)) { inlined = true; return "<style>" + css.replace(/<\/style/gi, "<\\/style") + "</style>"; } return ""; });
+    const doc = "<!doctype html><html><head>" + csp + "</head><body>" + body.replace(/<\/?(?:html|head|body)\b[^>]{0,500}>/gi, "") + "</body></html>";   // a fixed shell: the policy is always first, whatever the stored page looks like
     return { ok: true, srcdoc: doc, sandbox: "", bytes: Buffer.byteLength(doc), sha256: sha(doc), status: status(name).status, untrusted: true, note: "Rendered in an iframe with sandbox=\"\" and a restrictive CSP: no script, no network, no navigation." };
   }
   const list = () => Object.keys(d.prototypes).sort().map(n => { const s = status(n); return { name: n, template: d.prototypes[n].template, status: s.status ?? "UNKNOWN" }; });
