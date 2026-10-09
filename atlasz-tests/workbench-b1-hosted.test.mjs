@@ -55,16 +55,21 @@ test("HTTP: workflow end to end - template with real actions, run, per-step resu
     const id = (await c.wb("workflow.start", { templateId: "report", params: { csv: "a,b\n1,2\n3,4\n5,6\n" } })).result.id, run = await c.wb("workflow.run", { id }); assert.equal(run.result.status, "DONE");
     const inst = (await c.wb("workflow.instance", { id })).result.instance; assert.deepEqual(inst.steps.map(s => s.status), ["DONE", "DONE"]); assert.match(inst.steps[0].output.reportHash, /^[0-9a-f]{16,}$/);
     const found = (await c.wb("notes.search", { tags: ["report"] })).result.items[0]; assert.match(found.text, /^hash [0-9a-f]+$/);
-    assert.equal((await c.wb("workflow.rewind", { id, toStepId: "an" })).status, 400, "the notes.addNote step has an external side effect: rewind refused");
-    assert.equal((await c.wb("workflow.rewind", { id, toStepId: "note" })).status, 200);
+    await c.post("/api/owner-key", { passphrase: "correct horse battery" });
+    const PW = { passphrase: "correct horse battery" };
+    for (const op of ["workflow.rewind", "workflow.cancel", "workflow.review"]) { const args = { id, toStepId: "note", stepId: "note", decision: "RETRY" };
+      assert.equal((await c.wb(op, args)).status, 400, op + " needs the passphrase, the dashboard token alone is not enough");
+      assert.equal((await c.wb(op, { ...args, passphrase: "not the passphrase" })).status, 400, op + " wrong passphrase"); }
+    assert.equal((await c.wb("workflow.rewind", { id, toStepId: "an", ...PW })).status, 400, "the notes.addNote step has an external side effect: rewind refused");
+    assert.equal((await c.wb("workflow.rewind", { id, toStepId: "note", ...PW })).status, 200);
     // restart: instance survives; batch with an invalid item starts nothing
     await c.close(); c = await boot(base);
     assert.equal((await c.wb("workflow.instance", { id })).result.instance.status, "DONE", "rewind to the last step was a no-op and changed nothing");
     const bad = await c.wb("workflow.batchCreate", { templateId: "report", items: [{ csv: "a\n1\n" }, { csv: 5 }] }); assert.equal(bad.status, 400); assert.match(bad.error, /ITEM_1_PARAMETER_INVALID:csv/);
     const b = (await c.wb("workflow.batchCreate", { templateId: "report", items: [{ csv: "a,b\n1,2\n" }, { csv: "a,b\n1\n" }, { csv: "a,b\n3,4\n" }], ratePerMinute: 100 })).result.id;
     const br = (await c.wb("workflow.batchRun", { id: b })).result; assert.deepEqual([br.status, br.DONE, br.FAILED], ["DONE_WITH_ERRORS", 2, 1]);
+    { const x = (await c.wb("workflow.start", { templateId: "report", params: { csv: "a,b\n1,2\n" } })).result.id; assert.equal((await c.wb("workflow.cancel", { id: x, passphrase: "correct horse battery" })).status, 200); assert.equal((await c.wb("workflow.instance", { id: x })).result.instance.status, "CANCELLED"); }
     // kill switch
-    assert.equal((await c.post("/api/owner-key", { passphrase: "correct horse battery" })).status, 200);
     const id2 = (await c.wb("workflow.start", { templateId: "report", params: { csv: "a,b\n1,2\n" } })).result.id;
     assert.equal((await c.post("/api/emergency", { mode: "PAUSE_ALL", passphrase: "correct horse battery" })).status, 200);
     for (const op of ["workflow.run", "workflow.resume"]) { const r = await c.wb(op, { id: id2 }); assert.equal(r.status, 400); assert.match(r.error, /EMERGENCY_STOP_ACTIVE/, op); }
@@ -92,4 +97,20 @@ test("HTTP: the optional scheduler runs a due scheduled workflow by itself, exac
     await a.cc.close(); a = await mk(1000); await new Promise(r => setTimeout(r, 2600));
     const list = (await a.wb("workflow.instances", {})).result.instances; assert.equal(list.length, 1, "ran once, period consumed"); assert.equal(list[0].status, "DONE");
   } finally { await a.cc.close(); rm(base); }
+});
+
+test("HTTP: tutor (P01) end to end - owner-supplied course, quiz without answers, graded answers, honest progress and plan, survives a restart", async () => {
+  const base = tmp("tut-"); let c = await boot(base);
+  try {
+    const lessons = [{ id: "l1", title: "Basics", text: "Water boils at 100 C." }], questions = [{ id: "q1", lessonId: "l1", prompt: "Boiling point?", choices: ["90", "100"], answerIndex: 1, explanation: "100." }, { id: "q2", lessonId: "l1", prompt: "Freezing point?", choices: ["0", "10"], answerIndex: 0 }];
+    assert.equal((await c.post("/api/workbench/action", { op: "tutor.courses", args: {} }, null)).status, 401);
+    assert.equal((await c.wb("tutor.create", { id: "bad id", title: "x", lessons, questions })).status, 400);
+    assert.equal((await c.wb("tutor.create", { id: "phys", title: "Physics", lessons, questions })).status, 200);
+    const quiz = await c.wb("tutor.quiz", { courseId: "phys", count: 2 }); assert.equal(quiz.result.questions.length, 2); assert.ok(!JSON.stringify(quiz).includes("answerIndex"));
+    assert.equal((await c.wb("tutor.answer", { courseId: "phys", questionId: "q1", choiceIndex: 1 })).result.correct, true);
+    assert.equal((await c.wb("tutor.answer", { courseId: "phys", questionId: "q2", choiceIndex: 1 })).result.correct, false);
+    await c.close(); c = await boot(base);
+    const pr = (await c.wb("tutor.progress", { courseId: "phys" })).result.lessons[0]; assert.deepEqual([pr.unseen, pr.due, pr.accuracyPct], [0, 1, 50]);
+    assert.equal((await c.wb("tutor.plan", { courseId: "phys" })).result.steps[0].action, "REVIEW_DUE"); assert.equal((await c.wb("tutor.progress", { courseId: "nope" })).status, 400);
+  } finally { await c.close(); rm(base); }
 });

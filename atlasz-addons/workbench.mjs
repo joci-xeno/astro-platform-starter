@@ -10,6 +10,7 @@ import { renderChart, renderDiagram, renderTextPreview, renderAnnotationOverlay,
 import { chooseDetail } from "./detail-level.mjs";
 import { createProjectMemory } from "./project-memory.mjs";
 import { createNotesOrganizer } from "./notes-organizer.mjs";
+import { createTutor } from "./tutor.mjs";
 import { createWorkflowEngine } from "./workflow-engine.mjs";
 import { createSkillRegistry } from "./skill-registry.mjs";
 import { ingestPage, askPage } from "./page-ingest.mjs";
@@ -25,10 +26,10 @@ import { okName, own } from "./safe-keys.mjs";
 export const WB_LIMITS = Object.freeze({ csvChars: 400_000, textChars: 400_000, maxChartsReturned: 6 });
 const isObj = v => v && typeof v === "object" && !Array.isArray(v);
 
-export function createWorkbench({ conversationFile = null, memoryFile = null, notesFile = null, workflowFile = null, skillsFile = null, prefsFile = null, profilesFile = null, studyFile = null, suggestionsFile = null, suggestionExtras = () => ({}), gateway = null, ownerAuth = null, tenantId = "JOCI", now, isStopped = () => false } = {}) {
+export function createWorkbench({ conversationFile = null, memoryFile = null, notesFile = null, workflowFile = null, skillsFile = null, prefsFile = null, profilesFile = null, studyFile = null, suggestionsFile = null, tutorFile = null, suggestionExtras = () => ({}), gateway = null, ownerAuth = null, tenantId = "JOCI", now, isStopped = () => false } = {}) {
   const conv = createConversationStore({ file: conversationFile, ...(now ? { now } : {}) });
   const T = { tenantId };
-  const memory = createProjectMemory({ file: memoryFile, ...(now ? { now } : {}) }), notes = createNotesOrganizer({ file: notesFile, ...(now ? { now } : {}) });
+  const memory = createProjectMemory({ file: memoryFile, ...(now ? { now } : {}) }), notes = createNotesOrganizer({ file: notesFile, ...(now ? { now } : {}) }), tutor = createTutor({ file: tutorFile, ...(now ? { now } : {}) });
   // Workflow ACTIONS are the only things a step may do. Pure computations are idempotent and rewindable; anything that writes elsewhere is neither (so a crash needs review and a rewind is refused).
   const wfActions = {
     "analyst.analyze": { run: a => { const r = analyze(String(a.csv ?? ""), { ops: [] }); if (!r.ok) throw new Error(r.reason); return { report: r.report, reportHash: r.report.reportHash ?? null }; }, idempotent: true, rewindable: true },
@@ -104,6 +105,15 @@ export function createWorkbench({ conversationFile = null, memoryFile = null, no
     "notes.cloud": () => ({ ok: true, tags: notes.tagCloud(T) }),
     "notes.readingList": () => ({ ok: true, ...notes.readingList(T) }),
     "notes.export": () => ({ ok: true, markdown: notes.exportMarkdown(T) }),
+    // ---- personal learning tutor (P01): owner-supplied lessons and questions, Leitner-scheduled quizzes, honest progress
+    "tutor.create": a => tutor.createCourse({ ...T, id: a.id, title: a.title, lessons: a.lessons, questions: a.questions, actor: "OWNER" }),
+    "tutor.courses": () => ({ ok: true, courses: tutor.list(T) }),
+    "tutor.lesson": a => tutor.lesson({ ...T, courseId: a.courseId, lessonId: a.lessonId }),
+    "tutor.quiz": a => tutor.startQuiz({ ...T, courseId: a.courseId, lessonId: a.lessonId ?? null, count: a.count ?? 5 }),
+    "tutor.answer": a => tutor.answer({ ...T, courseId: a.courseId, questionId: a.questionId, choiceIndex: a.choiceIndex, actor: "OWNER" }),
+    "tutor.progress": a => tutor.progress({ ...T, courseId: a.courseId }),
+    "tutor.plan": a => tutor.plan({ ...T, courseId: a.courseId }),
+    "tutor.remove": a => tutor.remove({ ...T, courseId: a.courseId, actor: "OWNER" }),
     // ---- workflows (GE11 / P06 / P08 / P05 / P11)
     "workflow.actions": () => ({ ok: true, actions: wf.actionNames() }),
     "workflow.save": a => wf.saveTemplate({ ...T, id: a.id, name: a.name, params: a.params, steps: a.steps, schedule: a.schedule ?? null }),
