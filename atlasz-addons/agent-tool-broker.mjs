@@ -7,7 +7,7 @@ import { roleOf, permissionFor, TOOL_POLICY, DEFAULT_LIMITS, SAFE_AGENT_OPERATIO
 const HOUR = 3600000, MIN = 60000, DAY = 24 * HOUR;
 const hashOf = v => createHash("sha256").update(JSON.stringify(v ?? null)).digest("hex").slice(0, 16);
 
-export function createAgentToolBroker({ tools, blackBox = null, approvalRequests = null, approvalAction = null, approvalSubject = null, isStopped = () => false, onSignal = () => {}, now = () => Date.now(), limits = DEFAULT_LIMITS, policy = TOOL_POLICY } = {}) {
+export function createAgentToolBroker({ profileGate = null, tools, blackBox = null, approvalRequests = null, approvalAction = null, approvalSubject = null, isStopped = () => false, onSignal = () => {}, now = () => Date.now(), limits = DEFAULT_LIMITS, policy = TOOL_POLICY } = {}) {
   if (!tools || typeof tools.invoke !== "function" || typeof tools.inspect !== "function") throw new Error("TOOLS_REQUIRED");
   const L = limits, win = new Map(), jobs = new Map(), consumed = new Map();
   let inflight = 0; const stats = { calls: 0, ok: 0, refused: 0, rateLimited: 0, pendingApproval: 0 };
@@ -26,7 +26,7 @@ export function createAgentToolBroker({ tools, blackBox = null, approvalRequests
   }
   function describeFor(agentId) {
     const role = roleOf(agentId); if (!role) return [];
-    return tools.describe().filter(t => permissionFor(role, t.name, policy) !== "DENY" && !policy[t.name]?.disabled && !entryCheck(t.name)).map(t => ({ name: t.name, description: t.description, parameters: t.parameters, permission: permissionFor(role, t.name, policy) }));
+    return tools.describe().filter(t => { if (!profileGate) return true; try { return profileGate(agentId, t.name)?.allowed === true; } catch { return false; } }).filter(t => permissionFor(role, t.name, policy) !== "DENY" && !policy[t.name]?.disabled && !entryCheck(t.name)).map(t => ({ name: t.name, description: t.description, parameters: t.parameters, permission: permissionFor(role, t.name, policy) }));
   }
 
   async function call({ agentId, jobId, tool, args = {} } = {}) {
@@ -58,6 +58,8 @@ export function createAgentToolBroker({ tools, blackBox = null, approvalRequests
     if (perm === "DENY") { streakKind = "REFUSAL"; return out("DENIED", { reason: "TOOL_NOT_ALLOWED_FOR_ROLE" }); }
     const bad = entryCheck(tool); if (bad) { streakKind = "REFUSAL"; return out("DENIED", { reason: "POLICY_MISMATCH:" + bad }); }
     if (policy[tool].disabled) return out("DENIED", { reason: "TOOL_DISABLED:" + policy[tool].disabled });
+    if (profileGate) { let g; try { g = profileGate(agentId, tool); } catch { g = { allowed: false, reason: "PROFILE_GATE_ERROR" }; }       // M12: an assigned profile can only narrow, never widen
+      if (!g || g.allowed !== true) { streakKind = "REFUSAL"; return out("DENIED", { reason: "PROFILE:" + String(g?.reason ?? "DENIED").slice(0, 60) }); } }
     if (!args || typeof args !== "object" || Array.isArray(args)) { streakKind = "REFUSAL"; return out("INVALID_ARGUMENTS", { reason: "ARGS_MUST_BE_OBJECT" }); }
     const tl = L.perTool[tool] ?? {};
     let a2 = args;

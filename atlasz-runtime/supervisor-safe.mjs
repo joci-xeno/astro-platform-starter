@@ -32,6 +32,7 @@ import { createRuntimeHandler } from "./runtime-http.mjs";
 import { createVoiceSession } from "../atlasz-addons/voice-session.mjs";
 import { createVoiceConversation, registerVoiceTools } from "../atlasz-addons/voice-conversation.mjs";
 import { registerWorkbenchTools } from "../atlasz-addons/workbench.mjs";
+import { createAgentProfileGate } from "../atlasz-addons/assistant-profiles.mjs";
 import { createAgentToolBroker } from "../atlasz-addons/agent-tool-broker.mjs";
 import { approvalActionName } from "../atlasz-addons/owner-control/owner-authority.mjs";
 import { createObservationMemory, registerObservationTools, registerResearchCapture } from "../atlasz-addons/observation-memory.mjs";
@@ -186,7 +187,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
   registerVoiceTools(tools, voice);
   // M2 (owner decisions D1-D10, 2026-10-07): the ONLY path from the 30 agents to a tool. Deny by default; limits and approvals enforced in code; sandbox-only.
   const agentToolSignals = [];
-  const agentTools = createAgentToolBroker({ tools, blackBox: brain.blackBox, approvalRequests, approvalAction: approvalActionName, approvalSubject: (op, p, spend) => ownerControl.chain.subjectFor(op, p, spend), now: () => Date.now(),
+  const agentTools = createAgentToolBroker({ profileGate: createAgentProfileGate({ file: path.join(dataDir, "workbench", "profiles.json"), tenantId: "JOCI" }), tools, blackBox: brain.blackBox, approvalRequests, approvalAction: approvalActionName, approvalSubject: (op, p, spend) => ownerControl.chain.subjectFor(op, p, spend), now: () => Date.now(),
     isStopped: () => emergencyStatus().mode !== "RUNNING" || safeMode.status().mode !== "NORMAL",
     onSignal: sig => { agentToolSignals.push({ at: now(), ...sig }); if (agentToolSignals.length > 100) agentToolSignals.shift(); try { event("agent_tool_bypass_suspected", { agentId: sig.agentId, jobId: sig.jobId }); } catch { /* the Black Box already holds JOB_SUSPENDED */ } } });
   registerWorkbenchTools(tools);                                               // pure computation tools; NOT granted to agents until the owner approves the M2 permission table

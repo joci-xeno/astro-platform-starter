@@ -48,7 +48,7 @@
    "id": "P08",
    "claim": "Sandbox: Python cannot open files outside its work dir",
    "ok": true,
-   "note": "NONZERO_EXIT level=NAMESPACE"
+   "note": "LANGUAGE_UNAVAILABLE level=undefined"
   },
   {
    "id": "P09",
@@ -59,8 +59,8 @@
   {
    "id": "P10",
    "claim": "Sandbox: network and child processes are denied (python)",
-   "ok": true,
-   "note": "OK"
+   "ok": false,
+   "note": "LANGUAGE_UNAVAILABLE"
   },
   {
    "id": "P11",

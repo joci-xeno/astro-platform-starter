@@ -74,7 +74,7 @@ import runpy
 runpy.run_path(os.path.join(W, "main.py"), run_name="__main__")
 `;
 
-export function createCodeSandbox({ baseDir = path.join(os.tmpdir(), "atlasz-sandbox"), auditFile = null, blackBox = null, now = () => new Date().toISOString(), nodePath = process.execPath, pythonPath = null, forceLevel = null, limits = {} } = {}) {
+export function createCodeSandbox({ allowPython = process.env.ATLASZ_ALLOW_UNCONTAINED_PYTHON === "1", baseDir = path.join(os.tmpdir(), "atlasz-sandbox"), auditFile = null, blackBox = null, now = () => new Date().toISOString(), nodePath = process.execPath, pythonPath = null, forceLevel = null, limits = {} } = {}) {
   const L = { ...LIMITS, ...limits }; let busy = 0, seq = 0, caps = null;
   const audit = { events: [], prev: "GENESIS" };
   if (auditFile && fs.existsSync(auditFile)) { try { audit.events = fs.readFileSync(auditFile, "utf8").split("\n").filter(Boolean).map(l => JSON.parse(l)); audit.prev = audit.events.at(-1)?.hash ?? "GENESIS"; } catch { throw new Error("STORE_UNREADABLE:" + path.basename(auditFile)); } }
@@ -94,7 +94,7 @@ export function createCodeSandbox({ baseDir = path.join(os.tmpdir(), "atlasz-san
     const namespace = !IS_WIN && process.platform === "linux" && probe("unshare", ["--user", "--map-root-user", "--pid", "--fork", "--net", "--ipc", "--uts", "true"]);
     const killChild = namespace && probe("unshare", ["--user", "--map-root-user", "--pid", "--fork", "--kill-child", "--net", "true"]);
     const nodePermission = probe(nodePath, ["--permission", "-e", "0"]);
-    const py = pythonPath ?? ["python3", "python"].find(c => probe(c, ["-c", "import sys; assert sys.version_info >= (3, 8)"])) ?? null;
+    const py = !allowPython ? null : pythonPath ?? ["python3", "python"].find(c => probe(c, ["-c", "import sys; assert sys.version_info >= (3, 8)"])) ?? null;
     const posixLimits = !IS_WIN && probe("sh", ["-c", "ulimit -t 5"]);
     caps = { platform: process.platform, namespace, killChild, nodePermission, python: py, posixLimits, level: forceLevel ?? (namespace ? "NAMESPACE" : "PROCESS_ONLY"), languages: ["javascript", ...(py ? ["python"] : [])] };
     return caps;

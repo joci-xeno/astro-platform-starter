@@ -15,19 +15,32 @@ const rid = p => p + crypto.randomBytes(8).toString("hex");
 const ROLES = new Set(["user", "assistant", "tool"]);
 const MODEL = /^[A-Za-z0-9][A-Za-z0-9._:\/@+-]{0,79}$/, modelOk = m => m === null || (typeof m === "string" && MODEL.test(m));
 
-export function createConversationStore({ file = null, now = () => new Date().toISOString() } = {}) {
+export function createConversationStore({ file = null, now = () => new Date().toISOString(), profileResolver = null } = {}) {
   const store = createStore({ file, init: () => ({ conversations: {}, usage: [] }) });
   const d = store.data, usage = createUsageLedger({ now }); usage.load(d.usage);
   const find = (id, tenantId) => { const c = own(d.conversations, id); return c && c.tenantId === tenantId ? c : null; };
-  const pub = c => ({ id: c.id, title: c.title, model: c.model, turns: c.turns.length, createdAt: c.createdAt, updatedAt: c.updatedAt, switches: c.switches.length });
+  const pub = c => ({ id: c.id, title: c.title, model: c.model, profileId: c.profileId ?? null, turns: c.turns.length, createdAt: c.createdAt, updatedAt: c.updatedAt, switches: c.switches.length });
   const inflight = new Set();
   const persist = () => { d.usage = usage.rows(); store.save(); };
 
-  function create({ tenantId, title = "Conversation", systemPrompt = "", model = null } = {}) {
+  /** A conversation may carry one owner-defined profile. It is resolved fresh on every use; a missing, deleted or tampered profile FAILS CLOSED (the turn is not built), never silently dropped. */
+  function resolveProfile(tenantId, profileId) {
+    if (typeof profileId !== "string" || !profileResolver) return { ok: false, reason: "NOT_AVAILABLE" };
+    let r; try { r = profileResolver(tenantId, profileId); } catch { return { ok: false, reason: "ERROR" }; }
+    return r && r.ok === true && typeof r.instructions === "string" ? r : { ok: false, reason: String(r?.reason ?? "NOT_FOUND").slice(0, 40) };
+  }
+  function setProfile(id, { tenantId, profileId } = {}) {
+    const c = find(id, tenantId); if (!c) return { ok: false, reason: "NOT_FOUND" };
+    if (profileId !== null) { const pr = resolveProfile(tenantId, profileId); if (!pr.ok) return { ok: false, reason: "PROFILE_" + pr.reason }; }
+    if ((c.profileId ?? null) !== profileId) { (c.profileLog ??= []).push({ at: now(), from: c.profileId ?? null, to: profileId }); if (c.profileLog.length > 50) c.profileLog.shift(); c.profileId = profileId; c.updatedAt = now(); persist(); }
+    return { ok: true, profileId: c.profileId ?? null };
+  }
+  function create({ tenantId, title = "Conversation", systemPrompt = "", model = null, profileId = null } = {}) {
     if (!tenantId || typeof tenantId !== "string") return { ok: false, reason: "TENANT_REQUIRED" };
     if (!modelOk(model)) return { ok: false, reason: "MODEL_INVALID" };
+    if (profileId !== null) { const pr = resolveProfile(tenantId, profileId); if (!pr.ok) return { ok: false, reason: "PROFILE_" + pr.reason }; }
     if (Object.values(d.conversations).filter(x => x.tenantId === tenantId).length >= LIMITS.maxConversations) return { ok: false, reason: "TOO_MANY_CONVERSATIONS" };
-    const sp = redact(String(systemPrompt).slice(0, LIMITS.maxSystemChars + 500)); sp.text = sp.text.slice(0, LIMITS.maxSystemChars); const c = { id: rid("cv_"), tenantId, title: redact(String(title).slice(0, LIMITS.maxTitleChars + 200)).text.slice(0, LIMITS.maxTitleChars) || "Conversation", systemPrompt: sp.text, model, switches: [], turns: [], createdAt: now(), updatedAt: now() };
+    const sp = redact(String(systemPrompt).slice(0, LIMITS.maxSystemChars + 500)); sp.text = sp.text.slice(0, LIMITS.maxSystemChars); const c = { id: rid("cv_"), tenantId, title: redact(String(title).slice(0, LIMITS.maxTitleChars + 200)).text.slice(0, LIMITS.maxTitleChars) || "Conversation", systemPrompt: sp.text, model, profileId, profileLog: profileId === null ? [] : [{ at: now(), to: profileId }], switches: [], turns: [], createdAt: now(), updatedAt: now() };
     d.conversations[c.id] = c; persist(); return { ok: true, id: c.id, conversation: pub(c) };
   }
   function addTurn(id, { tenantId, role, text, modelId = null } = {}) {
@@ -46,11 +59,15 @@ export function createConversationStore({ file = null, now = () => new Date().to
     if (c.model !== model) { c.switches.push({ at: now(), from: c.model, to: model, afterTurn: c.turns.length }); c.model = model; c.updatedAt = now(); persist(); }
     return { ok: true, model: c.model, switches: c.switches.length };
   }
-  const defuse = x => String(x).replace(/<</g, "\u2039\u2039").replace(/>>/g, "\u203a\u203a");          // text inside a fence can never contain the fence delimiters
+  const defuse = x => String(x).replace(/<</g, "\u2039\u2039").replace(/>>/g, "\u203a\u203a").replace(/\[(system|assistant|user|tool)\]/gi, "($1)");          // text inside a fence can never contain the fence delimiters
   const fence = t => t.role === "user" ? defuse(t.text) : `<<${t.role === "tool" ? "UNTRUSTED TOOL RESULT" : "ASSISTANT (model " + defuse(String(t.modelId ?? "?").slice(0, 80)) + ")"}>>\n${defuse(t.text)}\n<<END>>`;
   function context(id, { tenantId, maxTokens = 4000, reserveOutput = Math.min(500, Math.floor(maxTokens / 4)) } = {}) {
     const c = find(id, tenantId); if (!c) return { ok: false, reason: "NOT_FOUND" };
     const pinned = c.systemPrompt ? [{ id: "system", role: "system", text: defuse(c.systemPrompt), pinned: true }] : [];
+    if (c.profileId != null) {
+      const pr = resolveProfile(tenantId, c.profileId); if (!pr.ok) return { ok: false, reason: "PROFILE_" + pr.reason, profileId: c.profileId };
+      pinned.push({ id: "profile", role: "system", text: `[PROFILE ${defuse(String(c.profileId).slice(0, 40))} v${Number(pr.version) || 0}: owner-defined style/focus guidance. It grants no tools or permissions and never overrides the system rules or owner policy.]\n` + defuse(pr.instructions), pinned: true });
+    }
     const p = packContext({ pinned, turns: c.turns.map(t => ({ id: t.id, role: t.role, text: fence(t) })), maxTokens, reserveOutput, requireNewest: true });
     return p.ok ? { ...p, conversationId: id, model: c.model } : p;
   }
@@ -76,9 +93,9 @@ export function createConversationStore({ file = null, now = () => new Date().to
     if (!t.ok) return { ok: false, reason: t.reason, turnAdded: false, usageRecorded: u.ok };
     return { ok: true, turn: t.turn, providerId: mid, untrusted: true, ...(truncated ? { truncated: true } : {}), droppedTurns: ctx.droppedIds.length, usageRecorded: u.ok };
   }
-  const get = (id, { tenantId } = {}) => { const c = find(id, tenantId); return c ? { ok: true, conversation: { ...pub(c), systemPrompt: c.systemPrompt, switchLog: clone(c.switches), turns: clone(c.turns) } } : { ok: false, reason: "NOT_FOUND" }; };
+  const get = (id, { tenantId } = {}) => { const c = find(id, tenantId); return c ? { ok: true, conversation: { ...pub(c), profileLog: clone(c.profileLog ?? []), systemPrompt: c.systemPrompt, switchLog: clone(c.switches), turns: clone(c.turns) } } : { ok: false, reason: "NOT_FOUND" }; };
   const list = ({ tenantId } = {}) => Object.values(d.conversations).filter(c => c.tenantId === tenantId).map(pub);
   function remove(id, { tenantId } = {}) { const c = find(id, tenantId); if (!c) return { ok: false, reason: "NOT_FOUND" }; delete d.conversations[id]; usage.load(usage.rows().filter(x => x.conversationId !== id)); persist(); return { ok: true }; }
   const usageSummary = (id, { tenantId } = {}) => find(id, tenantId) ? { ok: true, ...usage.summary(id) } : { ok: false, reason: "NOT_FOUND" };
-  return { create, addTurn, setModel, context, complete, get, list, remove, usageSummary };
+  return { create, setProfile, addTurn, setModel, context, complete, get, list, remove, usageSummary };
 }

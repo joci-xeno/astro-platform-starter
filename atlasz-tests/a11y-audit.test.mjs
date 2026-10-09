@@ -45,7 +45,7 @@ test("css parsing details: comments, other media queries, uppercase properties, 
   assert.deepEqual(sels(":root{--bg:#fff;--panel:#fff;--ink:#000;color:#ccc;background:#fff}"), ["light::root"], ":root's own colours are checked");
   assert.deepEqual(sels(T + "a,,.x,{color:#ccc}"), ["light:a", "light:.x"], "empty selector parts are dropped");
   const bgOnly = f(":root{--bg:#fff;--panel:#fff;--ink:#000}.x{background:transparent}.y{background:linear-gradient(#000,#fff)}"); assert.deepEqual([bgOnly.contrast.unresolved, bgOnly.findings.length], [0, 0], "non-hex backgrounds are not counted as unresolved pairs");
-  assert.deepEqual(f(".x{background:#000}").contrast, { pairsChecked: 0, unresolved: 0 }, "no ink token: a background-only rule has no foreground to check"); assert.equal(f(":root{--bg:#fff;--panel:#eee;--ink:#000}.x{color:var(--missing)}").contrast.unresolved, 2, "an unknown token is an unresolved pair on page and panel, not a pass");
+  assert.deepEqual(f(".x{background:#000}").contrast, { pairsChecked: 0, unresolved: 0, unresolvedPairs: [] }, "no ink token: a background-only rule has no foreground to check"); assert.equal(f(":root{--bg:#fff;--panel:#eee;--ink:#000}.x{color:var(--missing)}").contrast.unresolved, 2, "an unknown token is an unresolved pair on page and panel, not a pass");
   // text-only rules are checked against BOTH the page and the panel background
   assert.deepEqual(sels(":root{--bg:#ffffff;--panel:#000000;--ink:#000}.p{color:#888888}"), ["light:.p"], "fails on the white page only"); assert.deepEqual(sels(":root{--bg:#000000;--panel:#ffffff;--ink:#000}.p{color:#888888}"), ["light:.p"], "fails on the white panel only");
   // large-text boundaries and bold keyword
@@ -57,7 +57,7 @@ test("css parsing details: comments, other media queries, uppercase properties, 
 });
 
 test("html: lang, title, viewport zoom, landmarks, nav label, img alt, positive tabindex", () => {
-  assert.equal(auditAccessibility({ html: GOOD_HTML }).verdict, "NO_FAILS_BY_THESE_CHECKS");
+  assert.equal(auditAccessibility({ html: GOOD_HTML }).verdict, "INCOMPLETE_AUDIT", "html only: no stylesheet was audited, so a clean result is never reported");
   const bad = h => rules(auditAccessibility({ html: h }));
   assert.ok(bad(GOOD_HTML.replace(' lang="en"', "")).includes("HTML_LANG")); assert.ok(bad(GOOD_HTML.replace('lang="en"', 'lang=""')).includes("HTML_LANG")); assert.ok(bad(GOOD_HTML.replace('lang="en"', 'lang="x"')).includes("HTML_LANG")); assert.ok(!bad(GOOD_HTML.replace('lang="en"', 'lang="hu"')).includes("HTML_LANG")); assert.ok(!bad(GOOD_HTML.replace('lang="en"', 'lang="en-US"')).includes("HTML_LANG"));
   assert.ok(bad(GOOD_HTML.replace("<title>App</title>", "")).includes("TITLE")); assert.ok(bad(GOOD_HTML.replace("<title>App</title>", "<title>  </title>")).includes("TITLE"));
@@ -100,8 +100,8 @@ test("focus outlines and script-built controls", () => {
 });
 
 test("verdicts, limits and input validation; the verdict never says 'accessible'", () => {
-  const a = auditAccessibility({ html: GOOD_HTML, css: "", js: "" }); assert.deepEqual([a.ok, a.verdict, a.counts], [true, "NO_FAILS_BY_THESE_CHECKS", { FAIL: 0, WARN: 0, INFO: 0 }]); assert.match(a.notes[0], /not a statement that the interface is accessible/);
-  assert.equal(auditAccessibility({ html: GOOD_HTML, js: 'h("input", { placeholder: "a" })' }).verdict, "WARNINGS_ONLY"); assert.equal(auditAccessibility({ html: "<p>x</p>" }).verdict, "FAIL_FOUND");
+  const a = auditAccessibility({ html: GOOD_HTML, css: "", js: "" }); assert.deepEqual([a.ok, a.verdict, a.counts], [true, "INCOMPLETE_AUDIT", { FAIL: 0, WARN: 0, INFO: 0 }]); assert.match(a.notes[0], /not a statement that the interface is accessible/);
+  assert.equal(auditAccessibility({ html: GOOD_HTML, css: ":root{--bg:#fff;--panel:#fff;--ink:#000}body{color:var(--ink)}", js: 'h("input", { placeholder: "a" })' }).verdict, "WARNINGS_ONLY"); assert.equal(auditAccessibility({ html: "<p>x</p>" }).verdict, "FAIL_FOUND");
   for (const bad of [{ html: 5 }, { css: {} }, { js: null }, { html: "x".repeat(LIMITS.maxInputChars + 1) }]) assert.equal(auditAccessibility(bad).reason, "INPUT_INVALID_OR_TOO_LARGE");
   assert.equal(auditAccessibility().ok, true);
   const exact = "/* */".padEnd(LIMITS.maxInputChars, " "); assert.equal(exact.length, LIMITS.maxInputChars); assert.equal(auditAccessibility({ html: GOOD_HTML, css: exact }).ok, true, "exactly the limit is accepted");

@@ -6,7 +6,7 @@ import path from "node:path";
 import { createCodeSandbox, LIMITS } from "../atlasz-addons/code-sandbox.mjs";
 import { tmp, rm } from "./helpers.mjs";
 
-const mk = (o = {}) => { const base = tmp("sbx-"); const sb = createCodeSandbox({ baseDir: path.join(base, "runs"), auditFile: path.join(base, "audit.jsonl"), ...o }); return { base, sb, caps: sb.capabilities(), done: () => rm(base) }; };
+const mk = (o = {}) => { const base = tmp("sbx-"); const sb = createCodeSandbox({ allowPython: true, baseDir: path.join(base, "runs"), auditFile: path.join(base, "audit.jsonl"), ...o }); return { base, sb, caps: sb.capabilities(), done: () => rm(base) }; };
 const needPy = c => !c.python && "python not installed on this host";
 
 test("capabilities are detected, not assumed; every result carries the isolation actually used and an untrusted flag", async () => {
@@ -131,4 +131,15 @@ test("audit: every run (including refusals) is hash-chained, code is recorded by
     assert.deepEqual(createCodeSandbox({ baseDir: path.join(w.base, "runs"), auditFile: file }).verifyAudit(), { ok: false, brokenAt: 2 });
     fs.writeFileSync(file, "{broken\n"); assert.throws(() => createCodeSandbox({ baseDir: path.join(w.base, "runs"), auditFile: file }), /STORE_UNREADABLE/); assert.equal(fs.readFileSync(file, "utf8"), "{broken\n");
   } finally { w.done(); }
+});
+
+test("Python is OFF by default (no OS-level containment proven: a native module can escape the audit hook); only an explicit owner opt-in enables it", async () => {
+  const w = mk({ allowPython: false });
+  try {
+    assert.ok(!w.sb.capabilities().languages.includes("python")); assert.equal(w.sb.capabilities().python, null);
+    const r = await w.sb.run({ language: "python", code: "print(1)" }, { actor: "OWNER", allowProcessOnly: true }); assert.equal(r.status, "LANGUAGE_UNAVAILABLE");
+    const off = createCodeSandbox({ baseDir: path.join(w.base, "d") }); const viaEnv = process.env.ATLASZ_ALLOW_UNCONTAINED_PYTHON === "1";
+    assert.equal(off.capabilities().languages.includes("python"), viaEnv, "default follows the explicit owner switch only");
+    assert.equal((await w.sb.run({ language: "javascript", code: "console.log('js still works')" }, { actor: "OWNER" })).status === "OK" || w.sb.capabilities().level !== "NAMESPACE", true);
+  } finally { rm(w.base); }
 });

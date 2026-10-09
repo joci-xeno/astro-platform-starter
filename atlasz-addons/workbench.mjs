@@ -27,7 +27,7 @@ export const WB_LIMITS = Object.freeze({ csvChars: 400_000, textChars: 400_000, 
 const isObj = v => v && typeof v === "object" && !Array.isArray(v);
 
 export function createWorkbench({ conversationFile = null, memoryFile = null, notesFile = null, workflowFile = null, skillsFile = null, prefsFile = null, profilesFile = null, studyFile = null, suggestionsFile = null, tutorFile = null, suggestionExtras = () => ({}), gateway = null, ownerAuth = null, tenantId = "JOCI", now, isStopped = () => false } = {}) {
-  const conv = createConversationStore({ file: conversationFile, ...(now ? { now } : {}) });
+  const conv = createConversationStore({ file: conversationFile, profileResolver: (tenant, id) => profiles.resolve(tenant, id, { role: "EXECUTION" }), ...(now ? { now } : {}) });
   const T = { tenantId };
   const memory = createProjectMemory({ file: memoryFile, ...(now ? { now } : {}) }), notes = createNotesOrganizer({ file: notesFile, ...(now ? { now } : {}) }), tutor = createTutor({ file: tutorFile, ...(now ? { now } : {}) });
   // Workflow ACTIONS are the only things a step may do. Pure computations are idempotent and rewindable; anything that writes elsewhere is neither (so a crash needs review and a rewind is refused).
@@ -52,7 +52,8 @@ export function createWorkbench({ conversationFile = null, memoryFile = null, no
     return { ...extra, decisions, workflows: wf.listInstances({ ...T, status: null }), skills: skills.list(T.tenantId), preferences: prefs.proposals(T.tenantId, { status: "PENDING" }) };
   };
   const OPS = {
-    "conv.create": a => conv.create({ ...T, title: a.title, systemPrompt: a.systemPrompt, model: a.model ?? null }),
+    "conv.create": a => conv.create({ ...T, title: a.title, systemPrompt: a.systemPrompt, model: a.model ?? null, profileId: a.profile ?? null }),
+    "conv.setProfile": a => conv.setProfile(a.id, { ...T, profileId: a.profile ?? null }),
     "conv.list": () => ({ ok: true, conversations: conv.list(T) }),
     "conv.get": a => conv.get(a.id, T),
     "conv.addTurn": a => { if ((a.role ?? "user") !== "user") throw new Error("ROLE_NOT_ALLOWED: assistant turns are created only by conv.complete (a real model call)"); return conv.addTurn(a.id, { ...T, role: "user", text: a.text }); },
@@ -172,6 +173,8 @@ export function createWorkbench({ conversationFile = null, memoryFile = null, no
     "profile.get": a => profiles.get(T.tenantId, a.id),
     "profile.resolve": a => profiles.resolve(T.tenantId, a.id, { role: a.role }),
     "profile.check": a => ({ ok: true, ...profiles.check(T.tenantId, a.id, { role: a.role, tool: a.tool ?? null, scope: a.scope ?? null }) }),
+    "profile.assign": a => profiles.assign(T.tenantId, a.agentId, a.profile ?? null, { actor: "OWNER" }),
+    "profile.assignments": () => ({ ok: true, assignments: profiles.assignments(T.tenantId) }),
     "profile.rollback": a => profiles.rollback(T.tenantId, a.id, a.version, { actor: "OWNER" }),
     "profile.remove": a => profiles.remove(T.tenantId, a.id, { actor: "OWNER" }),
     // ---- study cards (P01): SM-2 scheduling, cloze cards from the owner's own text; the console is the OWNER

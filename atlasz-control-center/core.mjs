@@ -6,6 +6,8 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { Worker } from "node:worker_threads";
+import { scrub } from "../atlasz-addons/secret-patterns.mjs";
 import { createOwnerAuth } from "../atlasz-addons/owner-auth.mjs";
 import { createEmergencyStop } from "../atlasz-addons/emergency-stop.mjs";
 import { createSafeMode } from "../atlasz-addons/safe-mode.mjs";
@@ -54,7 +56,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const RUNTIME_ENTRY = path.join(HERE, "..", "atlasz-runtime", "supervisor-safe.mjs");
 const AUDITS = ["owner-auth-audit.jsonl", "emergency-audit.jsonl", "update-center-audit.jsonl", "safe-mode-audit.jsonl", "vault/vault-audit.jsonl", "ledger/ledger.jsonl"];
 
-export function createControlCenterCore({ stateDir, configDir, backupRoot = path.join(configDir, "backups"), port = 8080, fetchImpl = fetch,
+export function createControlCenterCore({ a11yWorkerUrl = null, a11yTimeoutMs = 3000, stateDir, configDir, backupRoot = path.join(configDir, "backups"), port = 8080, fetchImpl = fetch,
   updateAdapters = null, localUpdates = true, runtimeEntry = RUNTIME_ENTRY, nodeBin = process.execPath, evidenceDir = process.env.ATLASZ_EVIDENCE_DIR || null } = {}) {
   if (!stateDir || !configDir) throw new Error("STATE_DIR_AND_CONFIG_DIR_REQUIRED");
   fs.mkdirSync(stateDir, { recursive: true }); fs.mkdirSync(configDir, { recursive: true });
@@ -358,6 +360,32 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   const sandboxFresh = () => createCodeSandbox({ baseDir: path.join(stateDir, "sandbox", "runs"), auditFile: path.join(stateDir, "sandbox", "audit.jsonl") });   // read view: re-reads the log, so a corrupted audit log is reported
   const sandbox = () => { try { const s = sandboxFresh(); return { state: "CONNECTED", summary: s.summary(), history: s.history({ limit: 25 }).reverse() }; } catch (e) { return { state: "UNREADABLE", error: String(e.message) }; } };
   async function sandboxRun({ language, code, stdin } = {}) { sandboxFresh(); const r = await sandboxInst().run({ language, code, stdin }, { actor: "OWNER" }); if (/^INVALID/.test(r.status)) throw new Error(r.status); return r; }
+
+  // A13 accessibility audit (static source checks). Targets: the Control Center's own three public files (fixed names) or text the owner pastes. It never fetches a URL, opens a path
+  // the caller names, or runs the audited script; the engine runs in a worker thread with a hard timeout. A failed, timed-out or partial audit is never reported as clean.
+  const A11Y_FIELDS = new Set(["target", "html", "css", "js"]), A11Y_MAX = 60000;
+  async function a11yAudit(b = {}) {
+    if (!b || typeof b !== "object" || Array.isArray(b)) throw new Error("A11Y_BODY_MUST_BE_AN_OBJECT");
+    for (const k of Object.keys(b)) if (!A11Y_FIELDS.has(k)) throw new Error("A11Y_UNSUPPORTED_FIELD:" + String(k).slice(0, 30));
+    const target = b.target ?? "control-center"; if (target !== "control-center" && target !== "custom") throw new Error("A11Y_TARGET_INVALID");
+    let input;
+    if (target === "control-center") {
+      if (b.html !== undefined || b.css !== undefined || b.js !== undefined) throw new Error("A11Y_TEXT_ONLY_WITH_CUSTOM_TARGET");
+      const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), "public"); input = {};
+      for (const [k, f] of [["html", "index.html"], ["css", "style.css"], ["js", "app.js"]]) input[k] = fs.readFileSync(path.join(dir, f), "utf8");
+    } else {
+      input = { html: b.html ?? "", css: b.css ?? "", js: b.js ?? "" };
+      for (const v of Object.values(input)) if (typeof v !== "string") throw new Error("A11Y_TEXT_MUST_BE_STRINGS");
+      if (input.html.length + input.css.length + input.js.length > A11Y_MAX) throw new Error("A11Y_INPUT_TOO_LARGE");
+    }
+    const r = await new Promise(resolve => {
+      let done = false, w; const fin = v => { if (done) return; done = true; clearTimeout(t); try { w?.terminate(); } catch { /* gone */ } resolve(v); };
+      const t = setTimeout(() => fin({ ok: false, reason: "AUDIT_TIMEOUT" }), a11yTimeoutMs);
+      try { w = new Worker(a11yWorkerUrl ?? new URL("../atlasz-addons/a11y-worker.mjs", import.meta.url), { workerData: input }); w.once("message", m => fin(m.ok ? m.result : m)); w.once("error", () => fin({ ok: false, reason: "AUDIT_ENGINE_FAILED" })); w.once("exit", () => fin({ ok: false, reason: "AUDIT_ENGINE_FAILED" })); } catch { fin({ ok: false, reason: "AUDIT_ENGINE_FAILED" }); }
+    });
+    if (!r.ok) return { ok: false, verdict: "AUDIT_NOT_COMPLETED", reason: r.reason, note: "No result: a failed audit says nothing about accessibility." };
+    return { ...r, target, wcagClaim: "NONE", note: "Automated static checks cover only part of WCAG (contrast of declared colours, document structure, some control names). They cannot establish compliance; manual keyboard and screen-reader testing is still required." };
+  }
   const inboxMod = () => createUniversalInbox({ dir: path.join(stateDir, "inbox"), ownerAuth: ownerAuth() });
   const inbox = () => { const i = inboxMod(); return { counts: i.counts(), chain: i.verify(), items: i.list().slice(0, 100), note: "Drafts are never sent from here. Sending needs a proven connector, an open kill switch and your signed approval." }; };
   // Workbench (85-capability programme B0): conversations, analyst, previews, annotations, guidance, effort, chunking, detail policy. ATLASZ attaches NO model provider, so a conversation
@@ -465,6 +493,16 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
     rollback: ({ id, version, passphrase }) => act(() => { const ins = installer(), s = ins.rollbackSubject(id, version); return ins.rollback(id, version, { ownerApproval: passphrase && s ? sign(passphrase, "PLUGIN_ROLLBACK", s) : null }); }),
     uninstall: ({ id, passphrase }) => act(() => installer().uninstall(id, { ownerApproval: passphrase ? sign(passphrase, "PLUGIN_UNINSTALL", id) : null })),
     enable: ({ id, passphrase }) => act(() => { const pm = plugins(), sub = pm.enableSubject(id); return pm.enable(id, { ownerApproval: passphrase ? sign(passphrase, "PLUGIN_ENABLE", sub ?? id) : null }); }),
+    /** Run one hook of an ENABLED plugin. The manager still enforces: enabled by a code-hash-bound owner approval, exact code unchanged, not quarantined, kill switch / Safe Mode off, isolated child with the granted permissions only.
+     *  The plugin's answer is untrusted data: credential-shaped text is redacted and the size is capped before it reaches the console. */
+    invoke: async ({ id, hook, input = {} } = {}) => {
+      if (typeof id !== "string" || !/^[a-z][a-z0-9._-]{0,59}$/.test(id)) return { ok: false, error: "PLUGIN_ID_INVALID" };
+      if (typeof hook !== "string" || !/^[a-z][a-z0-9._-]{0,39}$/.test(hook)) return { ok: false, error: "HOOK_INVALID" };
+      let js; try { js = JSON.stringify(input ?? {}); } catch { return { ok: false, error: "INPUT_NOT_JSON" }; } if (!input || typeof input !== "object" || Array.isArray(input) || js.length > 10000) return { ok: false, error: "INPUT_INVALID_OR_TOO_LARGE" };
+      const r = await plugins().invoke(id, hook, JSON.parse(js)); if (!r.ok) return { ok: true, result: r };
+      let out = JSON.stringify(r.result ?? null); if (out.length > 20000) return { ok: true, result: { ok: false, reason: "RESULT_TOO_LARGE" } };
+      let clean; try { clean = JSON.parse(scrub(out)); } catch { clean = scrub(out); } return { ok: true, result: { ok: true, result: clean, untrusted: true } };
+    },
     disable: ({ id }) => act(() => plugins().disable(id)),
     setTheme: ({ id = null }) => act(() => plugins().setTheme(id)),
     resetQuarantine: ({ id, passphrase }) => act(() => plugins().resetQuarantine(id, { ownerApproval: sign(passphrase, "PLUGIN_RESET_QUARANTINE", id) }))
@@ -558,6 +596,6 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   };
 
   const moneyViews = createMoneyViews({ stateDir });
-  return { prototypes, prototypeActions, pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, workbench, workbenchAction, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => pluginView(), mcp, mcpActions, repos, repoActions, theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { prototypes, prototypeActions, pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, workbench, workbenchAction, a11yAudit, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => pluginView(), mcp, mcpActions, repos, repoActions, theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }

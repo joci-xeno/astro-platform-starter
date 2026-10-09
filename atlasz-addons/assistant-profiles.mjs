@@ -7,7 +7,7 @@
 import crypto from "node:crypto";
 import { createStore, clone } from "./business/store.mjs";
 import { redactSecrets, INJECTION_PATTERNS } from "./text-compare.mjs";
-import { TOOL_POLICY, ROLES, permissionFor } from "./agent-tool-policy.mjs";
+import { TOOL_POLICY, ROLES, permissionFor, roleOf } from "./agent-tool-policy.mjs";
 import { okName, own } from "./safe-keys.mjs";
 
 export const LIMITS = Object.freeze({ maxProfiles: 50, maxVersions: 10, maxInstructions: 2000, maxName: 60, maxTools: 40, maxSkills: 20, maxScopes: 20 });
@@ -21,7 +21,7 @@ export const defaultGrantable = (role, policy = TOOL_POLICY) => Object.keys(poli
 
 export function createProfiles({ file = null, grantable = defaultGrantable, skillExists = () => true, now = () => Date.now() } = {}) {
   const store = createStore({ file, init: () => ({ tenants: {} }), mode: 0o600 }), d = store.data;
-  const T = tenantId => { if (typeof tenantId !== "string" || !okName(TENANT, tenantId)) throw new Error("TENANT_INVALID"); return (d.tenants[tenantId] ??= { profiles: {} }); };
+  const T = tenantId => { if (typeof tenantId !== "string" || !okName(TENANT, tenantId)) throw new Error("TENANT_INVALID"); return (d.tenants[tenantId] ??= { profiles: {}, assignments: {} }); };
   const peek = tenantId => (typeof tenantId === "string" && okName(TENANT, tenantId) ? own(d.tenants, tenantId) ?? null : null);
   const union = () => new Set(ROLES.flatMap(r => { try { return grantable(r); } catch { return []; } }));
   const list = (arr, max, re, what) => (Array.isArray(arr) && arr.length <= max && arr.every(x => typeof x === "string" && re.test(x)) ? null : what);
@@ -77,5 +77,31 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
     if (scope !== null) return r.memoryScopes.includes(scope) ? { allowed: true } : { allowed: false, reason: "SCOPE_NOT_IN_PROFILE" };
     return { allowed: false, reason: "NOTHING_TO_CHECK" };
   }
-  return { create, rollback, remove, list: listAll, get, resolve, check, grantable: role => { try { return [...grantable(role)]; } catch { return []; } }, limits: LIMITS };
+  /** Agent -> profile assignment (owner only; the 30 ids are the fixed roster, a profile never creates one). A profile can only NARROW what the owner's tool matrix already allows. */
+  function assign(tenantId, agentId, profileId, { actor } = {}) {
+    if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" };
+    if (typeof agentId !== "string" || !roleOf(agentId)) return { ok: false, reason: "UNKNOWN_AGENT" };
+    const t = T(tenantId); t.assignments ??= {};
+    if (profileId === null) { delete t.assignments[agentId]; store.save(); return { ok: true, agentId, profileId: null }; }
+    if (typeof profileId !== "string" || !own(t.profiles, profileId)) return { ok: false, reason: "PROFILE_NOT_FOUND" };
+    t.assignments[agentId] = profileId; store.save(); return { ok: true, agentId, profileId };
+  }
+  const assignments = tenantId => { const a = peek(tenantId)?.assignments ?? {}; return Object.keys(a).sort().map(k => ({ agentId: k, profileId: a[k] })); };
+  /** The gate used by the tool broker. No assignment -> unchanged behaviour. Assigned -> the tool must be in the profile's CURRENT, still-granted tool list.
+   *  A deleted, tampered or unreadable profile FAILS CLOSED (no tools) until the owner re-assigns; deleting a profile never widens an agent. */
+  function agentGate(tenantId, agentId, tool) {
+    const pid = own(peek(tenantId)?.assignments ?? {}, agentId); if (pid == null) return { allowed: true, profile: null };
+    const role = roleOf(agentId); if (!role) return { allowed: false, reason: "UNKNOWN_AGENT" };
+    const r = resolve(tenantId, pid, { role }); if (!r.ok) return { allowed: false, profile: pid, reason: r.reason };
+    return r.tools.includes(tool) ? { allowed: true, profile: pid, version: r.version } : { allowed: false, profile: pid, reason: "TOOL_NOT_IN_AGENT_PROFILE" };
+  }
+  return { create, rollback, remove, assign, assignments, agentGate, list: listAll, get, resolve, check, grantable: role => { try { return [...grantable(role)]; } catch { return []; } }, limits: LIMITS };
+}
+
+/** Broker gate over the shared profiles file. The file is re-read on every call (the Control Center and the runtime are separate processes); an unreadable file denies instead of allowing. */
+export function createAgentProfileGate({ file, tenantId, grantable = defaultGrantable } = {}) {
+  return (agentId, tool) => {
+    try { if (!file) return { allowed: true, profile: null }; return createProfiles({ file, grantable }).agentGate(tenantId, agentId, tool); }
+    catch { return { allowed: false, reason: "PROFILE_STORE_UNREADABLE" }; }
+  };
 }
