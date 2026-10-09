@@ -13,7 +13,7 @@ const RULES = [
   ["SECRET_LITERAL", "HIGH", null, /-----BEGIN [A-Z ]*PRIVATE KEY-----|(?<![A-Za-z0-9])sk-[A-Za-z0-9_-]{20,}|(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}\b|(?<![A-Za-z0-9])ghp_[A-Za-z0-9]{30,}|(?<![A-Za-z0-9])xox[baprs]-[A-Za-z0-9-]{10,}/, "A credential-shaped literal is committed in source."],
   ["SECRET_ASSIGNMENT", "HIGH", null, /\b(?:password|passwd|secret|api[_-]?key|token|private[_-]?key)\b\s*[:=]\s*["'`][^"'`\s]{8,}["'`]/i, "A secret-named variable is assigned a literal value."],
   ["DYNAMIC_EVAL", "HIGH", JS, /\beval\s*\(|\bnew Function\s*\(|\bsetTimeout\s*\(\s*["'`]/, "Dynamic code evaluation: input becoming code."],
-  ["SHELL_INJECTION", "HIGH", JS, /\b(?:exec|execSync)\s*\(\s*(?:`[^`]*\$\{|[^)]*["']\s*\+|[a-zA-Z_$][\w$]*\s*[,)])/, "Shell command built from a variable or concatenation (use execFile with an argument array)."],
+  ["SHELL_INJECTION", "HIGH", JS, /\b(?:exec|execSync)\s*\(\s*(?:`[^`]*\$\{|[^)]*(?:["'`]\s*\+|\+\s*["'`]|\+\s*[A-Za-z_$])|[a-zA-Z_$][\w$]*\s*[,)])|\bspawn(?:Sync)?\s*\(\s*["'](?:sh|bash|cmd(?:\.exe)?|powershell)["']\s*,\s*\[\s*["']-?-?[ck]["']/, "Shell command built from a variable or concatenation (use execFile with an argument array)."],
   ["SHELL_INJECTION", "HIGH", PY, /\bos\.system\s*\(|\bsubprocess\.[a-z_]+\([^)]*shell\s*=\s*True|\beval\s*\(|\bexec\s*\(/, "Shell/dynamic execution in Python."],
   ["SHELL_INJECTION", "MEDIUM", SH, /\beval\b|\bsh\s+-c\b.*\$|\bcurl\b[^|]*\|\s*(?:sudo\s+)?(?:ba)?sh\b/, "Dynamic evaluation or pipe-to-shell."],
   ["SQL_INJECTION", "HIGH", null, /["'`]\s*(?:SELECT|INSERT|UPDATE|DELETE)\b[^"'`]*["'`]\s*\+|`\s*(?:SELECT|INSERT|UPDATE|DELETE)\b[^`]*\$\{|\b(?:SELECT|INSERT|UPDATE|DELETE)\b[^"']*["']\s*%\s*\(?|(?:execute|query)\(\s*f["']/i, "SQL text built from variables (use parameterised queries)."],
@@ -73,9 +73,10 @@ export function reviewCode(input) {
   // test presence: a source file counts as covered when some supplied test file mentions its base name
   const tests = files.filter(f => TEST_PATH.test(f.path)), sources = files.filter(f => SOURCE_EXT.test(f.path) && !TEST_PATH.test(f.path));
   const base = p => p.split("/").pop().replace(/\.[^.]+$/, "");
+  const codeOf = c => c.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|\s)(?:\/\/|#).*$/gm, "$1").trim();   // a test file holding only comments covers nothing
   const esc = x => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const importText = new Map(tests.map(t => [t, t.content.split("\n").filter(l => /from|require|import/.test(l)).slice(0, 5000).map(l => l.slice(0, 2000)).join("\n")]));   // only import-looking lines, each capped: the matching below is linear in what it is given
-  const covers = (t, b) => t.content.trim().length > 0 && (new RegExp("(?:from|require|import)[^\\n]*(?<![A-Za-z0-9_])" + esc(b) + "(?![A-Za-z0-9_])").test(importText.get(t)) || t.path.split("/").pop().replace(/\.(test|spec)\.[a-z]+$|^test_|_test\.[a-z]+$|\.[a-z]+$/gi, "") === b);
+  const covers = (t, b) => codeOf(t.content).length > 0 && (new RegExp("(?:from|require|import)[^\\n]*(?<![A-Za-z0-9_])" + esc(b) + "(?![A-Za-z0-9_])").test(importText.get(t)) || t.path.split("/").pop().replace(/\.(test|spec)\.[a-z]+$|^test_|_test\.[a-z]+$|\.[a-z]+$/gi, "") === b);
   const untested = sources.filter(s => !tests.some(t => covers(t, base(s.path)))).map(s => s.path);
   const verdict = counts.HIGH ? "BLOCK" : truncated || longLines ? "INCOMPLETE_REVIEW" : counts.MEDIUM || counts.LOW || counts.INFO ? "REVIEW" : "NO_FINDINGS_BY_THESE_RULES";
   return { ok: true, verdict, counts, findings, truncated, tests: { testFiles: tests.map(t => redactSecrets(t.path)), sourceFiles: sources.length, untested: untested.map(u => redactSecrets(u)) }, files: files.length,

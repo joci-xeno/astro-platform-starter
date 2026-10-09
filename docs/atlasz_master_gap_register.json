@@ -16,16 +16,16 @@
   ]
  },
  "summary": {
-  "total_gaps": 828,
+  "total_gaps": 813,
   "by_source": {
    "REGISTRY": 738,
-   "CAPABILITY_85": 82,
+   "CAPABILITY_85": 67,
    "IMPORT_SCAN": 5,
    "TODO_SCAN": 3
   },
   "by_reality": {
-   "SANDBOX_TESTED_PARTIAL": 479,
-   "NOT_BUILT": 195,
+   "SANDBOX_TESTED_PARTIAL": 473,
+   "NOT_BUILT": 186,
    "EXTERNAL": 58,
    "STRUCTURE_ONLY": 56,
    "MODULE_NOT_CONNECTED": 26,
@@ -33,20 +33,20 @@
    "OWNER_DECISION": 4
   },
   "by_workstream": {
-   "KNOWLEDGE_RESEARCH": 163,
-   "TYPED_TOOLS_MODEL_ROUTER": 92,
+   "KNOWLEDGE_RESEARCH": 161,
+   "TYPED_TOOLS_MODEL_ROUTER": 90,
    "SECURITY_OWNER": 67,
-   "MULTIMODAL_VOICE": 60,
+   "MULTIMODAL_VOICE": 56,
    "PERSONAL_HUMAN_CORE": 54,
    "MONEY_BUSINESS": 50,
    "WINDOWS_CONTROL_CENTER": 49,
    "AGENT_ORCHESTRATION": 44,
-   "RECOVERY_BACKUP": 37,
-   "CODE_SANDBOX_ENGINEERING": 27,
-   "SCHEDULER_PCC": 26,
+   "RECOVERY_BACKUP": 36,
+   "CODE_SANDBOX_ENGINEERING": 25,
+   "SCHEDULER_PCC": 23,
    "OBSERVABILITY_DOCTOR": 23,
    "SECTION_S31": 17,
-   "UNASSIGNED": 15,
+   "UNASSIGNED": 14,
    "SECTION_S52": 11,
    "SECTION_S18": 10,
    "SECTION_S44": 10,
@@ -67,8 +67,8 @@
    "LIVE_VOICE": 2
   },
   "by_status": {
-   "PARTIAL": 529,
-   "MISSING": 192,
+   "PARTIAL": 523,
+   "MISSING": 183,
    "EXTERNAL_BLOCKER": 58,
    "STRUCTURAL_ONLY": 28,
    "EXISTS_NEEDS_TEST": 10,
@@ -79,9 +79,9 @@
   },
   "registry_items": 930,
   "registry_gaps": 738,
-  "capabilities_with_gaps": 82,
-  "modules_total": 175,
-  "modules_reachable_from_entrypoints": 170,
+  "capabilities_with_gaps": 67,
+  "modules_total": 180,
+  "modules_reachable_from_entrypoints": 175,
   "orphan_modules": [
    "atlasz-addons/a11y-audit.mjs",
    "atlasz-addons/digital-twin.mjs",
@@ -210,6 +210,8 @@
     "/api/plugins/rollback",
     "/api/plugins/theme",
     "/api/plugins/uninstall",
+    "/api/prototypes",
+    "/api/prototypes/action",
     "/api/repos",
     "/api/repos/analyze",
     "/api/repos/test"
@@ -10826,7 +10828,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "knowledge-projects.mjs; document-center.mjs; brain/knowledge-brain.mjs; brain/memory-fabric.mjs; shared-project-registry.mjs; business/entity-graph.mjs",
-   "tests": "knowledge-projects.test (8) + knowledge-projects-hosted.test (2), 14+3 mutation checks; document-intelligence.test (6), doc-extractors.test (5), memory-fabric.t",
+   "tests": "Verified R5: cited keyword retrieval, tenant isolation, offsets, tamper detection. Secret screening now uses the shared scrubber (R5 fix).",
    "blocker": "BM25 keyword retrieval only (labelled NOT semantic); no embeddings; images not supported",
    "workstream": "KNOWLEDGE_RESEARCH",
    "depends_on": "V73-S03-017;V73-S05-013;V73-S06-002;V73-S06-007;V73-S07-001;V73-S07-002"
@@ -10840,7 +10842,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "atlasz-addons/model-gateway.mjs (composes provider-resilience + brain/model-intelligence); typed tool model.complete; Control Center providers panel",
-   "tests": "model-gateway.test (6: no-provider honesty, single real probe feeds both registries with measured latency, no-spend routing + fallback + breaker, untrusted-outp",
+   "tests": "See P16.",
    "blocker": "No provider registered (no credentials); conversation/context manager not built",
    "workstream": "TYPED_TOOLS_MODEL_ROUTER",
    "depends_on": "V73-S02-002;V73-S03-007;V73-S03-010;V73-S08-001;V73-S08-002;V73-S08-003"
@@ -10868,7 +10870,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "plugin-manager.mjs; skill-factory.mjs; capability-registry.mjs; control-center plugin panel",
-   "tests": "plugin-manager.test, control-center-plugins.test (manifest validation, permissions, isolated hook process, health)",
+   "tests": "Verified R5: install/enable/rollback/uninstall with owner passphrase, tamper detection; approval replay closed.",
    "blocker": "Skill Factory creates definitions only",
    "workstream": "TYPED_TOOLS_MODEL_ROUTER",
    "depends_on": "V73-S02-002;V73-S09-015;V73-S18-004;V73-S21-039;V73-S21-040;V73-S22-001"
@@ -10882,7 +10884,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "computer-use-fabric.mjs (policy); plugin-manager.mjs (child process, minimal env, timeout) ; code-sandbox.mjs (separate-process JS/Python runner, detected isolation level, limits, audit)",
-   "tests": "plugin-manager.test timeouts/containment; code-sandbox.test (9) + code-sandbox-hosted.test (3) + mutation checks; Linux namespace isolation (no network) verifie",
+   "tests": "JS NAMESPACE sandbox verified R5; R5 fixed shared instance (concurrency cap + audit chain no longer forked per request).",
    "blocker": "Isolation is labelled NAMESPACE or PROCESS_ONLY and is NOT a container or VM; Python filesystem restriction is best effort (audit hook); process-only mode needs argument-bound owner approval",
    "workstream": "CODE_SANDBOX_ENGINEERING",
    "depends_on": "V73-S19-001;V73-S19-002;V73-S19-003;V73-S19-004;V73-S19-005;V73-S19-006"
@@ -10892,11 +10894,11 @@
    "source": "CAPABILITY_85",
    "requirement_id": "M07",
    "title": "Advanced Analyst Mode",
-   "status": "MISSING",
-   "reality": "NOT_BUILT",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "doc-extractors.mjs (XLSX/ODS read); tool-fabric.mjs (catalogue 'data-analysis') ; code-sandbox.mjs (runner only)",
-   "tests": "Extractors read spreadsheets as text only; the sandbox exists as a runner, but no spreadsheet/statistics/chart workflow is built on it",
+   "tests": "Module analyst.mjs + analyst.run in the Control Center; cleaning, descriptive statistics, correlation, charts, reproducible hash. R5 verifier found blank cells ",
    "blocker": "Needs sandbox runner + deterministic calc library",
    "workstream": "CODE_SANDBOX_ENGINEERING",
    "depends_on": "V73-S09-020;V73-S26-006;V73-S30-007;ATLASZ-BR-004"
@@ -10910,7 +10912,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "research-ledger.mjs; knowledge-projects.mjs; brain/verifier.mjs; brain/evidence-sources.mjs; market-intelligence-engine.mjs; enterprise-knowledge-agentic-rag.mjs",
-   "tests": "research-ledger.test (9) + research-ledger-hosted.test (2), 28 mutation checks; evidence-sources.test, brain verifier tests",
+   "tests": "Offline ledger sound; R5 found support check accepted contradicting quotes (HIGH): FIXED 2026-10-08 (numbers must appear, polarity must match; support is lexica",
    "blocker": "No live web provider: sources must be supplied as already-retrieved text; comparison is quote-coverage/keyword based, not semantic",
    "workstream": "KNOWLEDGE_RESEARCH",
    "depends_on": "V73-S03-011;V73-S07-005;V73-S07-016;V73-S09-005;V73-S09-006;V73-S09-015"
@@ -10966,35 +10968,21 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "agent-factory.mjs; owner-control/agent-governor.mjs; capability-graph.mjs",
-   "tests": "agent-factory-governor.test (31st agent refused, unknown capability refused)",
+   "tests": "Profiles are stored/versioned/validated and check/resolve work (verified R5).",
    "blocker": "Fixed 30 limit applies to runtime agents; profiles are not agents",
    "workstream": "SECURITY_OWNER",
    "depends_on": "V73-S04-010;V73-S06-001;V73-S06-002;V73-S06-003;V73-S06-004;V73-S06-005"
-  },
-  {
-   "gap_id": "GAP-CAP-M13",
-   "source": "CAPABILITY_85",
-   "requirement_id": "M13",
-   "title": "Interactive Artifacts and Prototypes",
-   "status": "PARTIAL",
-   "reality": "SANDBOX_TESTED_PARTIAL",
-   "priority": "85-CAP",
-   "modules": "business/artifact-registry.mjs; atlasz-control-center (own UI)",
-   "tests": "business-engines.test (content-addressed artifacts, CREATED!=VERIFIED!=DELIVERED)",
-   "blocker": "Artifact store has no preview renderer",
-   "workstream": "CODE_SANDBOX_ENGINEERING",
-   "depends_on": "V73-S06-011;ATLASZ-BR-027;ATLASZ-PKG84-004;ATLASZ-PKG84-007;ATLASZ-PKG84-012;ATLASZ-T3-001"
   },
   {
    "gap_id": "GAP-CAP-C01",
    "source": "CAPABILITY_85",
    "requirement_id": "C01",
    "title": "Advanced Software Engineering Agent",
-   "status": "MISSING",
-   "reality": "NOT_BUILT",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "tool-fabric.mjs (catalogue 'code','test','github'); regression-eval-suite.mjs; skill-factory.mjs ; code-sandbox.mjs (runner only)",
-   "tests": "Only catalogue entries and an eval suite scaffold; tests/code can be executed in the sandbox; repo analysis/edit/review workflow still not built",
+   "tests": "code.review, repo analyze, governed test run (owner passphrase, sandboxed) and prototype builder are wired and were verified; R5 fixed review blind spots (conca",
    "blocker": "No code tools wired; needs sandbox + typed tools",
    "workstream": "CODE_SANDBOX_ENGINEERING",
    "depends_on": "V73-S08-001;V73-S08-007;V73-S12-005;V73-S12-006;V73-S16-003;V73-S20-006"
@@ -11042,20 +11030,6 @@
    "depends_on": "V73-S02-001;V73-S19-001;V73-S19-002;V73-S19-003;V73-S19-004;V73-S19-005"
   },
   {
-   "gap_id": "GAP-CAP-C05",
-   "source": "CAPABILITY_85",
-   "requirement_id": "C05",
-   "title": "Reusable Agent Skills",
-   "status": "PARTIAL",
-   "reality": "SANDBOX_TESTED_PARTIAL",
-   "priority": "85-CAP",
-   "modules": "skill-factory.mjs; capability-graph.mjs; plugin-manager.mjs",
-   "tests": "skill-factory + capability-graph tests",
-   "blocker": "Skill Factory registers definitions untested",
-   "workstream": "TYPED_TOOLS_MODEL_ROUTER",
-   "depends_on": "V73-S09-015;V73-S18-004;V73-S29-004;V73-S29-008;ATLASZ-BR-014;ATLASZ-OSC-018"
-  },
-  {
    "gap_id": "GAP-CAP-C06",
    "source": "CAPABILITY_85",
    "requirement_id": "C06",
@@ -11078,7 +11052,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "knowledge-projects.mjs (project notes); brain/memory-fabric.mjs; brain/knowledge-brain.mjs; business-memory.mjs; experience-learning-engine.mjs; shared-project-registry.mjs",
-   "tests": "memory-fabric.test (tenant isolation, HISTORICAL_RESULT only from independent ACCEPT)",
+   "tests": "Verified R5: lifecycle, tamper evidence, restart persistence.",
    "blocker": "shared-project-registry not durable",
    "workstream": "KNOWLEDGE_RESEARCH",
    "depends_on": "V73-S03-017;V73-S04-010;V73-S05-013;V73-S06-002;V73-S07-001;V73-S07-002"
@@ -11092,38 +11066,10 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "see M08",
-   "tests": "see M08",
+   "tests": "See M08.",
    "blocker": "see M08",
    "workstream": "KNOWLEDGE_RESEARCH",
    "depends_on": "V73-S09-005;V73-S09-006;V73-S09-015;V73-S31-005;V73-S32-006;V73-S38-004"
-  },
-  {
-   "gap_id": "GAP-CAP-C09",
-   "source": "CAPABILITY_85",
-   "requirement_id": "C09",
-   "title": "Interactive Artifact Generation",
-   "status": "PARTIAL",
-   "reality": "SANDBOX_TESTED_PARTIAL",
-   "priority": "85-CAP",
-   "modules": "see M13",
-   "tests": "see M13",
-   "blocker": "see M13",
-   "workstream": "UNASSIGNED",
-   "depends_on": "ATLASZ-BR-027;ATLASZ-PKG84-004;ATLASZ-PKG84-007;ATLASZ-PKG84-012"
-  },
-  {
-   "gap_id": "GAP-CAP-C10",
-   "source": "CAPABILITY_85",
-   "requirement_id": "C10",
-   "title": "Adaptive Reasoning Allocation",
-   "status": "PARTIAL",
-   "reality": "SANDBOX_TESTED_PARTIAL",
-   "priority": "85-CAP",
-   "modules": "brain/model-intelligence.mjs; cost-model-router.mjs; budget-consumption-governor.mjs",
-   "tests": "brain-systems.test routing by measured suitability",
-   "blocker": "Router picks a model, not an effort level",
-   "workstream": "TYPED_TOOLS_MODEL_ROUTER",
-   "depends_on": "V73-S02-002;V73-S03-001;V73-S03-007;V73-S03-010;V73-S08-001;V73-S08-002"
   },
   {
    "gap_id": "GAP-CAP-G01",
@@ -11190,7 +11136,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "see M06 ; code-sandbox.mjs",
-   "tests": "see M06; sandbox.run / sandbox.run_process_only typed tools; Control Center sandbox view (owner runs are NAMESPACE-only)",
+   "tests": "See M06.",
    "blocker": "see M06",
    "workstream": "CODE_SANDBOX_ENGINEERING",
    "depends_on": "V73-S02-003;V73-S09-002;V73-S09-013;V73-S09-014;V73-S09-029;V73-S10-001"
@@ -11288,7 +11234,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "event-bus.mjs; brain/black-box.mjs; task-ledger.mjs; progress-ledger.mjs; Control Center polling",
-   "tests": "black-box tests (8), control-center tests",
+   "tests": "SSE feed works end to end (secrets redacted, client cap, resume). R5 verifier: tail checked only the prev link; FIXED 2026-10-08 (entry hash recomputed, prevHas",
    "blocker": "UI polls; no server-sent events",
    "workstream": "WINDOWS_CONTROL_CENTER",
    "depends_on": "V73-S03-008;V73-S10-014;V73-S13-004;V73-S34-001;V73-S34-002;V73-S34-003"
@@ -11302,7 +11248,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "financial-ledger.mjs (token/API ledger); budget-consumption-governor.mjs; provider-resilience.mjs",
-   "tests": "financial-ledger tests (6), provider-resilience tests",
+   "tests": "Context packing and per-conversation usage accounting verified R5.",
    "blocker": "No context manager; caching is provider-side",
    "workstream": "UNASSIGNED",
    "depends_on": "V73-S03-007;V73-S03-018;V73-S04-004;V73-S04-011;V73-S08-011;V73-S08-013"
@@ -11358,7 +11304,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "research-ledger.mjs; knowledge-projects.mjs",
-   "tests": "research-ledger.test (9) + research-ledger-hosted.test (2), 28 mutation checks",
+   "tests": "See M08.",
    "blocker": "Grounded over supplied sources only",
    "workstream": "KNOWLEDGE_RESEARCH",
    "depends_on": "ATLASZ-PKG84-026;ATLASZ-PKG84-027"
@@ -11400,7 +11346,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "see M07/M06 ; code-sandbox.mjs",
-   "tests": "None; code runs in the sandbox with the code SHA-256 in a hash-chained audit (runs are reproducible by hash)",
+   "tests": "See M07. Code runs in the sandbox (NAMESPACE JS), analysis pipeline on top is analyst.mjs.",
    "blocker": "depends on M06",
    "workstream": "CODE_SANDBOX_ENGINEERING",
    "depends_on": ""
@@ -11456,7 +11402,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "brain/planning-brain.mjs; brain/orchestrator.mjs; team-lead-workflows.mjs; agent-factory.mjs",
-   "tests": "planning-brain tests (4), orchestrator tests (11)",
+   "tests": "Templates, params and schedule verified R5.",
    "blocker": "Workflows not reusable as templates",
    "workstream": "SCHEDULER_PCC",
    "depends_on": "V73-S02-001;V73-S02-002;V73-S02-003;V73-S03-001;V73-S03-002;V73-S03-003"
@@ -11554,7 +11500,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "brain/memory-fabric.mjs (text) ; observation-memory.mjs",
-   "tests": "Text memory only; observation-memory.test (8) + hosted (2) + mutation checks; modality + consent + classification + retention + correction + real deletion; raw ",
+   "tests": "Verified R5 at HTTP and module level; works with retention, correction, forget.",
    "blocker": "Keyword recall labelled NOT semantic",
    "workstream": "MULTIMODAL_VOICE",
    "depends_on": "V73-S04-010;V73-S05-013;V73-S07-001;V73-S07-002;V73-S07-003;V73-S07-004"
@@ -11574,20 +11520,6 @@
    "depends_on": "V73-S24-007;ATLASZ-PKG84-016"
   },
   {
-   "gap_id": "GAP-CAP-A07",
-   "source": "CAPABILITY_85",
-   "requirement_id": "A07",
-   "title": "Visual Guidance",
-   "status": "MISSING",
-   "reality": "NOT_BUILT",
-   "priority": "85-CAP",
-   "modules": "none",
-   "tests": "None",
-   "blocker": "Needs a renderer in Control Center",
-   "workstream": "MULTIMODAL_VOICE",
-   "depends_on": ""
-  },
-  {
    "gap_id": "GAP-CAP-A08",
    "source": "CAPABILITY_85",
    "requirement_id": "A08",
@@ -11596,7 +11528,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "human-core.mjs (planHelp); master-brief.mjs; brain/central-brain.mjs",
-   "tests": "human-core.test (7)",
+   "tests": "Verified R5: 3 of 6 suggestion sources exercised, canAct:false, dismiss does not change the decision.",
    "blocker": "Suggestions never act",
    "workstream": "UNASSIGNED",
    "depends_on": "ATLASZ-PKG84-012"
@@ -11638,7 +11570,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "master-brief.mjs (prefs); human-core.mjs; owner-keystore.mjs",
-   "tests": "control-center-home.test prefs; personal-command-center.test (owner-local day via utcOffsetMinutes, tasks/reminders/deadlines, hu/en brief)",
+   "tests": "Preference store verified R5 (propose/confirm, no silent change).",
    "blocker": "Limited prefs",
    "workstream": "PERSONAL_HUMAN_CORE",
    "depends_on": "V73-S04-010;V73-S06-001;V73-S06-002;V73-S06-003;V73-S06-004;V73-S06-005"
@@ -11666,7 +11598,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "Control Center UI",
-   "tests": "none specific",
+   "tests": "a11y-audit logic verified (contrast ratios match an independent formula).",
    "blocker": "Provider for scenes",
    "workstream": "WINDOWS_CONTROL_CENTER",
    "depends_on": ""
@@ -11676,84 +11608,14 @@
    "source": "CAPABILITY_85",
    "requirement_id": "P01",
    "title": "Personal Learning Tutor",
-   "status": "MISSING",
-   "reality": "NOT_BUILT",
+   "status": "PARTIAL",
+   "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "none",
-   "tests": "None",
+   "tests": "tutor.mjs + tutor.* ops + Control Center panel. R5 verifier: honest unknowns, no answers in quiz, restart persistence OK; mastery could be gamed by instant repe",
    "blocker": "Content generation needs a model for novel lessons; spaced-repetition scheduler is local",
    "workstream": "SCHEDULER_PCC",
    "depends_on": "V73-S07-001;V73-S07-002;V73-S07-003;V73-S07-004;V73-S07-005;V73-S07-006"
-  },
-  {
-   "gap_id": "GAP-CAP-P02",
-   "source": "CAPABILITY_85",
-   "requirement_id": "P02",
-   "title": "Video-to-Action Workflow",
-   "status": "MISSING",
-   "reality": "NOT_BUILT",
-   "priority": "85-CAP",
-   "modules": "none",
-   "tests": "None",
-   "blocker": "Transcript source",
-   "workstream": "MULTIMODAL_VOICE",
-   "depends_on": "V73-S02-001;V73-S04-010;V73-S05-003;V73-S05-004;V73-S05-013;V73-S07-005"
-  },
-  {
-   "gap_id": "GAP-CAP-P03",
-   "source": "CAPABILITY_85",
-   "requirement_id": "P03",
-   "title": "Personal Knowledge Organizer",
-   "status": "PARTIAL",
-   "reality": "SANDBOX_TESTED_PARTIAL",
-   "priority": "85-CAP",
-   "modules": "knowledge-projects.mjs; document-center.mjs; brain/knowledge-brain.mjs",
-   "tests": "document-intelligence.test",
-   "blocker": "Notes exist (Knowledge Projects) but no tags or reading-list model",
-   "workstream": "KNOWLEDGE_RESEARCH",
-   "depends_on": "V73-S06-007;V73-S07-001;V73-S07-002;V73-S07-003;V73-S07-004;V73-S07-005"
-  },
-  {
-   "gap_id": "GAP-CAP-P04",
-   "source": "CAPABILITY_85",
-   "requirement_id": "P04",
-   "title": "Rapid Prototype Builder",
-   "status": "MISSING",
-   "reality": "NOT_BUILT",
-   "priority": "85-CAP",
-   "modules": "none ; code-sandbox.mjs (runner only)",
-   "tests": "None; prototype execution is possible; generator + test gate not built",
-   "blocker": "Needs sandbox + model",
-   "workstream": "CODE_SANDBOX_ENGINEERING",
-   "depends_on": "V73-S08-001;V73-S08-007;V73-S29-001;V73-S29-010;V73-S43-011;V73-S48-013"
-  },
-  {
-   "gap_id": "GAP-CAP-P05",
-   "source": "CAPABILITY_85",
-   "requirement_id": "P05",
-   "title": "Task State Rewind",
-   "status": "PARTIAL",
-   "reality": "SANDBOX_TESTED_PARTIAL",
-   "priority": "85-CAP",
-   "modules": "owner-control/recovery-points.mjs; checkpoint-engine.mjs; backup-recovery.mjs; durable-queue.mjs",
-   "tests": "backup-recovery tests (3), recovery-points tests",
-   "blocker": "Restore is per category, not per task",
-   "workstream": "RECOVERY_BACKUP",
-   "depends_on": "V73-S03-018;V73-S10-012;V73-S14-007;V73-S23-032;V73-S35-017;V73-S37-003"
-  },
-  {
-   "gap_id": "GAP-CAP-P06",
-   "source": "CAPABILITY_85",
-   "requirement_id": "P06",
-   "title": "Reusable Personal Workflows",
-   "status": "PARTIAL",
-   "reality": "SANDBOX_TESTED_PARTIAL",
-   "priority": "85-CAP",
-   "modules": "brain/planning-brain.mjs; team-lead-workflows.mjs",
-   "tests": "planning-brain tests",
-   "blocker": "none",
-   "workstream": "SCHEDULER_PCC",
-   "depends_on": "V73-S02-002;V73-S21-001;V73-S26-002;V73-S26-008;V73-S28-003;V73-S30-003"
   },
   {
    "gap_id": "GAP-CAP-P07",
@@ -11768,20 +11630,6 @@
    "blocker": "none for code",
    "workstream": "CODE_SANDBOX_ENGINEERING",
    "depends_on": "V73-S03-010;V73-S03-011;V73-S04-012;V73-S08-001;V73-S08-007;V73-S09-026"
-  },
-  {
-   "gap_id": "GAP-CAP-P08",
-   "source": "CAPABILITY_85",
-   "requirement_id": "P08",
-   "title": "Interrupted Task Continuation",
-   "status": "PARTIAL",
-   "reality": "SANDBOX_TESTED_PARTIAL",
-   "priority": "85-CAP",
-   "modules": "durable-queue.mjs; checkpoint-engine.mjs; brain/planning-brain.mjs; startup-self-check.mjs",
-   "tests": "durable-queue.test (replay, lease, DLQ), canonical-queue-safety, scheduler.test (crash mid-run recorded INTERRUPTED and rerun)",
-   "blocker": "Per-module durable; no unified resume test across restart",
-   "workstream": "SCHEDULER_PCC",
-   "depends_on": "V73-S03-018;V73-S10-012;V73-S10-016;V73-S14-007;V73-S39-004;V73-S46-010"
   },
   {
    "gap_id": "GAP-CAP-P09",
@@ -11812,20 +11660,6 @@
    "depends_on": "V73-S02-002;V73-S03-007;V73-S03-010;V73-S04-008;V73-S08-001;V73-S08-002"
   },
   {
-   "gap_id": "GAP-CAP-P11",
-   "source": "CAPABILITY_85",
-   "requirement_id": "P11",
-   "title": "Batch Processing Engine",
-   "status": "PARTIAL",
-   "reality": "SANDBOX_TESTED_PARTIAL",
-   "priority": "85-CAP",
-   "modules": "durable-queue.mjs; priority-queue-rate-limit-governor.mjs; dead-letter-queue.mjs",
-   "tests": "durable-queue.test (maxPending, DLQ), canonical-queue-safety",
-   "blocker": "none",
-   "workstream": "SCHEDULER_PCC",
-   "depends_on": "V73-S03-002;V73-S03-017;V73-S07-006;V73-S10-001;V73-S10-002;V73-S10-003"
-  },
-  {
    "gap_id": "GAP-CAP-P12",
    "source": "CAPABILITY_85",
    "requirement_id": "P12",
@@ -11838,20 +11672,6 @@
    "blocker": "Metadata only without providers",
    "workstream": "MULTIMODAL_VOICE",
    "depends_on": "V73-S09-024;V73-S22-006;V73-S28-001;V73-S28-002;V73-S28-003;V73-S28-004"
-  },
-  {
-   "gap_id": "GAP-CAP-P13",
-   "source": "CAPABILITY_85",
-   "requirement_id": "P13",
-   "title": "Multi-Website Comparison",
-   "status": "MISSING",
-   "reality": "NOT_BUILT",
-   "priority": "85-CAP",
-   "modules": "none",
-   "tests": "None",
-   "blocker": "Fetcher is a provider/adapter",
-   "workstream": "KNOWLEDGE_RESEARCH",
-   "depends_on": "V73-S16-006;V73-S30-001;V73-S30-002;V73-S30-003;V73-S30-004;V73-S30-005"
   },
   {
    "gap_id": "GAP-CAP-P14",
@@ -11868,20 +11688,6 @@
    "depends_on": "V73-S24-005;V73-S34-001;V73-S43-006;V73-S51-011;ATLASZ-OSC-014;ATLASZ-OSC-015"
   },
   {
-   "gap_id": "GAP-CAP-P15",
-   "source": "CAPABILITY_85",
-   "requirement_id": "P15",
-   "title": "Adaptive Multimodal Processing",
-   "status": "MISSING",
-   "reality": "NOT_BUILT",
-   "priority": "85-CAP",
-   "modules": "none",
-   "tests": "None",
-   "blocker": "Providers",
-   "workstream": "MULTIMODAL_VOICE",
-   "depends_on": "ATLASZ-PKG84-029"
-  },
-  {
    "gap_id": "GAP-CAP-P16",
    "source": "CAPABILITY_85",
    "requirement_id": "P16",
@@ -11890,7 +11696,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "brain/memory-fabric.mjs; checkpoint-engine.mjs; planning-brain.mjs",
-   "tests": "memory-fabric.test",
+   "tests": "Verified R5: persisted conversation, context packing, per-turn model switch. R5 fix: hand-written assistant turns are refused.",
    "blocker": "Conversation object missing (M03)",
    "workstream": "KNOWLEDGE_RESEARCH",
    "depends_on": "V73-S03-018;V73-S04-004;V73-S04-011;V73-S05-001;V73-S05-002;V73-S05-005"
@@ -11910,20 +11716,6 @@
    "depends_on": "V73-S04-010;V73-S05-001;V73-S05-002;V73-S05-003;V73-S05-004;V73-S05-005"
   },
   {
-   "gap_id": "GAP-CAP-P18",
-   "source": "CAPABILITY_85",
-   "requirement_id": "P18",
-   "title": "Visual Highlighting",
-   "status": "MISSING",
-   "reality": "NOT_BUILT",
-   "priority": "85-CAP",
-   "modules": "none",
-   "tests": "None",
-   "blocker": "Renderer",
-   "workstream": "MULTIMODAL_VOICE",
-   "depends_on": ""
-  },
-  {
    "gap_id": "GAP-CAP-P19",
    "source": "CAPABILITY_85",
    "requirement_id": "P19",
@@ -11932,7 +11724,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "brain/memory-fabric.mjs (text) ; observation-memory.mjs; obs.* typed tools",
-   "tests": "Text only; permission-controlled recall with provenance, tenant isolation and deletion (observation-memory.test, hosted)",
+   "tests": "See A05.",
    "blocker": "Agents see only PUBLIC/PERSONAL records the Security Brain screened ALLOW",
    "workstream": "MULTIMODAL_VOICE",
    "depends_on": "V73-S04-010;V73-S05-013;V73-S07-001;V73-S07-002;V73-S07-003;V73-S07-004"
@@ -11946,7 +11738,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "human-core.mjs; master-brief.mjs",
-   "tests": "human-core.test",
+   "tests": "See A08.",
    "blocker": "Suggestions limited to brief",
    "workstream": "UNASSIGNED",
    "depends_on": "V73-S38-001"

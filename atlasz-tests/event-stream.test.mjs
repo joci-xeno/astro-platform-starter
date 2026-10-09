@@ -130,7 +130,12 @@ test("round-4 fixes: the tail refuses a log whose sequence goes backwards or rep
     const f = path.join(dir, "bb.jsonl"), L = o => JSON.stringify(o) + "\n";
     fs.writeFileSync(f, L(ent(5)) + L(ent(5))); assert.throws(() => createChainTail(f).read(), /LOG_CORRUPT/, "repeat");
     fs.writeFileSync(f, L(ent(5)) + L(ent(2))); assert.throws(() => createChainTail(f).read(), /LOG_CORRUPT/, "backwards");
-    fs.writeFileSync(f, L({ ...ent(1), hash: "h1", prev: "GENESIS" }) + L({ ...ent(2), hash: "h2", prev: "h1" })); assert.equal(createChainTail(f).read().length, 2);
-    fs.writeFileSync(f, L({ ...ent(1), hash: "h1", prev: "GENESIS" }) + L({ ...ent(2), hash: "h2", prev: "WRONG" })); assert.throws(() => createChainTail(f).read(), /LOG_CORRUPT/, "broken link");
+    const { hashEntry, GENESIS } = await import("../atlasz-addons/audit-chain.mjs");
+    const mk = (seq, prevHash) => { const e = { seq, at: "2026-01-01T00:00:00Z", event: "E", data: { n: seq }, prevHash }; return { ...e, hash: hashEntry(e) }; };
+    const e1 = mk(1, GENESIS), e2 = mk(2, e1.hash);
+    fs.writeFileSync(f, L(e1) + L(e2)); assert.equal(createChainTail(f).read().length, 2, "a genuine chain is served");
+    fs.writeFileSync(f, L(e1) + L(mk(2, "f".repeat(64)))); assert.throws(() => createChainTail(f).read(), /LOG_CORRUPT/, "broken link");
+    fs.writeFileSync(f, L(e1) + L({ ...e2, hash: "0".repeat(64) })); assert.throws(() => createChainTail(f).read(), /LOG_CORRUPT/, "forged entry hash (valid link, garbage hash)");
+    fs.writeFileSync(f, L(e1) + L({ ...e2, data: { n: 99 } })); assert.throws(() => createChainTail(f).read(), /LOG_CORRUPT/, "edited content with the old hash");
   } finally { rm(dir); }
 });

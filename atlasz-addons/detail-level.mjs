@@ -18,7 +18,7 @@ export function chooseDetail({ modality, bytes, privacy = "CONFIDENTIAL", purpos
   let usable = provider !== "NONE";
   if (provider === "NONE") { idx = 0; reasons.push("no provider: built-in metadata/structure analysis only"); }
   if (provider === "EXTERNAL" && priv === "CONFIDENTIAL") { idx = 0; usable = false; reasons.push("CONFIDENTIAL content is never sent to an external provider"); }
-  if (provider === "EXTERNAL" && !providerFree && budgetUsd === 0) { idx = 0; usable = false; reasons.push("external provider is not free and no spend is approved"); }
+  if (provider === "EXTERNAL" && providerFree !== true && budgetUsd === 0) { idx = 0; usable = false; reasons.push("external provider is not free and no spend is approved"); }
   if (provider === "EXTERNAL" && priv === "PERSONAL") { idx = Math.min(idx, 2); reasons.push("PERSONAL content: never FULL on an external provider"); }
   return { ok: true, level: LEVELS[idx], providerUsed: usable, privacy: priv, spendUsd: 0, reasons };
 }

@@ -64,30 +64,28 @@
  },
  "unique_open_requirements": 675,
  "capability": {
-  "MISSING": 10,
-  "PARTIAL": 50,
+  "MISSING": 1,
+  "PARTIAL": 44,
   "EXTERNAL_BLOCKER": 22,
-  "VERIFIED_WORKING": 3
+  "VERIFIED_WORKING": 18
  },
- "capability_open": 82,
- "capability_open_linked_to_registry": 76,
+ "capability_open": 67,
+ "capability_open_linked_to_registry": 63,
  "capability_open_without_link": [
   "G01",
   "GE07",
   "A01",
-  "A07",
-  "A13",
-  "P18"
+  "A13"
  ],
  "capability_dangling_links": [],
- "gap_register_total": 828,
+ "gap_register_total": 813,
  "gap_register_by_source": {
   "REGISTRY": 738,
-  "CAPABILITY_85": 82,
+  "CAPABILITY_85": 67,
   "IMPORT_SCAN": 5,
   "TODO_SCAN": 3
  },
- "gap_register_formula": "738 registry item gaps + 82 open capabilities + 5 import-scan orphans (+ 3 other scans)",
+ "gap_register_formula": "738 registry item gaps + 67 open capabilities + 5 import-scan orphans (+ 3 other scans)",
  "milestone_counts": {
   "M1": {
    "PARTIAL": 62,

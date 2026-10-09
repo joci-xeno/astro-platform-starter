@@ -1,6 +1,6 @@
 # ATLASZ V7.3 — 85-capability audit
 
-Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total 85
+Statuses: MISSING 1, PARTIAL 44, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 18, total 85
 
 ## M01 — Universal AI Browser Sidebar — **MISSING**
 - Registry links (candidates): V73-S19-001, V73-S19-002, V73-S19-003, V73-S19-004, V73-S19-005, V73-S19-006
@@ -15,8 +15,8 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 ## M02 — Intelligent Knowledge Projects — **PARTIAL**
 - Registry links (candidates): V73-S03-017, V73-S05-013, V73-S06-002, V73-S06-007, V73-S07-001, V73-S07-002
 - Modules: knowledge-projects.mjs; document-center.mjs; brain/knowledge-brain.mjs; brain/memory-fabric.mjs; shared-project-registry.mjs; business/entity-graph.mjs
-- Evidence: knowledge-projects.test (8) + knowledge-projects-hosted.test (2), 14+3 mutation checks; document-intelligence.test (6), doc-extractors.test (5), memory-fabric.test, knowledge-brain tests
-- Missing: Semantic (embedding) retrieval; image members (no OCR/vision provider)
+- Evidence: Verified R5: cited keyword retrieval, tenant isolation, offsets, tamper detection. Secret screening now uses the shared scrubber (R5 fix).
+- Missing: Semantic retrieval; documents cannot be added over HTTP (module level only).
 - Integration gaps / blockers: BM25 keyword retrieval only (labelled NOT semantic); no embeddings; images not supported
 - Security: Tenant+role gates already enforced; screening before agent read
 - Plan: BUILT: projects with document/note/webpage members, extractive cited answers, verifiable citations, hosted as kp.* typed tools + Control Center view. Embeddings need a provider (EXTERNAL BLOCKER)
@@ -25,8 +25,8 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 ## M03 — Multi-Model Conversation Interface — **PARTIAL**
 - Registry links (candidates): V73-S02-002, V73-S03-007, V73-S03-010, V73-S08-001, V73-S08-002, V73-S08-003
 - Modules: atlasz-addons/model-gateway.mjs (composes provider-resilience + brain/model-intelligence); typed tool model.complete; Control Center providers panel
-- Evidence: model-gateway.test (6: no-provider honesty, single real probe feeds both registries with measured latency, no-spend routing + fallback + breaker, untrusted-output quarantine, independent judge needs another family, ledger failure never triggers a second call); 8+1 mutation checks caught; hosted in money-engine-hosted.test
-- Missing: Shared multi-model CONVERSATION object (turns, per-turn switching, context window management); any live provider (EXTERNAL)
+- Evidence: See P16.
+- Missing: Live multi-model completion needs a provider.
 - Integration gaps / blockers: No provider registered (no credentials); conversation/context manager not built
 - Security: Keys server-side only; LIVE only from our own probe
 - Plan: Conversation manager with context budget + token/cost accounting over existing router; providers stay blocked
@@ -45,8 +45,8 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 ## M05 — Skills and Plugin Framework — **PARTIAL**
 - Registry links (candidates): V73-S02-002, V73-S09-015, V73-S18-004, V73-S21-039, V73-S21-040, V73-S22-001
 - Modules: plugin-manager.mjs; skill-factory.mjs; capability-registry.mjs; control-center plugin panel
-- Evidence: plugin-manager.test, control-center-plugins.test (manifest validation, permissions, isolated hook process, health)
-- Missing: Versioned install from package, rollback of a bad plugin version, skill testing harness
+- Evidence: Verified R5: install/enable/rollback/uninstall with owner passphrase, tamper detection; approval replay closed.
+- Missing: Plugin hooks cannot be executed from any route; status stays ENABLED after post-enable code edits (LOW).
 - Integration gaps / blockers: Skill Factory creates definitions only
 - Security: Plugin code never runs in core process; forbidden permissions refused
 - Plan: Add versioned skill packages with test-gate + rollback on the shared typed-tool registry
@@ -55,18 +55,18 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 ## M06 — Isolated Sandbox Workspace — **PARTIAL**
 - Registry links (candidates): V73-S19-001, V73-S19-002, V73-S19-003, V73-S19-004, V73-S19-005, V73-S19-006
 - Modules: computer-use-fabric.mjs (policy); plugin-manager.mjs (child process, minimal env, timeout) ; code-sandbox.mjs (separate-process JS/Python runner, detected isolation level, limits, audit)
-- Evidence: plugin-manager.test timeouts/containment; code-sandbox.test (9) + code-sandbox-hosted.test (3) + mutation checks; Linux namespace isolation (no network) verified on this host
-- Missing: Container/VM-grade isolation; Windows has only process limits + timeouts
+- Evidence: JS NAMESPACE sandbox verified R5; R5 fixed shared instance (concurrency cap + audit chain no longer forked per request).
+- Missing: Python native-module escape (MEDIUM, label overstated); container/VM isolation external.
 - Integration gaps / blockers: Isolation is labelled NAMESPACE or PROCESS_ONLY and is NOT a container or VM; Python filesystem restriction is best effort (audit hook); process-only mode needs argument-bound owner approval
 - Security: Untrusted code must never get secrets; honest label if isolation is process-level only
 - Plan: Build code-sandbox runner (child process, rlimits, scrubbed env, temp dir, output caps) and label isolation level truthfully
 - Tests required: timeout kill, memory cap, env scrub, path escape refused, output cap
 
-## M07 — Advanced Analyst Mode — **MISSING**
+## M07 — Advanced Analyst Mode — **PARTIAL**
 - Registry links (candidates): V73-S09-020, V73-S26-006, V73-S30-007, ATLASZ-BR-004
 - Modules: doc-extractors.mjs (XLSX/ODS read); tool-fabric.mjs (catalogue 'data-analysis') ; code-sandbox.mjs (runner only)
-- Evidence: Extractors read spreadsheets as text only; the sandbox exists as a runner, but no spreadsheet/statistics/chart workflow is built on it
-- Missing: Cleaning, calculation, statistics, charts, reproducible reports
+- Evidence: Module analyst.mjs + analyst.run in the Control Center; cleaning, descriptive statistics, correlation, charts, reproducible hash. R5 verifier found blank cells counted as 0 (HIGH): FIXED 2026-10-08 (blank/null = missing everywhere) with tests + mutation. tests: analyst-mutation.test, chunker-analyst.test, stage-r5-fixes.test.
+- Missing: Fresh independent re-verification after the fix is pending.
 - Integration gaps / blockers: Needs sandbox runner + deterministic calc library
 - Security: Computations must be reproducible and hash-recorded
 - Plan: Analyst module: CSV/XLSX table load, profile, clean, stats, chart spec (data only), report with input hashes
@@ -75,8 +75,8 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 ## M08 — Deep Research — **PARTIAL**
 - Registry links (candidates): V73-S03-011, V73-S07-005, V73-S07-016, V73-S09-005, V73-S09-006, V73-S09-015
 - Modules: research-ledger.mjs; knowledge-projects.mjs; brain/verifier.mjs; brain/evidence-sources.mjs; market-intelligence-engine.mjs; enterprise-knowledge-agentic-rag.mjs
-- Evidence: research-ledger.test (9) + research-ledger-hosted.test (2), 28 mutation checks; evidence-sources.test, brain verifier tests
-- Missing: Live multi-source collection (no web provider); semantic comparison of sources
+- Evidence: Offline ledger sound; R5 found support check accepted contradicting quotes (HIGH): FIXED 2026-10-08 (numbers must appear, polarity must match; support is lexical, labelled as such).
+- Missing: Live multi-source collection and semantic entailment need a provider (external). Re-verification pending.
 - Integration gaps / blockers: No live web provider: sources must be supplied as already-retrieved text; comparison is quote-coverage/keyword based, not semantic
 - Security: Fetched pages are untrusted; claims need provenance
 - Plan: BUILT: durable ledger of questions/findings/citations/contradictions/unresolved, status recomputed from live sources (VERIFIED/UNSUPPORTED/ASSUMPTION/OUTDATED/CONFLICTED/REFUTED/UNVERIFIABLE), hash-chained audit, kp.* + research.* typed tools, Control Center view. Live fetcher still blocked (provider)
@@ -115,28 +115,28 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 ## M12 — Custom AI Assistants — **PARTIAL**
 - Registry links (candidates): V73-S04-010, V73-S06-001, V73-S06-002, V73-S06-003, V73-S06-004, V73-S06-005
 - Modules: agent-factory.mjs; owner-control/agent-governor.mjs; capability-graph.mjs
-- Evidence: agent-factory-governor.test (31st agent refused, unknown capability refused)
-- Missing: Configurable assistant profiles (instructions, tools, memory scope, permissions) separate from the fixed 30 runtime agents
+- Evidence: Profiles are stored/versioned/validated and check/resolve work (verified R5).
+- Missing: MEDIUM open: nothing applies a profile to a chat or agent run (conv.create ignores it).
 - Integration gaps / blockers: Fixed 30 limit applies to runtime agents; profiles are not agents
 - Security: Profiles cannot add agents or permissions beyond the owner grant
 - Plan: Assistant Profiles module (config only, no extra agents) using memory scopes + typed tool allowlists
 - Tests required: profile cannot exceed grants, scope isolation, no agent-count change
 
-## M13 — Interactive Artifacts and Prototypes — **PARTIAL**
+## M13 — Interactive Artifacts and Prototypes — **VERIFIED_WORKING**
 - Registry links (candidates): V73-S06-011, ATLASZ-BR-027, ATLASZ-PKG84-004, ATLASZ-PKG84-007, ATLASZ-PKG84-012, ATLASZ-T3-001
 - Modules: business/artifact-registry.mjs; atlasz-control-center (own UI)
-- Evidence: business-engines.test (content-addressed artifacts, CREATED!=VERIFIED!=DELIVERED)
-- Missing: Chart/diagram/app preview generation and rendering
+- Evidence: Independent verification R5 (2026-10-08, fresh verifier driving the Control Center HTTP API, own attack scenarios): VERIFIED. render.chart/diagram/preview: NaN/null/strings refused (never drawn as zero), all output escaped, hostile labels produce no script/handler. tests: render-detail.test, render-mutation.test.
+- Missing: App-style interactive previews are the static previewPage only.
 - Integration gaps / blockers: Artifact store has no preview renderer
 - Security: Previews must be sandboxed (no script from untrusted artifacts)
 - Plan: Static preview generator (SVG/HTML with CSP, data-only charts) registered as artifacts
 - Tests required: preview sandbox/CSP, content hash, no remote loads
 
-## C01 — Advanced Software Engineering Agent — **MISSING**
+## C01 — Advanced Software Engineering Agent — **PARTIAL**
 - Registry links (candidates): V73-S08-001, V73-S08-007, V73-S12-005, V73-S12-006, V73-S16-003, V73-S20-006
 - Modules: tool-fabric.mjs (catalogue 'code','test','github'); regression-eval-suite.mjs; skill-factory.mjs ; code-sandbox.mjs (runner only)
-- Evidence: Only catalogue entries and an eval suite scaffold; tests/code can be executed in the sandbox; repo analysis/edit/review workflow still not built
-- Missing: Repo analysis, edit, test run, review workflow as governed tools
+- Evidence: code.review, repo analyze, governed test run (owner passphrase, sandboxed) and prototype builder are wired and were verified; R5 fixed review blind spots (concatenated exec, spawn sh -c, comment-only test files).
+- Missing: No code EDIT workflow (read, review and test only); re-verification of review rules pending.
 - Integration gaps / blockers: No code tools wired; needs sandbox + typed tools
 - Security: Writes only inside a project sandbox; no push without approval
 - Plan: Engineering toolkit on shared sandbox: repo scan, test runner, diff review (P07) — read/analyze first
@@ -172,11 +172,11 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 - Plan: Provider-dependent; policy already built
 - Tests required: No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.
 
-## C05 — Reusable Agent Skills — **PARTIAL**
+## C05 — Reusable Agent Skills — **VERIFIED_WORKING**
 - Registry links (candidates): V73-S09-015, V73-S18-004, V73-S29-004, V73-S29-008, ATLASZ-BR-014, ATLASZ-OSC-018
 - Modules: skill-factory.mjs; capability-graph.mjs; plugin-manager.mjs
-- Evidence: skill-factory + capability-graph tests
-- Missing: Versioned skill definitions with permission boundary and a pass/fail test gate before activation
+- Evidence: Independent verification R5 (2026-10-08, fresh verifier driving the Control Center HTTP API, own attack scenarios): VERIFIED. skill.submit/gate/activate/run/rollback/deactivate: ungated, unapproved, forged, revoked, tampered and side-effecting skills refused; failing v2 never replaces v1. Approval replay across calls closed in R5 (owner-auth verifier is now process-wide). tests: skill-registry.test, skills-hosted.test.
+- Missing: Skills can run only the 5 pure actions (by design).
 - Integration gaps / blockers: Skill Factory registers definitions untested
 - Security: Skills inherit caller permissions only
 - Plan: Skill package format + test gate (shared with M05)
@@ -195,8 +195,8 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 ## C07 — Project Memory — **PARTIAL**
 - Registry links (candidates): V73-S03-017, V73-S04-010, V73-S05-013, V73-S06-002, V73-S07-001, V73-S07-002
 - Modules: knowledge-projects.mjs (project notes); brain/memory-fabric.mjs; brain/knowledge-brain.mjs; business-memory.mjs; experience-learning-engine.mjs; shared-project-registry.mjs
-- Evidence: memory-fabric.test (tenant isolation, HISTORICAL_RESULT only from independent ACCEPT)
-- Missing: Decision log with provenance across sessions; project registry is in-process
+- Evidence: Verified R5: lifecycle, tamper evidence, restart persistence.
+- Missing: LOW: evidence provenance is self-asserted free text.
 - Integration gaps / blockers: shared-project-registry not durable
 - Security: Tenant isolation verified
 - Plan: Notes with provenance exist in Knowledge Projects; still need a typed decision-log and persisting shared-project-registry
@@ -205,28 +205,28 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 ## C08 — Advanced Research — **PARTIAL**
 - Registry links (candidates): V73-S09-005, V73-S09-006, V73-S09-015, V73-S31-005, V73-S32-006, V73-S38-004
 - Modules: see M08
-- Evidence: see M08
-- Missing: Live collection and semantic synthesis (provider)
+- Evidence: See M08.
+- Missing: See M08.
 - Integration gaps / blockers: see M08
 - Security: see M08
 - Plan: Ledger BUILT (see M08); live research needs a provider
 - Tests required: see M08
 
-## C09 — Interactive Artifact Generation — **PARTIAL**
+## C09 — Interactive Artifact Generation — **VERIFIED_WORKING**
 - Registry links (candidates): ATLASZ-BR-027, ATLASZ-PKG84-004, ATLASZ-PKG84-007, ATLASZ-PKG84-012
 - Modules: see M13
-- Evidence: see M13
-- Missing: see M13
+- Evidence: Independent verification R5 (2026-10-08, fresh verifier driving the Control Center HTTP API, own attack scenarios): VERIFIED. see M13 (same renderer and preview path).
+- Missing: None beyond M13.
 - Integration gaps / blockers: see M13
 - Security: see M13
 - Plan: Shared with M13
 - Tests required: see M13
 
-## C10 — Adaptive Reasoning Allocation — **PARTIAL**
+## C10 — Adaptive Reasoning Allocation — **VERIFIED_WORKING**
 - Registry links (candidates): V73-S02-002, V73-S03-001, V73-S03-007, V73-S03-010, V73-S08-001, V73-S08-002
 - Modules: brain/model-intelligence.mjs; cost-model-router.mjs; budget-consumption-governor.mjs
-- Evidence: brain-systems.test routing by measured suitability
-- Missing: Effort/depth selection by complexity, risk and budget
+- Evidence: Independent verification R5 (2026-10-08, fresh verifier driving the Control Center HTTP API, own attack scenarios): VERIFIED. effort.choose / chunk.plan: effort and depth by complexity, risk and budget, full coverage plans; advisory (typed-tool exposure stays DENY by decision D11). tests: chunker-mutation.test, detail-level-mutation.test.
+- Missing: Advisory only; not wired into a live model router (no provider).
 - Integration gaps / blockers: Router picks a model, not an effort level
 - Security: Spend limited by no-spend default
 - Plan: Effort policy function (complexity x risk x budget -> tier) feeding the router
@@ -305,8 +305,8 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 ## G05 — Secure Code Execution — **PARTIAL**
 - Registry links (candidates): V73-S02-003, V73-S09-002, V73-S09-013, V73-S09-014, V73-S09-029, V73-S10-001
 - Modules: see M06 ; code-sandbox.mjs
-- Evidence: see M06; sandbox.run / sandbox.run_process_only typed tools; Control Center sandbox view (owner runs are NAMESPACE-only)
-- Missing: see M06
+- Evidence: See M06.
+- Missing: See M06.
 - Integration gaps / blockers: see M06
 - Security: see M06
 - Plan: Shared with M06
@@ -375,8 +375,8 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 ## G12 — Streaming Tool Observability — **PARTIAL**
 - Registry links (candidates): V73-S03-008, V73-S10-014, V73-S13-004, V73-S34-001, V73-S34-002, V73-S34-003
 - Modules: event-bus.mjs; brain/black-box.mjs; task-ledger.mjs; progress-ledger.mjs; Control Center polling
-- Evidence: black-box tests (8), control-center tests
-- Missing: Live push stream of tool calls/progress to the UI
+- Evidence: SSE feed works end to end (secrets redacted, client cap, resume). R5 verifier: tail checked only the prev link; FIXED 2026-10-08 (entry hash recomputed, prevHash link enforced).
+- Missing: Fresh re-verification pending.
 - Integration gaps / blockers: UI polls; no server-sent events
 - Security: Black Box redacts secrets
 - Plan: Add SSE endpoint over event bus (read-only, token-gated)
@@ -385,8 +385,8 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 ## G13 — Context and Cost Optimization — **PARTIAL**
 - Registry links (candidates): V73-S03-007, V73-S03-018, V73-S04-004, V73-S04-011, V73-S08-011, V73-S08-013
 - Modules: financial-ledger.mjs (token/API ledger); budget-consumption-governor.mjs; provider-resilience.mjs
-- Evidence: financial-ledger tests (6), provider-resilience tests
-- Missing: Context-window management, provider prompt caching, token accounting per conversation
+- Evidence: Context packing and per-conversation usage accounting verified R5.
+- Missing: Provider prompt caching / routing for cost are absent (provider-dependent).
 - Integration gaps / blockers: No context manager; caching is provider-side
 - Security: No-spend default
 - Plan: Context budgeter (M03) ; caching deferred to provider adapters
@@ -425,8 +425,8 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 ## GE04 — Grounded Search — **PARTIAL**
 - Registry links (candidates): ATLASZ-PKG84-026, ATLASZ-PKG84-027
 - Modules: research-ledger.mjs; knowledge-projects.mjs
-- Evidence: research-ledger.test (9) + research-ledger-hosted.test (2), 28 mutation checks
-- Missing: Grounding of live web search results (provider)
+- Evidence: See M08.
+- Missing: See M08.
 - Integration gaps / blockers: Grounded over supplied sources only
 - Security: Fetched/added text is untrusted and screened
 - Plan: Citation re-verification and freshness (30-day age-out, superseded-version detection) BUILT; live search remains blocked
@@ -455,8 +455,8 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 ## GE07 — Analytical Code Execution — **PARTIAL**
 - Registry links (candidates): none
 - Modules: see M07/M06 ; code-sandbox.mjs
-- Evidence: None; code runs in the sandbox with the code SHA-256 in a hash-chained audit (runs are reproducible by hash)
-- Missing: No analysis libraries, data loading or report pipeline on top of the sandbox
+- Evidence: See M07. Code runs in the sandbox (NAMESPACE JS), analysis pipeline on top is analyst.mjs.
+- Missing: Re-verification of M07 pending; Python sandbox containment is PARTIAL (see M06).
 - Integration gaps / blockers: depends on M06
 - Security: reproducible, hash recorded
 - Plan: Shared with M06/M07
@@ -495,8 +495,8 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 ## GE11 — Agent Development Architecture — **PARTIAL**
 - Registry links (candidates): V73-S02-001, V73-S02-002, V73-S02-003, V73-S03-001, V73-S03-002, V73-S03-003
 - Modules: brain/planning-brain.mjs; brain/orchestrator.mjs; team-lead-workflows.mjs; agent-factory.mjs
-- Evidence: planning-brain tests (4), orchestrator tests (11)
-- Missing: Reusable workflow templates, stateful delegation primitives
+- Evidence: Templates, params and schedule verified R5.
+- Missing: 'Stateful delegation' = step outputs between steps; no delegation to agents.
 - Integration gaps / blockers: Workflows not reusable as templates
 - Security: Fixed topology
 - Plan: Workflow templates on durable scheduler (P06)
@@ -565,8 +565,8 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 ## A05 — Multimodal Memory — **PARTIAL**
 - Registry links (candidates): V73-S04-010, V73-S05-013, V73-S07-001, V73-S07-002, V73-S07-003, V73-S07-004
 - Modules: brain/memory-fabric.mjs (text) ; observation-memory.mjs
-- Evidence: Text memory only; observation-memory.test (8) + hosted (2) + mutation checks; modality + consent + classification + retention + correction + real deletion; raw media never stored
-- Missing: Semantic recall; media content (only descriptions and metadata are stored)
+- Evidence: Verified R5 at HTTP and module level; works with retention, correction, forget.
+- Missing: LOW: retentionDays 0 defaults to 90; purge is not automatic. Text only.
 - Integration gaps / blockers: Keyword recall labelled NOT semantic
 - Security: Consent + classification + deletion required
 - Plan: Observation memory module (metadata/descriptions; raw media not stored by default)
@@ -582,11 +582,11 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 - Plan: Slot; uncertainty schema
 - Tests required: No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.
 
-## A07 — Visual Guidance — **MISSING**
+## A07 — Visual Guidance — **VERIFIED_WORKING**
 - Registry links (candidates): none
 - Modules: none
-- Evidence: None
-- Missing: Instruction/overlay descriptors
+- Evidence: Independent verification R5 (2026-10-08, fresh verifier driving the Control Center HTTP API, own attack scenarios): VERIFIED. guidance.build/guidance.step: instruction + overlay descriptors; performedByAtlasz is always false even if the input claims otherwise. tests: render-detail.test.
+- Missing: Descriptors only: no screen capture or real overlay (A02 external).
 - Integration gaps / blockers: Needs a renderer in Control Center
 - Security: Overlays cannot execute actions
 - Plan: Data model for annotated steps (renderer later)
@@ -595,8 +595,8 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 ## A08 — Contextual Proactive Assistance — **PARTIAL**
 - Registry links (candidates): ATLASZ-PKG84-012
 - Modules: human-core.mjs (planHelp); master-brief.mjs; brain/central-brain.mjs
-- Evidence: human-core.test (7)
-- Missing: Suggestion engine across state sources, suppression, rate limits
+- Evidence: Verified R5: 3 of 6 suggestion sources exercised, canAct:false, dismiss does not change the decision.
+- Missing: Approvals, plugin and skill sources not exercised end to end.
 - Integration gaps / blockers: Suggestions never act
 - Security: Suggest-only; restricted actions need approval
 - Plan: Suggestion queue fed by brief sources with dismissal memory
@@ -625,8 +625,8 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 ## A11 — Personalized Assistance — **PARTIAL**
 - Registry links (candidates): V73-S04-010, V73-S06-001, V73-S06-002, V73-S06-003, V73-S06-004, V73-S06-005
 - Modules: master-brief.mjs (prefs); human-core.mjs; owner-keystore.mjs
-- Evidence: control-center-home.test prefs; personal-command-center.test (owner-local day via utcOffsetMinutes, tasks/reminders/deadlines, hu/en brief)
-- Missing: Preference/history store beyond language, signature and UTC offset; suggestion engine (A08)
+- Evidence: Preference store verified R5 (propose/confirm, no silent change).
+- Missing: Depends on A08 suggestion engine.
 - Integration gaps / blockers: Limited prefs
 - Security: No hardcoded personal data in reusable code (config only)
 - Plan: Profile store (config-driven) for Personal Command Center
@@ -645,68 +645,68 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 ## A13 — Visual Accessibility and Guidance — **PARTIAL**
 - Registry links (candidates): none
 - Modules: Control Center UI
-- Evidence: none specific
-- Missing: Scene descriptions (provider), UI accessibility audit
+- Evidence: a11y-audit logic verified (contrast ratios match an independent formula).
+- Missing: Not reachable from the Control Center (module + test only).
 - Integration gaps / blockers: Provider for scenes
 - Security: None
 - Plan: UI accessibility checklist tests (labels, contrast tokens)
 - Tests required: a11y static checks
 
-## P01 — Personal Learning Tutor — **MISSING**
+## P01 — Personal Learning Tutor — **PARTIAL**
 - Registry links (candidates): V73-S07-001, V73-S07-002, V73-S07-003, V73-S07-004, V73-S07-005, V73-S07-006
 - Modules: none
-- Evidence: None
-- Missing: Lessons, quizzes, adaptive plan
+- Evidence: tutor.mjs + tutor.* ops + Control Center panel. R5 verifier: honest unknowns, no answers in quiz, restart persistence OK; mastery could be gamed by instant repeats: FIXED 2026-10-08 (answers before the review is due do not raise the box). tests: tutor.test, stage-r5-fixes.test, workbench-b1-hosted.
+- Missing: Fresh independent re-verification after the fix is pending.
 - Integration gaps / blockers: Content generation needs a model for novel lessons; spaced-repetition scheduler is local
 - Security: Personal data minimal
 - Plan: Tutor engine: deck/quiz store + spaced-repetition scheduler (local, deterministic); content authoring by model later
 - Tests required: scheduler intervals, scoring, persistence
 
-## P02 — Video-to-Action Workflow — **MISSING**
+## P02 — Video-to-Action Workflow — **VERIFIED_WORKING**
 - Registry links (candidates): V73-S02-001, V73-S04-010, V73-S05-003, V73-S05-004, V73-S05-013, V73-S07-005
 - Modules: none
-- Evidence: None
-- Missing: Transcript -> steps
+- Evidence: Independent verification R5 (2026-10-08, fresh verifier driving the Control Center HTTP API, own attack scenarios): VERIFIED. transcript.analyze: ordered steps and chapters, out-of-order cues refused. tests: compare-transcript.test, compare-transcript-mutation.test.
+- Missing: Needs a transcript (no video/ASR: M09/G09 external).
 - Integration gaps / blockers: Transcript source
 - Security: Authorized only
 - Plan: Transcript->actionable steps with verification checklist (see M09)
 - Tests required: step extraction, each step verifiable
 
-## P03 — Personal Knowledge Organizer — **PARTIAL**
+## P03 — Personal Knowledge Organizer — **VERIFIED_WORKING**
 - Registry links (candidates): V73-S06-007, V73-S07-001, V73-S07-002, V73-S07-003, V73-S07-004, V73-S07-005
 - Modules: knowledge-projects.mjs; document-center.mjs; brain/knowledge-brain.mjs
-- Evidence: document-intelligence.test
-- Missing: Tags/books/ideas model
+- Evidence: Independent verification R5 (2026-10-08, fresh verifier driving the Control Center HTTP API, own attack scenarios): VERIFIED. notes/books/ideas/tags/reading list/search/export, linked-note cleanup, secret redaction, credential-looking tags refused, prototype keys refused, restart persistence. tests: notes-organizer.test, workbench-hosted.
+- Missing: None for the capability as scoped (export is titles+tags, a documented LOW).
 - Integration gaps / blockers: Notes exist (Knowledge Projects) but no tags or reading-list model
 - Security: Classification PERSONAL/CONFIDENTIAL
 - Plan: Notes BUILT; add tags next
 - Tests required: tag search, classification
 
-## P04 — Rapid Prototype Builder — **MISSING**
+## P04 — Rapid Prototype Builder — **VERIFIED_WORKING**
 - Registry links (candidates): V73-S08-001, V73-S08-007, V73-S29-001, V73-S29-010, V73-S43-011, V73-S48-013
 - Modules: none ; code-sandbox.mjs (runner only)
-- Evidence: None; prototype execution is possible; generator + test gate not built
-- Missing: Idea->prototype with tests
+- Evidence: Independent verification R5 (2026-10-08, fresh verifier driving the Control Center HTTP API, own attack scenarios): VERIFIED. idea->prototype from 4 templates; TESTS_PASSED_IN_SANDBOX only after a passphrase-approved real run; source/test edits void a pass; names, params and routes validated; hostile preview confined (iframe sandbox + CSP). tests: prototype-builder.test, prototypes-hosted.test.
+- Missing: None.
 - Integration gaps / blockers: Needs sandbox + model
 - Security: Sandbox only
 - Plan: After M06/C01
 - Tests required: generated-test pass required
 
-## P05 — Task State Rewind — **PARTIAL**
+## P05 — Task State Rewind — **VERIFIED_WORKING**
 - Registry links (candidates): V73-S03-018, V73-S10-012, V73-S14-007, V73-S23-032, V73-S35-017, V73-S37-003
 - Modules: owner-control/recovery-points.mjs; checkpoint-engine.mjs; backup-recovery.mjs; durable-queue.mjs
-- Evidence: backup-recovery tests (3), recovery-points tests
-- Missing: Per-task state rewind without touching financial/audit facts
+- Evidence: Independent verification R5 (2026-10-08, fresh verifier driving the Control Center HTTP API, own attack scenarios): VERIFIED. workflow.rewind is owner-passphrase gated at the Control Center boundary (R5), refuses to rewind past a step with side effects (REWIND_BLOCKED), never touches ledger/audit facts (engine cannot reach them). tests: workflow-engine.test, workbench-b1-hosted.
+- Missing: None for task-level rewind.
 - Integration gaps / blockers: Restore is per category, not per task
 - Security: Audit and payment facts must never rewind
 - Plan: Task checkpoints with rewind that excludes immutable domains
 - Tests required: rewind excludes audit/payments, verified hash
 
-## P06 — Reusable Personal Workflows — **PARTIAL**
+## P06 — Reusable Personal Workflows — **VERIFIED_WORKING**
 - Registry links (candidates): V73-S02-002, V73-S21-001, V73-S26-002, V73-S26-008, V73-S28-003, V73-S30-003
 - Modules: brain/planning-brain.mjs; team-lead-workflows.mjs
-- Evidence: planning-brain tests
-- Missing: Templates parameterized + schedulable
+- Evidence: Independent verification R5 (2026-10-08, fresh verifier driving the Control Center HTTP API, own attack scenarios): VERIFIED. Reusable parameterised workflow templates ({{p.x}}, {{s.step.field}}), schedulable; scheduled template fired once, not re-fired after restart/re-save; forward references, __proto__, secrets, sub-5-minute schedules refused. tests: workflow-engine.test, workbench-b1-hosted.
+- Missing: None.
 - Integration gaps / blockers: none
 - Security: Approval points preserved
 - Plan: Workflow templates on scheduler
@@ -722,11 +722,11 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 - Plan: Code review checks module (rule-based, no model needed)
 - Tests required: detects seeded defects, no false OK on empty
 
-## P08 — Interrupted Task Continuation — **PARTIAL**
+## P08 — Interrupted Task Continuation — **VERIFIED_WORKING**
 - Registry links (candidates): V73-S03-018, V73-S10-012, V73-S10-016, V73-S14-007, V73-S39-004, V73-S46-010
 - Modules: durable-queue.mjs; checkpoint-engine.mjs; brain/planning-brain.mjs; startup-self-check.mjs
-- Evidence: durable-queue.test (replay, lease, DLQ), canonical-queue-safety, scheduler.test (crash mid-run recorded INTERRUPTED and rerun)
-- Missing: Task-level resume contract for planning-brain tasks across a real process restart (module-level only)
+- Evidence: Independent verification R5 (2026-10-08, fresh verifier driving the Control Center HTTP API, own attack scenarios): VERIFIED. Scope: workflow-engine tasks. Simulated crash with a non-idempotent step RUNNING -> restart -> PAUSED/NEEDS_REVIEW; resume refused until an owner-passphrase review; finished steps not re-run. tests: workflow-engine.test, workbench-b1-hosted.
+- Missing: Planning-brain internal tasks are not resumable through this contract (out of scope of the workflow engine).
 - Integration gaps / blockers: Per-module durable; no unified resume test across restart
 - Security: Corrupt state is never replaced
 - Plan: End-to-end restart scenario test + resume contract
@@ -752,11 +752,11 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 - Plan: Disagreement escalation path (exists) + live providers blocked
 - Tests required: (done offline) + live when providers exist
 
-## P11 — Batch Processing Engine — **PARTIAL**
+## P11 — Batch Processing Engine — **VERIFIED_WORKING**
 - Registry links (candidates): V73-S03-002, V73-S03-017, V73-S07-006, V73-S10-001, V73-S10-002, V73-S10-003
 - Modules: durable-queue.mjs; priority-queue-rate-limit-governor.mjs; dead-letter-queue.mjs
-- Evidence: durable-queue.test (maxPending, DLQ), canonical-queue-safety
-- Missing: Batch job abstraction with checkpoint per item, rate limit, error isolation
+- Evidence: Independent verification R5 (2026-10-08, fresh verifier driving the Control Center HTTP API, own attack scenarios): VERIFIED. Batch of N items with checkpoint per item, rate limit, error isolation (one bad item -> DONE_WITH_ERRORS, others run), requeue only failed items, no duplicate side effects, survives restart, refused under kill switch. tests: workflow-engine.test, workbench-b1-hosted.
+- Missing: batchRun holds the request for up to one rate window (LOW).
 - Integration gaps / blockers: none
 - Security: Spend/approval gates per item
 - Plan: Batch runner on scheduler/queue
@@ -772,11 +772,11 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 - Plan: Media index: metadata, tags, classification via observation memory (no content analysis)
 - Tests required: consent, class, no raw bytes leakage
 
-## P13 — Multi-Website Comparison — **MISSING**
+## P13 — Multi-Website Comparison — **VERIFIED_WORKING**
 - Registry links (candidates): V73-S16-006, V73-S30-001, V73-S30-002, V73-S30-003, V73-S30-004, V73-S30-005
 - Modules: none
-- Evidence: None
-- Missing: Structured diff of user-specified pages
+- Evidence: Independent verification R5 (2026-10-08, fresh verifier driving the Control Center HTTP API, own attack scenarios): VERIFIED. compare.pages structural diff of owner-supplied pages (script stripped, secrets redacted, injection text flagged not obeyed), 12 ReDoS-style inputs <100 ms. tests: compare-transcript.test, compare-transcript-mutation.test.
+- Missing: No fetching: pages are supplied by the owner.
 - Integration gaps / blockers: Fetcher is a provider/adapter
 - Security: Untrusted content
 - Plan: Comparison over fetched snapshots (injected fetcher) with structured differences
@@ -792,11 +792,11 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 - Plan: Shared schema validator (see G06)
 - Tests required: accept/reject matrix, no coercion
 
-## P15 — Adaptive Multimodal Processing — **MISSING**
+## P15 — Adaptive Multimodal Processing — **VERIFIED_WORKING**
 - Registry links (candidates): ATLASZ-PKG84-029
 - Modules: none
-- Evidence: None
-- Missing: Detail-level chooser
+- Evidence: Independent verification R5 (2026-10-08, fresh verifier driving the Control Center HTTP API, own attack scenarios): VERIFIED. detail.choose: CONFIDENTIAL never external, no spend without approval, level by modality/size/privacy. R5 hardened providerFree to strict boolean. tests: detail-level-mutation.test, render-detail.test.
+- Missing: Advisory chooser; no multimodal processing behind it (providers external).
 - Integration gaps / blockers: Providers
 - Security: Cost gating
 - Plan: Policy function in modality fabric
@@ -805,8 +805,8 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 ## P16 — Long-Session Continuity — **PARTIAL**
 - Registry links (candidates): V73-S03-018, V73-S04-004, V73-S04-011, V73-S05-001, V73-S05-002, V73-S05-005
 - Modules: brain/memory-fabric.mjs; checkpoint-engine.mjs; planning-brain.mjs
-- Evidence: memory-fabric.test
-- Missing: Conversation state persistence
+- Evidence: Verified R5: persisted conversation, context packing, per-turn model switch. R5 fix: hand-written assistant turns are refused.
+- Missing: Live completion path needs a provider.
 - Integration gaps / blockers: Conversation object missing (M03)
 - Security: Provenance retained
 - Plan: With M03 conversation store
@@ -822,11 +822,11 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 - Plan: Slot
 - Tests required: No live provider/credential in this workspace; nothing may be reported LIVE without our own passing probe.
 
-## P18 — Visual Highlighting — **MISSING**
+## P18 — Visual Highlighting — **VERIFIED_WORKING**
 - Registry links (candidates): none
 - Modules: none
-- Evidence: None
-- Missing: Region annotation schema
+- Evidence: Independent verification R5 (2026-10-08, fresh verifier driving the Control Center HTTP API, own attack scenarios): VERIFIED. region annotation schema validated, sparse arrays refused, escaped output. tests: render-mutation.test.
+- Missing: None.
 - Integration gaps / blockers: Renderer
 - Security: Annotations cannot act
 - Plan: Annotation schema (see A07)
@@ -835,8 +835,8 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 ## P19 — Personal Object and Information Recall — **PARTIAL**
 - Registry links (candidates): V73-S04-010, V73-S05-013, V73-S07-001, V73-S07-002, V73-S07-003, V73-S07-004
 - Modules: brain/memory-fabric.mjs (text) ; observation-memory.mjs; obs.* typed tools
-- Evidence: Text only; permission-controlled recall with provenance, tenant isolation and deletion (observation-memory.test, hosted)
-- Missing: Semantic recall; recall of objects seen by cameras (no vision)
+- Evidence: See A05.
+- Missing: See A05.
 - Integration gaps / blockers: Agents see only PUBLIC/PERSONAL records the Security Brain screened ALLOW
 - Security: Consent, retention, deletion
 - Plan: Observation memory (A05)
@@ -845,8 +845,8 @@ Statuses: MISSING 10, PARTIAL 50, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 3, total
 ## P20 — Situational Assistance — **PARTIAL**
 - Registry links (candidates): V73-S38-001
 - Modules: human-core.mjs; master-brief.mjs
-- Evidence: human-core.test
-- Missing: Cross-source next-step suggestions
+- Evidence: See A08.
+- Missing: See A08.
 - Integration gaps / blockers: Suggestions limited to brief
 - Security: Suggest-only
 - Plan: Suggestion queue (A08)

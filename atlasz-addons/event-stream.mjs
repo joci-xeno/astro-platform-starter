@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import { StringDecoder } from "node:string_decoder";
 import { redactSecrets } from "./brain/black-box.mjs";
+import { hashEntry, GENESIS } from "./audit-chain.mjs";
 
 export const LIMITS = Object.freeze({ maxClients: 5, pollMs: 1000, heartbeatMs: 15000, batch: 100, backlog: 20, maxDataChars: 4000, maxBufferedBytes: 1048576 });
 const TYPE = /[^A-Za-z0-9_.:-]/g;
@@ -72,7 +73,7 @@ export function createChainTail(file, { keep = 2000 } = {}) {
         const fd = fs.openSync(file, "r"); let chunk; try { const n = Math.min(st.size - offset, 8 * 1048576); chunk = Buffer.alloc(n); fs.readSync(fd, chunk, 0, n, offset); offset += n; } finally { fs.closeSync(fd); }
         buf += dec.write(chunk); const lines = buf.split("\n"); buf = lines.pop();
         if (buf.length > 1048576) { reset(); throw new Error("LOG_CORRUPT"); }                 // a "line" that never ends is not buffered without bound
-        for (const line of lines) { if (!line) continue; let e; try { e = JSON.parse(line); } catch { reset(); throw new Error("LOG_CORRUPT"); } if (Number.isSafeInteger(e?.seq)) { if (e.seq <= lastSeq || (lastHash !== null && typeof e.prev === "string" && e.prev !== lastHash)) { reset(); throw new Error("LOG_CORRUPT"); } lastSeq = e.seq; lastHash = typeof e.hash === "string" ? e.hash : null; } if (Number.isSafeInteger(e?.seq)) entries.push(line.length > 65536 ? { seq: e.seq, event: typeof e.event === "string" ? e.event.slice(0, 80) : "EVENT", oversize: true } : e); }   // an entry is kept in memory at a bounded size
+        for (const line of lines) { if (!line) continue; let e; try { e = JSON.parse(line); } catch { reset(); throw new Error("LOG_CORRUPT"); } if (Number.isSafeInteger(e?.seq)) { const link = typeof e.prevHash === "string" ? e.prevHash : e.prev; let okHash = true; try { okHash = typeof e.hash !== "string" || hashEntry(e) === e.hash; } catch { okHash = true; /* not an audit-chain-shaped entry */ } if (e.seq <= lastSeq || !okHash || (typeof link === "string" && link !== (lastHash ?? (lastSeq === 0 ? link : GENESIS)))) { reset(); throw new Error("LOG_CORRUPT"); } lastSeq = e.seq; lastHash = typeof e.hash === "string" ? e.hash : null; } if (Number.isSafeInteger(e?.seq)) entries.push(line.length > 65536 ? { seq: e.seq, event: typeof e.event === "string" ? e.event.slice(0, 80) : "EVENT", oversize: true } : e); }   // an entry is kept in memory at a bounded size
         if (entries.length > keep) entries = entries.slice(-keep);
       }
       sig = offset >= st.size ? s2 : ""; return entries;   // a partially-read large log is not 'seen': the next read continues

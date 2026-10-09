@@ -24,19 +24,19 @@ Branch `atlasz-v73-integration`. Audit only: no product code was changed in Task
 
 | 85 capabilities | Before | After | Change |
 |---|---|---|---|
-| VERIFIED_WORKING | 6 | 3 | -3 |
-| PARTIAL | 47 | 50 | +3 |
-| MISSING | 10 | 10 | +0 |
+| VERIFIED_WORKING | 6 | 18 | +12 |
+| PARTIAL | 47 | 44 | -3 |
+| MISSING | 10 | 1 | -9 |
 | EXTERNAL_BLOCKER | 22 | 22 | +0 |
 
 | Master gap register | Before | After | Change |
 |---|---|---|---|
 | REGISTRY item gaps | 710 | 738 | +28 |
-| CAPABILITY_85 gaps | 79 | 82 | +3 |
+| CAPABILITY_85 gaps | 79 | 67 | -12 |
 | IMPORT_SCAN orphans | 3 | 5 | +0 |
-| **Total** | 792 | 828 | +36 |
+| **Total** | 792 | 813 | +21 |
 
-**What the change means.** Nothing was newly built and no gap was closed in Task 3. The open-gap count rose by 36 = 23 registry items + 3 capabilities **reclassified downward** (their 'working' status was not supported: modules are tested but nothing runs them; these are over-claims, not new problems) + 9 **newly discovered** gaps registered as ATLASZ-T3-001..009 (8 MISSING, 1 EXTERNAL_BLOCKER): unauthenticated runtime dashboard, unsandboxed plugin/update child processes, agents cannot invoke tools, duplicate/hub-bag-only modules, weak-random id fallbacks, no restore UI, 4 untested routes, no schedule creation in the UI, unverified real-source discovery.
+**What the change means.** Nothing was newly built and no gap was closed in Task 3. The open-gap count rose by 21 = 23 registry items + 3 capabilities **reclassified downward** (their 'working' status was not supported: modules are tested but nothing runs them; these are over-claims, not new problems) + 9 **newly discovered** gaps registered as ATLASZ-T3-001..009 (8 MISSING, 1 EXTERNAL_BLOCKER): unauthenticated runtime dashboard, unsandboxed plugin/update child processes, agents cannot invoke tools, duplicate/hub-bag-only modules, weak-random id fallbacks, no restore UI, 4 untested routes, no schedule creation in the UI, unverified real-source discovery.
 
 ## 3. Reconciliation: requirements vs gaps (no double counting)
 
@@ -53,8 +53,8 @@ The three documents measure different things and overlap. Rule used: **a require
 
 - **974 rows = 930 items + 53 section roll-ups.** The registry figures quoted at the start of Task 3 (478 PARTIAL / 194 MISSING; now 501 / 194 after the 23 downgrades) include roll-ups: at item level it is 479 PARTIAL (+28 STRUCTURAL_ONLY, +10 EXISTS_NEEDS_TEST, which this audit also reports as PARTIAL) and 182 MISSING.
 - **Unique outstanding requirements: 675** (588 product + 87 supplementary, not implemented). The remaining open registry rows are 63 roll-ups/labels/process tasks/implementation records.
-- **Gap register total 828 = 738 registry item gaps + 82 open capabilities + 5 import-scan orphans (+ 3 other scans).** Every REGISTRY gap links to exactly one registry item; each CAPABILITY gap links to the registry items it depends on (`depends_on`). 76 of the 82 open capabilities link to registry items, so most capability gaps are *views of the same work*, not additional work; only G01, GE07, A01, A07, A13, P18 have no registry link and are independent.
-- Therefore the honest size of the remaining work is **~681 requirements** (not 828 gaps and not 974); the 828-gap figure double counts capability views and non-product rows. Dangling capability→registry links: 0.
+- **Gap register total 813 = 738 registry item gaps + 67 open capabilities + 5 import-scan orphans (+ 3 other scans).** Every REGISTRY gap links to exactly one registry item; each CAPABILITY gap links to the registry items it depends on (`depends_on`). 63 of the 67 open capabilities link to registry items, so most capability gaps are *views of the same work*, not additional work; only G01, GE07, A01, A13 have no registry link and are independent.
+- Therefore the honest size of the remaining work is **~679 requirements** (not 813 gaps and not 974); the 813-gap figure double counts capability views and non-product rows. Dangling capability→registry links: 0.
 
 Final classification of all 930 items (registry status mapped to the five classes requested; STRUCTURAL_ONLY and EXISTS_NEEDS_TEST are reported as PARTIAL; **no item is LIVE-verified**):
 
@@ -78,7 +78,7 @@ Started with **211** EXISTS_AND_WORKING registry rows (all items).
 
 Remaining flags on retained items (reviewed, none changes status): TESTS_DO_NOT_EXERCISE_MODULE×6, NO_MODULE_FILE×12, LOCATION_FILE_NOT_FOUND×2, NO_TEST_LISTED×4, LISTED_TEST_MISSING×1, MODULE_TESTED_BUT_NEVER_INVOKED_BY_A_RUNTIME_WORKFLOW×1. These are meta items (tests/registry/audit-task rows with no code module), a `*.test.mjs` glob mistaken for a missing file (ATLASZ-CR-003), or heuristic misses where the test drives a real process (S14-001, S35-008).
 
-**Independent probes (20):** 49/49 pass.
+**Independent probes (20):** 52/52 pass.
 
 | Probe | Claim | Result |
 |---|---|---|
@@ -131,6 +131,9 @@ Remaining flags on retained items (reviewed, none changes status): TESTS_DO_NOT_
 | P47 | B3: none of the 30 agent ids (nor spoofed spellings) can create, roll back or remove an assistant profile; a profile cannot grant pcc.* or model.complete | PASS |
 | P48 | B3: handoffs are roster-only, a receiver cannot accept different artifacts than were handed over, and a non-roster id cannot receive work | PASS |
 | P49 | B3: study cards - agents cannot change the schedule, and invalid grades never alter a card | PASS |
+| P50 | G12: the live stream never emits a credential-shaped value, caps clients, and a read failure never leaks the error text | PASS |
+| P51 | P04: no prototype is written or tested without the owner: agent ids and spoofed spellings are refused, and parameter text never becomes code | PASS |
+| P52 | P04: a prototype is never reported as tested without a real gated run, and a changed file voids an earlier pass | PASS |
 
 **Live boot of runtime + Control Center:** 30 agents (SEARCH 5, EXECUTION 25); 31 typed tools registered; 60 Control Center routes (30 GET, 30 POST): every GET returns 200 with a token and is refused without one, every POST is refused without/with a wrong token, a foreign Host header gets 403. 
 
@@ -203,7 +206,7 @@ These categories are derived from each row's own blocker/evidence text and the m
 
 ## 7. Test results and coverage limits
 
-- Full suite (`npm test --prefix atlasz-runtime`): **807 tests, 807 pass, 0 fail, 0 skipped, 0 cancelled** (see recorded note in full_suite_result.json).
+- Full suite (`npm test --prefix atlasz-runtime`): **952 tests, 952 pass, 0 fail, 0 skipped, 0 cancelled** (see recorded note in full_suite_result.json).
 - Per-file run (`docs/audit/run_tests_per_file.py`): 86 files, 568 tests, 568 pass, 0 fail, 0 skipped.
 - Line coverage (node --experimental-test-coverage, full suite, 527/527): **98.8% lines / 84.5% branches** over 151 loaded source files; lowest-covered: atlasz-addons/negotiation-engine.mjs 30%; atlasz-addons/tracing-evals.mjs 61%; atlasz-addons/enterprise-knowledge-agentic-rag.mjs 78%; atlasz-control-center/server.mjs 83%; atlasz-addons/tool-fabric.mjs 89%; atlasz-addons/personal-command-center.mjs 93%. Absent from the coverage report (not loaded, or not attributed by the collector - e.g. supervisor-safe.mjs is exercised through real-process tests): atlasz-control-center/public/app.js, atlasz-runtime/agent-child.js, atlasz-runtime/owner-cli.mjs, atlasz-runtime/supervisor-safe.mjs, atlasz-runtime/supervisor.js, atlasz-runtime/worker.js. Caveat: coverage counts executed lines, not asserted behaviour, so it supports but does not prove the 'working' claims (e.g. `negotiation-engine.mjs` is the least covered module and is hub-bag only).
 - Limits: tests run against temp dirs with fake providers, so they show logic and failure handling, not provider behaviour; Windows-only branches (env scrubbing, junctions, process limits) cannot run on this Linux host; the Electron shell and installer are untested here; timing/robustness tests use short real timeouts and can be load-sensitive; mutation testing was done per module by hand-written mutants, not for the whole code base; the registry/gap-register generators have their own tests, so some of the suite verifies tooling rather than product behaviour.

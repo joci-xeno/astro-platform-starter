@@ -8,7 +8,7 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 
 export const GENESIS = "0".repeat(64);
-const hashEntry = e => createHash("sha256")
+export const hashEntry = e => createHash("sha256")
   .update([e.seq, e.at, e.event, JSON.stringify(e.data ?? null), e.prevHash].join("\n"))
   .digest("hex");
 

@@ -105,3 +105,8 @@ SHARED = {
  "RESEARCH_LEDGER": ["M08","C08","G02","GE04","P13","G03","P10"],
  "ENGINEERING_TOOLS": ["C01","P07","P04"],
 }
+
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+from capability_updates_r5 import apply as _apply_r5  # noqa: E402
+ROWS = _apply_r5(ROWS)

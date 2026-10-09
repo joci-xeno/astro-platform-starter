@@ -60,10 +60,12 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   fs.mkdirSync(stateDir, { recursive: true }); fs.mkdirSync(configDir, { recursive: true });
   let child = null, childExit = null;
 
+  let authCache = null;       // one verifier per public key for the life of this process, so a used approval nonce is remembered (single-use holds, not just per call)
   const ownerAuth = () => {
     const k = keystoreStatus(configDir);
     // No stateDir on purpose: the running runtime owns owner-auth-audit.jsonl (two processes must not append to one chain).
-    return createOwnerAuth({ publicKeyB64: k.publicKeyB64 });
+    if (authCache && authCache.key === k.publicKeyB64) return authCache.auth;
+    const auth = createOwnerAuth({ publicKeyB64: k.publicKeyB64 }); authCache = { key: k.publicKeyB64, auth }; return auth;
   };
   const sign = (passphrase, action, subject) => signWithKeystore(configDir, passphrase, { action, subject, ttlMs: 60000 });
   const emergency = () => createEmergencyStop({ statePath: path.join(stateDir, "emergency-stop.json"), auditPath: path.join(stateDir, "emergency-audit.jsonl"), ownerAuth: ownerAuth() });
@@ -351,9 +353,11 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
     }
   }
   // Code sandbox (owner view). Runs here use NAMESPACE isolation only; a process-only run needs a signed approval through the control chain and is not offered from this form.
-  const sandboxInst = () => createCodeSandbox({ baseDir: path.join(stateDir, "sandbox", "runs"), auditFile: path.join(stateDir, "sandbox", "audit.jsonl") });
-  const sandbox = () => { try { const s = sandboxInst(); return { state: "CONNECTED", summary: s.summary(), history: s.history({ limit: 25 }).reverse() }; } catch (e) { return { state: "UNREADABLE", error: String(e.message) }; } };
-  async function sandboxRun({ language, code, stdin } = {}) { const r = await sandboxInst().run({ language, code, stdin }, { actor: "OWNER" }); if (/^INVALID/.test(r.status)) throw new Error(r.status); return r; }
+  let sandboxCache = null;     // ONE instance: the concurrency cap and the in-memory audit chain head must be shared by every request
+  const sandboxInst = () => (sandboxCache ??= createCodeSandbox({ baseDir: path.join(stateDir, "sandbox", "runs"), auditFile: path.join(stateDir, "sandbox", "audit.jsonl") }));
+  const sandboxFresh = () => createCodeSandbox({ baseDir: path.join(stateDir, "sandbox", "runs"), auditFile: path.join(stateDir, "sandbox", "audit.jsonl") });   // read view: re-reads the log, so a corrupted audit log is reported
+  const sandbox = () => { try { const s = sandboxFresh(); return { state: "CONNECTED", summary: s.summary(), history: s.history({ limit: 25 }).reverse() }; } catch (e) { return { state: "UNREADABLE", error: String(e.message) }; } };
+  async function sandboxRun({ language, code, stdin } = {}) { sandboxFresh(); const r = await sandboxInst().run({ language, code, stdin }, { actor: "OWNER" }); if (/^INVALID/.test(r.status)) throw new Error(r.status); return r; }
   const inboxMod = () => createUniversalInbox({ dir: path.join(stateDir, "inbox"), ownerAuth: ownerAuth() });
   const inbox = () => { const i = inboxMod(); return { counts: i.counts(), chain: i.verify(), items: i.list().slice(0, 100), note: "Drafts are never sent from here. Sending needs a proven connector, an open kill switch and your signed approval." }; };
   // Workbench (85-capability programme B0): conversations, analyst, previews, annotations, guidance, effort, chunking, detail policy. ATLASZ attaches NO model provider, so a conversation

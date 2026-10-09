@@ -73,11 +73,12 @@ export function createTutor({ file = null, now: nowFn = () => Date.now() } = {})
     const q = c.questions.find(x => x.id === questionId); if (!q) return { ok: false, reason: "QUESTION_NOT_FOUND" };
     if (!Number.isInteger(choiceIndex) || choiceIndex < 0 || choiceIndex >= q.choices.length) return { ok: false, reason: "CHOICE_INVALID" };
     const t = now(), right = choiceIndex === q.answerIndex;
-    q.seen++; if (right) { q.correct++; q.box = Math.min(BOX_DAYS.length - 1, Math.max(q.box, 1) + 1); } else q.box = 1;
-    q.dueAt = t + BOX_DAYS[q.box] * DAY;
+    const wasDue = q.seen === 0 || q.dueAt <= t;     // answering again before the review is due is practice only: it cannot raise the box (no gaming "mastery" with instant repeats)
+    q.seen++; if (right) { q.correct++; if (wasDue) q.box = Math.min(BOX_DAYS.length - 1, Math.max(q.box, 1) + 1); } else q.box = 1;
+    if (wasDue || !right) q.dueAt = t + BOX_DAYS[q.box] * DAY;
     c.attempts.push({ at: t, questionId, right }); if (c.attempts.length > LIMITS.maxAttempts) c.attempts.splice(0, c.attempts.length - LIMITS.maxAttempts);
     store.save();
-    return { ok: true, correct: right, correctIndex: q.answerIndex, explanation: q.explanation, box: q.box, nextReviewAt: new Date(q.dueAt).toISOString() };
+    return { ok: true, correct: right, countedForReview: wasDue || !right, correctIndex: q.answerIndex, explanation: q.explanation, box: q.box, nextReviewAt: new Date(q.dueAt).toISOString() };
   }
 
   /** Mastery of a lesson = share of its questions that reached box >= 4. Unseen questions are reported as unseen, never counted as failed or known. */

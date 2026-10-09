@@ -55,7 +55,7 @@ export function createWorkbench({ conversationFile = null, memoryFile = null, no
     "conv.create": a => conv.create({ ...T, title: a.title, systemPrompt: a.systemPrompt, model: a.model ?? null }),
     "conv.list": () => ({ ok: true, conversations: conv.list(T) }),
     "conv.get": a => conv.get(a.id, T),
-    "conv.addTurn": a => conv.addTurn(a.id, { ...T, role: a.role ?? "user", text: a.text }),
+    "conv.addTurn": a => { if ((a.role ?? "user") !== "user") throw new Error("ROLE_NOT_ALLOWED: assistant turns are created only by conv.complete (a real model call)"); return conv.addTurn(a.id, { ...T, role: "user", text: a.text }); },
     "conv.setModel": a => conv.setModel(a.id, { ...T, model: a.model }),
     "conv.context": a => conv.context(a.id, { ...T, maxTokens: a.maxTokens ?? 4000 }),
     "conv.usage": a => conv.usageSummary(a.id, T),

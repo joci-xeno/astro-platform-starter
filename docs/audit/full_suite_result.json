@@ -1,9 +1,9 @@
 {
  "command": "npm test --prefix atlasz-runtime",
- "tests": 807,
- "pass_": 807,
+ "tests": 952,
+ "pass_": 952,
  "fail": 0,
  "cancelled": 0,
  "skipped": 0,
- "recorded": "2026-10-08 B2/B3 slice (repo analyzer+test gate, preferences, study cards, suggestions, a11y audit, assistant profiles, handoff ledger): 807/807 in one process; independent probes 49/49; mutation checks on a11y-audit (documented equivalent survivors only), assistant-profiles, handoff-ledger (0 survivors on 83 mutants incl. boundaries); the coverage-instrumented run was NOT repeated"
+ "recorded": "2026-10-08 stage R5 (independent verification round 5 fixes + registry reconciliation): 952/952 in one process; independent probes 52/52; R5 fix mutants: analyst, research-ledger, tutor 0 survivors (documented equivalents only)."
 }

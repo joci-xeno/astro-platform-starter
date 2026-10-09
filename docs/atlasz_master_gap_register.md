@@ -1,12 +1,12 @@
 # ATLASZ V7.3 — Unified Master Gap Register
 
-Total gaps: **828** (registry 738, 85-capability 82, scans 8).
+Total gaps: **813** (registry 738, 85-capability 67, scans 8).
 
 LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence exists in this workspace.
 
 ## By reality
-- SANDBOX_TESTED_PARTIAL: 479
-- NOT_BUILT: 195
+- SANDBOX_TESTED_PARTIAL: 473
+- NOT_BUILT: 186
 - EXTERNAL: 58
 - STRUCTURE_ONLY: 56
 - MODULE_NOT_CONNECTED: 26
@@ -14,20 +14,20 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - OWNER_DECISION: 4
 
 ## By workstream
-- KNOWLEDGE_RESEARCH: 163
-- TYPED_TOOLS_MODEL_ROUTER: 92
+- KNOWLEDGE_RESEARCH: 161
+- TYPED_TOOLS_MODEL_ROUTER: 90
 - SECURITY_OWNER: 67
-- MULTIMODAL_VOICE: 60
+- MULTIMODAL_VOICE: 56
 - PERSONAL_HUMAN_CORE: 54
 - MONEY_BUSINESS: 50
 - WINDOWS_CONTROL_CENTER: 49
 - AGENT_ORCHESTRATION: 44
-- RECOVERY_BACKUP: 37
-- CODE_SANDBOX_ENGINEERING: 27
-- SCHEDULER_PCC: 26
+- RECOVERY_BACKUP: 36
+- CODE_SANDBOX_ENGINEERING: 25
+- SCHEDULER_PCC: 23
 - OBSERVABILITY_DOCTOR: 23
 - SECTION_S31: 17
-- UNASSIGNED: 15
+- UNASSIGNED: 14
 - SECTION_S52: 11
 - SECTION_S18: 10
 - SECTION_S44: 10
@@ -48,7 +48,7 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - LIVE_VOICE: 2
 
 ## Reachability
-- Modules in atlasz-addons: 175; reachable from entry points: 170
+- Modules in atlasz-addons: 180; reachable from entry points: 175
 - ORPHAN: atlasz-addons/a11y-audit.mjs
 - ORPHAN: atlasz-addons/digital-twin.mjs
 - ORPHAN: atlasz-addons/evidence-record.mjs

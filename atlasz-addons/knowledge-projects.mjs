@@ -7,6 +7,7 @@
 // the project never keeps a copy of text a caller was not allowed to see. Web snapshots and notes are untrusted input and are screened on the way in.
 import { createStore } from "./business/store.mjs";
 import crypto from "node:crypto";
+import { scrub } from "./secret-patterns.mjs";
 import { okName, own } from "./safe-keys.mjs";
 
 export const KINDS = Object.freeze(["document", "note", "webpage"]);
@@ -59,7 +60,7 @@ export function createKnowledgeProjects({ file = null, documents, security = nul
     const p = proj(projectId, tenantId); if (!p) throw new Error("UNKNOWN_PROJECT");
     if (!String(title ?? "").trim()) throw new Error("TITLE_REQUIRED"); if (typeof text !== "string" || !text.trim()) throw new Error("TEXT_REQUIRED"); if (text.length > LIMITS.noteChars) throw new Error("TEXT_TOO_LONG");
     const sc = screen(text, kind + ":" + title), blocked = sc.allowed === false;
-    const secret = /-----BEGIN [A-Z ]*PRIVATE KEY-----|(?<![A-Za-z0-9])sk-[A-Za-z0-9]{20,}|(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}\b|(?<![A-Za-z0-9])ghp_[A-Za-z0-9]{30,}/.test(text);   // detected before screening can withhold the text
+    const secret = /-----BEGIN [A-Z ]*PRIVATE KEY-----|(?<![A-Za-z0-9])sk-[A-Za-z0-9]{20,}|(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}\b|(?<![A-Za-z0-9])ghp_[A-Za-z0-9]{30,}/.test(text) || scrub(text) !== text;   // detected before screening can withhold the text
     return addMember(p, { id: "m-" + crypto.randomBytes(4).toString("hex"), kind, title: String(title).slice(0, 160), url, retrievedAt, createdBy, addedAt: now(), classification: secret ? "SECRET" : "PERSONAL",
       screening: { decision: sc.decision, reasons: sc.reasons }, text: blocked || secret ? null : text, sha256: sha(text), withheld: blocked ? "QUARANTINED" : secret ? "SECRET" : null });
   }

@@ -19,6 +19,14 @@ import fs from "node:fs";
 export const FINDING_KINDS = Object.freeze(["CLAIM", "ASSUMPTION"]);
 export const RELATIONS = Object.freeze(["SUPPORTS", "REFUTES"]);
 export const STATUSES = Object.freeze(["VERIFIED", "UNSUPPORTED", "ASSUMPTION", "OUTDATED", "CONFLICTED", "REFUTED", "REJECTED", "UNVERIFIABLE"]);
+const NEG = /\b(not|no|never|none|neither|nor|cannot|without|n't|isn't|aren't|doesn't|don't|didn't|won't|wasn't|weren't|hasn't|haven't|nem|nincs|soha|sem)\b|n't\b/gi;
+const nums = t => new Set((String(t).normalize("NFKC").match(/\d[\d.,]*\d|\d/g) ?? []).map(n => n.replace(/[,.](?=\d{3}\b)/g, "").replace(/[.,]$/, "")));
+/** Offline support check (no semantics): a SUPPORTING quote must contain every number the claim states and must not flip its polarity. Lexical overlap alone is NOT entailment. */
+function supportMismatch(claim, quote) {
+  const q = nums(quote); for (const n of nums(claim)) if (!q.has(n)) return "EVIDENCE_NUMBER_NOT_IN_QUOTE:" + n;
+  if ((String(claim).match(NEG) ?? []).length % 2 !== (String(quote).match(NEG) ?? []).length % 2) return "EVIDENCE_NEGATION_MISMATCH";
+  return null;
+}
 export const LIMITS = Object.freeze({ questionChars: 500, claimChars: 1000, noteChars: 1000, topicChars: 120, valueChars: 200, evidencePerFinding: 50, minCoverage: 0.5, freshnessDays: 30 });
 import { scrub, containsSecret } from "./secret-patterns.mjs";
 const looksSecret = v => { const t = String(v ?? ""); return containsSecret(t) || scrub(t, "[r]") !== t; };
@@ -94,6 +102,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
     const v = knowledge.verifyCitation(citation, w); if (v.status !== "OK") throw new Error("CITATION_" + v.status);
     const ct = new Set(terms(f.claim)), qt = new Set(terms(citation.quote)), cov = ct.size ? [...ct].filter(t => qt.has(t)).length / ct.size : 0;
     if (cov < LIMITS.minCoverage) throw new Error("EVIDENCE_DOES_NOT_COVER_CLAIM");
+    if (relation === "SUPPORTS") { const bad = supportMismatch(f.claim, citation.quote); if (bad) throw new Error(bad); }
     const meta = knowledge.summary(q.projectId, w).members.find(m => m.id === citation.memberId);
     const e = { id: id("re"), relation, citation: { projectId: citation.projectId, memberId: citation.memberId, kind: citation.kind, title: citation.title, version: citation.version, sha256: citation.sha256, url: citation.url ?? null, start: citation.start, end: citation.end, quote: citation.quote },
       retrievedAt: meta?.retrievedAt ?? null, coverage: Number(cov.toFixed(2)), addedBy: b, addedAt: now() };
@@ -139,7 +148,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
     const redact = who(w).role !== "OWNER" && ev.some(e => e.verification === "SOURCE_UNAVAILABLE"); if (redact) { base.claim = "[withheld: finding rests on a source this role cannot read]"; reasons.push("CLAIM_REDACTED_FOR_ROLE"); }
     const distinct = new Set(sup.map(e => e.memberId)).size;
     const confidence = status === "VERIFIED" ? (distinct >= 2 ? "HIGH" : "MEDIUM") : status === "CONFLICTED" ? "LOW" : "NONE";
-    return { ...base, status, confidence, independentSources: distinct, reasons, evidence: ev, note: "Status is recomputed from the current sources on every read. Confidence = independent verified sources + freshness, not proof of truth." };
+    return { ...base, status, confidence, independentSources: distinct, reasons, evidence: ev, note: "Status is recomputed from the current sources on every read. Confidence = independent verified sources + freshness, not proof of truth. Support is lexical (all claim numbers present, same polarity, term overlap), not semantic entailment: the owner still judges meaning." };
   }
   /** Structured report: facts only from VERIFIED findings; every other class is listed separately. */
   function report(qid, w) {
