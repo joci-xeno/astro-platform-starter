@@ -199,3 +199,12 @@ test("round-3 fixes: a stop during a run kills the running test file; licences/l
     assert.ok(a.notReviewed.unsupported >= 3, "svg + rb + go counted: " + a.notReviewed.unsupported);
   } finally { x.done(); }
 });
+
+test("round-4 fixes: test files beyond the per-run cap are reported as not run (the result is not 'complete')", { skip: !ISOLATED && "host cannot isolate network" }, async () => {
+  const extra = {}; for (let i = 0; i < LIMITS.maxTestFiles + 3; i++) extra["tests/t" + String(i).padStart(2, "0") + ".test.mjs"] = i >= LIMITS.maxTestFiles ? "process.exit(1);\n" : "console.log('ok');\n";
+  const r = mkRepo(extra);
+  try {
+    const res = await runRepoTests({ name: "demo", root: r.root, ownerAuth: auth, ownerApproval: ap("REPO_TEST_RUN", "demo#" + analyzeRepo(r.root).hash), timeoutMs: 20000 });
+    assert.equal(res.ok, true); assert.equal(res.ran, LIMITS.maxTestFiles); assert.ok(res.notRun >= 3, "notRun " + res.notRun); assert.equal(res.complete, false);
+  } finally { r.done(); }
+});

@@ -203,3 +203,15 @@ test("round-3 fixes: credential-shaped claim, topic and value are refused; a wro
     fs.writeFileSync(f, JSON.stringify({ questions: [], findings: {}, contradictions: {} })); assert.throws(() => w.rl.openQuestion({ projectId: w.p.id, text: "q3" }, OWNER), /STORE_UNREADABLE/); fs.writeFileSync(f, JSON.stringify({ questions: {}, findings: {}, contradictions: {}, events: "x" })); assert.throws(() => w.rl.openQuestion({ projectId: w.p.id, text: "q4" }, OWNER), /STORE_UNREADABLE/); fs.writeFileSync(f, before);
   } finally { w.done(); }
 });
+
+test("round-4 fixes: cutting events off the research log, or deleting its head anchor, is detected and blocks further writes", async () => {
+  const w = await world();
+  try {
+    w.rl.openQuestion({ projectId: w.p.id, text: "One?" }, OWNER); w.rl.openQuestion({ projectId: w.p.id, text: "Two?" }, OWNER); w.rl.openQuestion({ projectId: w.p.id, text: "Three?" }, OWNER);
+    const file = path.join(w.d, "rl.json"); assert.ok(fs.existsSync(file + ".head")); const full = fs.readFileSync(file, "utf8"), j = JSON.parse(full);
+    j.events = j.events.slice(0, 1); fs.writeFileSync(file, JSON.stringify(j)); const cut = w.mk();
+    assert.equal(cut.verifyChain().ok, false); assert.throws(() => cut.openQuestion({ projectId: w.p.id, text: "extends the cut chain" }, OWNER), /CHAIN_BROKEN/);
+    fs.writeFileSync(file, full); assert.equal(w.mk().verifyChain().ok, true);
+    const live = w.mk(); fs.rmSync(file + ".head"); assert.equal(live.verifyChain().ok, false); assert.throws(() => live.openQuestion({ projectId: w.p.id, text: "no anchor" }, OWNER), /CHAIN_BROKEN/);
+  } finally { w.done(); }
+});

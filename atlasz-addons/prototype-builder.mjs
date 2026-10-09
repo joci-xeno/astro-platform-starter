@@ -130,7 +130,7 @@ export function createPrototypeBuilder({ repoRoot, file = null, now = () => Date
     const m = Object.hasOwn(d.prototypes, name) ? d.prototypes[name] : null; if (!m) return { ok: false, reason: "PROTOTYPE_NOT_FOUND" };
     const root = path.join(repoRoot, name), r = await run({ name, root, ownerAuth, ownerApproval, isStopped: () => { try { return Boolean(isStopped()) || Boolean(callStop?.()); } catch { return true; } }, nodeBin, caps, scratchRoot }); if (!r.ok) return r;   // the builder-level stop and the per-call stop both apply; a throwing check fails closed
     if (typeof r.hash !== "string") return { ok: false, reason: "RUN_HASH_MISSING" };            // the outcome is bound to the hash the owner approved and the tests ran against, never to a re-read afterwards
-    const passed = r.ran > 0 && r.failed === 0 && r.contentUnchanged !== false;
+    const passed = r.ran > 0 && r.failed === 0 && r.contentUnchanged !== false && r.complete !== false;      // test files that were not run (over the per-run cap) mean the pass is incomplete
     m.tested = { at: new Date(now()).toISOString(), hash: r.hash, passed, ran: r.ran, failed: r.failed }; store.save();
     return { ok: true, name, status: status(name).status, ran: r.ran, passed: r.passed, failed: r.failed, results: r.results, isolation: r.isolation };
   }

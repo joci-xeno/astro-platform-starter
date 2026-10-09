@@ -234,3 +234,10 @@ test("round-3 fixes: a full conversation is refused before any provider call; pr
   const u2 = s2.usageSummary(c2.id, { tenantId: "t" }); assert.deepEqual([u2.tokenEstimatedCalls, u2.byModel.beta.costUsd, u2.byModel.beta.unknownCostCalls, u2.byModel.alpha.costUsd], [1, null, 1, 0.1]);
   const only = createUsageLedger(); only.record({ conversationId: "z", modelId: "m" }); assert.equal(only.summary("z").costUsd, null, "all-unknown cost is null, not 0");
 });
+
+test("round-4 fixes: an absurd provider cost is recorded at the ceiling and flagged, not dropped; a huge title/system prompt is cut before it is scrubbed", async () => {
+  const s = createConversationStore({}), c = s.create({ tenantId: "t", title: "T", model: "alpha" }); s.addTurn(c.id, { tenantId: "t", role: "user", text: "q" });
+  const r = await s.complete(c.id, { tenantId: "t", gateway: { async complete() { return { ok: true, providerId: "alpha", output: "fine", costUsd: 2e7 }; } }, budgetUsd: 1 });
+  assert.equal(r.ok, true); assert.equal(r.usageRecorded, true); const u = s.usageSummary(c.id, { tenantId: "t" }); assert.equal(u.calls, 1); assert.equal(u.costUsd, 1e7);
+  const t0 = performance.now(); const big = s.create({ tenantId: "t", title: "a".repeat(200000), systemPrompt: "b".repeat(200000), model: "alpha" }); assert.equal(big.ok, true); assert.ok(performance.now() - t0 < 1000, "creation is not slow");
+});

@@ -90,3 +90,8 @@ test("verification fixes: test-coverage matching is linear (no ReDoS); a flood o
   assert.equal(f.verdict, "BLOCK"); assert.ok(f.findings.some(x => x.severity === "HIGH"), "the HIGH finding is in the returned list"); assert.equal(f.truncated, true);
   const covered = reviewCode({ files: [{ path: "src/pay.js", content: "x" }, { path: "tests/pay.test.js", content: "import { pay } from '../src/pay.js';\n" + "z".repeat(5000) }] }); assert.deepEqual(covered.tests.untested, [], "a normal import line is still recognised");
 });
+
+test("round-4 fixes: secret-shaped file names are redacted in findings and test lists", () => {
+  const K = "s" + "k-" + "a1b2c3d4e5f6g7h8i9j0k1l2", r = reviewCode({ files: [{ path: "src/" + K + ".js", content: "eval(x);\n" }, { path: "tests/" + K + ".test.js", content: "x" }] });
+  assert.ok(!JSON.stringify(r).includes(K), JSON.stringify(r).slice(0, 300));
+});

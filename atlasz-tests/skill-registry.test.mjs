@@ -244,3 +244,22 @@ test("round-3 fixes: the skill cap is per tenant; a gate result handed out canno
   release(); await p;
   const v = r3.get(T, "shout").skill.versions[0]; assert.equal(v.status, "REVOKED"); assert.equal(v.history.length, h, "the late gate result is not recorded");
 });
+
+test("round-4 fixes: NaN/undefined in a submission cannot make the stored version look tampered after a reload; cyclic or very deep input is refused", async () => {
+  const d = tmp("sk-"), file = path.join(d, "skills.json");
+  try {
+    const r = mk({ actions: acts(), file });
+    const s = r.submit(good({ steps: [{ id: "u", action: "upper", args: { text: "{{p.text}}", extra: NaN, gone: undefined } }] })); assert.equal(s.ok, true, JSON.stringify(s));
+    const r2 = mk({ actions: acts(), file }); assert.equal((await r2.runGate(T, "shout", 1)).reason === "STORED_VERSION_TAMPERED", false, "no false tamper report after reload");
+    const cyc = { text: "{{p.text}}" }; cyc.self = cyc; assert.equal(r.submit(good({ id: "cyc", steps: [{ id: "u", action: "upper", args: cyc }] })).reason, "INPUT_NOT_PLAIN_JSON");
+    let deep = { v: 1 }; for (let i = 0; i < 20000; i++) deep = { n: deep }; assert.equal(r.submit(good({ id: "deep", steps: [{ id: "u", action: "upper", args: { text: "{{p.text}}", deep } }] })).reason, "INPUT_NOT_PLAIN_JSON");
+  } finally { rm(d); }
+});
+
+test("round-4 fixes: activation and rollback wait while the system is stopped, deactivation does not", async () => {
+  let stop = false; const r = mk({ actions: acts(), isStopped: () => stop });
+  r.submit(good()); assert.equal((await r.runGate(T, "shout", 1)).passed, true);
+  stop = true; assert.equal(r.activate(T, "shout", 1, { actor: "OWNER" }).reason, "OWNER_STOP_OR_SAFE_MODE_ACTIVE");
+  stop = false; assert.equal(r.activate(T, "shout", 1, { actor: "OWNER" }).ok, true);
+  stop = true; assert.equal(r.deactivate(T, "shout", { actor: "OWNER" }).ok, true, "switching off is always possible");
+});

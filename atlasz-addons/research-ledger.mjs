@@ -33,13 +33,21 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   const log = (kind, d) => { try { blackBox?.record({ kind, ...d }); } catch { /* audit must not change behaviour */ } };
   const id = p => p + "-" + (++S.seq) + "-" + crypto.randomBytes(3).toString("hex");
   /** Append-only, hash-chained event log: every write is recorded with who/what/when; verifyChain() detects edits, deletions and reordering. */
+  // Head anchor: the newest event's number and hash live in a second file, so a truncated event list (or a deleted anchor) is noticed instead of being extended.
+  const headFile = file ? file + ".head" : null, baseSave = store.save;
+  const readHead = () => { if (!headFile || !fs.existsSync(headFile)) return null; try { const h = JSON.parse(fs.readFileSync(headFile, "utf8")); return Number.isInteger(h?.n) && typeof h?.hash === "string" ? h : { n: -1, hash: "" }; } catch { return { n: -1, hash: "" }; } };
+  store.save = () => { baseSave(); if (headFile && S.events.length) { try { fs.writeFileSync(headFile, JSON.stringify({ n: S.events.length, hash: S.events.at(-1).hash }), { mode: 0o600 }); } catch { /* the store itself is saved */ } } };
+  if (headFile && S.events.length && !fs.existsSync(headFile)) store.save();            // a store written before anchors existed adopts one when opened
+  const anchorOk = () => { if (!headFile || !S.events.length) return true; const h = readHead(); return Boolean(h) && h.n === S.events.length && S.events.at(-1).hash === h.hash; };
   function event(type, by, d) {
+    if (!anchorOk()) throw new Error("CHAIN_BROKEN");
     const prev = S.events.length ? S.events[S.events.length - 1].hash : "GENESIS", e = { n: S.events.length + 1, at: now(), type, by, ...d, prev };
     e.hash = sha(prev + JSON.stringify({ ...e, hash: undefined })); S.events.push(e); log("RESEARCH_" + type, { by, ...d }); return e;
   }
   function verifyChain() {
     let prev = "GENESIS";
     for (const e of S.events) { const { hash, ...rest } = e; if (e.prev !== prev || sha(prev + JSON.stringify({ ...rest, hash: undefined })) !== hash) return { ok: false, brokenAt: e.n }; prev = hash; }
+    if (!anchorOk()) return { ok: false, brokenAt: S.events.length + 1, reason: readHead() ? "HEAD_ANCHOR_MISMATCH" : "HEAD_ANCHOR_MISSING" };
     return { ok: true, events: S.events.length };
   }
   const who = w => ({ tenantId: w?.tenantId, role: w?.role ?? "OWNER", forAgent: Boolean(w?.forAgent) });

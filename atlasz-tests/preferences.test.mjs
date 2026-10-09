@@ -139,3 +139,20 @@ test("round-3 fixes: resolved proposals are kept bounded", () => {
   for (let i = 0; i < 260; i++) { const r = p.propose("t1", "suggestions.maxPerDay", 6 + (i % 10), { actor: "SYSTEM" }); assert.equal(r.ok, true, JSON.stringify(r)); assert.equal(p.rejectProposal("t1", r.id, { actor: "OWNER" }).ok, true); }
   assert.ok(p.proposals("t1").length <= 201, "history of decided proposals is capped: " + p.proposals("t1").length);
 });
+
+test("round-4 fixes: an out-of-date proposal is listed as EXPIRED even before the next write; a NaN/garbage history limit falls back to the default cap", () => {
+  const now = clock(), p = createPreferences({ now }); const r = p.propose("t1", "ui.language", "en", { actor: "SYSTEM" }); assert.equal(r.ok, true);
+  assert.equal(p.proposals("t1", { status: "PENDING" }).length, 1); now.adv(LIMITS.proposalTtlMs + 1000);
+  assert.equal(p.proposals("t1", { status: "PENDING" }).length, 0); assert.equal(p.proposals("t1", { status: "EXPIRED" }).length, 1);
+  for (let i = 0; i < 260; i++) p.set("t1", "suggestions.maxPerDay", i % 20, { actor: "OWNER" });
+  assert.ok(p.history("t1", NaN).length <= 50); assert.ok(p.history("t1", "abc").length <= 50); assert.equal(p.history("t1", 5).length, 5); assert.ok(p.history("t1", 1e9).length <= 200);
+});
+
+test("round-4 fixes: hand-edited stored values that fail the schema are ignored (defaults apply)", () => {
+  const d = tmp("pf-"), f = path.join(d, "p.json");
+  try {
+    const p = createPreferences({ file: f }); p.set("t1", "suggestions.maxPerDay", 3, { actor: "OWNER" });
+    const j = JSON.parse(fs.readFileSync(f, "utf8")); j.tenants.t1.values["suggestions.maxPerDay"] = 1e9; j.tenants.t1.values["suggestions.snoozeDays"] = "abc"; fs.writeFileSync(f, JSON.stringify(j));
+    const q = createPreferences({ file: f }); assert.equal(q.get("t1", "suggestions.maxPerDay").value, SCHEMA["suggestions.maxPerDay"].default); assert.equal(q.get("t1", "suggestions.snoozeDays").value, SCHEMA["suggestions.snoozeDays"].default); assert.equal(q.get("t1", "suggestions.snoozeDays").isDefault, true);
+  } finally { rm(d); }
+});

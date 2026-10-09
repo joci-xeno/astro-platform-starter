@@ -27,7 +27,7 @@ export function createConversationStore({ file = null, now = () => new Date().to
     if (!tenantId || typeof tenantId !== "string") return { ok: false, reason: "TENANT_REQUIRED" };
     if (!modelOk(model)) return { ok: false, reason: "MODEL_INVALID" };
     if (Object.values(d.conversations).filter(x => x.tenantId === tenantId).length >= LIMITS.maxConversations) return { ok: false, reason: "TOO_MANY_CONVERSATIONS" };
-    const sp = redact(String(systemPrompt)); sp.text = sp.text.slice(0, LIMITS.maxSystemChars); const c = { id: rid("cv_"), tenantId, title: redact(String(title)).text.slice(0, LIMITS.maxTitleChars) || "Conversation", systemPrompt: sp.text, model, switches: [], turns: [], createdAt: now(), updatedAt: now() };
+    const sp = redact(String(systemPrompt).slice(0, LIMITS.maxSystemChars + 500)); sp.text = sp.text.slice(0, LIMITS.maxSystemChars); const c = { id: rid("cv_"), tenantId, title: redact(String(title).slice(0, LIMITS.maxTitleChars + 200)).text.slice(0, LIMITS.maxTitleChars) || "Conversation", systemPrompt: sp.text, model, switches: [], turns: [], createdAt: now(), updatedAt: now() };
     d.conversations[c.id] = c; persist(); return { ok: true, id: c.id, conversation: pub(c) };
   }
   function addTurn(id, { tenantId, role, text, modelId = null } = {}) {
@@ -72,7 +72,7 @@ export function createConversationStore({ file = null, now = () => new Date().to
     let out = r.output, truncated = false; if (typeof out === "string" && out.length > LIMITS.maxTextChars) { out = out.slice(0, LIMITS.maxTextChars - 14) + " [truncated]"; truncated = true; }   // a long answer that was paid for is kept (shortened), not thrown away
     const t = typeof r.output === "string" ? addTurn(id, { tenantId, role: "assistant", text: out, modelId: mid === "unknown" ? c.model : mid }) : { ok: false, reason: "OUTPUT_NOT_TEXT" };
     const ru = r.usage, reported = ru && typeof ru === "object" && [ru.promptTokens, ru.completionTokens].every(v => Number.isInteger(v) && v >= 0 && v <= 1e9);   // provider-reported token counts win; otherwise the numbers are local estimates and say so
-    const u = usage.record({ conversationId: id, modelId: mid, tokensEstimated: !reported, promptTokens: reported ? ru.promptTokens : ctx.tokens, completionTokens: reported ? ru.completionTokens : estimateTokens(typeof r.output === "string" ? r.output : ""), source: Number.isFinite(r.costUsd) && r.costUsd >= 0 ? "PROVIDER" : "ESTIMATE", costUsd: Number.isFinite(r.costUsd) && r.costUsd >= 0 ? r.costUsd : null, budgetUsd }); persist();      // spend is recorded even when the answer cannot be stored
+    const u = usage.record({ conversationId: id, modelId: mid, tokensEstimated: !reported, promptTokens: reported ? ru.promptTokens : ctx.tokens, completionTokens: reported ? ru.completionTokens : estimateTokens(typeof r.output === "string" ? r.output : ""), source: Number.isFinite(r.costUsd) && r.costUsd >= 0 ? "PROVIDER" : "ESTIMATE", costUsd: Number.isFinite(r.costUsd) && r.costUsd >= 0 ? Math.min(r.costUsd, 1e7) : null, budgetUsd }); persist();      // spend is recorded even when the answer cannot be stored; an absurd reported cost is kept at the ceiling and flagged, never dropped
     if (!t.ok) return { ok: false, reason: t.reason, turnAdded: false, usageRecorded: u.ok };
     return { ok: true, turn: t.turn, providerId: mid, untrusted: true, ...(truncated ? { truncated: true } : {}), droppedTurns: ctx.droppedIds.length, usageRecorded: u.ok };
   }

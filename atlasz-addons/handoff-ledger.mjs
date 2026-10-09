@@ -10,6 +10,7 @@ import crypto from "node:crypto";
 import { createStore, clone } from "./business/store.mjs";
 import { AGENT_ID_RE } from "./agent-tool-policy.mjs";
 import { okName, own } from "./safe-keys.mjs";
+import { scrub } from "./secret-patterns.mjs";
 
 export const LIMITS = Object.freeze({ perAgentOpen: 3, maxOpen: 200, maxTasks: 5000, maxDeps: 10, maxArtifacts: 10, maxSummary: 300, maxEvents: 2000, maxPayloadChars: 20000 });
 const OPEN = new Set(["ASSIGNED", "IN_PROGRESS", "HANDOFF_PENDING", "VERIFYING"]), RETRYABLE = new Set(["FAILED", "CANCELLED"]);
@@ -60,6 +61,7 @@ export function createHandoffLedger({ file = null, isStopped = () => false, now 
     if (k.status !== "IN_PROGRESS") return { ok: false, reason: "BAD_STATE:" + k.status };
     if (!Array.isArray(artifacts) || !artifacts.length || artifacts.length > L.maxArtifacts || !artifacts.every(a => a && typeof a.name === "string" && TASK.test(a.name) && typeof a.sha256 === "string" && HASH.test(a.sha256)) || new Set(artifacts.map(a => a.name)).size !== artifacts.length) return { ok: false, reason: "ARTIFACTS_INVALID" };
     if (typeof summary !== "string" || summary.length > L.maxSummary) return { ok: false, reason: "SUMMARY_INVALID" };
+    if (scrub(summary) !== summary) return { ok: false, reason: "SECRET_IN_INPUT" };          // a handoff note travels between agents and is stored: no credentials in it
     const t = peek(tenantId); if (openOf(t, to) >= L.perAgentOpen) return { ok: false, reason: "RECEIVER_AT_CONCURRENCY_LIMIT" };
     const h = { n: k.handoffs.length + 1, from, to, artifacts: artifacts.map(a => ({ name: a.name, sha256: a.sha256 })).sort((a, b) => (a.name < b.name ? -1 : 1)), summary, at: new Date(now()).toISOString(), status: "PENDING" };
     h.contract = crypto.createHash("sha256").update(canon({ task: id, from, to, artifacts: h.artifacts })).digest("hex"); k.handoffs.push(h); k.handoff = h.n; k.status = "HANDOFF_PENDING";
@@ -76,7 +78,7 @@ export function createHandoffLedger({ file = null, isStopped = () => false, now 
   }
   function rejectHandoff(tenantId, id, { agent, reason = "" } = {}) {
     const g = guard(); if (g) return g; const k = find(tenantId, id); if (!k) return { ok: false, reason: "TASK_NOT_FOUND" }; const h = pending(k); if (!h) return { ok: false, reason: "NO_PENDING_HANDOFF" };
-    if (agent !== h.to) return { ok: false, reason: "NOT_THE_RECEIVER" }; h.status = "REJECTED"; k.status = "IN_PROGRESS"; k.handoff = null; ev(peek(tenantId), id, "HANDOFF_REJECTED", agent, { from: h.from, reason: String(reason).slice(0, 100) }); store.save(); return { ok: true, id, owner: k.owner };
+    if (agent !== h.to) return { ok: false, reason: "NOT_THE_RECEIVER" }; h.status = "REJECTED"; k.status = "IN_PROGRESS"; k.handoff = null; ev(peek(tenantId), id, "HANDOFF_REJECTED", agent, { from: h.from, reason: scrub(String(reason)).slice(0, 100) }); store.save(); return { ok: true, id, owner: k.owner };
   }
   function complete(tenantId, id, { agent, resultSha256 } = {}) {
     const g = guard(); if (g) return g; const k = find(tenantId, id); if (!k) return { ok: false, reason: "TASK_NOT_FOUND" }; if (agent !== k.owner) return { ok: false, reason: "NOT_THE_OWNER" };
@@ -93,7 +95,7 @@ export function createHandoffLedger({ file = null, isStopped = () => false, now 
   function close(tenantId, id, { agent, status, reason = "" } = {}) {                     // the owner can mark an unfinished task FAILED or CANCELLED (frees its fingerprint for a retry)
     const g = guard(); if (g) return g; const k = find(tenantId, id); if (!k) return { ok: false, reason: "TASK_NOT_FOUND" }; if (agent !== k.owner) return { ok: false, reason: "NOT_THE_OWNER" };
     if (status !== "FAILED" && status !== "CANCELLED") return { ok: false, reason: "STATUS_INVALID" }; if (!OPEN.has(k.status)) return { ok: false, reason: "BAD_STATE:" + k.status };
-    const h = pending(k); if (h) h.status = "WITHDRAWN"; k.status = status; k.handoff = null; ev(peek(tenantId), id, status, agent, { reason: String(reason).slice(0, 100) }); store.save(); return { ok: true, id, status };
+    const h = pending(k); if (h) h.status = "WITHDRAWN"; k.status = status; k.handoff = null; ev(peek(tenantId), id, status, agent, { reason: scrub(String(reason)).slice(0, 100) }); store.save(); return { ok: true, id, status };
   }
   const get = (tenantId, id) => { const k = find(tenantId, id); return k ? { ok: true, task: clone(k) } : { ok: false, reason: "TASK_NOT_FOUND" }; };
   const list = (tenantId, { status = null } = {}) => Object.values(peek(tenantId)?.tasks ?? {}).filter(k => !status || k.status === status).map(k => ({ id: k.id, kind: k.kind, owner: k.owner, status: k.status, dependsOn: [...k.dependsOn], handoffs: k.handoffs.length, rejections: k.rejections }));

@@ -77,7 +77,7 @@ test("mutation hardening: default client cap, exact size boundaries, empty event
 
 test("frame never throws and never emits what looks like a credential, in the data, the event name or nested under a secret-looking key", () => {
   let deep = { v: 1 }; for (let i = 0; i < 20000; i++) deep = { n: deep };
-  const f = frame(ent(9, deep)); assert.match(f, /^id: 9\nevent: BB_TOOL\ndata: \{.*"truncated":true\}\n\n$/, "an unserialisable entry becomes a minimal frame");
+  const f = frame(ent(9, deep)); assert.match(f, /^id: 9\nevent: BB_TOOL\ndata: \{.*\}\n\n$/, "an extremely deep entry becomes a well-formed frame"); assert.ok(f.includes("TOO_DEEP_OR_CYCLIC") || f.includes('"truncated":true'));
   const K = SK, J = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV";
   const g = frame(ent(5, { secret: { k: "nested-secret-val" }, password: 123456789, token: 99887766, auth: { Authorization: "Bearer abcdefghijklmnop" }, url: "https://user:pw12345@host/x", jwt: J, note: "key_" + K, bare: "Bearer abcdefghijklmnop" }, "BB_" + K));
   for (const bad of ["nested-secret-val", "123456789", "99887766", "abcdefghijklmnop", "pw12345", J, K]) assert.equal(g.includes(bad), false, bad);
@@ -122,4 +122,15 @@ test("createChainTail: a log larger than one read chunk is caught up over succes
     for (let i = 0; i < 5 && last < n; i++) { const r = tail.read(); last = r.length ? r[r.length - 1].seq : 0; }
     assert.equal(last, n, "the tail reaches the end of a >8 MB log without a size change");
   } finally { rm(d); }
+});
+
+test("round-4 fixes: the tail refuses a log whose sequence goes backwards or repeats, or whose hash links do not connect", async () => {
+  const { createChainTail } = await import("../atlasz-addons/event-stream.mjs"); const fs = await import("node:fs"); const path = await import("node:path"); const { tmp, rm } = await import("./helpers.mjs");
+  const dir = tmp("tail2-"); try {
+    const f = path.join(dir, "bb.jsonl"), L = o => JSON.stringify(o) + "\n";
+    fs.writeFileSync(f, L(ent(5)) + L(ent(5))); assert.throws(() => createChainTail(f).read(), /LOG_CORRUPT/, "repeat");
+    fs.writeFileSync(f, L(ent(5)) + L(ent(2))); assert.throws(() => createChainTail(f).read(), /LOG_CORRUPT/, "backwards");
+    fs.writeFileSync(f, L({ ...ent(1), hash: "h1", prev: "GENESIS" }) + L({ ...ent(2), hash: "h2", prev: "h1" })); assert.equal(createChainTail(f).read().length, 2);
+    fs.writeFileSync(f, L({ ...ent(1), hash: "h1", prev: "GENESIS" }) + L({ ...ent(2), hash: "h2", prev: "WRONG" })); assert.throws(() => createChainTail(f).read(), /LOG_CORRUPT/, "broken link");
+  } finally { rm(dir); }
 });

@@ -398,7 +398,7 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
   const connectors = () => { let vault; try { vault = createSecretVault({ dir: path.join(stateDir, "vault") }); } catch (e) { return { error: String(e.message), connectors: [] }; } return createConnectorCatalog({ vault }).health(); };
   const techWatch = () => createTechWatch({ feedDir: path.join(configDir, "tech-watch"), installed: () => uc().viewModel().components.map(c => ({ componentId: c.id, version: c.version })) }).scan();
   // ---- Update Center (same flow as the CLI/tests; no real detector adapters yet => honest BLOCKED) ----
-  const plugins = () => createPluginManager({ roots: [path.join(configDir, "plugins"), path.join(packDir, "plugins")], stateDir: path.join(stateDir, "plugins"), ownerAuth: ownerAuth() });
+  const plugins = () => createPluginManager({ roots: [path.join(configDir, "plugins"), path.join(packDir, "plugins")], stateDir: path.join(stateDir, "plugins"), ownerAuth: ownerAuth(), isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL" });
   // Installer (M05): packages are read ONLY from <configDir>/plugin-inbox/<name> (a fixed folder; no arbitrary paths from the UI). Always owner-signed; installs DISABLED.
   const pluginInbox = path.join(configDir, "plugin-inbox");
   const installer = () => createPluginInstaller({ pluginRoot: path.join(configDir, "plugins"), stateDir: path.join(stateDir, "plugin-installer"), ownerAuth: ownerAuth(), pluginManager: plugins(), isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL" });
@@ -455,7 +455,7 @@ export function createControlCenterCore({ stateDir, configDir, backupRoot = path
     install: ({ name, passphrase }) => act(() => { const { ins, dir } = inboxPkg(name), p = ins.inspectPackage(dir); if (!p.ok) return { ok: false, reason: "PACKAGE_REJECTED", problems: p.problems.slice(0, 10) }; return ins.install(dir, { ownerApproval: passphrase ? sign(passphrase, "PLUGIN_INSTALL", p.subject) : null }); }),
     rollback: ({ id, version, passphrase }) => act(() => { const ins = installer(), s = ins.rollbackSubject(id, version); return ins.rollback(id, version, { ownerApproval: passphrase && s ? sign(passphrase, "PLUGIN_ROLLBACK", s) : null }); }),
     uninstall: ({ id, passphrase }) => act(() => installer().uninstall(id, { ownerApproval: passphrase ? sign(passphrase, "PLUGIN_UNINSTALL", id) : null })),
-    enable: ({ id, passphrase }) => act(() => plugins().enable(id, { ownerApproval: passphrase ? sign(passphrase, "PLUGIN_ENABLE", id) : null })),
+    enable: ({ id, passphrase }) => act(() => { const pm = plugins(), sub = pm.enableSubject(id); return pm.enable(id, { ownerApproval: passphrase ? sign(passphrase, "PLUGIN_ENABLE", sub ?? id) : null }); }),
     disable: ({ id }) => act(() => plugins().disable(id)),
     setTheme: ({ id = null }) => act(() => plugins().setTheme(id)),
     resetQuarantine: ({ id, passphrase }) => act(() => plugins().resetQuarantine(id, { ownerApproval: sign(passphrase, "PLUGIN_RESET_QUARANTINE", id) }))

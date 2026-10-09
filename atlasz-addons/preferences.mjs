@@ -46,7 +46,7 @@ export function createPreferences({ file = null, now = () => Date.now() } = {}) 
   const actorOk = a => typeof a === "string" && (a === "OWNER" || a === "SYSTEM" || AGENT_ID_RE.test(a));
   const log = (t, e) => { t.history.push({ at: new Date(now()).toISOString(), ...e }); if (t.history.length > LIMITS.maxHistory) t.history.splice(0, t.history.length - LIMITS.maxHistory); };
 
-  const get = (tenantId, key) => { if (!Object.hasOwn(SCHEMA, key)) return { ok: false, reason: "UNKNOWN_PREFERENCE" }; const t = peek(tenantId); const set = t && Object.hasOwn(t.values, key); return { ok: true, key, value: clone(set ? t.values[key] : SCHEMA[key].default), isDefault: !set }; };
+  const get = (tenantId, key) => { if (!Object.hasOwn(SCHEMA, key)) return { ok: false, reason: "UNKNOWN_PREFERENCE" }; const t = peek(tenantId); const stored = t && t.values && typeof t.values === "object" && Object.hasOwn(t.values, key) && validatePreference(key, t.values[key]).ok; return { ok: true, key, value: clone(stored ? t.values[key] : SCHEMA[key].default), isDefault: !stored }; };      // a value that fails the schema (hand-edited file) is ignored, the default applies
   const all = tenantId => Object.fromEntries(Object.keys(SCHEMA).map(k => { const g = get(tenantId, k); return [k, { value: g.value, isDefault: g.isDefault, doc: SCHEMA[k].doc }]; }));
 
   function applyValue(t, key, value, by, how) {
@@ -88,7 +88,7 @@ export function createPreferences({ file = null, now = () => Date.now() } = {}) 
     const r = applyValue(t, p.key, p.value, "OWNER", "CONFIRMED_PROPOSAL"); if (!r.ok) return r; p.status = "ACCEPTED"; store.save(); return { ok: true, status: "ACCEPTED", key: p.key, value: p.value };
   }
   const confirm = (tenantId, id, { actor } = {}) => decide(tenantId, id, actor, true), rejectProposal = (tenantId, id, { actor } = {}) => decide(tenantId, id, actor, false);
-  const proposals = (tenantId, { status = null } = {}) => (peek(tenantId)?.proposals ?? []).filter(p => !status || p.status === status).map(({ createdAtMs, ...p }) => clone(p));
+  const proposals = (tenantId, { status = null } = {}) => (peek(tenantId)?.proposals ?? []).map(p => (p.status === "PENDING" && now() - p.createdAtMs > LIMITS.proposalTtlMs ? { ...p, status: "EXPIRED" } : p)).filter(p => !status || p.status === status).map(({ createdAtMs, ...p }) => clone(p));      // an out-of-date proposal is reported as expired even before the next write marks it
 
   /** Count one choice of the OWNER (labels only). Ignored when privacy.rememberHistory is off. */
   function recordChoice(tenantId, { kind, subject, actor } = {}) {
@@ -110,7 +110,7 @@ export function createPreferences({ file = null, now = () => Date.now() } = {}) 
     }
     return { ok: true, proposed: out };
   }
-  const history = (tenantId, limit = 50) => clone((peek(tenantId)?.history ?? []).slice(-Math.max(1, Math.min(200, limit))));
+  const history = (tenantId, limit = 50) => clone((peek(tenantId)?.history ?? []).slice(-Math.max(1, Math.min(200, Number.isFinite(Number(limit)) ? Math.floor(Number(limit)) : 50))));
   const exportAll = tenantId => { const t = peek(tenantId); return { ok: true, preferences: all(tenantId), history: t ? clone(t.history) : [], counters: t ? clone(t.counters) : {}, proposals: proposals(tenantId) }; };
   function forgetAll(tenantId, { actor } = {}) {
     if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_FORGET" };

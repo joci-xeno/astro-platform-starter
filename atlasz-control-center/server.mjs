@@ -31,9 +31,12 @@ export function createControlCenterServer(opts = {}) {
   };
   const send = (res, code, obj) => { res.writeHead(code, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" }); res.end(JSON.stringify(obj)); };
   const readBody = req => new Promise((resolve, reject) => {
-    let n = 0; const parts = [];
-    req.on("data", c => { n += c.length; if (n > 65536) { reject(new Error("BODY_TOO_LARGE")); req.destroy(); } else parts.push(c); });
-    req.on("end", () => { try { resolve(parts.length ? JSON.parse(Buffer.concat(parts).toString("utf8")) : {}); } catch { reject(new Error("INVALID_JSON")); } });
+    let n = 0, big = false; const parts = [];
+    req.on("data", c => { n += c.length; if (n > 65536) { big = true; parts.length = 0; if (n > 4 * 1048576) req.destroy(); } else if (!big) parts.push(c); });       // an oversize body is drained (up to a hard ceiling) so the client gets a 413 instead of a reset
+    req.on("end", () => {
+      if (big) return reject(Object.assign(new Error("BODY_TOO_LARGE"), { status: 413 }));
+      try { const v = parts.length ? JSON.parse(Buffer.concat(parts).toString("utf8")) : {}; if (v === null || typeof v !== "object" || Array.isArray(v)) return reject(new Error("BODY_MUST_BE_A_JSON_OBJECT")); resolve(v); } catch { reject(new Error("INVALID_JSON")); }
+    });
     req.on("error", reject);
   });
 
@@ -66,7 +69,7 @@ export function createControlCenterServer(opts = {}) {
         catch (e) { return send(res, 400, { ok: false, error: String(e.message).replace(/passphrase[^,}]*/gi, "[redacted]") }); }   // owner-denied / validation errors, never the secret
       }
       return send(res, 404, { error: "NOT_FOUND" });
-    } catch (e) { return send(res, 400, { error: String(e.message) }); }
+    } catch (e) { return send(res, Number.isInteger(e?.status) ? e.status : 400, { error: String(e.message) }); }
   });
   const listen = (p = 0) => new Promise(resolve => server.listen(p, "127.0.0.1", () => { port = server.address().port; resolve({ port, token, url: "http://127.0.0.1:" + port + "/#" + token }); }));
   // Optional scheduler (off by default): runs due scheduled workflows. Same gates as a manual tick (kill switch/safe mode are checked inside the engine); overlapping ticks are skipped.

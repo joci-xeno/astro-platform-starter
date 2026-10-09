@@ -314,3 +314,25 @@ test("round-3 fixes: a template read back cannot be used to alter the stored par
   const t = e.getTemplate("greet", T); const tt = t.template ?? t; if (tt.params?.who) tt.params.who.required = false;
   const again = e.getTemplate("greet", T); assert.equal((again.template ?? again).params.who.required, true);
 });
+
+test("round-4 fixes: credential-shaped assignments in template args/params are refused; cyclic or absurdly deep input is refused instead of throwing", () => {
+  const e = createWorkflowEngine({ actions: mkActions() });
+  const DBP = "DB_PASS" + "WORD=Sup3rS3cretValue9", PW = "login with pass" + "word: Hunter2Hunter2 ok";
+  assert.match(String(e.saveTemplate({ ...T, id: "a", name: "a", params: {}, steps: [{ id: "s", action: "upper", args: { text: DBP } }] }).reason), /SECRET_IN_INPUT/);
+  assert.match(String(e.saveTemplate({ ...T, id: "b", name: "b", params: { x: { type: "string", default: PW } }, steps: [{ id: "s", action: "upper", args: { text: "{{p.x}}" } }] }).reason), /SECRET|PARAM/);
+  const cyc = { text: "x" }; cyc.self = cyc;
+  assert.equal(e.saveTemplate({ ...T, id: "c", name: "c", params: {}, steps: [{ id: "s", action: "upper", args: cyc }] }).reason, "INPUT_NOT_PLAIN_JSON");
+  let deep = { v: 1 }; for (let i = 0; i < 20000; i++) deep = { n: deep };
+  assert.equal(e.saveTemplate({ ...T, id: "d", name: "d", params: {}, steps: [{ id: "s", action: "upper", args: deep }] }).reason, "INPUT_NOT_PLAIN_JSON");
+  assert.equal(e.listTemplates(T).length, 0);
+});
+
+test("round-4: a failed side-effecting (non-idempotent) step that stops the run is marked NEEDS_REVIEW and is never silently re-run by resume", async () => {
+  let runs = 0; const actions = { ...mkActions(), pay: { run: async () => { runs++; throw new Error("provider timeout"); }, idempotent: false, rewindable: false } };
+  const e = createWorkflowEngine({ actions, sleep: async () => {} });
+  e.saveTemplate({ ...T, id: "p", name: "p", params: {}, steps: [{ id: "s", action: "pay" }] });
+  const id = e.start({ ...T, templateId: "p" }).id; const r = await e.execute(id, T); assert.equal(runs, 1);
+  assert.equal(e.getInstance(id, T).instance.status, "FAILED");
+  assert.equal((await e.resume(id, T)).reason, "NEEDS_REVIEW"); assert.equal(runs, 1, "resume did not execute the side-effecting step again");
+  const i = e.getInstance(id, T).instance; assert.equal(i.steps[0].status, "NEEDS_REVIEW"); assert.equal(i.status, "PAUSED"); assert.equal((await e.execute(id, T)).reason, "NEEDS_REVIEW"); assert.equal(runs, 1); void r;
+});

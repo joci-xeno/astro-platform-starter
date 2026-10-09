@@ -16,7 +16,7 @@ import { SECRET_KEY } from "./secret-patterns.mjs";
 const secretKeyed = (k, x) => SECRET_KEY.test(k) && ((typeof x === "string" && x.trim() !== "" && !/^\{\{.*\}\}$/.test(x.trim())) || typeof x === "number");   // a credential-NAMED field holding a value (a pure {{placeholder}} is only a reference)
 const redactDeep = v => typeof v === "string" ? redactStr(v) : Array.isArray(v) ? v.map(redactDeep) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([k, x]) => [redactStr(k), secretKeyed(k, x) ? "[redacted]" : redactDeep(x)])) : v;
 const credentialPlaceholder = v => Array.isArray(v) ? v.some(credentialPlaceholder) : v && typeof v === "object" ? Object.entries(v).some(([k, x]) => (SECRET_KEY.test(k) && typeof x === "string" && /\{\{/.test(x)) || credentialPlaceholder(x)) : false;
-const hasSecret = v => { if (typeof v === "string") return containsSecret(v); if (Array.isArray(v)) return v.some(hasSecret); if (v && typeof v === "object") return Object.entries(v).some(([k, x]) => containsSecret(k) || secretKeyed(k, x) || hasSecret(x)); return false; };
+const hasSecret = v => { if (typeof v === "string") return containsSecret(v) || scrub(v) !== v; if (Array.isArray(v)) return v.some(hasSecret); if (v && typeof v === "object") return Object.entries(v).some(([k, x]) => containsSecret(k) || secretKeyed(k, x) || hasSecret(x)); return false; };
 const rid = p => p + crypto.randomBytes(6).toString("hex");
 const ID = /^[a-z][a-z0-9_-]{0,39}$/, PARAM_TYPES = new Set(["string", "number", "boolean", "enum"]);
 const PLACE = /\{\{\s*(p|s)\.([A-Za-z0-9_.-]+)\s*\}\}/g, ONLY = /^\{\{\s*(p|s)\.([A-Za-z0-9_.-]+)\s*\}\}$/;
@@ -48,6 +48,7 @@ export function createWorkflowEngine({ file = null, actions = {}, now = () => ne
     if (!tenantId || typeof tenantId !== "string") return { ok: false, reason: "TENANT_REQUIRED" };
     if (!ID.test(String(id))) return { ok: false, reason: "TEMPLATE_ID_INVALID" };
     if (typeof name !== "string" || !name.trim()) return { ok: false, reason: "NAME_REQUIRED" };
+    try { const j = JSON.stringify({ params, steps, schedule }); if (j.length > 1000000) return { ok: false, reason: "INPUT_TOO_LARGE" }; ({ params, steps, schedule } = JSON.parse(j)); if (schedule === undefined) schedule = null; } catch { return { ok: false, reason: "INPUT_NOT_PLAIN_JSON" }; }
     const pc = checkParams(params); if (!pc.ok) return pc;
     if (!Array.isArray(steps) || !steps.length || steps.length > L.maxSteps) return { ok: false, reason: "STEPS_INVALID" };
     const seen = new Set(); let idx = 0;

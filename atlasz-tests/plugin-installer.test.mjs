@@ -82,7 +82,7 @@ test("upgrade keeps the old version, refuses same/older, and DISABLES an enabled
   const r = rig();
   try {
     const d1 = r.pkg("v1"), p1 = r.ins.inspectPackage(d1); assert.equal(r.ins.install(d1, { ownerApproval: ap("PLUGIN_INSTALL", sub(p1)) }).ok, true);
-    assert.equal(r.pm.enable("demo-plugin", { ownerApproval: ap("PLUGIN_ENABLE", "demo-plugin") }).ok, true);
+    assert.equal(r.pm.enable("demo-plugin", { ownerApproval: ap("PLUGIN_ENABLE", r.pm.enableSubject("demo-plugin")) }).ok, true);
     assert.equal((await r.pm.invoke("demo-plugin", "ping")).ok, true, "installed plugin really runs through the restricted launcher");
     const d2 = r.pkg("v2", { version: "1.1.0", files: { "extra.txt": "new" } }), p2 = r.ins.inspectPackage(d2);
     const up = r.ins.install(d2, { ownerApproval: ap("PLUGIN_INSTALL", sub(p2)) }); assert.deepEqual([up.ok, up.previous, up.enabled], [true, "1.0.0", false]);

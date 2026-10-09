@@ -19,6 +19,7 @@ export function normTags(tags) {
     if (typeof t !== "string") return { ok: false, reason: "TAG_INVALID" };
     const n = t.trim().replace(/^#+/, "").toLowerCase().replace(/[\s]+/g, "-");
     if (!/^[\p{L}\p{N}_-]{1,32}$/u.test(n)) return { ok: false, reason: "TAG_INVALID" };
+    if (scrub(n) !== n) return { ok: false, reason: "TAG_INVALID" };            // a tag that looks like a credential is not stored
     out.add(n);
   }
   if (out.size > LIMITS.maxTags) return { ok: false, reason: "TOO_MANY_TAGS" };
@@ -33,6 +34,7 @@ export function createNotesOrganizer({ file = null, now = () => new Date().toISO
   const pub = ({ tenantId: _t, ...x }) => clone(x);
   function base(kind, tenantId, tags, title) {
     if (!tenantId || typeof tenantId !== "string") return { ok: false, reason: "TENANT_REQUIRED" };
+    if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(tenantId)) return { ok: false, reason: "TENANT_INVALID" };
     if (typeof title !== "string" || !title.trim()) return { ok: false, reason: "TITLE_REQUIRED" };
     if (tenantItems(tenantId).length >= LIMITS.maxItems) return { ok: false, reason: "TOO_MANY_ITEMS" };
     const t = normTags(tags ?? []); if (!t.ok) return t;
@@ -45,6 +47,7 @@ export function createNotesOrganizer({ file = null, now = () => new Date().toISO
   }
   function addBook({ tenantId, title, author = "", tags = [], totalPages = null } = {}) {
     const b = base("book", tenantId, tags, title); if (!b.ok) return b;
+    if (typeof author !== "string") return { ok: false, reason: "AUTHOR_INVALID" };
     if (totalPages !== null && !(Number.isInteger(totalPages) && totalPages > 0 && totalPages <= 100000)) return { ok: false, reason: "PAGES_INVALID" };
     const x = { ...b.item, author: redact(author).replace(/\s+/g, " ").trim().slice(0, LIMITS.maxTitle), status: "TO_READ", totalPages, pagesRead: 0, startedAt: null, finishedAt: null, takeaways: [] }; d.items[x.id] = x; store.save(); return { ok: true, id: x.id, item: pub(x) };
   }

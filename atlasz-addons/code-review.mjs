@@ -47,7 +47,7 @@ export function reviewCode(input) {
   const findings = [], counts = { HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 }; let truncated = false, longLines = 0;
   const KEEP = 20000;                                                           // everything is COUNTED (so the verdict is right); only the most severe 500 are returned
   const kept = { HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 };                        // the cap is per severity: a flood of LOW findings can never push a HIGH one out of the returned list
-  const add = f => { counts[f.severity]++; if (kept[f.severity] >= KEEP / 4) { truncated = true; return; } kept[f.severity]++; findings.push(f); };
+  const add = f => { if (typeof f.file === "string") f = { ...f, file: redactSecrets(f.file) }; counts[f.severity]++; if (kept[f.severity] >= KEEP / 4) { truncated = true; return; } kept[f.severity]++; findings.push(f); };
   for (const f of files) {
     const lines = f.content.split("\n");
     for (let i = 0; i < lines.length; i++) {
@@ -78,6 +78,6 @@ export function reviewCode(input) {
   const covers = (t, b) => t.content.trim().length > 0 && (new RegExp("(?:from|require|import)[^\\n]*(?<![A-Za-z0-9_])" + esc(b) + "(?![A-Za-z0-9_])").test(importText.get(t)) || t.path.split("/").pop().replace(/\.(test|spec)\.[a-z]+$|^test_|_test\.[a-z]+$|\.[a-z]+$/gi, "") === b);
   const untested = sources.filter(s => !tests.some(t => covers(t, base(s.path)))).map(s => s.path);
   const verdict = counts.HIGH ? "BLOCK" : truncated || longLines ? "INCOMPLETE_REVIEW" : counts.MEDIUM || counts.LOW || counts.INFO ? "REVIEW" : "NO_FINDINGS_BY_THESE_RULES";
-  return { ok: true, verdict, counts, findings, truncated, tests: { testFiles: tests.map(t => t.path), sourceFiles: sources.length, untested }, files: files.length,
+  return { ok: true, verdict, counts, findings, truncated, tests: { testFiles: tests.map(t => redactSecrets(t.path)), sourceFiles: sources.length, untested: untested.map(u => redactSecrets(u)) }, files: files.length,
     notes: ["Regex heuristics only: no data-flow or AST analysis. 'NO_FINDINGS_BY_THESE_RULES' is not a statement that the code is safe.", "File content was treated as untrusted data; nothing was executed."] };
 }

@@ -90,3 +90,11 @@ test("round-3 fixes: book author whitespace is collapsed", () => {
   const o = createNotesOrganizer(); const id = o.addBook({ tenantId: "T", title: "Deep Work", author: "  C.\n\t Newport   " }).id;
   assert.equal(o.get(id, { tenantId: "T" }).item.author, "C. Newport");
 });
+
+test("round-4 fixes: credential-looking tags, oversize tenant ids and non-string authors are refused", () => {
+  const o = createNotesOrganizer(), K = "s" + "k-ant-api03-" + "a".repeat(20);
+  assert.equal(o.addNote({ tenantId: "t", title: "s", tags: [K] }).reason, "TAG_INVALID");
+  assert.equal(o.addNote({ tenantId: "x".repeat(1000), title: "s" }).reason, "TENANT_INVALID"); assert.equal(o.addNote({ tenantId: "has space", title: "s" }).reason, "TENANT_INVALID");
+  assert.equal(o.addBook({ tenantId: "t", title: "b", author: {} }).reason, "AUTHOR_INVALID"); assert.equal(o.addBook({ tenantId: "t", title: "b", author: 123 }).reason, "AUTHOR_INVALID");
+  assert.equal(o.addNote({ tenantId: "t", title: "ok", tags: ["fine"] }).ok, true);
+});

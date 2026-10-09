@@ -152,3 +152,10 @@ test("verification fixes: artifact check is element-wise; zero-width characters 
   assert.equal(m.accept("t", "a", { agent: E(2), received: [{ name: "b", sha256: H("2") }, { name: "a", sha256: H("1") }] }).ok, true, "order does not matter");
   const l = mk(); assert.equal(reg(l, "x", { payload: "delete user" }).ok, true); assert.equal(reg(l, "y", { payload: "dele\u200bte user" }).reason, "DUPLICATE_WORK"); assert.equal(fingerprint("k", "a\u00adb"), fingerprint("k", "ab"));
 });
+
+test("round-4 fixes: a credential in a handoff summary is refused and one in a close/reject reason is redacted before storage", () => {
+  const K = "gh" + "p_" + "a".repeat(36), l = mk(); reg(l, "a"); l.start("t", "a", { agent: E(1) });
+  assert.equal(l.handoff("t", "a", { from: E(1), to: E(2), artifacts: A, summary: "use token " + K }).reason, "SECRET_IN_INPUT");
+  assert.equal(l.close("t", "a", { agent: E(1), status: "FAILED", reason: "pw " + K }).ok, true);
+  assert.ok(!JSON.stringify(l.events("t", "a")).includes(K) && !JSON.stringify(l.get("t", "a")).includes(K));
+});

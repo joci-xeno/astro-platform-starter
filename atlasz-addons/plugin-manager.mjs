@@ -11,6 +11,7 @@ import { restrictedNodeCommand } from "./restricted-node.mjs";
 import { satisfies, parseVersion } from "./update-center.mjs";
 import { createAuditChain } from "./audit-chain.mjs";
 import { okName, own } from "./safe-keys.mjs";
+import { scrub } from "./secret-patterns.mjs";
 
 export const PLUGIN_KINDS = Object.freeze(["PLUGIN", "EXTENSION", "MODULE", "THEME", "SKIN"]);
 export const GRANTABLE_PERMISSIONS = Object.freeze(["READ_STATE", "WRITE_STATE", "NETWORK", "EXTERNAL_ACTION", "FILESYSTEM_PLUGIN_DIR", "UI_THEME"]);
@@ -36,7 +37,7 @@ export function validateManifest(m, { atlaszVersion = "7.3.0" } = {}) {
     else for (const [k, v] of Object.entries(m.variables)) if (!THEME_VAR.test(k) || !THEME_VALUE.test(String(v))) problems.push("UNSAFE_THEME_VARIABLE:" + k);
     if ((m.permissions ?? []).some(p => p !== "UI_THEME")) problems.push("THEME_PERMISSIONS_MUST_BE_UI_THEME_ONLY");
   } else if (typeof m.entry !== "string" || !/^[\w./-]+\.(mjs|js|cjs)$/.test(m.entry) || m.entry.includes("..") || path.isAbsolute(m.entry)) problems.push("ENTRY_REQUIRED_RELATIVE_JS");
-  return { ok: problems.length === 0, problems };
+  return { ok: problems.length === 0, problems: problems.map(x => scrub(String(x)).slice(0, 200)) };      // problem texts quote manifest values: never a credential, never unbounded
 }
 
 /** Content hash of a plugin folder (names + bytes, symlinks hashed as links). null = too large or unreadable: such a plugin is never run. */
@@ -52,7 +53,7 @@ function dirHash(dir) {
   } };
   try { walkDir(dir, ""); return h.digest("hex"); } catch { return null; }
 }
-export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVersion = "7.3.0", nodeBin = process.execPath, hookTimeoutMs = 5000, quarantineAfter = 3, now = () => new Date().toISOString() } = {}) {
+export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVersion = "7.3.0", nodeBin = process.execPath, hookTimeoutMs = 5000, quarantineAfter = 3, isStopped = () => false, now = () => new Date().toISOString() } = {}) {
   if (!stateDir || !ownerAuth) throw new Error("STATE_DIR_AND_OWNER_AUTH_REQUIRED");
   fs.mkdirSync(stateDir, { recursive: true });
   const stateFile = path.join(stateDir, "plugins-state.json");
@@ -100,11 +101,14 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
     const p = scan().found.get(id); if (!p) return { ok: false, reason: "UNKNOWN_PLUGIN" };
     if (own(S.health, id)?.quarantined) return { ok: false, reason: "QUARANTINED_RESET_REQUIRES_OWNER_APPROVAL" };
     const codeLess = p.manifest.kind === "THEME" || p.manifest.kind === "SKIN";
-    if (!codeLess) { const v = approve(ownerApproval, "PLUGIN_ENABLE", id); if (!v.allowed) return { ok: false, reason: "OWNER_APPROVAL_REQUIRED:" + v.reason }; }
+    let stopped = true; try { stopped = Boolean(isStopped()); } catch { /* fail closed */ } if (stopped && !codeLess) return { ok: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" };
     const hash = codeLess ? null : dirHash(p.dir); if (!codeLess && !hash) return { ok: false, reason: "PLUGIN_FOLDER_UNHASHABLE" };
+    if (!codeLess) { const v = approve(ownerApproval, "PLUGIN_ENABLE", id + "#" + hash); if (!v.allowed) return { ok: false, reason: "OWNER_APPROVAL_REQUIRED:" + v.reason, subject: id + "#" + hash }; }   // the owner approves these exact bytes, not just a name
     S.enabled[id] = { since: now(), version: p.manifest.version, permissions: p.manifest.permissions, ...(hash ? { hash } : {}) }; S.health[id] = { failures: 0 };
     audit.append("PLUGIN_ENABLED", { id, version: p.manifest.version, permissions: p.manifest.permissions }); save(); return { ok: true };
   }
+  /** What the owner signs for PLUGIN_ENABLE: the plugin id and the content hash of its folder as it is now (a code-less theme needs no approval). */
+  const enableSubject = id => { const p = scan().found.get(id); if (!p || p.manifest.kind === "THEME" || p.manifest.kind === "SKIN") return null; const h = dirHash(p.dir); return h ? id + "#" + h : null; };
   function disable(id) { if (!own(S.enabled, id)) return { ok: true, already: true }; delete S.enabled[id]; if (S.theme === id) S.theme = null; audit.append("PLUGIN_DISABLED", { id }); save(); return { ok: true }; }
   function resetQuarantine(id, { ownerApproval = null } = {}) {
     if (unreadable) return STATE_BAD;
@@ -112,7 +116,7 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
     S.health[id] = { failures: 0 }; audit.append("PLUGIN_QUARANTINE_RESET", { id }); save(); return { ok: true };
   }
   function fail(id, why) {
-    const h = (Object.hasOwn(S.health, id) ? S.health[id] : (S.health[id] = { failures: 0 })); h.failures++; h.lastError = String(why).slice(0, 200);
+    const h = (Object.hasOwn(S.health, id) ? S.health[id] : (S.health[id] = { failures: 0 })); h.failures++; h.lastError = scrub(String(why)).slice(0, 200);
     if (h.failures >= quarantineAfter) { h.quarantined = true; delete S.enabled[id]; if (S.theme === id) S.theme = null; audit.append("PLUGIN_QUARANTINED", { id, why: h.lastError }); }
     else audit.append("PLUGIN_FAILURE", { id, why: h.lastError });
     save();
@@ -123,6 +127,7 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
       const p = scan().found.get(id);
       if (!p || !own(S.enabled, id) || own(S.health, id)?.quarantined) return resolve({ ok: false, reason: !p ? "UNKNOWN_PLUGIN" : "NOT_ENABLED" });
       if (!p.manifest.entry) return resolve({ ok: false, reason: "NO_CODE_ENTRY" });
+      { let st = true; try { st = Boolean(isStopped()); } catch { /* fail closed */ } if (st) { audit.append("PLUGIN_HOOK_NOT_RUN", { id, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" }); return resolve({ ok: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" }); } }
       { const en = own(S.enabled, id), now0 = dirHash(p.dir); if (!en?.hash || now0 !== en.hash) { audit.append("PLUGIN_HOOK_NOT_RUN", { id, reason: "CODE_CHANGED_SINCE_ENABLE" }); return resolve({ ok: false, reason: "CODE_CHANGED_SINCE_ENABLE" }); } }   // only the exact code the owner enabled ever runs
       let out = "", err = "", done = false, timer = null;
       const finish = r => { if (done) return; done = true; clearTimeout(timer); resolve(r); };
@@ -135,7 +140,7 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
       try { child = spawn(rc.cmd, rc.args, { cwd: p.dir, env: rc.env, stdio: ["pipe", "pipe", "pipe"], windowsHide: true }); }
       catch (e) { fail(id, "SPAWN_FAILED:" + e.message); return finish({ ok: false, reason: "SPAWN_FAILED" }); }
       timer = setTimeout(() => { child.kill("SIGKILL"); fail(id, "TIMEOUT"); finish({ ok: false, reason: "TIMEOUT" }); }, hookTimeoutMs);
-      child.stdout.on("data", d => { out += d; if (out.length > MAX_OUT) { child.kill("SIGKILL"); fail(id, "OUTPUT_TOO_LARGE"); finish({ ok: false, reason: "OUTPUT_TOO_LARGE" }); } });
+      child.stdout.on("data", d => { if (done) return; out += d; if (out.length > MAX_OUT) { child.kill("SIGKILL"); fail(id, "OUTPUT_TOO_LARGE"); finish({ ok: false, reason: "OUTPUT_TOO_LARGE" }); } });
       child.stderr.on("data", d => { if (err.length < 2000) err += d; });
       child.on("error", e => { fail(id, "PROCESS_ERROR:" + e.message); finish({ ok: false, reason: "PROCESS_ERROR" }); });
       child.on("close", code => {
@@ -154,5 +159,5 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
     S.theme = id; S.enabled[id] ??= { since: now(), version: p.manifest.version, permissions: ["UI_THEME"] }; audit.append("THEME_SET", { id }); save(); return { ok: true };
   }
   function activeTheme() { if (!S.theme) return { id: null, variables: {} }; const p = scan().found.get(S.theme); return p ? { id: S.theme, name: p.manifest.name, variables: p.manifest.variables } : { id: null, variables: {} }; }
-  return { scan: () => { const s = scan(); return { found: [...s.found.keys()], rejected: s.rejected }; }, list, enable, disable, resetQuarantine, invoke, setTheme, activeTheme, auditVerify: () => audit.verify(), validateManifest };
+  return { scan: () => { const s = scan(); return { found: [...s.found.keys()], rejected: s.rejected }; }, list, enable, enableSubject, disable, resetQuarantine, invoke, setTheme, activeTheme, auditVerify: () => audit.verify(), validateManifest };
 }

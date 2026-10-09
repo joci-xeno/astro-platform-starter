@@ -105,3 +105,11 @@ test("verification fixes R-4/R-5: sparse arrays are refused; palette names are o
   for (const color of ["constructor", "__proto__", "toString", 5, {}]) assert.equal(validateAnnotations([{ type: "rect", x: 0.1, y: 0.1, w: 0.2, h: 0.2, color }]).ok, false, String(color));
   assert.equal(validateAnnotations([{ type: "rect", x: 0.1, y: 0.1, w: 0.2, h: 0.2, color: "red" }]).ok, true);
 });
+
+test("round-4 fixes: negative-only bars are drawn inside the plot; a mismatched x array is refused; sparse annotation lists are refused", () => {
+  const r = renderChart({ type: "bar", labels: ["a", "b"], values: [-5, -9], title: "neg" }); assert.equal(r.ok, true);
+  const rects = [...r.svg.matchAll(/<rect x="[^"]+" y="([-\d.]+)" width="[^"]+" height="([-\d.]+)"/g)].map(m => [Number(m[1]), Number(m[2])]); assert.equal(rects.length, 2);
+  for (const [y, h] of rects) { assert.ok(y >= 0 && y + h <= 420 + 0.01, "bar inside canvas: " + y + "/" + h); }
+  assert.equal(renderChart({ type: "line", values: [1, 2, 3], x: [1, "a", 3] }).reason, "LINE_DATA_INVALID"); assert.equal(renderChart({ type: "line", values: [1, 2, 3], x: [1, 2] }).reason, "LINE_DATA_INVALID");
+  assert.equal(validateAnnotations(new Array(50)).reason, "SPARSE_ARRAY");
+});

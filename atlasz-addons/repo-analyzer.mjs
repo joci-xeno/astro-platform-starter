@@ -92,7 +92,7 @@ export async function runRepoTests({ name, root, ownerAuth, ownerApproval = null
   if (Object.values(unhashed).some(n => n > 0)) return { ok: false, reason: "UNHASHED_CONTENT_PRESENT", unhashed, note: "Part of the tree (symlinks, oversize or hidden files, node_modules/dist/build, a capped walk) is not covered by the content hash the owner approves, and the tests could read or run it. Remove it or test a clean copy." };
   const v = ownerAuth.verifyApproval(ownerApproval, { action: "REPO_TEST_RUN", subject: name + "#" + a.hash });
   if (!v.allowed) return { ok: false, reason: "OWNER_APPROVAL_REQUIRED:" + v.reason, subject: name + "#" + a.hash };
-  const targets = a.testFiles.slice(0, LIMITS.maxTestFiles); if (!targets.length) return { ok: true, hash: a.hash, contentUnchanged: true, ran: 0, results: [], note: "No Node test files found (tests/ folder, *.test.mjs/js, *.spec.mjs/js)." };
+  const targets = a.testFiles.slice(0, LIMITS.maxTestFiles), notRun = a.testFiles.length - targets.length; if (!targets.length) return { ok: true, hash: a.hash, contentUnchanged: true, ran: 0, notRun: 0, results: [], note: "No Node test files found (tests/ folder, *.test.mjs/js, *.spec.mjs/js)." };
   const results = []; let level = null, stoppedMid = false;
   for (const rel of targets) {
     { let st = true; try { st = Boolean(isStopped()); } catch { /* fail closed */ } if (st) return { ok: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE", results, hash: a.hash }; }
@@ -116,5 +116,5 @@ export async function runRepoTests({ name, root, ownerAuth, ownerApproval = null
   if (stoppedMid) return { ok: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE", results, hash: a.hash };      // a stop during a run kills the running file and ends the run
   const failed = results.filter(r => r.status !== "PASSED").length;
   const after = analyzeRepo(root), unchanged = after.ok && after.hash === a.hash;
-  return { ok: true, untrusted: true, hash: a.hash, contentUnchanged: unchanged, ran: results.length, passed: results.length - failed, failed, results, isolation: level, note: "Each file ran alone in a read-only, no-child-process sandbox with no network (note: this does not cover unix sockets reachable through the filesystem, and there is no disk quota on the scratch folder). A pass means the file exited 0 here, not that the repo is correct." };
+  return { ok: true, untrusted: true, hash: a.hash, contentUnchanged: unchanged, ran: results.length, notRun, complete: notRun === 0, passed: results.length - failed, failed, results, isolation: level, note: "Each file ran alone in a read-only, no-child-process sandbox with no network (note: this does not cover unix sockets reachable through the filesystem, and there is no disk quota on the scratch folder). A pass means the file exited 0 here, not that the repo is correct." };
 }

@@ -28,11 +28,18 @@ export function createObservationMemory({ file = null, security = null, blackBox
   const reload = () => { if (!file) return; let d; try { d = JSON.parse(fs.readFileSync(file, "utf8")); } catch (e) { if (e.code === "ENOENT") return; throw new Error("STORE_UNREADABLE:" + file.split(/[\\/]/).pop()); } const obj = x => x !== null && typeof x === "object" && !Array.isArray(x);
     if (!obj(d) || !obj(d.items ?? {}) || !obj(d.tombstones ?? {}) || !Array.isArray(d.events ?? []) || !Number.isInteger(d.seq ?? 0)) throw new Error("STORE_UNREADABLE:" + file.split(/[\\/]/).pop());   // same shape rules as at construction: a wrong-kind file is refused, never adopted and overwritten
     S.items = d.items ?? {}; S.tombstones = d.tombstones ?? {}; S.events = d.events ?? []; S.seq = d.seq ?? 0; };
+  // Head anchor: the newest event's number and hash are kept in a second file, so cutting the end off the event list (or deleting the anchor) is noticed instead of being extended as if nothing happened.
+  const headFile = file ? file + ".head" : null, baseSave = store.save;
+  const readHead = () => { if (!headFile || !fs.existsSync(headFile)) return null; try { const h = JSON.parse(fs.readFileSync(headFile, "utf8")); return Number.isInteger(h?.n) && typeof h?.hash === "string" ? h : { n: -1, hash: "" }; } catch { return { n: -1, hash: "" }; } };
+  store.save = () => { baseSave(); if (headFile && S.events.length) { try { fs.writeFileSync(headFile, JSON.stringify({ n: S.events.length, hash: S.events.at(-1).hash }), { mode: 0o600 }); } catch { /* the store itself is saved */ } } };
+  if (headFile && S.events.length && !fs.existsSync(headFile)) store.save();            // a store written before anchors existed adopts one when it is opened (an anchor deleted while running is still noticed)
+  const anchorOk = () => { if (!headFile || !S.events.length) return true; const h = readHead(); return Boolean(h) && h.n === S.events.length && S.events.at(-1).hash === h.hash; };
   const log = (kind, d) => { try { blackBox?.record({ kind, ...d }); } catch { /* audit must not change behaviour */ } };
   function event(type, by, d) {
+    if (!anchorOk()) throw new Error("CHAIN_BROKEN");                        // no write is added on top of a truncated or re-pointed event log
     const prev = S.events.length ? S.events.at(-1).hash : "GENESIS", e = { n: S.events.length + 1, at: now(), type, by, ...d, prev }; e.hash = sha(prev + JSON.stringify({ ...e, hash: undefined })); S.events.push(e); log("OBSERVATION_" + type, { by, ...d }); return e;
   }
-  const verifyChain = () => { let prev = "GENESIS"; for (const e of S.events) { const { hash, ...rest } = e; if (e.prev !== prev || sha(prev + JSON.stringify({ ...rest, hash: undefined })) !== hash) return { ok: false, brokenAt: e.n }; prev = hash; } return { ok: true, events: S.events.length }; };
+  const verifyChain = () => { let prev = "GENESIS"; for (const e of S.events) { const { hash, ...rest } = e; if (e.prev !== prev || sha(prev + JSON.stringify({ ...rest, hash: undefined })) !== hash) return { ok: false, brokenAt: e.n }; prev = hash; } if (!anchorOk()) return { ok: false, brokenAt: S.events.length + 1, reason: readHead() ? "HEAD_ANCHOR_MISMATCH" : "HEAD_ANCHOR_MISSING" }; return { ok: true, events: S.events.length }; };
   const who = w => ({ tenantId: w?.tenantId, role: w?.role ?? "OWNER", forAgent: Boolean(w?.forAgent), actorId: w?.actorId ?? null });
   const need = w => { if (!w?.tenantId) throw new Error("TENANT_REQUIRED"); return who(w); };
   const isOwner = w => who(w).role === "OWNER" && !who(w).forAgent;
@@ -97,12 +104,16 @@ export function createObservationMemory({ file = null, security = null, blackBox
   function correct(id, { text, reason = "" } = {}, w) {
     w = need(w); reload(); const i = mine(id, w); if (!i || expired(i)) throw new Error("UNKNOWN_OBSERVATION"); if (!canTouch(i, w)) throw new Error("NOT_PERMITTED");
     const t = String(text ?? "").trim(); if (!t) throw new Error("TEXT_REQUIRED"); if (t.length > LIMITS.textChars) throw new Error("TEXT_TOO_LONG"); if (looksSecret(t)) throw new Error("SECRET_NOT_STORED");
-    if (security && w.forAgent) { const a = security.assess({ kind: "EXTERNAL_INSTRUCTION", agentId: null, source: "observation:correct", text: t }); if (a.allowed === false) throw new Error("BLOCKED_BY_SECURITY"); i.screening = a.decision; }
+    if (looksSecret(String(reason))) throw new Error("SECRET_NOT_STORED");
+    let screening = "NOT_SCREENED";                                                           // corrected text is screened again whoever corrects it; unscreened text is not shown to agents
+    if (security) { const a = security.assess({ kind: "EXTERNAL_INSTRUCTION", agentId: null, source: "observation:correct", text: t }); if (a.allowed === false && w.forAgent) throw new Error("BLOCKED_BY_SECURITY"); screening = a.allowed === false ? "BLOCK_OVERRIDE_STORED_OWNER_ONLY" : a.decision; }
+    i.screening = screening;
     i.history.push({ version: i.version, text: i.text, textSha256: i.textSha256, replacedAt: now(), by: by(w), reason: String(reason).slice(0, 280) }); i.text = t; i.textSha256 = sha(t); i.version++; i.correctedAt = now(); if (i.verification !== "UNVERIFIED") i.verification = "UNVERIFIED_AFTER_CORRECTION";
     event("CORRECTED", by(w), { id, version: i.version }); store.save(); return pub(i, w);
   }
   /** Real deletion: text, tags and history are removed. A tombstone with no content (id, time, who, reason) stays for the audit. */
   function forget(id, { reason = "" } = {}, w) {
+    if (looksSecret(String(reason))) throw new Error("SECRET_NOT_STORED");
     w = need(w); reload(); const i = mine(id, w); if (!i) throw new Error("UNKNOWN_OBSERVATION"); if (!canTouch(i, w)) throw new Error("NOT_PERMITTED");
     S.tombstones[id] = { id, tenantId: w.tenantId, deletedAt: now(), by: by(w), reason: String(reason).slice(0, 280), kind: i.kind, modality: i.modality }; delete S.items[id];
     event("DELETED", by(w), { id, tenantId: w.tenantId }); store.save(); return { deleted: true, id };

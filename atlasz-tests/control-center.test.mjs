@@ -119,6 +119,10 @@ test("HTTP: token, Host allow-list, Origin, content-type, traversal, secrets nev
     const post = (p, body, h = {}) => raw(port, p, { method: "POST", headers: { ...H, "x-atlasz-token": token, "content-type": "application/json", ...h }, body: JSON.stringify(body) });
     assert.equal((await post("/api/owner-key", { passphrase: PW }, { origin: "http://evil.example" })).status, 403);
     assert.equal((await raw(port, "/api/owner-key", { method: "POST", headers: { ...H, "x-atlasz-token": token, "content-type": "text/plain" }, body: "x" })).status, 415);
+    { const J = { ...H, "x-atlasz-token": token, "content-type": "application/json" };
+      const big = await raw(port, "/api/owner-key", { method: "POST", headers: J, body: JSON.stringify({ passphrase: "x".repeat(70000) }) }); assert.equal(big.status, 413, "an oversize body gets a 413, not a reset");
+      const nul = await raw(port, "/api/owner-key", { method: "POST", headers: J, body: "null" }); assert.equal(nul.status, 400); assert.ok(!/destructure|intermediate value/.test(nul.body), "no internal message: " + nul.body);
+      assert.equal((await raw(port, "/api/owner-key", { method: "POST", headers: J, body: "[1]" })).status, 400); }
     assert.equal((await post("/api/owner-key", { passphrase: PW })).status, 200);
     assert.equal((await post("/api/emergency", { mode: "PAUSE_ALL", passphrase: PW })).status, 200);
     const bad = await post("/api/emergency", { mode: "RUNNING", passphrase: "wrong wrong wrong" });

@@ -36,7 +36,7 @@ test("scan rejects bad packages without throwing; plugins start DISABLED; enabli
     const l = r.pm.list(); assert.equal(l.plugins.length, 1); assert.equal(l.plugins[0].status, "DISABLED"); assert.equal(l.rejected.length, 2);
     assert.match(r.pm.enable("echo", {}).reason, /OWNER_APPROVAL_REQUIRED/); assert.match(r.pm.enable("echo", { ownerApproval: true }).reason, /OWNER_APPROVAL_REQUIRED/);
     assert.match(r.pm.enable("echo", { ownerApproval: ap("PLUGIN_ENABLE", "other-plugin") }).reason, /OWNER_APPROVAL_REQUIRED/);   // approval is bound to the exact plugin
-    assert.equal(r.pm.enable("echo", { ownerApproval: ap("PLUGIN_ENABLE", "echo") }).ok, true);
+    assert.equal(r.pm.enable("echo", { ownerApproval: ap("PLUGIN_ENABLE", r.pm.enableSubject("echo")) }).ok, true);
     assert.equal(r.pm.list().plugins[0].status, "ENABLED");
   } finally { r.done(); }
 });
@@ -45,7 +45,7 @@ test("hooks run in an isolated child process with no secrets; disabled plugins c
   try {
     r.mk("echo", { ...base, id: "echo", name: "Echo", kind: "PLUGIN", entry: "main.mjs" }, { "main.mjs": ok });
     assert.equal((await r.pm.invoke("echo", "h", {})).reason, "NOT_ENABLED");
-    r.pm.enable("echo", { ownerApproval: ap("PLUGIN_ENABLE", "echo") });
+    r.pm.enable("echo", { ownerApproval: ap("PLUGIN_ENABLE", r.pm.enableSubject("echo")) });
     process.env.ATLASZ_OWNER_PASSPHRASE = "super-secret"; process.env.ATLASZ_VAULT_KEY = "k";
     try { const res = await r.pm.invoke("echo", "greet", { a: 1 }); assert.equal(res.ok, true); assert.deepEqual(res.result.echo, { a: 1 }); assert.equal(res.result.secretVisible, false); }
     finally { delete process.env.ATLASZ_OWNER_PASSPHRASE; delete process.env.ATLASZ_VAULT_KEY; }
@@ -57,7 +57,7 @@ test("a crashing / hanging / garbage plugin cannot take the core down; repeated 
     r.mk("crash", { ...base, id: "crash", name: "C", kind: "PLUGIN", entry: "m.mjs" }, { "m.mjs": "process.exit(7);" });
     r.mk("hang", { ...base, id: "hang", name: "H", kind: "PLUGIN", entry: "m.mjs" }, { "m.mjs": "setInterval(()=>{},1000);" });
     r.mk("junk", { ...base, id: "junk", name: "J", kind: "PLUGIN", entry: "m.mjs" }, { "m.mjs": "console.log('not json');" });
-    for (const id of ["crash", "hang", "junk"]) r.pm.enable(id, { ownerApproval: ap("PLUGIN_ENABLE", id) });
+    for (const id of ["crash", "hang", "junk"]) r.pm.enable(id, { ownerApproval: ap("PLUGIN_ENABLE", r.pm.enableSubject(id)) });
     assert.equal((await r.pm.invoke("crash", "x")).reason, "PLUGIN_CRASHED");
     assert.equal((await r.pm.invoke("hang", "x")).reason, "TIMEOUT");
     assert.equal((await r.pm.invoke("junk", "x")).reason, "INVALID_OUTPUT");
@@ -65,7 +65,7 @@ test("a crashing / hanging / garbage plugin cannot take the core down; repeated 
     await r.pm.invoke("crash", "x");                                           // 2nd failure => quarantine (quarantineAfter: 2)
     assert.equal(r.pm.list().plugins.find(p => p.id === "crash").status, "QUARANTINED");
     assert.equal((await r.pm.invoke("crash", "x")).reason, "NOT_ENABLED");
-    assert.match(r.pm.enable("crash", { ownerApproval: ap("PLUGIN_ENABLE", "crash") }).reason, /QUARANTINED/);
+    assert.match(r.pm.enable("crash", { ownerApproval: ap("PLUGIN_ENABLE", r.pm.enableSubject("crash")) }).reason, /QUARANTINED/);
     assert.match(r.pm.resetQuarantine("crash", {}).reason, /OWNER_APPROVAL_REQUIRED/);
     assert.equal(r.pm.resetQuarantine("crash", { ownerApproval: ap("PLUGIN_RESET_QUARANTINE", "crash") }).ok, true);
     assert.equal(r.pm.auditVerify().ok, true);
@@ -91,7 +91,7 @@ test("hook runs with least privilege: cannot read outside its dir, cannot spawn,
   try {
     const dir = path.join(r.root, "plugins", "probe");
     r.mk("probe", { ...base, id: "probe", name: "P", kind: "PLUGIN", entry: "m.mjs" }, { "m.mjs": probeHook(outside, dir) });
-    assert.equal(r.pm.enable("probe", { ownerApproval: ap("PLUGIN_ENABLE", "probe") }).ok, true);
+    assert.equal(r.pm.enable("probe", { ownerApproval: ap("PLUGIN_ENABLE", r.pm.enableSubject("probe")) }).ok, true);
     process.env.ATLASZ_VAULT_KEY = "vault-secret";
     try {
       const res = await r.pm.invoke("probe", "go"); assert.equal(res.ok, true, JSON.stringify(res));
@@ -107,7 +107,7 @@ test("FILESYSTEM_PLUGIN_DIR grant (given at enable time) allows writing inside t
   try {
     const dir = path.join(r.root, "plugins", "wr");
     r.mk("wr", { ...base, id: "wr", name: "W", kind: "PLUGIN", entry: "m.mjs", permissions: ["READ_STATE", "FILESYSTEM_PLUGIN_DIR"] }, { "m.mjs": probeHook(outside, dir) });
-    assert.equal(r.pm.enable("wr", { ownerApproval: ap("PLUGIN_ENABLE", "wr") }).ok, true);
+    assert.equal(r.pm.enable("wr", { ownerApproval: ap("PLUGIN_ENABLE", r.pm.enableSubject("wr")) }).ok, true);
     const res = await r.pm.invoke("wr", "go"); assert.equal(res.ok, true, JSON.stringify(res));
     assert.equal(res.result.writeOwn, "ALLOWED"); assert.equal(res.result.readOutside, "DENIED"); assert.equal(res.result.spawn, "DENIED");
   } finally { r.done(); }
@@ -119,7 +119,7 @@ test("host that cannot restrict Node => hook is NOT run (fails closed): SANDBOX_
     const plugins = path.join(r.root, "plugins");
     const pm = createPluginManager({ roots: [plugins], stateDir: path.join(r.root, "state2"), ownerAuth: createOwnerAuth({ publicKeyB64: key.publicKeyB64 }), nodeBin: fakeNode, hookTimeoutMs: 1500, quarantineAfter: 1 });
     r.mk("nr", { ...base, id: "nr", name: "N", kind: "PLUGIN", entry: "m.mjs" }, { "m.mjs": "console.log('{}')" });
-    assert.equal(pm.enable("nr", { ownerApproval: ap("PLUGIN_ENABLE", "nr") }).ok, true);
+    assert.equal(pm.enable("nr", { ownerApproval: ap("PLUGIN_ENABLE", pm.enableSubject("nr")) }).ok, true);
     for (let i = 0; i < 3; i++) assert.deepEqual(await pm.invoke("nr", "go"), { ok: false, reason: "SANDBOX_UNAVAILABLE" });
     assert.ok(!fs.existsSync(marker), "unrestricted fallback must never run");
     assert.equal(pm.list().plugins.find(p => p.id === "nr").status, "ENABLED");
@@ -138,7 +138,7 @@ test("network: a plugin without the NETWORK grant gets no network (namespace) wh
   try {
     r.mk("nonet", { ...base, id: "nonet", name: "N", kind: "PLUGIN", entry: "m.mjs" }, { "m.mjs": netHook });
     r.mk("withnet", { ...base, id: "withnet", name: "W", kind: "PLUGIN", entry: "m.mjs", permissions: ["READ_STATE", "NETWORK"] }, { "m.mjs": netHook });
-    for (const id of ["nonet", "withnet"]) assert.equal(r.pm.enable(id, { ownerApproval: ap("PLUGIN_ENABLE", id) }).ok, true);
+    for (const id of ["nonet", "withnet"]) assert.equal(r.pm.enable(id, { ownerApproval: ap("PLUGIN_ENABLE", r.pm.enableSubject(id)) }).ok, true);
     assert.equal((await r.pm.invoke("nonet", "go")).result.ifaces, 0);
     assert.equal((await r.pm.invoke("withnet", "go")).result.ifaces, hostIfaces);
   } finally { r.done(); }
@@ -148,7 +148,7 @@ test("privilege escalation by editing the manifest AFTER enabling: granted permi
   try {
     const dir = path.join(r.root, "plugins", "esc");
     r.mk("esc", { ...base, id: "esc", name: "E", kind: "PLUGIN", entry: "m.mjs" }, { "m.mjs": probeHook(outside, dir) });
-    assert.equal(r.pm.enable("esc", { ownerApproval: ap("PLUGIN_ENABLE", "esc") }).ok, true);
+    assert.equal(r.pm.enable("esc", { ownerApproval: ap("PLUGIN_ENABLE", r.pm.enableSubject("esc")) }).ok, true);
     fs.writeFileSync(path.join(dir, "plugin.json"), JSON.stringify({ ...base, id: "esc", name: "E", kind: "PLUGIN", entry: "m.mjs", permissions: ["READ_STATE", "FILESYSTEM_PLUGIN_DIR", "NETWORK"] }));
     const res = await r.pm.invoke("esc", "go");
     assert.deepEqual([res.ok, res.reason], [false, "CODE_CHANGED_SINCE_ENABLE"], "any edit after the owner enabled the plugin (manifest included) stops it from running at all");
@@ -173,11 +173,11 @@ test("a state file that cannot be read is kept as found: every plugin stays disa
       fs.writeFileSync(sf, bad);
       const pm = createPluginManager({ roots: [path.join(r.root, "plugins")], stateDir: path.join(r.root, "state"), ownerAuth: createOwnerAuth({ publicKeyB64: key.publicKeyB64 }) });
       const l = pm.list(); assert.equal(l.plugins[0].status, "DISABLED", bad); assert.match(l.stateProblem, /STATE_UNREADABLE/, bad);
-      assert.equal(pm.enable("p-one", { ownerApproval: ap("PLUGIN_ENABLE", "p-one") }).reason, "STATE_UNREADABLE:plugins-state.json"); assert.equal(pm.setTheme(null).reason, "STATE_UNREADABLE:plugins-state.json"); assert.equal(pm.resetQuarantine("p-one", { ownerApproval: ap("PLUGIN_RESET_QUARANTINE", "p-one") }).reason, "STATE_UNREADABLE:plugins-state.json");
+      assert.equal(pm.enable("p-one", { ownerApproval: ap("PLUGIN_ENABLE", pm.enableSubject("p-one")) }).reason, "STATE_UNREADABLE:plugins-state.json"); assert.equal(pm.setTheme(null).reason, "STATE_UNREADABLE:plugins-state.json"); assert.equal(pm.resetQuarantine("p-one", { ownerApproval: ap("PLUGIN_RESET_QUARANTINE", "p-one") }).reason, "STATE_UNREADABLE:plugins-state.json");
       assert.equal(fs.readFileSync(sf, "utf8"), bad, "the unreadable file is untouched");
     }
     fs.writeFileSync(sf, JSON.stringify({ enabled: {}, health: {}, theme: null }));
-    const ok2 = createPluginManager({ roots: [path.join(r.root, "plugins")], stateDir: path.join(r.root, "state"), ownerAuth: createOwnerAuth({ publicKeyB64: key.publicKeyB64 }) }); assert.equal(ok2.list().stateProblem, undefined); assert.equal(ok2.enable("p-one", { ownerApproval: ap("PLUGIN_ENABLE", "p-one") }).ok, true);
+    const ok2 = createPluginManager({ roots: [path.join(r.root, "plugins")], stateDir: path.join(r.root, "state"), ownerAuth: createOwnerAuth({ publicKeyB64: key.publicKeyB64 }) }); assert.equal(ok2.list().stateProblem, undefined); assert.equal(ok2.enable("p-one", { ownerApproval: ap("PLUGIN_ENABLE", ok2.enableSubject("p-one")) }).ok, true);
   } finally { r.done(); }
 });
 
@@ -185,7 +185,7 @@ test("verification fix C05-2: only the exact bytes the owner enabled ever run; s
   const r = rig(); try {
     const dir = path.join(r.root, "plugins", "pin");
     r.mk("pin", { ...base, id: "pin", name: "P", kind: "PLUGIN", entry: "m.mjs" }, { "m.mjs": "console.log(JSON.stringify({v:1}));" });
-    assert.equal(r.pm.enable("pin", { ownerApproval: ap("PLUGIN_ENABLE", "pin") }).ok, true); assert.equal((await r.pm.invoke("pin", "go")).ok, true);
+    assert.equal(r.pm.enable("pin", { ownerApproval: ap("PLUGIN_ENABLE", r.pm.enableSubject("pin")) }).ok, true); assert.equal((await r.pm.invoke("pin", "go")).ok, true);
     fs.writeFileSync(path.join(dir, "m.mjs"), "console.log(JSON.stringify({v:'EVIL'}));"); assert.equal((await r.pm.invoke("pin", "go")).reason, "CODE_CHANGED_SINCE_ENABLE");
     fs.writeFileSync(path.join(dir, "m.mjs"), "console.log(JSON.stringify({v:1}));"); assert.equal((await r.pm.invoke("pin", "go")).ok, true, "restoring the exact bytes works again");
     fs.writeFileSync(path.join(dir, "extra.txt"), "x"); assert.equal((await r.pm.invoke("pin", "go")).reason, "CODE_CHANGED_SINCE_ENABLE", "an added file changes the pinned content too");
@@ -195,12 +195,38 @@ test("verification fix C05-2 (edges): a symlink, a legacy enabled entry without 
   const r = rig(); try {
     const dir = path.join(r.root, "plugins", "pin2");
     r.mk("pin2", { ...base, id: "pin2", name: "P", kind: "PLUGIN", entry: "m.mjs" }, { "m.mjs": "console.log(JSON.stringify({v:1}));" });
-    assert.equal(r.pm.enable("pin2", { ownerApproval: ap("PLUGIN_ENABLE", "pin2") }).ok, true); assert.equal((await r.pm.invoke("pin2", "go")).ok, true);
+    assert.equal(r.pm.enable("pin2", { ownerApproval: ap("PLUGIN_ENABLE", r.pm.enableSubject("pin2")) }).ok, true); assert.equal((await r.pm.invoke("pin2", "go")).ok, true);
     fs.symlinkSync("/etc", path.join(dir, "lnk")); assert.equal((await r.pm.invoke("pin2", "go")).reason, "CODE_CHANGED_SINCE_ENABLE", "an added symlink is a change"); fs.rmSync(path.join(dir, "lnk"));
     const sf = path.join(r.root, "state", "plugins-state.json"); const st = JSON.parse(fs.readFileSync(sf, "utf8")); delete st.enabled.pin2.hash; fs.writeFileSync(sf, JSON.stringify(st));
     const legacy = createPluginManager({ roots: [path.join(r.root, "plugins")], stateDir: path.join(r.root, "state"), ownerAuth: createOwnerAuth({ publicKeyB64: key.publicKeyB64 }), hookTimeoutMs: 1500 });
     assert.equal((await legacy.invoke("pin2", "go")).reason, "CODE_CHANGED_SINCE_ENABLE", "no pinned hash => re-enable required");
     const big = path.join(r.root, "plugins", "big"); r.mk("big", { ...base, id: "big", name: "B", kind: "PLUGIN", entry: "m.mjs" }, { "m.mjs": "1" }); for (let i = 0; i < 510; i++) fs.writeFileSync(path.join(big, "f" + i), "x");
-    assert.equal(r.pm.enable("big", { ownerApproval: ap("PLUGIN_ENABLE", "big") }).reason, "PLUGIN_FOLDER_UNHASHABLE");
+    assert.equal(r.pm.enable("big", { ownerApproval: ap("PLUGIN_ENABLE", r.pm.enableSubject("big")) }).reason, "PLUGIN_FOLDER_UNHASHABLE");
   } finally { r.done(); }
+});
+
+test("round-4 fixes: the enable approval is bound to the exact bytes (a stale or name-only approval is refused); a stop blocks enable and invoke; stderr secrets are redacted in state and audit", async () => {
+  const r = rig(); let stop = false;
+  const pm = createPluginManager({ roots: [path.join(r.root, "plugins")], stateDir: path.join(r.root, "state2"), ownerAuth: createOwnerAuth({ publicKeyB64: key.publicKeyB64 }), hookTimeoutMs: 1500, quarantineAfter: 5, isStopped: () => stop });
+  try {
+    const dir = path.join(r.root, "plugins", "pin3"), K = "gh" + "p_" + "a".repeat(36);
+    r.mk("pin3", { ...base, id: "pin3", name: "P", kind: "PLUGIN", entry: "m.mjs" }, { "m.mjs": "console.log(JSON.stringify({v:1}));" });
+    const stale = ap("PLUGIN_ENABLE", pm.enableSubject("pin3")), nameOnly = ap("PLUGIN_ENABLE", "pin3");
+    assert.match(pm.enable("pin3", { ownerApproval: nameOnly }).reason, /OWNER_APPROVAL_REQUIRED/, "an approval for the name alone is no longer enough");
+    fs.writeFileSync(path.join(dir, "m.mjs"), "console.log(JSON.stringify({v:'SWAPPED'}));");
+    assert.match(pm.enable("pin3", { ownerApproval: stale }).reason, /OWNER_APPROVAL_REQUIRED/, "bytes changed after the owner signed");
+    assert.equal(pm.enable("pin3", { ownerApproval: ap("PLUGIN_ENABLE", pm.enableSubject("pin3")) }).ok, true);
+    stop = true; assert.equal((await pm.invoke("pin3", "go")).reason, "OWNER_STOP_OR_SAFE_MODE_ACTIVE"); pm.disable("pin3");
+    assert.equal(pm.enable("pin3", { ownerApproval: ap("PLUGIN_ENABLE", pm.enableSubject("pin3")) }).reason, "OWNER_STOP_OR_SAFE_MODE_ACTIVE"); stop = false;
+    fs.writeFileSync(path.join(dir, "m.mjs"), "console.error('token=" + K + "');process.exit(3);");
+    assert.equal(pm.enable("pin3", { ownerApproval: ap("PLUGIN_ENABLE", pm.enableSubject("pin3")) }).ok, true); assert.equal((await pm.invoke("pin3", "go")).reason, "PLUGIN_CRASHED");
+    for (const f of fs.readdirSync(path.join(r.root, "state2"))) assert.ok(!fs.readFileSync(path.join(r.root, "state2", f), "utf8").includes(K), f);
+    assert.ok(!JSON.stringify(pm.list()).includes(K));
+  } finally { r.done(); }
+});
+
+test("round-4 fixes: manifest problems never echo a credential-shaped value and are length-bounded", () => {
+  const K = "s" + "k-" + "a1b2c3d4e5f6g7h8i9j0k1l2";
+  const v = validateManifest({ ...base, id: "x1", name: "x", kind: "PLUGIN", entry: "m.mjs", permissions: [K, "x".repeat(5000)] });
+  assert.equal(v.ok, false); assert.ok(!v.problems.join().includes(K)); assert.ok(v.problems.every(p => p.length <= 200));
 });

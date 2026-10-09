@@ -44,11 +44,11 @@ function renderChart_(spec, { width = 640, height = 360 } = {}) {
     const bins = Math.min(30, Math.max(3, Math.ceil(Math.log2(v.length) + 1))), lo = Math.min(...v), hi = Math.max(...v), w = (hi - lo) / bins || 1, cnt = new Array(bins).fill(0);
     for (const x of v) cnt[Math.min(bins - 1, Math.floor((x - lo) / w))]++; series = cnt; cats = cnt.map((_, i) => tickLabel(lo + i * w)); kind = "bar";
   } else if (kind === "line") {
-    const y = spec.values; if (!Array.isArray(y) || y.length < 2 || y.length > LIMITS.maxPoints || !y.every(num)) return { ok: false, reason: "LINE_DATA_INVALID" }; series = y; xs = Array.isArray(spec.x) && spec.x.length === y.length && spec.x.every(num) ? spec.x : y.map((_, i) => i);
+    const y = spec.values; if (!Array.isArray(y) || y.length < 2 || y.length > LIMITS.maxPoints || !y.every(num)) return { ok: false, reason: "LINE_DATA_INVALID" }; if (Array.isArray(spec.x) && !(spec.x.length === y.length && spec.x.every(num))) return { ok: false, reason: "LINE_DATA_INVALID" }; series = y; xs = Array.isArray(spec.x) ? spec.x : y.map((_, i) => i);      // an x array that does not fit is refused, not silently replaced
   } else if (kind === "scatter") {
     const p = spec.points; if (!Array.isArray(p) || !p.length || p.length > LIMITS.maxPoints || !p.every(q => Array.isArray(q) && q.length === 2 && q.every(num))) return { ok: false, reason: "SCATTER_DATA_INVALID" }; xs = p.map(q => q[0]); series = p.map(q => q[1]);
   } else return { ok: false, reason: "TYPE_UNKNOWN" };
-  const yt = niceTicks(Math.min(0, ...series) === 0 && kind === "bar" ? 0 : Math.min(...series), Math.max(...series)), sy = v => f(M.t + H - ((v - yt.a) / (yt.b - yt.a || 1)) * H);
+  const yt = kind === "bar" ? niceTicks(Math.min(0, ...series), Math.max(0, ...series)) : niceTicks(Math.min(...series), Math.max(...series)), sy = v => f(M.t + H - ((v - yt.a) / (yt.b - yt.a || 1)) * H);
   let body = yt.t.map(t => `<line x1="${M.l}" x2="${M.l + W}" y1="${sy(t)}" y2="${sy(t)}" stroke="#e2e8f0"/><text x="${M.l - 6}" y="${f(sy(t) + 4)}" font-size="11" text-anchor="end" fill="#4a5568">${esc(tickLabel(t))}</text>`).join("");
   body += `<text x="${width / 2}" y="20" font-size="14" font-weight="bold" text-anchor="middle" fill="#1a202c">${esc(title)}</text><line x1="${M.l}" x2="${M.l}" y1="${M.t}" y2="${M.t + H}" stroke="#718096"/><line x1="${M.l}" x2="${M.l + W}" y1="${M.t + H}" y2="${M.t + H}" stroke="#718096"/>`;
   if (kind === "bar") { const n = series.length, bw = W / n; series.forEach((v, i) => { const y0 = sy(Math.max(0, yt.a)), y1 = sy(v); body += `<rect x="${f(M.l + i * bw + bw * 0.1)}" y="${f(Math.min(y0, y1))}" width="${f(bw * 0.8)}" height="${f(Math.abs(y0 - y1))}" fill="${SERIES[0]}"><title>${esc(cats[i])}: ${esc(tickLabel(v))}</title></rect>`; if (n <= 12) body += `<text x="${f(M.l + i * bw + bw / 2)}" y="${M.t + H + 16}" font-size="10" text-anchor="middle" fill="#4a5568">${esc(short(cats[i], 12))}</text>`; }); }
@@ -92,6 +92,7 @@ const rel = v => fin(v) && v >= 0 && v <= 1;
 function validateAnnotations_(list) {
   if (!Array.isArray(list)) return { ok: false, reason: "LIST_REQUIRED" };
   if (list.length > LIMITS.maxAnnotations) return { ok: false, reason: "TOO_MANY_ANNOTATIONS" };
+  if (Object.keys(list).length !== list.length) return { ok: false, reason: "SPARSE_ARRAY" };
   const out = [], problems = [];
   list.forEach((a, i) => {
     const bad = r => problems.push({ index: i, reason: r });

@@ -65,6 +65,7 @@ export function createSkillRegistry({ file = null, actions = {}, isStopped = () 
     if (typeof name !== "string" || !name.trim() || name.length > 120) return { ok: false, reason: "NAME_REQUIRED" };
     if (typeof description !== "string" || description.length > LIMITS.maxText) return { ok: false, reason: "DESCRIPTION_INVALID" };
     if (!(submittedBy === "OWNER" || submittedBy === "SYSTEM" || AGENT_ID_RE.test(submittedBy))) return { ok: false, reason: "SUBMITTER_INVALID" };
+    try { const j = JSON.stringify({ params, steps, permissions, tests }); if (j.length > 1000000) return { ok: false, reason: "INPUT_TOO_LARGE" }; ({ params, steps, permissions, tests } = JSON.parse(j)); } catch { return { ok: false, reason: "INPUT_NOT_PLAIN_JSON" }; }   // cycles, absurd depth and NaN/undefined are normalised once, so the hash survives a reload
     if (!Array.isArray(tests) || !tests.length || tests.length > LIMITS.maxTests) return { ok: false, reason: "TESTS_INVALID" };
     const c = checkDefinition({ params, steps, permissions }); if (!c.ok) return c;
     if (looksSecret({ name, description, params, steps, permissions, tests })) return { ok: false, reason: "SECRET_IN_INPUT" };   // the whole submission, tests and descriptions included, is stored and shown back
@@ -122,6 +123,7 @@ export function createSkillRegistry({ file = null, actions = {}, isStopped = () 
     if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_" + verb };
     const s = rec(tenantId, id), v = s?.versions.find(x => x.version === version); if (!v) return { ok: false, reason: "VERSION_NOT_FOUND" };
     if (v.status === "REVOKED") return { ok: false, reason: "VERSION_REVOKED" };
+    if (stopped()) return { ok: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" };            // switching a skill ON (activate / roll back to a version) waits for the stop to be lifted; switching off stays possible
     if (!v.gate?.passed || v.gate.hash !== v.hash || hashOf(v.definition) !== v.hash) return { ok: false, reason: "TEST_GATE_NOT_PASSED_FOR_THIS_CONTENT" };
     const c = checkDefinition(v.definition); if (!c.ok) return c;
     if (s.active === version) return { ok: false, reason: "ALREADY_ACTIVE" };

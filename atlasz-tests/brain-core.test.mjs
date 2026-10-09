@@ -162,3 +162,13 @@ test("black-box redaction: short key names pass/pwd are secret keys; secret-look
   assert.equal(r.pass, "[REDACTED]"); assert.equal(r.pwd, "[REDACTED]"); assert.equal(r.passed, true); assert.equal(r.ok, "fine");
   assert.ok(!JSON.stringify(r).includes("abcdefghijklmnop"));
 });
+
+test("round-4 black-box: kind/correlation ids are fixed-shape, key names with zero-width characters still redact, toJSON/Buffer/cycles are screened, unknown cost is not summed as 0", () => {
+  const K = "gh" + "p_" + "a".repeat(36);
+  assert.throws(() => createBlackBox().record({ kind: "X" + K }), /KIND_INVALID/); { const b = createBlackBox(), a = b.record({ kind: "OK", correlationId: "c-" + K, parentCorrelationId: "p " + K }); assert.ok(a.correlationId.startsWith("corr-") && !JSON.stringify(b.query({})).includes(K), "unusable ids are replaced and flagged, the event is kept"); assert.equal(b.query({})[0].correlationIdReplaced, true); }
+  const r = redactSecrets({ ["to​ken"]: "vvvvvvvv", ["api​Key"]: "zzzzzzzz", f: { toJSON() { return K; } }, b: Buffer.from(K), ok: 1 });
+  const j = JSON.stringify(r); assert.ok(!j.includes("vvvvvvvv") && !j.includes("zzzzzzzz") && !j.includes(K) && !j.includes("103,104,112"), j);
+  const cyc = { a: 1 }; cyc.self = cyc; assert.doesNotThrow(() => redactSecrets(cyc)); assert.equal(redactSecrets(cyc).self, "[TOO_DEEP_OR_CYCLIC]");
+  const bb = createBlackBox(); bb.record({ kind: "A", costUsd: 1.5 }); bb.record({ kind: "A", costUsd: "abc" }); bb.record({ kind: "A", costUsd: -5 }); bb.record({ kind: "A", costUsd: 1e308 });
+  const st = bb.stats(); assert.equal(st.costUsd, 1.5 + 1e308); assert.equal(st.unknownCostEvents, 2);
+});
