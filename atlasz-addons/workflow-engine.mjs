@@ -170,7 +170,7 @@ export function createWorkflowEngine({ file = null, actions = {}, now = () => ne
       touch(i, i.steps.some(s => s.status === "FAILED") ? "DONE_WITH_ERRORS" : "DONE"); return { ok: true, status: i.status };
     } finally { running.delete(id); }
   }
-  function cancel(id, { tenantId } = {}) { const i = inst(id, tenantId); if (!i) return { ok: false, reason: "NOT_FOUND" }; if (["DONE", "DONE_WITH_ERRORS", "CANCELLED"].includes(i.status)) return { ok: false, reason: "NOT_CANCELLABLE:" + i.status }; touch(i, "CANCELLED", "CANCELLED_BY_USER"); return { ok: true }; }
+  function cancel(id, { tenantId, actor } = {}) { if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_CANCEL" }; const i = inst(id, tenantId); if (!i) return { ok: false, reason: "NOT_FOUND" }; if (["DONE", "DONE_WITH_ERRORS", "CANCELLED"].includes(i.status)) return { ok: false, reason: "NOT_CANCELLABLE:" + i.status }; touch(i, "CANCELLED", "CANCELLED_BY_USER"); return { ok: true }; }
   /** Task-level continuation: PAUSED / FAILED / interrupted instances continue from the first unfinished step. A FAILED step is retried; NEEDS_REVIEW must be cleared by review(). */
   async function resume(id, { tenantId } = {}) {
     const i = inst(id, tenantId); if (!i) return { ok: false, reason: "NOT_FOUND" };
@@ -178,7 +178,8 @@ export function createWorkflowEngine({ file = null, actions = {}, now = () => ne
     if (!["PAUSED", "FAILED", "RUNNING", "PENDING"].includes(i.status)) return { ok: false, reason: "NOT_RESUMABLE:" + i.status };
     return execute(id, { tenantId });
   }
-  function review(id, stepId, { tenantId, decision } = {}) {
+  function review(id, stepId, { tenantId, decision, actor } = {}) {
+    if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_REVIEW" };                // clearing NEEDS_REVIEW re-allows a side-effecting step: a human decision, enforced where it executes
     const i = inst(id, tenantId); if (!i) return { ok: false, reason: "NOT_FOUND" };
     if (["CANCELLED", "DONE", "DONE_WITH_ERRORS"].includes(i.status)) return { ok: false, reason: "NOT_REVIEWABLE:" + i.status };
     const s = i.steps.find(x => x.id === stepId); if (!s || s.status !== "NEEDS_REVIEW") return { ok: false, reason: "NOT_AWAITING_REVIEW" };
@@ -201,7 +202,8 @@ export function createWorkflowEngine({ file = null, actions = {}, now = () => ne
   if (!shapeOk()) throw new Error("STORE_UNREADABLE:workflow");                                 // a malformed file is refused as a whole and never rewritten
   const recovered = recover();
   /** Rewind to just after `toStepId` (or to the start with toStepId=null). Only this instance's step results change. */
-  function rewind(id, toStepId, { tenantId } = {}) {
+  function rewind(id, toStepId, { tenantId, actor } = {}) {
+    if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_REWIND" };
     const i = inst(id, tenantId); if (!i) return { ok: false, reason: "NOT_FOUND" };
     if (running.has(id)) return { ok: false, reason: "ALREADY_RUNNING" };
     if (i.status === "CANCELLED") return { ok: false, reason: "NOT_REWINDABLE:CANCELLED" };

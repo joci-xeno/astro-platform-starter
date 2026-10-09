@@ -5,7 +5,7 @@ import path from "node:path";
 import { createWorkflowEngine, LIMITS } from "../atlasz-addons/workflow-engine.mjs";
 import { tmp, rm } from "./helpers.mjs";
 
-const T = { tenantId: "T" };
+const T = { tenantId: "T" }, OT = { tenantId: "T", actor: "OWNER" };
 function mkActions(log = []) {
   return {
     upper: { run: async a => { log.push(["upper", a]); return { text: String(a.text).toUpperCase(), n: String(a.text).length }; }, idempotent: true, rewindable: true },
@@ -49,7 +49,7 @@ test("failure handling: retries then FAILED with a redacted error; onError conti
   e.saveTemplate({ ...T, id: "stop", name: "s", steps: [{ id: "x", action: "boom" }, { id: "y", action: "count", args: { value: 1 } }] });
   const j = e.start({ ...T, templateId: "stop" }).id, rj = await e.execute(j, T); assert.deepEqual([rj.status, rj.reason], ["FAILED", "STEP_FAILED:x"]); assert.equal(e.getInstance(j, T).instance.steps[1].status, "PENDING", "later steps did not run");
   e.saveTemplate({ ...T, id: "slow", name: "s", steps: [{ id: "h", action: "hang" }] }); const k = e.start({ ...T, templateId: "slow" }).id; const rk = await e.execute(k, T); assert.equal(rk.status, "PAUSED"); const sk = e.getInstance(k, T).instance.steps[0]; assert.equal(sk.status, "NEEDS_REVIEW"); assert.equal(sk.error, "STEP_OUTCOME_UNKNOWN_AFTER_TIMEOUT", "a timed-out non-idempotent step is never blindly retried");
-  const c = e.start({ ...T, templateId: "stop" }).id; assert.equal(e.cancel(c, T).ok, true); assert.equal((await e.execute(c, T)).reason, "NOT_RUNNABLE:CANCELLED"); assert.equal(e.cancel(c, T).reason, "NOT_CANCELLABLE:CANCELLED"); assert.equal(e.cancel(c, { tenantId: "O" }).reason, "NOT_FOUND");
+  const c = e.start({ ...T, templateId: "stop" }).id; assert.equal(e.cancel(c, OT).ok, true); assert.equal((await e.execute(c, T)).reason, "NOT_RUNNABLE:CANCELLED"); assert.equal(e.cancel(c, OT).reason, "NOT_CANCELLABLE:CANCELLED"); assert.equal(e.cancel(c, { tenantId: "O", actor: "OWNER" }).reason, "NOT_FOUND");
 });
 test("P08 continuation across a REAL restart: the checkpoint file lets a new engine continue after the last finished step; idempotent steps are retried, others need review", async () => {
   const d = tmp("wf-"), f = path.join(d, "wf.json");
@@ -63,8 +63,8 @@ test("P08 continuation across a REAL restart: the checkpoint file lets a new eng
     assert.equal(e2.recoveredOnStart, 1); const i = e2.getInstance(id, T).instance;
     assert.deepEqual([i.status, i.reason, i.steps.map(s => s.status)], ["PAUSED", "RECOVERED_NEEDS_REVIEW", ["DONE", "NEEDS_REVIEW", "PENDING"]]);
     assert.equal((await e2.resume(id, T)).reason, "NEEDS_REVIEW"); assert.equal(log2.length, 0, "nothing re-ran");
-    assert.equal(e2.review(id, "two", { ...T, decision: "WAT" }).reason, "DECISION_INVALID"); assert.equal(e2.review(id, "one", { ...T, decision: "RETRY" }).reason, "NOT_AWAITING_REVIEW");
-    assert.equal(e2.review(id, "two", { ...T, decision: "RETRY" }).ok, true); const r = await e2.resume(id, T); assert.equal(r.status, "DONE");
+    assert.equal(e2.review(id, "two", { ...OT, decision: "WAT" }).reason, "DECISION_INVALID"); assert.equal(e2.review(id, "one", { ...OT, decision: "RETRY" }).reason, "NOT_AWAITING_REVIEW");
+    assert.equal(e2.review(id, "two", { ...OT, decision: "RETRY" }).ok, true); const r = await e2.resume(id, T); assert.equal(r.status, "DONE");
     assert.deepEqual(log2.map(x => x[0]), ["count"], "step one was NOT repeated after the restart"); assert.equal(createWorkflowEngine({ file: f, actions: mkActions() }).recoveredOnStart, 0);
     // idempotent in-flight step is simply retried
     const e3 = createWorkflowEngine({ file: path.join(d, "wf3.json"), actions: { idem: { run: () => new Promise(() => {}), idempotent: true }, count: mkActions().count } });
@@ -78,14 +78,14 @@ test("P05 rewind: resets later steps of THIS instance only; refused (nothing cha
   e.saveTemplate({ ...T, id: "r", name: "r", steps: [{ id: "a", action: "upper", args: { text: "q" } }, { id: "b", action: "count", args: { value: 2 } }, { id: "c", action: "save", args: { text: "{{s.a.text}}" } }, { id: "d", action: "count", args: { value: 4 } }] });
   const id = e.start({ ...T, templateId: "r" }).id; await e.execute(id, T);
   const before = JSON.stringify(e.getInstance(id, T).instance);
-  assert.deepEqual(e.rewind(id, "a", T), { ok: false, reason: "REWIND_BLOCKED:c" }); assert.deepEqual(e.rewind(id, "b", T), { ok: false, reason: "REWIND_BLOCKED:c" }); assert.equal(JSON.stringify(e.getInstance(id, T).instance), before, "a refused rewind changes nothing");
-  assert.deepEqual(e.rewind(id, "c", T), { ok: true, reset: ["d"] }); const i = e.getInstance(id, T).instance; assert.deepEqual(i.steps.map(s => s.status), ["DONE", "DONE", "DONE", "PENDING"]); assert.equal(i.steps[3].output, null); assert.equal(i.status, "PAUSED");
+  assert.deepEqual(e.rewind(id, "a", OT), { ok: false, reason: "REWIND_BLOCKED:c" }); assert.deepEqual(e.rewind(id, "b", OT), { ok: false, reason: "REWIND_BLOCKED:c" }); assert.equal(JSON.stringify(e.getInstance(id, T).instance), before, "a refused rewind changes nothing");
+  assert.deepEqual(e.rewind(id, "c", OT), { ok: true, reset: ["d"] }); const i = e.getInstance(id, T).instance; assert.deepEqual(i.steps.map(s => s.status), ["DONE", "DONE", "DONE", "PENDING"]); assert.equal(i.steps[3].output, null); assert.equal(i.status, "PAUSED");
   assert.equal((await e.resume(id, T)).status, "DONE");
-  assert.equal(e.rewind(id, "zz", T).reason, "STEP_NOT_FOUND"); assert.equal(e.rewind(id, "a", { tenantId: "O" }).reason, "NOT_FOUND");
+  assert.equal(e.rewind(id, "zz", OT).reason, "STEP_NOT_FOUND"); assert.equal(e.rewind(id, "a", { tenantId: "O", actor: "OWNER" }).reason, "NOT_FOUND");
   e.saveTemplate({ ...T, id: "pure", name: "p", steps: [{ id: "a", action: "upper", args: { text: "q" } }, { id: "b", action: "count", args: { value: 2 } }] }); const p = e.start({ ...T, templateId: "pure" }).id; await e.execute(p, T);
-  assert.deepEqual(e.rewind(p, null, T), { ok: true, reset: ["a", "b"] }); assert.deepEqual(e.getInstance(p, T).instance.steps.map(s => s.status), ["PENDING", "PENDING"]);
+  assert.deepEqual(e.rewind(p, null, OT), { ok: true, reset: ["a", "b"] }); assert.deepEqual(e.getInstance(p, T).instance.steps.map(s => s.status), ["PENDING", "PENDING"]);
   // an action that does not declare rewindable is treated as NOT rewindable (deny by default)
-  const e2 = createWorkflowEngine({ actions: { plain: { run: async () => ({}) } } }); e2.saveTemplate({ ...T, id: "x", name: "x", steps: [{ id: "a", action: "plain" }] }); const x = e2.start({ ...T, templateId: "x" }).id; await e2.execute(x, T); assert.equal(e2.rewind(x, null, T).reason, "REWIND_BLOCKED:a");
+  const e2 = createWorkflowEngine({ actions: { plain: { run: async () => ({}) } } }); e2.saveTemplate({ ...T, id: "x", name: "x", steps: [{ id: "a", action: "plain" }] }); const x = e2.start({ ...T, templateId: "x" }).id; await e2.execute(x, T); assert.equal(e2.rewind(x, null, OT).reason, "REWIND_BLOCKED:a");
 });
 test("stop hook: a kill switch / Safe Mode pauses the instance before its next step; a failing stop check fails closed; resume continues afterwards", async () => {
   let stop = false; const log = [], e = createWorkflowEngine({ actions: mkActions(log), isStopped: () => stop });
@@ -97,7 +97,7 @@ test("stop hook: a kill switch / Safe Mode pauses the instance before its next s
 test("concurrency: the same instance cannot be executed twice at once", async () => {
   let release; const gate = new Promise(r => { release = r; }); const e = createWorkflowEngine({ actions: { slow: { run: () => gate } } });
   e.saveTemplate({ ...T, id: "s", name: "s", steps: [{ id: "a", action: "slow" }] }); const id = e.start({ ...T, templateId: "s" }).id; const first = e.execute(id, T);
-  await new Promise(r => setTimeout(r, 10)); assert.equal((await e.execute(id, T)).reason, "ALREADY_RUNNING"); assert.equal((await e.resume(id, T)).reason, "ALREADY_RUNNING"); assert.equal(e.rewind(id, null, T).reason, "ALREADY_RUNNING");
+  await new Promise(r => setTimeout(r, 10)); assert.equal((await e.execute(id, T)).reason, "ALREADY_RUNNING"); assert.equal((await e.resume(id, T)).reason, "ALREADY_RUNNING"); assert.equal(e.rewind(id, null, OT).reason, "ALREADY_RUNNING");
   release({ ok: 1 }); assert.equal((await first).status, "DONE");
 });
 test("P11 batch: every item validated first, per-item checkpoint, error isolation, rate limit (sliding window), resume after a restart skips finished items, failed items can be requeued", async () => {
@@ -189,9 +189,9 @@ test("hardening: rewind blocks non-rewindable states, refuses CANCELLED, a no-op
   const e = createWorkflowEngine({ actions: mkActions(log), isStopped: () => stop, now: () => new Date(ms).toISOString() });
   e.saveTemplate({ ...T, id: "r", name: "r", steps: [{ id: "a", action: "count", args: { value: 1 } }, { id: "h", action: "hang" }, { id: "c", action: "count", args: { value: 3 } }] });
   const id = e.start({ ...T, templateId: "r" }).id; await e.execute(id, T).catch(() => {});
-  const c = e.start({ ...T, templateId: "r" }).id; e.cancel(c, T); assert.equal(e.rewind(c, null, T).reason, "NOT_REWINDABLE:CANCELLED");
+  const c = e.start({ ...T, templateId: "r" }).id; e.cancel(c, OT); assert.equal(e.rewind(c, null, OT).reason, "NOT_REWINDABLE:CANCELLED");
   e.saveTemplate({ ...T, id: "p", name: "p", steps: [{ id: "a", action: "count", args: { value: 1 } }] }); const p = e.start({ ...T, templateId: "p" }).id; await e.execute(p, T);
-  const before = JSON.stringify(e.getInstance(p, T).instance); assert.deepEqual(e.rewind(p, "a", T), { ok: true, reset: [] }); assert.equal(JSON.stringify(e.getInstance(p, T).instance), before, "no-op rewind leaves status and checkpoints untouched");
+  const before = JSON.stringify(e.getInstance(p, T).instance); assert.deepEqual(e.rewind(p, "a", OT), { ok: true, reset: [] }); assert.equal(JSON.stringify(e.getInstance(p, T).instance), before, "no-op rewind leaves status and checkpoints untouched");
   e.saveTemplate({ ...tpl(), schedule: { everyMinutes: 60, params: { who: "cron" } } }); stop = true; assert.deepEqual(await e.tick(T), []); assert.deepEqual(e.due(T), ["greet"], "period not consumed while stopped"); stop = false; assert.equal((await e.tick(T)).length, 1);
 });
 test("hardening: a stop arriving DURING an item leaves it PENDING (batch PAUSED); rewinding over a FAILED non-rewindable step is blocked", async () => {
@@ -201,18 +201,18 @@ test("hardening: a stop arriving DURING an item leaves it PENDING (batch PAUSED)
   const b = e.createBatch({ ...T, templateId: "m", items: [{}, {}] }).id; const r = await e.runBatch(b, T);
   assert.deepEqual([r.status, r.reason, r.PENDING, r.FAILED], ["PAUSED", "OWNER_STOP_OR_SAFE_MODE_ACTIVE", 2, 0]);
   stop = false; e.saveTemplate({ ...T, id: "f", name: "f", steps: [{ id: "a", action: "two" }, { id: "x", action: "bad", onError: "continue" }] }); const id = e.start({ ...T, templateId: "f" }).id; await e.execute(id, T);
-  assert.equal(e.getInstance(id, T).instance.steps[1].status, "FAILED"); assert.equal(e.rewind(id, "a", T).reason, "REWIND_BLOCKED:x");
+  assert.equal(e.getInstance(id, T).instance.steps[1].status, "FAILED"); assert.equal(e.rewind(id, "a", OT).reason, "REWIND_BLOCKED:x");
 });
 test("verification fixes: cancel is never overwritten by a failing/timed-out step; review cannot revive a cancelled instance; rewind re-resolves arguments; split secrets are refused", async () => {
   let release; const acts = { gate: { run: () => new Promise((res, rej) => { release = () => rej(new Error("late failure")); }), idempotent: true }, val: { run: async () => ({ v: globalThis.__v ?? 1 }), idempotent: true, rewindable: true }, take: { run: async a => ({ got: a.x }), idempotent: true, rewindable: true }, up: mkActions().upper };
   const e = createWorkflowEngine({ actions: acts, limits: { ...LIMITS, stepTimeoutMs: 80 } });
-  e.saveTemplate({ ...T, id: "c", name: "c", steps: [{ id: "a", action: "gate" }] }); const c = e.start({ ...T, templateId: "c" }).id; const run = e.execute(c, T); await new Promise(r => setTimeout(r, 10)); assert.equal(e.cancel(c, T).ok, true); release(); const rc = await run;
+  e.saveTemplate({ ...T, id: "c", name: "c", steps: [{ id: "a", action: "gate" }] }); const c = e.start({ ...T, templateId: "c" }).id; const run = e.execute(c, T); await new Promise(r => setTimeout(r, 10)); assert.equal(e.cancel(c, OT).ok, true); release(); const rc = await run;
   assert.deepEqual([rc.status, e.getInstance(c, T).instance.status], ["CANCELLED", "CANCELLED"], "a step failing after a cancel does not overwrite it");
   const hang = createWorkflowEngine({ actions: { h: { run: () => new Promise(() => {}), idempotent: false } }, limits: { ...LIMITS, stepTimeoutMs: 60 } });
-  hang.saveTemplate({ ...T, id: "h", name: "h", steps: [{ id: "a", action: "h" }, { id: "b", action: "h" }] }); const h = hang.start({ ...T, templateId: "h" }).id; const rh = hang.execute(h, T); await new Promise(r => setTimeout(r, 10)); hang.cancel(h, T); assert.equal((await rh).status, "CANCELLED");
-  const h2 = hang.start({ ...T, templateId: "h" }).id; assert.equal((await hang.execute(h2, T)).status, "PAUSED"); hang.cancel(h2, T); assert.equal(hang.review(h2, "a", { ...T, decision: "SKIP" }).reason, "NOT_REVIEWABLE:CANCELLED"); assert.equal(hang.getInstance(h2, T).instance.status, "CANCELLED");
+  hang.saveTemplate({ ...T, id: "h", name: "h", steps: [{ id: "a", action: "h" }, { id: "b", action: "h" }] }); const h = hang.start({ ...T, templateId: "h" }).id; const rh = hang.execute(h, T); await new Promise(r => setTimeout(r, 10)); hang.cancel(h, OT); assert.equal((await rh).status, "CANCELLED");
+  const h2 = hang.start({ ...T, templateId: "h" }).id; assert.equal((await hang.execute(h2, T)).status, "PAUSED"); hang.cancel(h2, OT); assert.equal(hang.review(h2, "a", { ...OT, decision: "SKIP" }).reason, "NOT_REVIEWABLE:CANCELLED"); assert.equal(hang.getInstance(h2, T).instance.status, "CANCELLED");
   e.saveTemplate({ ...T, id: "r", name: "r", steps: [{ id: "a", action: "val" }, { id: "b", action: "take", args: { x: "{{s.a.v}}" } }] }); const r = e.start({ ...T, templateId: "r" }).id; await e.execute(r, T);
-  assert.equal(e.getInstance(r, T).instance.steps[1].output.got, 1); globalThis.__v = 2; assert.equal(e.rewind(r, null, T).ok, true); await e.resume(r, T); assert.equal(e.getInstance(r, T).instance.steps[1].output.got, 2, "downstream step saw the NEW upstream value"); delete globalThis.__v;
+  assert.equal(e.getInstance(r, T).instance.steps[1].output.got, 1); globalThis.__v = 2; assert.equal(e.rewind(r, null, OT).ok, true); await e.resume(r, T); assert.equal(e.getInstance(r, T).instance.steps[1].output.got, 2, "downstream step saw the NEW upstream value"); delete globalThis.__v;
   assert.equal(e.getInstance(r, T).instance.steps[1].args.x, "{{s.a.v}}", "the template argument is kept");
   const SK = "s" + "k-ABCDEFGHIJKLMNOPQRSTUVWX";
   e.saveTemplate({ ...T, id: "sp", name: "sp", params: { a: { type: "string", required: true }, b: { type: "string", required: true } }, steps: [{ id: "x", action: "up", args: { text: "{{p.a}}{{p.b}}" } }] });
@@ -236,7 +236,7 @@ test("verification fixes: scheduler honours a stop mid-tick and concurrent ticks
   const ids = []; for (let i = 0; i < 10; i++) { const id = e3.start({ ...T, templateId: "w" }).id; ids.push(id); await e3.execute(id, T); }
   const pend = e3.start({ ...T, templateId: "w" }); assert.equal(pend.ok, true, "room was made by archiving the oldest finished instance"); assert.equal(e3.listInstances(T).length, 10); assert.equal(e3.getInstance(ids[0], T).ok, false); assert.equal(e3.getInstance(pend.id, T).ok, true);
   // own-key lookups: reserved ids are plain misses and pollute nothing
-  for (const id of ["__proto__", "constructor", "toString"]) { assert.equal(e.cancel(id, {}).reason, "NOT_FOUND"); assert.equal(e.getBatch(id, {}).reason, "NOT_FOUND"); assert.equal((await e.runBatch(id, T)).reason, "NOT_FOUND"); } assert.equal({}.status, undefined);
+  for (const id of ["__proto__", "constructor", "toString"]) { assert.equal(e.cancel(id, { actor: "OWNER" }).reason, "NOT_FOUND"); assert.equal(e.getBatch(id, {}).reason, "NOT_FOUND"); assert.equal((await e.runBatch(id, T)).reason, "NOT_FOUND"); } assert.equal({}.status, undefined);
   // malformed state files
   const d = tmp("wfs-"); try {
     const f = path.join(d, "w.json"); for (const bad of ['{"templates":{},"instances":{"x":{"id":"x","status":"RUNNING"}},"batches":{}}', '{"templates":{},"instances":{},"batches":{"b":{"items":5}}}', '{"templates":{"t":{}},"instances":{},"batches":{}}']) { fs.writeFileSync(f, bad); assert.throws(() => createWorkflowEngine({ file: f, actions: {} }), /STORE_UNREADABLE/); assert.equal(fs.readFileSync(f, "utf8"), bad, "file untouched"); }
@@ -292,7 +292,7 @@ test("verification fixes: a ':' in a tenant id never reaches another tenant's te
   const d = tmp("wfs-"); try { const f = path.join(d, "w.json"); fs.writeFileSync(f, JSON.stringify({ templates: { "A:t": { tenantId: "A", id: "t", steps: [1] } }, instances: {}, batches: {} })); assert.throws(() => createWorkflowEngine({ file: f, actions: mkActions() }), /STORE_UNREADABLE/); } finally { rm(d); }
   // rewind clears resolved args
   const w = createWorkflowEngine({ actions: mkActions() }); w.saveTemplate({ ...T, id: "rw", name: "r", params: { v: { type: "string", default: "v" } }, steps: [{ id: "a", action: "count", args: { value: 1 } }, { id: "b", action: "upper", args: { text: "{{p.v}}" } }] });
-  const rw = w.start({ ...T, templateId: "rw" }); await w.execute(rw.id, T); const rr = w.rewind(rw.id, "a", T); assert.equal(rr.ok, true, JSON.stringify(rr)); assert.equal(w.getInstance(rw.id, T).instance.steps[1].resolvedArgs, undefined);
+  const rw = w.start({ ...T, templateId: "rw" }); await w.execute(rw.id, T); const rr = w.rewind(rw.id, "a", OT); assert.equal(rr.ok, true, JSON.stringify(rr)); assert.equal(w.getInstance(rw.id, T).instance.steps[1].resolvedArgs, undefined);
 });
 
 test("verification fix: the batch cap is per tenant", () => {
@@ -335,4 +335,15 @@ test("round-4: a failed side-effecting (non-idempotent) step that stops the run 
   assert.equal(e.getInstance(id, T).instance.status, "FAILED");
   assert.equal((await e.resume(id, T)).reason, "NEEDS_REVIEW"); assert.equal(runs, 1, "resume did not execute the side-effecting step again");
   const i = e.getInstance(id, T).instance; assert.equal(i.steps[0].status, "NEEDS_REVIEW"); assert.equal(i.status, "PAUSED"); assert.equal((await e.execute(id, T)).reason, "NEEDS_REVIEW"); assert.equal(runs, 1); void r;
+});
+
+test("owner boundary: review, rewind and cancel are refused for any non-OWNER actor spelling, and change nothing", async () => {
+  const e = createWorkflowEngine({ actions: mkActions(), sleep: async () => {} }); e.saveTemplate({ ...T, id: "p", name: "p", params: {}, steps: [{ id: "s", action: "count", args: { value: 1 } }] });
+  const id = e.start({ ...T, templateId: "p" }).id; await e.execute(id, T);
+  for (const actor of [undefined, null, "", "owner", "OWNER ", "SEARCH-1", "EXECUTION-7", "SYSTEM", "ОWNER", { toString: () => "OWNER" }, ["OWNER"]]) {
+    assert.equal(e.review(id, "s", { ...T, decision: "RETRY", actor }).reason, "ONLY_OWNER_MAY_REVIEW", String(actor));
+    assert.equal(e.rewind(id, null, { ...T, actor }).reason, "ONLY_OWNER_MAY_REWIND", String(actor));
+    assert.equal(e.cancel(id, { ...T, actor }).reason, "ONLY_OWNER_MAY_CANCEL", String(actor));
+  }
+  assert.equal(e.getInstance(id, T).instance.status, "DONE");
 });
