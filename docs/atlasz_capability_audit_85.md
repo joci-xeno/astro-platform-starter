@@ -65,8 +65,8 @@ Statuses: MISSING 1, PARTIAL 44, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 18, total
 ## M07 — Advanced Analyst Mode — **PARTIAL**
 - Registry links (candidates): V73-S09-020, V73-S26-006, V73-S30-007, ATLASZ-BR-004
 - Modules: doc-extractors.mjs (XLSX/ODS read); tool-fabric.mjs (catalogue 'data-analysis') ; code-sandbox.mjs (runner only)
-- Evidence: Module analyst.mjs + analyst.run in the Control Center; cleaning, descriptive statistics, correlation, charts, reproducible hash. R5 verifier found blank cells counted as 0 (HIGH): FIXED 2026-10-08 (blank/null = missing everywhere) with tests + mutation. tests: analyst-mutation.test, chunker-analyst.test, stage-r5-fixes.test.
-- Missing: Fresh independent re-verification after the fix is pending.
+- Evidence: analyst.mjs + analyst.run: cleaning, stats, correlation, charts, reproducible hash, cleaned CSV export (owner), spreadsheet-formula neutralisation, secret scrubbing in headers/labels/titles/steps/errors, row/column caps, malformed ops refused, scalar-only fill values, markdown report neutralises links/images/HTML/pipes. tests: chunker-analyst, analyst-mutation, r6-round2. R6 (2026-10-09): 3 independent rounds (fresh worktrees, attack scripts, no access to the authors' tests); all HIGH/MEDIUM findings fixed with regression tests + mutation checks (new mutants killed). NOT promoted: the last round still produced new defects, so the verifier has not returned a clean VERIFIED. 
+- Missing: Open (LOW): numeric overflow to Infinity; two headers that scrub to the same text collide in stats keys; bare 'www.' text is only de-linked by a regex. Independent clean verification pending.
 - Integration gaps / blockers: Needs sandbox runner + deterministic calc library
 - Security: Computations must be reproducible and hash-recorded
 - Plan: Analyst module: CSV/XLSX table load, profile, clean, stats, chart spec (data only), report with input hashes
@@ -75,8 +75,8 @@ Statuses: MISSING 1, PARTIAL 44, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 18, total
 ## M08 — Deep Research — **PARTIAL**
 - Registry links (candidates): V73-S03-011, V73-S07-005, V73-S07-016, V73-S09-005, V73-S09-006, V73-S09-015
 - Modules: research-ledger.mjs; knowledge-projects.mjs; brain/verifier.mjs; brain/evidence-sources.mjs; market-intelligence-engine.mjs; enterprise-knowledge-agentic-rag.mjs
-- Evidence: Offline ledger sound; R5 found support check accepted contradicting quotes (HIGH): FIXED 2026-10-08 (numbers must appear, polarity must match; support is lexical, labelled as such).
-- Missing: Live multi-source collection and semantic entailment need a provider (external). Re-verification pending.
+- Evidence: Research ledger: a quotation match is QUOTE_MATCHED (lexical: numbers, polarity, term overlap), never VERIFIED; only an owner-passphrase confirmation (bound in the hash chain to claim, relation, retrieval date, quote and source offsets) makes a finding VERIFIED; the store is cross-checked against the verified chain (removed evidence, altered findings/contradictions, unrecorded resolutions => CONFLICTED); non-verifiable or aged refuting sources keep a supported finding CONFLICTED. tests: research-ledger, research-ledger-hosted, r6-round2. R6 (2026-10-09): 3 independent rounds (fresh worktrees, attack scripts, no access to the authors' tests); all HIGH/MEDIUM findings fixed with regression tests + mutation checks (new mutants killed). NOT promoted: the last round still produced new defects, so the verifier has not returned a clean VERIFIED. 
+- Missing: Open (documented): semantic entailment needs a provider (external); lexical limits (spelled-out numbers, fractions, units, antonyms without a negation word); the chain and head anchor are unkeyed and local (an attacker who can write the store AND truncate the chain/delete the head can roll the ledger back to an earlier consistent state); the owner has no way to dismiss a mistaken REFUTES item except by creating a new finding.
 - Integration gaps / blockers: No live web provider: sources must be supplied as already-retrieved text; comparison is quote-coverage/keyword based, not semantic
 - Security: Fetched pages are untrusted; claims need provenance
 - Plan: BUILT: durable ledger of questions/findings/citations/contradictions/unresolved, status recomputed from live sources (VERIFIED/UNSUPPORTED/ASSUMPTION/OUTDATED/CONFLICTED/REFUTED/UNVERIFIABLE), hash-chained audit, kp.* + research.* typed tools, Control Center view. Live fetcher still blocked (provider)
@@ -115,8 +115,8 @@ Statuses: MISSING 1, PARTIAL 44, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 18, total
 ## M12 — Custom AI Assistants — **PARTIAL**
 - Registry links (candidates): V73-S04-010, V73-S06-001, V73-S06-002, V73-S06-003, V73-S06-004, V73-S06-005
 - Modules: agent-factory.mjs; owner-control/agent-governor.mjs; capability-graph.mjs
-- Evidence: Profiles are stored/versioned/validated and check/resolve work (verified R5).
-- Missing: MEDIUM open: nothing applies a profile to a chat or agent run (conv.create ignores it).
+- Evidence: Profiles are stored/versioned/validated; R6 CONNECTED them: the selected profile is applied to conversations (conv.create/setProfile, deterministic resolution, [PROFILE] markers neutralised) and to agent tool calls (agent gate: a profile can only NARROW the owner's tool matrix; deleted/tampered/corrupt/emptied store fails closed). Profile create/assign/remove/rollback need the owner passphrase in the Control Center. tests: m12-profile-integration, profiles-hosted, r6-round2. R6 (2026-10-09): 3 independent rounds (fresh worktrees, attack scripts, no access to the authors' tests); all HIGH/MEDIUM findings fixed with regression tests + mutation checks (new mutants killed). NOT promoted: the last round still produced new defects, so the verifier has not returned a clean VERIFIED. 
+- Missing: Open (documented limits): the profile version hash and the .in-use marker are unkeyed (an attacker who can write BOTH files can rewrite them); a profile text is owner-authored prose framed as guidance (marker neutralisation is literal). Independent clean verification pending.
 - Integration gaps / blockers: Fixed 30 limit applies to runtime agents; profiles are not agents
 - Security: Profiles cannot add agents or permissions beyond the owner grant
 - Plan: Assistant Profiles module (config only, no extra agents) using memory scopes + typed tool allowlists
@@ -135,8 +135,8 @@ Statuses: MISSING 1, PARTIAL 44, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 18, total
 ## C01 — Advanced Software Engineering Agent — **PARTIAL**
 - Registry links (candidates): V73-S08-001, V73-S08-007, V73-S12-005, V73-S12-006, V73-S16-003, V73-S20-006
 - Modules: tool-fabric.mjs (catalogue 'code','test','github'); regression-eval-suite.mjs; skill-factory.mjs ; code-sandbox.mjs (runner only)
-- Evidence: code.review, repo analyze, governed test run (owner passphrase, sandboxed) and prototype builder are wired and were verified; R5 fixed review blind spots (concatenated exec, spawn sh -c, comment-only test files).
-- Missing: No code EDIT workflow (read, review and test only); re-verification of review rules pending.
+- Evidence: code.review / repo analyze / governed test run: many rules (secrets incl. Bearer/JWT/URL credentials/webhooks, eval and indirect eval, child_process, SQL building, TLS off, XSS sinks, path traversal, unsafe deserialisation, shell injection, pipe-to-shell, install scripts), multi-line statements, linear-time on hostile input, closed list of reviewed file types (everything else, incl. extensionless files, makes the verdict INCOMPLETE_REVIEW), test-presence needs real cases, repo-analyzer 'passed' means exit code 0 only. tests: code-review, repo-analyzer, r6-round2. R6 (2026-10-09): 3 independent rounds (fresh worktrees, attack scripts, no access to the authors' tests); all HIGH/MEDIUM findings fixed with regression tests + mutation checks (new mutants killed). NOT promoted: the last round still produced new defects, so the verifier has not returned a clean VERIFIED. 
+- Missing: Open: no code EDIT workflow (review/test only); MEDIUM-class rule misses remain (eval/exec of non-identifier arguments only reach MEDIUM CHILD_PROCESS_USE; config files (.yml/.json/.toml/.conf) get secret and pipe-to-shell rules only); test-presence is a heuristic that can be inflated by trivial tests.
 - Integration gaps / blockers: No code tools wired; needs sandbox + typed tools
 - Security: Writes only inside a project sandbox; no push without approval
 - Plan: Engineering toolkit on shared sandbox: repo scan, test runner, diff review (P07) — read/analyze first
@@ -375,8 +375,8 @@ Statuses: MISSING 1, PARTIAL 44, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 18, total
 ## G12 — Streaming Tool Observability — **PARTIAL**
 - Registry links (candidates): V73-S03-008, V73-S10-014, V73-S13-004, V73-S34-001, V73-S34-002, V73-S34-003
 - Modules: event-bus.mjs; brain/black-box.mjs; task-ledger.mjs; progress-ledger.mjs; Control Center polling
-- Evidence: SSE feed works end to end (secrets redacted, client cap, resume). R5 verifier: tail checked only the prev link; FIXED 2026-10-08 (entry hash recomputed, prevHash link enforced).
-- Missing: Fresh re-verification pending.
+- Evidence: SSE feed over the hash-chained Black Box (secrets redacted, client cap, resume, corrupt/junk/forged lines make the stream report SOURCE_UNREADABLE, rotation/truncation reset). R6 junk-line fix. tests: event-stream, r6-round2. R6 (2026-10-09): 3 independent rounds (fresh worktrees, attack scripts, no access to the authors' tests); all HIGH/MEDIUM findings fixed with regression tests + mutation checks (new mutants killed). NOT promoted: the last round still produced new defects, so the verifier has not returned a clean VERIFIED. 
+- Missing: Open (LOW, documented): a same-size edit with the mtime restored is not noticed by a live tail; rotation to a LONGER log does not send a reset frame; an oversize entry is shown as null-data without the truncated flag.
 - Integration gaps / blockers: UI polls; no server-sent events
 - Security: Black Box redacts secrets
 - Plan: Add SSE endpoint over event bus (read-only, token-gated)
@@ -455,8 +455,8 @@ Statuses: MISSING 1, PARTIAL 44, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 18, total
 ## GE07 — Analytical Code Execution — **PARTIAL**
 - Registry links (candidates): none
 - Modules: see M07/M06 ; code-sandbox.mjs
-- Evidence: See M07. Code runs in the sandbox (NAMESPACE JS), analysis pipeline on top is analyst.mjs.
-- Missing: Re-verification of M07 pending; Python sandbox containment is PARTIAL (see M06).
+- Evidence: See M07. Code runs in the sandbox (JS NAMESPACE); the analysis pipeline is analyst.mjs.
+- Missing: See M07; the Python sandbox native-module escape is NOT resolved (see M06).
 - Integration gaps / blockers: depends on M06
 - Security: reproducible, hash recorded
 - Plan: Shared with M06/M07
@@ -595,8 +595,8 @@ Statuses: MISSING 1, PARTIAL 44, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 18, total
 ## A08 — Contextual Proactive Assistance — **PARTIAL**
 - Registry links (candidates): ATLASZ-PKG84-012
 - Modules: human-core.mjs (planHelp); master-brief.mjs; brain/central-brain.mjs
-- Evidence: Verified R5: 3 of 6 suggestion sources exercised, canAct:false, dismiss does not change the decision.
-- Missing: Approvals, plugin and skill sources not exercised end to end.
+- Evidence: All six suggestion sources (approvals, plugin, skill, workflow/tasks, research/ledger, brief) are wired through adapters and tested end to end incl. broker APPROVAL path; normalisation (long ids hashed, invisible/blank titles refused, secrets redacted), dedup + provenance, fairness (priority 4/5 separate allowances, rotation), owner-only dismiss/snooze. tests: suggestions, a08-sources, r6-round2. R6 (2026-10-09): 3 independent rounds (fresh worktrees, attack scripts, no access to the authors' tests); all HIGH/MEDIUM findings fixed with regression tests + mutation checks (new mutants killed). NOT promoted: the last round still produced new defects, so the verifier has not returned a clean VERIFIED. 
+- Missing: Open (LOW): dedup happens before the mute check (a muted high-priority item can replace an unmuted lower one with the same key); a null snoozed record throws a raw TypeError; the 1000-candidate cap is a documented limit.
 - Integration gaps / blockers: Suggestions never act
 - Security: Suggest-only; restricted actions need approval
 - Plan: Suggestion queue fed by brief sources with dismissal memory
@@ -645,8 +645,8 @@ Statuses: MISSING 1, PARTIAL 44, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 18, total
 ## A13 — Visual Accessibility and Guidance — **PARTIAL**
 - Registry links (candidates): none
 - Modules: Control Center UI
-- Evidence: a11y-audit logic verified (contrast ratios match an independent formula).
-- Missing: Not reachable from the Control Center (module + test only).
+- Evidence: Connected: a11y.audit route + Control Center panel (authenticated, owner-only, no URL/path input: targets are control-center or supplied text; worker thread with timeout; worker answers validated; incomplete audits never report clean). Findings carry severity/location/remediation; contrast evaluated per theme and per @media/@supports/@container variant; external stylesheets (@import, <link>) make the result INCOMPLETE; HTML checks: input label, button name, duplicate id, aria-hidden focusable. tests: a11y-audit, a11y-control-center, r6-round2. R6 (2026-10-09): 3 independent rounds (fresh worktrees, attack scripts, no access to the authors' tests); all HIGH/MEDIUM findings fixed with regression tests + mutation checks (new mutants killed). NOT promoted: the last round still produced new defects, so the verifier has not returned a clean VERIFIED. 
+- Missing: Not a WCAG compliance claim: automated checks cover a subset (contrast of declared pairs, a few markup rules). Open: aria-hidden focusable detection ignores contenteditable/summary/iframe and flags <a> without href (false positives); preload-stylesheet via onload not flagged. Independent clean verification pending.
 - Integration gaps / blockers: Provider for scenes
 - Security: None
 - Plan: UI accessibility checklist tests (labels, contrast tokens)
@@ -655,8 +655,8 @@ Statuses: MISSING 1, PARTIAL 44, EXTERNAL_BLOCKER 22, VERIFIED_WORKING 18, total
 ## P01 — Personal Learning Tutor — **PARTIAL**
 - Registry links (candidates): V73-S07-001, V73-S07-002, V73-S07-003, V73-S07-004, V73-S07-005, V73-S07-006
 - Modules: none
-- Evidence: tutor.mjs + tutor.* ops + Control Center panel. R5 verifier: honest unknowns, no answers in quiz, restart persistence OK; mastery could be gamed by instant repeats: FIXED 2026-10-08 (answers before the review is due do not raise the box). tests: tutor.test, stage-r5-fixes.test, workbench-b1-hosted.
-- Missing: Fresh independent re-verification after the fix is pending.
+- Evidence: tutor.mjs + tutor.* ops + Control Center panel. Repeated/early answers cannot raise mastery; accuracy counts only counted answers; broken or out-of-range clocks refused before any mutation (CLOCK_INVALID); hand-edited store shapes (lessons, choices, dueAt, accuracy fields) make the course unreadable instead of crashing or inflating, and an unreadable course is never overwritten (owner can delete it); titles screened for secrets. tests: tutor, stage-r5-fixes, r6-round2. R6 (2026-10-09): 3 independent rounds (fresh worktrees, attack scripts, no access to the authors' tests); all HIGH/MEDIUM findings fixed with regression tests + mutation checks (new mutants killed). NOT promoted: the last round still produced new defects, so the verifier has not returned a clean VERIFIED. 
+- Missing: Open (LOW): ids and titles are screened for secrets but not for injection text (they are data, never instructions); no content generation without a model.
 - Integration gaps / blockers: Content generation needs a model for novel lessons; spaced-repetition scheduler is local
 - Security: Personal data minimal
 - Plan: Tutor engine: deck/quiz store + spaced-repetition scheduler (local, deterministic); content authoring by model later

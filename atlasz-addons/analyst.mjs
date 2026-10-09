@@ -118,7 +118,7 @@ export function analyze(csvText, { ops = [] } = {}) {
   const hs = x => scrub(String(x)), body = { inputHash: p.inputHash, rows: c.rows.length, columns: c.headers.length, steps: c.log, profile: prof.map(x => ({ ...x, column: hs(x.column) })), stats: Object.fromEntries(Object.entries(stats).map(([k, v]) => [hs(k), v])), correlations: corr.map(x => ({ ...x, a: hs(x.a), b: hs(x.b) })) };
   return { ok: true, report: { ...body, reportHash: sha(JSON.stringify(body)) }, data: { headers: c.headers, rows: c.rows }, charts: chartSpecs(c, prof), note: "Descriptive statistics only. Correlation is not causation." };
 }
-const md = v => scrub(String(v).replace(/[\r\n\u2028\u2029]+/g, " ").replace(/\|/g, "\\|").replace(/[`*_#<>\[\]()!\\&~]/g, " "));
+const md = v => String(scrub(String(v))).replace(/[\r\n\u2028\u2029]+/g, " ").replace(/[`*_#<>\[\]()!\\&~|@]/g, " ").replace(/:\/\//g, " ").replace(/\bwww\./gi, "www ").replace(/\s+/g, " ");   // scrub FIRST (before characters that hide a secret are removed); table pipes, links, images, mentions and bare URLs cannot survive
 /** The cleaned table as CSV (formula-neutralised by toCsv) so the owner can take the result away. */
 export const cleanedCsv = result => (result?.ok ? toCsv(result.data.headers, result.data.rows) : null);
 export function reportToMarkdown(rep) {

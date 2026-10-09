@@ -67,8 +67,9 @@ test("M12: emptying the store (assignments removed outside the owner's unassign)
     fs.writeFileSync(file, JSON.stringify({ tenants: {} })); assert.equal(gate("EXECUTION-3", "sandbox.x").allowed, false);
     const j = JSON.parse(orig); j.tenants.JOCI.assignments = { "EXECUTION-3": null }; fs.writeFileSync(file, JSON.stringify(j)); assert.equal(gate("EXECUTION-3", "sandbox.x").allowed, false);
     fs.writeFileSync(file, orig); fs.rmSync(file + ".in-use"); fs.mkdirSync(file + ".in-use"); assert.equal(gate("EXECUTION-3", "sandbox.x").allowed, false, "a directory in place of the marker fails closed");
-    fs.rmSync(file + ".in-use", { recursive: true }); fs.writeFileSync(file + ".in-use", "1");
-    assert.equal(P.assign("JOCI", "EXECUTION-3", null, { actor: "OWNER" }).ok, true); assert.equal(fs.readFileSync(file + ".in-use", "utf8"), "0");
+    fs.rmSync(file + ".in-use", { recursive: true }); fs.writeFileSync(file + ".in-use", '["JOCI/EXECUTION-3"]');
+    { const sw = JSON.parse(orig); sw.tenants.JOCI.assignments = { "EXECUTION-4": "p1" }; fs.writeFileSync(file, JSON.stringify(sw)); assert.equal(gate("EXECUTION-3", "sandbox.x").allowed, false, "moving the assignment to another agent keeps the count but frees the restricted agent"); fs.writeFileSync(file, orig); }
+    assert.equal(P.assign("JOCI", "EXECUTION-3", null, { actor: "OWNER" }).ok, true); assert.equal(fs.readFileSync(file + ".in-use", "utf8"), "[]");
     assert.equal(gate("EXECUTION-3", "sandbox.x").allowed, true, "the owner's own unassign restores the baseline");
   } finally { rm(d); }
 });
@@ -105,4 +106,20 @@ test("audit chain: a torn final line (crash mid-append) is cut off before the ne
     const D = createAuditChain({ filePath: f }); assert.equal(D.entries().length, 4); D.append("FIVE"); assert.equal(createAuditChain({ filePath: f }).entries().length, 5);
     fs.appendFileSync(f, "garbage\nmore\n"); assert.throws(() => D.append("SIX"), /AUDIT_FILE_CORRUPT|AUDIT_CHAIN_TAMPERED/, "tampering still refuses");
   } finally { rm(d); }
+});
+
+test("round 4: audit chain heals a trailing garbage line and refuses non-object entries; markdown report neutralises pipes, URLs, mentions and scrubs before stripping; LICENSE files do not make a review incomplete", async () => {
+  const d = tmp("ac3-"); try {
+    const f = path.join(d, "a.jsonl"), A = createAuditChain({ filePath: f }); A.append("ONE");
+    fs.appendFileSync(f, "garbage\n"); const B = createAuditChain({ filePath: f }); B.append("TWO"); assert.equal(createAuditChain({ filePath: f }).entries().length, 2);
+    fs.writeFileSync(f, fs.readFileSync(f, "utf8") + "null\nnull\n"); assert.throws(() => createAuditChain({ filePath: f }), /AUDIT_CHAIN_TAMPERED|AUDIT_FILE_CORRUPT/);
+  } finally { rm(d); }
+  const { analyze, reportToMarkdown } = await import("../atlasz-addons/analyst.mjs");
+  const GH = "g" + "hp_" + "A".repeat(36);
+  const r = analyze("a|b,https://evil.example/x,me@evil.com,www.evil.com\n1,2,3,4\n2,3,5,6\n3,5,6,7\n"); const m = reportToMarkdown(r.report ?? r);
+  assert.ok(!/https?:\/\/|@evil|www\./i.test(m), m); assert.equal(m.split("\n").filter(l => l.startsWith("| a")).every(l => l.split("|").length === 6), true, m);
+  assert.ok(!reportToMarkdown({ ...(r.report ?? r), steps: [{ op: "x", column: GH }] }).includes("A".repeat(20)), "a raw report is scrubbed before characters are stripped");
+  const { analyzeRepo } = await import("../atlasz-addons/repo-analyzer.mjs");
+  const lic = reviewCode({ files: [{ path: "LICENSE", content: "MIT" }, { path: "a.js", content: "const x = 1;" }] }); assert.notEqual(lic.verdict, "INCOMPLETE_REVIEW");
+  void analyzeRepo;
 });

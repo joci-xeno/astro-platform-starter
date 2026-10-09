@@ -76,12 +76,13 @@ function tagEnd(h, from) {                                                      
   return h.indexOf(">", from);                                                                     // an unterminated quote: fall back to the plain scan
 }
 function htmlTags(html) {
-  const out = []; out.styles = []; let i = 0;
+  const out = []; out.styles = []; let i = 0, p1 = -2, p2 = -2;
   const ATTR = /([^\s"'<>\/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
   while (i < html.length && out.length < LIMITS.maxTags) {
     const a = html.indexOf("<", i); if (a < 0) break;
-    if (html.startsWith("<!--", a)) { const z1 = html.indexOf("-->", a + 2), z2 = html.indexOf("--!>", a + 2), z = z1 < 0 ? z2 : z2 < 0 ? z1 : Math.min(z1, z2); if (z < 0) break; i = z + (z === z2 ? 4 : 3); continue; }       // "<!-->" is a complete (empty) comment, as in browsers
-    const z = tagEnd(html, a + 1); if (z < 0) break; const m = /^<(\/?)([A-Za-z][A-Za-z0-9-]*)/.exec(html.slice(a, a + 60)); i = z + 1; if (!m) continue;
+    if (html.startsWith("<!--", a)) { if (p1 !== -1 && p1 < a + 2) p1 = html.indexOf("-->", a + 2); if (p2 !== -1 && p2 < a + 2) p2 = html.indexOf("--!>", a + 2);   /* each terminator is searched again only after it has been passed: linear overall */
+      const z1 = p1, z2 = p2, z = z1 < 0 ? z2 : z2 < 0 ? z1 : Math.min(z1, z2); if (z < 0) break; i = z + (z === z2 ? 4 : 3); continue; }       // "<!-->" is a complete (empty) comment, as in browsers
+    const z = /^<\/?[A-Za-z]/.test(html.slice(a, a + 3)) ? tagEnd(html, a + 1) : html.indexOf(">", a + 1); if (z < 0) break; const m = /^<(\/?)([A-Za-z][A-Za-z0-9-]*)/.exec(html.slice(a, a + 60)); i = z + 1; if (!m) continue;
     const nextLt = html.indexOf("<", z + 1), name = m[2].toLowerCase(), attrs = html.slice(a + m[0].length, z), map = new Map();
     for (const am of attrs.matchAll(ATTR)) { const k = am[1].toLowerCase(); if (!map.has(k)) map.set(k, am[2] ?? am[3] ?? am[4] ?? ""); }
     out.push({ name, closing: m[1] === "/", attrs, map, text: m[1] ? "" : html.slice(z + 1, nextLt < 0 ? Math.min(html.length, z + 301) : Math.min(nextLt, z + 301)) });

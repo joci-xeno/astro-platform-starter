@@ -67,12 +67,13 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   // Owner confirmations live in the hash-chained event log (not in a field of the evidence): a hand-edited store cannot create one without also forging the chain AND its head anchor.
   let confMemo = { key: "", set: new Set() };
   /** What the owner actually confirmed: the claim text, the relation, the retrieval date and the quote. Any later edit of one of them (outside the hash chain) voids the confirmation. */
-  const bindOf = (f, e) => sha([f.claim, e.relation, e.retrievedAt ?? "", e.citation.quote].join("\u0000"));
+  const bindOf = (f, e) => sha([f.claim, e.relation, e.retrievedAt ?? "", e.citation.quote, e.citation.memberId, e.citation.start, e.citation.end, e.citation.sha256].join("\u0000"));
+  const findingSig = f => sha([f.tenantId, f.questionId, f.kind, f.topic ?? "", f.value ?? "", f.claim].join("\u0000"));
   /** What the verified chain says happened (null when the chain is broken): evidence that was attached, contradictions declared and how each was resolved. The store must agree with it. */
   let factMemo = { key: "", v: null };
   const chainFacts = () => { const key = S.events.length + ":" + (S.events.at(-1)?.hash ?? ""); if (factMemo.key === key) return factMemo.v;
-    let v = null; if (verifyChain().ok) { v = { attached: new Map(), declared: [], resolved: new Map() };
-      for (const e of S.events) { if (e.type === "EVIDENCE_ATTACHED" && typeof e.findingId === "string") { if (!v.attached.has(e.findingId)) v.attached.set(e.findingId, new Set()); v.attached.get(e.findingId).add(e.evidence); } else if (e.type === "CONTRADICTION_DECLARED") v.declared.push({ id: e.id, a: e.a, b: e.b }); else if (e.type === "CONTRADICTION_RESOLVED") v.resolved.set(e.id, String(e.winner ?? null)); } }
+    let v = null; if (verifyChain().ok) { v = { attached: new Map(), declared: [], resolved: new Map(), findings: new Map() };
+      for (const e of S.events) { if (e.type === "EVIDENCE_ATTACHED" && typeof e.findingId === "string") { if (!v.attached.has(e.findingId)) v.attached.set(e.findingId, new Set()); v.attached.get(e.findingId).add(e.evidence); } else if (e.type === "FINDING_ADDED" && typeof e.fsig === "string") v.findings.set(e.id, { fsig: e.fsig, questionId: e.questionId }); else if (e.type === "CONTRADICTION_DECLARED") v.declared.push({ id: e.id, a: e.a, b: e.b }); else if (e.type === "CONTRADICTION_RESOLVED") v.resolved.set(e.id, String(e.winner ?? null)); } }
     factMemo = { key, v }; return v; };
   const confirmedSet = () => { const key = S.events.length + ":" + (S.events.at(-1)?.hash ?? ""); if (confMemo.key === key) return confMemo.set; const ok = verifyChain().ok; confMemo = { key, set: new Set(ok ? S.events.filter(e => e.type === "EVIDENCE_CONFIRMED" && e.by === "OWNER" && typeof e.bind === "string").map(e => e.findingId + "|" + e.evidence + "|" + e.bind) : []) }; return confMemo.set; };
   const who = w => ({ tenantId: w?.tenantId, role: w?.role ?? "OWNER", forAgent: Boolean(w?.forAgent) });
@@ -107,7 +108,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
     if (topic != null && (looksSecret(topic) || looksSecret(value))) throw new Error("TOPIC_OR_VALUE_CONTAINS_SECRET");
     if (topic != null && (String(topic).length > LIMITS.topicChars || String(value).length > LIMITS.valueChars)) throw new Error("TOPIC_OR_VALUE_TOO_LONG");
     const f = { id: id("rf"), tenantId: w.tenantId, questionId: q.id, claim: c.text, kind, topic: topic == null ? null : norm(topic), value: value == null ? null : norm(value), screening: c.screening, createdBy: b, createdAt: now(), evidence: [] };
-    S.findings[f.id] = f; event("FINDING_ADDED", b, { id: f.id, questionId: q.id, kind, claimSha: sha(f.claim) }); store.save(); return structuredClone(f);
+    S.findings[f.id] = f; event("FINDING_ADDED", b, { id: f.id, questionId: q.id, kind, claimSha: sha(f.claim), fsig: findingSig(f) }); store.save(); return structuredClone(f);
   }
   /** Attach a Knowledge-Projects citation. It must verify OK right now, belong to the question's project and actually cover the claim's terms. */
   function attachEvidence(fid, { citation, relation = "SUPPORTS", by } = {}, w) {
@@ -162,7 +163,8 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
     const cf = chainFacts(), tamper = [];
     if (cf) { const miss = [...(cf.attached.get(f.id) ?? [])].filter(x => !f.evidence.some(e => e.id === x)); if (miss.length) tamper.push("EVIDENCE_REMOVED_OUTSIDE_LEDGER:" + miss.join(",")); }
     const pairs = Object.values(S.contradictions).filter(k => k.tenantId === f.tenantId && (k.a === f.id || k.b === f.id)).map(k => { if (cf && k.state === "RESOLVED" && cf.resolved.get(k.id) !== String(k.resolution?.winner ?? null)) { tamper.push("RESOLUTION_NOT_IN_CHAIN:" + k.id); return { ...k, state: "OPEN" }; } return k; });
-    if (cf) for (const dk of cf.declared) if ((dk.a === f.id || dk.b === f.id) && !S.contradictions[dk.id]) tamper.push("CONTRADICTION_REMOVED_OUTSIDE_LEDGER:" + dk.id);
+    if (cf) for (const dk of cf.declared) if (dk.a === f.id || dk.b === f.id) { const sk = S.contradictions[dk.id]; if (!sk || sk.a !== dk.a || sk.b !== dk.b || sk.tenantId !== f.tenantId) tamper.push("CONTRADICTION_REMOVED_OR_ALTERED_OUTSIDE_LEDGER:" + dk.id); }
+    if (cf) for (const [fid, m] of cf.findings) if (m.questionId === f.questionId) { const sf = S.findings[fid]; if (!sf || findingSig(sf) !== m.fsig) tamper.push("FINDING_REMOVED_OR_ALTERED_OUTSIDE_LEDGER:" + fid); }
     const rejected = pairs.some(k => k.state === "RESOLVED" && k.resolution.winner && k.resolution.winner !== f.id);
     const open = pairs.filter(k => k.state === "OPEN");
     const autoConf = f.topic ? Object.values(S.findings).filter(o => o.id !== f.id && o.questionId === f.questionId && o.kind === "CLAIM" && o.topic === f.topic && o.value !== f.value && !pairs.some(k => k.state === "RESOLVED" && [k.a, k.b].includes(o.id))) : [];

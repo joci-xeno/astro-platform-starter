@@ -110,3 +110,5 @@ import os as _os, sys as _sys
 _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
 from capability_updates_r5 import apply as _apply_r5  # noqa: E402
 ROWS = _apply_r5(ROWS)
+from capability_updates_r6 import apply as _apply_r6  # noqa: E402
+ROWS = _apply_r6(ROWS)

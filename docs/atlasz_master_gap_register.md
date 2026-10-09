@@ -1,6 +1,6 @@
 # ATLASZ V7.3 — Unified Master Gap Register
 
-Total gaps: **813** (registry 738, 85-capability 67, scans 8).
+Total gaps: **814** (registry 738, 85-capability 67, scans 9).
 
 LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence exists in this workspace.
 
@@ -9,7 +9,7 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - NOT_BUILT: 186
 - EXTERNAL: 58
 - STRUCTURE_ONLY: 56
-- MODULE_NOT_CONNECTED: 26
+- MODULE_NOT_CONNECTED: 27
 - UNTESTED: 10
 - OWNER_DECISION: 4
 
@@ -27,7 +27,7 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - SCHEDULER_PCC: 23
 - OBSERVABILITY_DOCTOR: 23
 - SECTION_S31: 17
-- UNASSIGNED: 14
+- UNASSIGNED: 15
 - SECTION_S52: 11
 - SECTION_S18: 10
 - SECTION_S44: 10
@@ -48,14 +48,16 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - LIVE_VOICE: 2
 
 ## Reachability
-- Modules in atlasz-addons: 180; reachable from entry points: 175
+- Modules in atlasz-addons: 181; reachable from entry points: 175
 - ORPHAN: atlasz-addons/a11y-audit.mjs
+- ORPHAN: atlasz-addons/a11y-worker.mjs
 - ORPHAN: atlasz-addons/digital-twin.mjs
 - ORPHAN: atlasz-addons/evidence-record.mjs
 - ORPHAN: atlasz-addons/handoff-ledger.mjs
 - ORPHAN: atlasz-addons/tenant-isolation.mjs
 
 ## Modules without a test reference
+- atlasz-addons/a11y-worker.mjs
 
 ## Unconnected provider slots (declared PLACEHOLDER_UNCONNECTED)
 - atlasz-addons/approval-command-gateway.mjs
@@ -67,7 +69,7 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - atlasz-addons/voice-interface.mjs
 
 ## Control Center panels
-- connected: 45 of 45
+- connected: 46 of 46
 
 ## Highest-priority open gaps (P0, not external/owner)
 - GAP-V73-S02-001 [SANDBOX_TESTED_PARTIAL] Authority chain: JOCI/OWNER -> STRONG OWNER AUTH -> MASTER -> AGENTS -> TOOLS/CONNECTORS/COMPUTER USE/EXTERNAL

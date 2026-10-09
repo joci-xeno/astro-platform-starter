@@ -376,8 +376,53 @@ test("R6 round 3: a contradiction marked RESOLVED (or deleted) in the store with
     const j = JSON.parse(orig); j.contradictions[k.id].state = "RESOLVED"; j.contradictions[k.id].resolution = { winner: fa.id, by: "OWNER", at: w.now() }; fs.writeFileSync(file, JSON.stringify(j));
     let r = w.mk().report(q.id, OWNER); assert.equal(r.verifiedFacts.length, 0, JSON.stringify(r.verifiedFacts.map(x => x.claim)));
     const j2 = JSON.parse(orig); delete j2.contradictions[k.id]; fs.writeFileSync(file, JSON.stringify(j2));
-    r = w.mk().report(q.id, OWNER); assert.equal(r.verifiedFacts.length, 0); assert.ok(JSON.stringify(r.conflicted).includes("CONTRADICTION_REMOVED_OUTSIDE_LEDGER"));
+    r = w.mk().report(q.id, OWNER); assert.equal(r.verifiedFacts.length, 0); assert.ok(JSON.stringify(r.conflicted).includes("CONTRADICTION_REMOVED_OR_ALTERED_OUTSIDE_LEDGER"));
     fs.writeFileSync(file, orig); w.mk().resolveContradiction(k.id, { winner: fa.id, note: "owner decided" }, OWNER);
     r = w.mk().report(q.id, OWNER); assert.equal(r.verifiedFacts.length, 1, "a real owner resolution still works");
+  } finally { w.done(); }
+});
+
+test("R6 round 4: editing a contradiction's tenant/members, or deleting/editing the conflicting finding in the store, cannot clear a conflict; swapping the cited source voids the confirmation", async () => {
+  const w = await world();
+  try {
+    const q = w.rl.openQuestion({ projectId: w.p.id, text: "Rent?" }, OWNER);
+    w.web("A", RENT, "https://example.org/a"); w.web("B", RENT2, "https://example.org/b"); w.web("C", RENT + " Cleaning is extra.", "https://example.org/c");
+    const hits = w.kp.search(w.p.id, { query: "monthly rent Maple Street warehouse", ...OWNER }).results, ca = hits.find(h => h.text.includes("4200") && h.text.includes("payable")).citation, cb = hits.find(h => h.text.includes("4800")).citation;
+    const fa = w.rl.addFinding(q.id, { claim: "The monthly rent for the Maple Street warehouse is 4200 dollars", topic: "rent", value: "4200" }, OWNER), fb = w.rl.addFinding(q.id, { claim: "The monthly rent for the Maple Street warehouse is 4800 dollars", topic: "rent", value: "4800" }, OWNER);
+    w.att(fa.id, { citation: ca }, OWNER); w.att(fb.id, { citation: cb }, OWNER);
+    assert.equal(w.rl.report(q.id, OWNER).conflicted.length, 2, "same topic, different value");
+    const file = path.join(w.d, "rl.json"), orig = fs.readFileSync(file, "utf8"), edit = fn => { const j = JSON.parse(orig); fn(j); fs.writeFileSync(file, JSON.stringify(j)); return w.mk().report(q.id, OWNER); };
+    let r = edit(j => { delete j.findings[fb.id]; }); assert.equal(r.verifiedFacts.length, 0, "deleting the conflicting finding");
+    r = edit(j => { j.findings[fb.id].value = "4200"; }); assert.equal(r.verifiedFacts.length, 0, "editing its value");
+    r = edit(j => { j.findings[fb.id].topic = "other"; }); assert.equal(r.verifiedFacts.length, 0, "editing its topic");
+    r = edit(j => { j.findings[fb.id].kind = "ASSUMPTION"; }); assert.equal(r.verifiedFacts.length, 0, "editing its kind");
+    // a declared contradiction with tampered tenant / members
+    fs.writeFileSync(file, orig); const k = w.mk().declareContradiction(fa.id, fb.id, { note: "differ" }, OWNER); const orig2 = fs.readFileSync(file, "utf8");
+    for (const fn of [j => { j.contradictions[k.id].tenantId = "x"; }, j => { j.contradictions[k.id].a = fb.id; }]) { const j = JSON.parse(orig2); fn(j); fs.writeFileSync(file, JSON.stringify(j)); assert.equal(w.mk().report(q.id, OWNER).verifiedFacts.length, 0); }
+    // swapping the cited source of a confirmed item keeps no confirmation
+    fs.writeFileSync(file, orig); const j3 = JSON.parse(orig); const E = j3.findings[fa.id].evidence[0]; E.citation.memberId = "other-member"; fs.writeFileSync(file, JSON.stringify(j3));
+    assert.equal(w.mk().report(q.id, OWNER).verifiedFacts.length, 0);
+  } finally { w.done(); }
+});
+
+test("R6 round 4b: a tampered contradiction (no topic shortcut) and a swapped identical source both void the verified status", async () => {
+  const w = await world();
+  try {
+    const q = w.rl.openQuestion({ projectId: w.p.id, text: "Rent?" }, OWNER);
+    w.web("A", RENT, "https://example.org/a"); w.web("B", RENT2, "https://example.org/b"); w.web("A2", RENT, "https://example.org/a2");
+    const hits = w.kp.search(w.p.id, { query: "monthly rent Maple Street warehouse", ...OWNER }).results, ca = hits.find(h => h.text.includes("4200") && h.url?.includes?.("/a") !== false).citation, cb = hits.find(h => h.text.includes("4800")).citation;
+    const fa = w.rl.addFinding(q.id, { claim: "The monthly rent for the Maple Street warehouse is 4200 dollars" }, OWNER), fb = w.rl.addFinding(q.id, { claim: "The monthly rent for the Maple Street warehouse is 4800 dollars" }, OWNER);
+    const ea = w.att(fa.id, { citation: ca }, OWNER); w.att(fb.id, { citation: cb }, OWNER);
+    const k = w.rl.declareContradiction(fa.id, fb.id, { note: "differ" }, OWNER);
+    const file = path.join(w.d, "rl.json"), orig = fs.readFileSync(file, "utf8");
+    for (const fn of [j => { j.contradictions[k.id].tenantId = "x"; }, j => { j.contradictions[k.id].a = fb.id; }, j => { j.contradictions[k.id].b = fa.id; }]) { const j = JSON.parse(orig); fn(j); fs.writeFileSync(file, JSON.stringify(j)); const r = w.mk().report(q.id, OWNER); assert.equal(r.verifiedFacts.length, 0, JSON.stringify(fn.toString())); }
+    fs.writeFileSync(file, orig); assert.equal(w.mk().report(q.id, OWNER).verifiedFacts.length, 0, "open contradiction");
+    // swap the confirmed citation to another snapshot with identical text and offsets
+    const q2 = w.rl.openQuestion({ projectId: w.p.id, text: "Rent again?" }, OWNER), f2 = w.rl.addFinding(q2.id, { claim: "The monthly rent for the Maple Street warehouse is 4200 dollars" }, OWNER);
+    const all = w.kp.search(w.p.id, { query: "monthly rent Maple Street warehouse payable", ...OWNER }).results.filter(h => h.text.includes("payable")); assert.ok(all.length >= 2, "two identical snapshots");
+    w.att(f2.id, { citation: all[0].citation }, OWNER); assert.equal(w.rl.report(q2.id, OWNER).verifiedFacts.length, 1);
+    const j = JSON.parse(fs.readFileSync(file, "utf8")), ev = j.findings[f2.id].evidence[0]; const other = all.find(h => h.citation.memberId !== ev.citation.memberId); ev.citation.memberId = other.citation.memberId; ev.citation.sha256 = other.citation.sha256; ev.citation.title = other.citation.title; fs.writeFileSync(file, JSON.stringify(j));
+    assert.equal(w.mk().report(q2.id, OWNER).verifiedFacts.length, 0, "the owner confirmed a different source");
+    void ea;
   } finally { w.done(); }
 });

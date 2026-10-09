@@ -83,8 +83,8 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
   }
   /** Agent -> profile assignment (owner only; the 30 ids are the fixed roster, a profile never creates one). A profile can only NARROW what the owner's tool matrix already allows. */
   /** The marker records that a store existed and how many assignments it held, so a deleted OR emptied store can be told from one that never had assignments (the gate fails closed on both). */
-  const countAssignments = dd => Object.values(dd.tenants ?? {}).reduce((n, t) => n + Object.values(t?.assignments ?? {}).filter(v => v != null).length, 0);
-  const mark = () => { if (file) { try { fs.writeFileSync(file + ".in-use", String(countAssignments(d)), { mode: 0o600 }); } catch { /* the gate then cannot tell a deleted store from a never-used one */ } } };
+  const assignedKeys = dd => Object.entries(dd.tenants ?? {}).flatMap(([tn, t]) => Object.entries(t?.assignments ?? {}).filter(([, v]) => v != null).map(([a]) => tn + "/" + a)).sort();
+  const mark = () => { if (file) { try { fs.writeFileSync(file + ".in-use", JSON.stringify(assignedKeys(d)), { mode: 0o600 }); } catch { /* the gate then cannot tell a deleted store from a never-used one */ } } };
   function assign(tenantId, agentId, profileId, { actor } = {}) {
     if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" };
     if (typeof agentId !== "string" || !roleOf(agentId)) return { ok: false, reason: "UNKNOWN_AGENT" };
@@ -111,16 +111,16 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
 }
 
 /** Broker gate over the shared profiles file. The file is re-read on every call (the Control Center and the runtime are separate processes); an unreadable file denies instead of allowing. */
-/** null = no marker (never used); otherwise the assignment count recorded at the last owner change. An unreadable or odd marker counts as a huge number: fail closed. */
-function markerCount(file) { try { const st = fs.lstatSync(file + ".in-use"); if (!st.isFile()) return Infinity; const n = Number(fs.readFileSync(file + ".in-use", "utf8")); return Number.isInteger(n) && n >= 0 ? n : Infinity; } catch (e) { return e?.code === "ENOENT" ? null : Infinity; } }
+/** null = no marker (never used); otherwise the list of tenant/agent assignments recorded at the last owner change (every one must still be assigned). An unreadable or odd marker counts as a huge number: fail closed. */
+function markerKeys(file) { try { const st = fs.lstatSync(file + ".in-use"); if (!st.isFile()) return Infinity; const a = JSON.parse(fs.readFileSync(file + ".in-use", "utf8")); return Array.isArray(a) && a.every(x => typeof x === "string") ? a : Infinity; } catch (e) { return e?.code === "ENOENT" ? null : Infinity; } }
 export function createAgentProfileGate({ file, tenantId, grantable = defaultGrantable } = {}) {
   return (agentId, tool) => {
     try {
       if (!file) return { allowed: true, profile: null };
-      let raw; try { raw = fs.readFileSync(file, "utf8"); } catch (e) { if (e?.code === "ENOENT") { if (markerCount(file) !== null) return { allowed: false, reason: "PROFILE_STORE_MISSING" }; return { allowed: true, profile: null }; } throw e; }      // no file yet = nothing was ever assigned
+      let raw; try { raw = fs.readFileSync(file, "utf8"); } catch (e) { if (e?.code === "ENOENT") { if (markerKeys(file) !== null) return { allowed: false, reason: "PROFILE_STORE_MISSING" }; return { allowed: true, profile: null }; } throw e; }      // no file yet = nothing was ever assigned
       const j = JSON.parse(raw); if (j === null || typeof j !== "object" || Array.isArray(j) || j.tenants === null || typeof j.tenants !== "object" || Array.isArray(j.tenants)) return { allowed: false, reason: "PROFILE_STORE_CORRUPT" };   // a file this module wrote always has a tenants record
-      const mk = markerCount(file), have = Object.values(j.tenants).reduce((n, t) => n + Object.values(t?.assignments ?? {}).filter(v => v != null).length, 0);
-      if (mk !== null && have < mk) return { allowed: false, reason: "PROFILE_STORE_ASSIGNMENTS_MISSING" };    // assignments were removed outside the owner's unassign
+      const mk = markerKeys(file);
+      if (mk === Infinity || (mk !== null && mk.some(key => { const [tn, ...r] = key.split("/"), a = r.join("/"); return !(Object.hasOwn(j.tenants, tn) && j.tenants[tn] && typeof j.tenants[tn] === "object" && j.tenants[tn].assignments && typeof j.tenants[tn].assignments === "object" && Object.hasOwn(j.tenants[tn].assignments, a) && j.tenants[tn].assignments[a] != null); }))) return { allowed: false, reason: "PROFILE_STORE_ASSIGNMENTS_MISSING" };    // an assignment was removed outside the owner's unassign
       return createProfiles({ file, grantable }).agentGate(tenantId, agentId, tool);
     }
     catch { return { allowed: false, reason: "PROFILE_STORE_UNREADABLE" }; }

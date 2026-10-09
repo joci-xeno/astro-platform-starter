@@ -186,3 +186,10 @@ test("R6 round 3: @import without a following rule, > inside a quoted attribute,
   assert.ok(a(H('<div title=">" aria-hidden="true"><button>x</button></div>')).findings.some(f => f.rule === "ARIA_HIDDEN_FOCUSABLE"));
   assert.ok(!a(H('<input data-x=">" aria-label=L>')).findings.some(f => f.rule === "INPUT_LABEL"), "a > inside a quoted value no longer cuts the tag");
 });
+
+test("R6 round 4: many comments are linear time; bogus-comment shapes with a quote do not hide a real <link>", () => {
+  const C = ":root{--bg:#fff;--ink:#000}body{color:var(--ink);background:var(--bg)}", H = b => "<html lang=en><head><title>t</title><meta name=viewport content='width=device-width'></head><body><main>" + b + "</main></body></html>";
+  let t0 = Date.now(); auditAccessibility({ html: H("<!--x-->".repeat(50000)), css: C }); auditAccessibility({ html: H("<!-- --!>".repeat(50000)), css: C }); auditAccessibility({ html: H("<!--".repeat(50000)), css: C });
+  assert.ok(Date.now() - t0 < 5000, "comment scanning is linear: " + (Date.now() - t0) + " ms");
+  for (const pre of ['<?x a=">', '<!x a=">', '</ a=">', '< a=">', '<1 a=">']) { const r = auditAccessibility({ html: H(pre + '\n<link rel=stylesheet href=x.css>\n">'), css: C }); assert.equal(r.complete, false, pre); }
+});

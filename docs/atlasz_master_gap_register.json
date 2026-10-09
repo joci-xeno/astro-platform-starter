@@ -16,11 +16,11 @@
   ]
  },
  "summary": {
-  "total_gaps": 813,
+  "total_gaps": 814,
   "by_source": {
    "REGISTRY": 738,
    "CAPABILITY_85": 67,
-   "IMPORT_SCAN": 5,
+   "IMPORT_SCAN": 6,
    "TODO_SCAN": 3
   },
   "by_reality": {
@@ -28,7 +28,7 @@
    "NOT_BUILT": 186,
    "EXTERNAL": 58,
    "STRUCTURE_ONLY": 56,
-   "MODULE_NOT_CONNECTED": 26,
+   "MODULE_NOT_CONNECTED": 27,
    "UNTESTED": 10,
    "OWNER_DECISION": 4
   },
@@ -46,7 +46,7 @@
    "SCHEDULER_PCC": 23,
    "OBSERVABILITY_DOCTOR": 23,
    "SECTION_S31": 17,
-   "UNASSIGNED": 14,
+   "UNASSIGNED": 15,
    "SECTION_S52": 11,
    "SECTION_S18": 10,
    "SECTION_S44": 10,
@@ -72,7 +72,7 @@
    "EXTERNAL_BLOCKER": 58,
    "STRUCTURAL_ONLY": 28,
    "EXISTS_NEEDS_TEST": 10,
-   "DISCONNECTED": 4,
+   "DISCONNECTED": 5,
    "BLOCKED_AWAITING_JOCI_APPROVAL": 3,
    "UNFINISHED_MARKER": 3,
    "DISCONNECTED_BY_DESIGN": 1
@@ -80,16 +80,19 @@
   "registry_items": 930,
   "registry_gaps": 738,
   "capabilities_with_gaps": 67,
-  "modules_total": 180,
+  "modules_total": 181,
   "modules_reachable_from_entrypoints": 175,
   "orphan_modules": [
    "atlasz-addons/a11y-audit.mjs",
+   "atlasz-addons/a11y-worker.mjs",
    "atlasz-addons/digital-twin.mjs",
    "atlasz-addons/evidence-record.mjs",
    "atlasz-addons/handoff-ledger.mjs",
    "atlasz-addons/tenant-isolation.mjs"
   ],
-  "modules_without_test_reference": [],
+  "modules_without_test_reference": [
+   "atlasz-addons/a11y-worker.mjs"
+  ],
   "unconnected_provider_slots": [
    "atlasz-addons/approval-command-gateway.mjs",
    "atlasz-addons/computer-use-fabric.mjs",
@@ -101,7 +104,7 @@
   ],
   "todo_markers": 3,
   "panels": {
-   "CONNECTED": 45
+   "CONNECTED": 46
   },
   "live_verified_items": 0,
   "note": "LIVE_VERIFIED is intentionally zero: no live provider, payment, delivery or Windows-run evidence exists in this workspace."
@@ -113,6 +116,13 @@
     "/api/brief",
     "/api/chat",
     "/api/prefs"
+   ],
+   "status": "CONNECTED"
+  },
+  {
+   "panel": "a11y",
+   "apis": [
+    "/api/a11y/audit"
    ],
    "status": "CONNECTED"
   },
@@ -206,6 +216,7 @@
     "/api/plugins/disable",
     "/api/plugins/enable",
     "/api/plugins/install",
+    "/api/plugins/invoke",
     "/api/plugins/reset",
     "/api/plugins/rollback",
     "/api/plugins/theme",
@@ -10898,7 +10909,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "doc-extractors.mjs (XLSX/ODS read); tool-fabric.mjs (catalogue 'data-analysis') ; code-sandbox.mjs (runner only)",
-   "tests": "Module analyst.mjs + analyst.run in the Control Center; cleaning, descriptive statistics, correlation, charts, reproducible hash. R5 verifier found blank cells ",
+   "tests": "analyst.mjs + analyst.run: cleaning, stats, correlation, charts, reproducible hash, cleaned CSV export (owner), spreadsheet-formula neutralisation, secret scrub",
    "blocker": "Needs sandbox runner + deterministic calc library",
    "workstream": "CODE_SANDBOX_ENGINEERING",
    "depends_on": "V73-S09-020;V73-S26-006;V73-S30-007;ATLASZ-BR-004"
@@ -10912,7 +10923,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "research-ledger.mjs; knowledge-projects.mjs; brain/verifier.mjs; brain/evidence-sources.mjs; market-intelligence-engine.mjs; enterprise-knowledge-agentic-rag.mjs",
-   "tests": "Offline ledger sound; R5 found support check accepted contradicting quotes (HIGH): FIXED 2026-10-08 (numbers must appear, polarity must match; support is lexica",
+   "tests": "Research ledger: a quotation match is QUOTE_MATCHED (lexical: numbers, polarity, term overlap), never VERIFIED; only an owner-passphrase confirmation (bound in ",
    "blocker": "No live web provider: sources must be supplied as already-retrieved text; comparison is quote-coverage/keyword based, not semantic",
    "workstream": "KNOWLEDGE_RESEARCH",
    "depends_on": "V73-S03-011;V73-S07-005;V73-S07-016;V73-S09-005;V73-S09-006;V73-S09-015"
@@ -10968,7 +10979,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "agent-factory.mjs; owner-control/agent-governor.mjs; capability-graph.mjs",
-   "tests": "Profiles are stored/versioned/validated and check/resolve work (verified R5).",
+   "tests": "Profiles are stored/versioned/validated; R6 CONNECTED them: the selected profile is applied to conversations (conv.create/setProfile, deterministic resolution, ",
    "blocker": "Fixed 30 limit applies to runtime agents; profiles are not agents",
    "workstream": "SECURITY_OWNER",
    "depends_on": "V73-S04-010;V73-S06-001;V73-S06-002;V73-S06-003;V73-S06-004;V73-S06-005"
@@ -10982,7 +10993,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "tool-fabric.mjs (catalogue 'code','test','github'); regression-eval-suite.mjs; skill-factory.mjs ; code-sandbox.mjs (runner only)",
-   "tests": "code.review, repo analyze, governed test run (owner passphrase, sandboxed) and prototype builder are wired and were verified; R5 fixed review blind spots (conca",
+   "tests": "code.review / repo analyze / governed test run: many rules (secrets incl. Bearer/JWT/URL credentials/webhooks, eval and indirect eval, child_process, SQL buildi",
    "blocker": "No code tools wired; needs sandbox + typed tools",
    "workstream": "CODE_SANDBOX_ENGINEERING",
    "depends_on": "V73-S08-001;V73-S08-007;V73-S12-005;V73-S12-006;V73-S16-003;V73-S20-006"
@@ -11234,7 +11245,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "event-bus.mjs; brain/black-box.mjs; task-ledger.mjs; progress-ledger.mjs; Control Center polling",
-   "tests": "SSE feed works end to end (secrets redacted, client cap, resume). R5 verifier: tail checked only the prev link; FIXED 2026-10-08 (entry hash recomputed, prevHas",
+   "tests": "SSE feed over the hash-chained Black Box (secrets redacted, client cap, resume, corrupt/junk/forged lines make the stream report SOURCE_UNREADABLE, rotation/tru",
    "blocker": "UI polls; no server-sent events",
    "workstream": "WINDOWS_CONTROL_CENTER",
    "depends_on": "V73-S03-008;V73-S10-014;V73-S13-004;V73-S34-001;V73-S34-002;V73-S34-003"
@@ -11346,7 +11357,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "see M07/M06 ; code-sandbox.mjs",
-   "tests": "See M07. Code runs in the sandbox (NAMESPACE JS), analysis pipeline on top is analyst.mjs.",
+   "tests": "See M07. Code runs in the sandbox (JS NAMESPACE); the analysis pipeline is analyst.mjs.",
    "blocker": "depends on M06",
    "workstream": "CODE_SANDBOX_ENGINEERING",
    "depends_on": ""
@@ -11528,7 +11539,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "human-core.mjs (planHelp); master-brief.mjs; brain/central-brain.mjs",
-   "tests": "Verified R5: 3 of 6 suggestion sources exercised, canAct:false, dismiss does not change the decision.",
+   "tests": "All six suggestion sources (approvals, plugin, skill, workflow/tasks, research/ledger, brief) are wired through adapters and tested end to end incl. broker APPR",
    "blocker": "Suggestions never act",
    "workstream": "UNASSIGNED",
    "depends_on": "ATLASZ-PKG84-012"
@@ -11598,7 +11609,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "Control Center UI",
-   "tests": "a11y-audit logic verified (contrast ratios match an independent formula).",
+   "tests": "Connected: a11y.audit route + Control Center panel (authenticated, owner-only, no URL/path input: targets are control-center or supplied text; worker thread wit",
    "blocker": "Provider for scenes",
    "workstream": "WINDOWS_CONTROL_CENTER",
    "depends_on": ""
@@ -11612,7 +11623,7 @@
    "reality": "SANDBOX_TESTED_PARTIAL",
    "priority": "85-CAP",
    "modules": "none",
-   "tests": "tutor.mjs + tutor.* ops + Control Center panel. R5 verifier: honest unknowns, no answers in quiz, restart persistence OK; mastery could be gamed by instant repe",
+   "tests": "tutor.mjs + tutor.* ops + Control Center panel. Repeated/early answers cannot raise mastery; accuracy counts only counted answers; broken or out-of-range clocks",
    "blocker": "Content generation needs a model for novel lessons; spaced-repetition scheduler is local",
    "workstream": "SCHEDULER_PCC",
    "depends_on": "V73-S07-001;V73-S07-002;V73-S07-003;V73-S07-004;V73-S07-005;V73-S07-006"
@@ -11758,6 +11769,20 @@
    "depends_on": ""
   },
   {
+   "gap_id": "GAP-ORPHAN-a11y-worker.mjs",
+   "source": "IMPORT_SCAN",
+   "requirement_id": "",
+   "title": "atlasz-addons/a11y-worker.mjs is not reachable from the runtime supervisor, Control Center or owner CLI",
+   "status": "DISCONNECTED",
+   "reality": "MODULE_NOT_CONNECTED",
+   "priority": "CHECK",
+   "modules": "atlasz-addons/a11y-worker.mjs",
+   "tests": "NO TEST REFERENCE",
+   "blocker": "",
+   "workstream": "UNASSIGNED",
+   "depends_on": ""
+  },
+  {
    "gap_id": "GAP-ORPHAN-digital-twin.mjs",
    "source": "IMPORT_SCAN",
    "requirement_id": "",
@@ -11814,7 +11839,7 @@
    "depends_on": ""
   },
   {
-   "gap_id": "GAP-TODO-code-review.mjs:29",
+   "gap_id": "GAP-TODO-code-review.mjs:36",
    "source": "TODO_SCAN",
    "requirement_id": "",
    "title": "[\"TODO_SECURITY\", \"LOW\", null, /\\b(?:TODO|FIXME|HACK|XXX)\\b[^\\n]*\\b(?:security|auth|password|encrypt|validate|sanitize)/i, \"Open security-re",

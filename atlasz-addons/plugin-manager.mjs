@@ -65,7 +65,7 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
     catch { unreadable = true; }
   }
   const STATE_BAD = { ok: false, reason: "STATE_UNREADABLE:plugins-state.json" };
-  const save = () => { if (unreadable) return; const t = stateFile + ".tmp"; fs.writeFileSync(t, JSON.stringify(S)); fs.renameSync(t, stateFile); };
+  const save = () => { if (unreadable) return true; try { const t = stateFile + ".tmp"; fs.writeFileSync(t, JSON.stringify(S)); fs.renameSync(t, stateFile); return true; } catch { return false; } };   // an unwritable state dir is reported (false), never thrown into a timer or child callback
   const approve = (ap, action, subject) => ownerAuth.verifyApproval(ap, { action, subject });
 
   function scan() {
@@ -106,15 +106,15 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
     const hash = codeLess ? null : dirHash(p.dir); if (!codeLess && !hash) return { ok: false, reason: "PLUGIN_FOLDER_UNHASHABLE" };
     if (!codeLess) { const v = approve(ownerApproval, "PLUGIN_ENABLE", id + "#" + hash); if (!v.allowed) return { ok: false, reason: "OWNER_APPROVAL_REQUIRED:" + v.reason, subject: id + "#" + hash }; }   // the owner approves these exact bytes, not just a name
     S.enabled[id] = { since: now(), version: p.manifest.version, permissions: p.manifest.permissions, ...(hash ? { hash } : {}) }; S.health[id] = { failures: 0 };
-    audit.append("PLUGIN_ENABLED", { id, version: p.manifest.version, permissions: p.manifest.permissions }); save(); return { ok: true };
+    audit.append("PLUGIN_ENABLED", { id, version: p.manifest.version, permissions: p.manifest.permissions }); if (!save()) return { ok: false, reason: "STATE_NOT_WRITTEN" }; return { ok: true };
   }
   /** What the owner signs for PLUGIN_ENABLE: the plugin id and the content hash of its folder as it is now (a code-less theme needs no approval). */
   const enableSubject = id => { const p = scan().found.get(id); if (!p || p.manifest.kind === "THEME" || p.manifest.kind === "SKIN") return null; const h = dirHash(p.dir); return h ? id + "#" + h : null; };
-  function disable(id) { if (!own(S.enabled, id)) return { ok: true, already: true }; delete S.enabled[id]; if (S.theme === id) S.theme = null; audit.append("PLUGIN_DISABLED", { id }); save(); return { ok: true }; }
+  function disable(id) { if (!own(S.enabled, id)) return { ok: true, already: true }; delete S.enabled[id]; if (S.theme === id) S.theme = null; audit.append("PLUGIN_DISABLED", { id }); if (!save()) return { ok: false, reason: "STATE_NOT_WRITTEN" }; return { ok: true }; }
   function resetQuarantine(id, { ownerApproval = null } = {}) {
     if (unreadable) return STATE_BAD;
     const v = approve(ownerApproval, "PLUGIN_RESET_QUARANTINE", id); if (!v.allowed) return { ok: false, reason: "OWNER_APPROVAL_REQUIRED:" + v.reason };
-    S.health[id] = { failures: 0 }; audit.append("PLUGIN_QUARANTINE_RESET", { id }); save(); return { ok: true };
+    S.health[id] = { failures: 0 }; audit.append("PLUGIN_QUARANTINE_RESET", { id }); if (!save()) return { ok: false, reason: "STATE_NOT_WRITTEN" }; return { ok: true };
   }
   /** Audit write that cannot throw into timers/child callbacks: a failed audit (corrupt or unwritable log) is reported as false, never as an uncaught exception. */
   const rec = (e, d) => { try { audit.append(e, d); return true; } catch { return false; } };
@@ -158,9 +158,9 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
   }
   function setTheme(id) {
     if (unreadable) return STATE_BAD;
-    if (id === null) { S.theme = null; audit.append("THEME_CLEARED", {}); save(); return { ok: true }; }
+    if (id === null) { S.theme = null; audit.append("THEME_CLEARED", {}); if (!save()) return { ok: false, reason: "STATE_NOT_WRITTEN" }; return { ok: true }; }
     const p = scan().found.get(id); if (!p || !["THEME", "SKIN"].includes(p.manifest.kind)) return { ok: false, reason: "NOT_A_THEME" };
-    S.theme = id; S.enabled[id] ??= { since: now(), version: p.manifest.version, permissions: ["UI_THEME"] }; audit.append("THEME_SET", { id }); save(); return { ok: true };
+    S.theme = id; S.enabled[id] ??= { since: now(), version: p.manifest.version, permissions: ["UI_THEME"] }; audit.append("THEME_SET", { id }); if (!save()) return { ok: false, reason: "STATE_NOT_WRITTEN" }; return { ok: true };
   }
   function activeTheme() { if (!S.theme) return { id: null, variables: {} }; const p = scan().found.get(S.theme); return p ? { id: S.theme, name: p.manifest.name, variables: p.manifest.variables } : { id: null, variables: {} }; }
   return { scan: () => { const s = scan(); return { found: [...s.found.keys()], rejected: s.rejected }; }, list, enable, enableSubject, disable, resetQuarantine, invoke, setTheme, activeTheme, auditVerify: () => audit.verify(), validateManifest };

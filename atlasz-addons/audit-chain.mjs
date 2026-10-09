@@ -16,6 +16,7 @@ export function verifyChain(entries) {
   let prev = GENESIS;
   for (let i = 0; i < entries.length; i++) {
     const e = entries[i];
+    if (!e || typeof e !== "object" || Array.isArray(e)) return { ok: false, brokenAt: i + 1, reason: "ENTRY_NOT_AN_OBJECT" };
     if (e.seq !== i + 1) return { ok: false, brokenAt: i + 1, reason: "SEQUENCE_GAP_OR_REORDER" };
     if (e.prevHash !== prev) return { ok: false, brokenAt: i + 1, reason: "PREV_HASH_MISMATCH" };
     if (hashEntry(e) !== e.hash) return { ok: false, brokenAt: i + 1, reason: "ENTRY_HASH_MISMATCH" };
@@ -49,9 +50,11 @@ export function createAuditChain({ filePath = null, now = () => new Date().toISO
   /** A crash mid-append can leave a final line without its newline. A complete entry just gets its newline; an unparseable fragment is cut off (it was never a valid entry), so the next entry does not glue onto it and turn ordinary crash recovery into a permanent "tampered" state. */
   function healTail() {
     let raw; try { raw = fs.readFileSync(filePath, "utf8"); } catch { return; }
-    if (!raw || raw.endsWith("\n")) return;
-    const nl = raw.lastIndexOf("\n"), frag = raw.slice(nl + 1); let whole = false; try { JSON.parse(frag); whole = true; } catch { /* torn */ }
-    if (whole) fs.appendFileSync(filePath, "\n"); else fs.truncateSync(filePath, Buffer.byteLength(raw.slice(0, nl + 1)));
+    if (!raw) return;
+    const body = raw.replace(/\n+$/, ""), nl = body.lastIndexOf("\n"), frag = body.slice(nl + 1);
+    let whole = false; try { JSON.parse(frag); whole = true; } catch { /* torn or garbage */ }
+    if (!whole) { fs.truncateSync(filePath, Buffer.byteLength(body.slice(0, nl + 1))); return; }       // the reader already ignores an unparseable LAST line; it is cut off so the next entry cannot bury it mid-file
+    if (!raw.endsWith("\n")) fs.appendFileSync(filePath, "\n");
   }
   function append(event, data = {}) {
     if (!event) throw new Error("AUDIT_EVENT_REQUIRED");
