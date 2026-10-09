@@ -27,6 +27,7 @@ const DARK_ONLY = /^@media\s*\(\s*prefers-color-scheme\s*:\s*dark\s*\)\s*$/i, LA
 function blocks(css) {
   const out = []; out.unsupported = [];
   { let r = "", i = 0; for (;;) { const a = css.indexOf("/*", i); if (a < 0) { r += css.slice(i); break; } r += css.slice(i, a); const z = css.indexOf("*/", a + 2); if (z < 0) break; i = z + 2; } css = r; }   // strip comments in linear time; an unterminated comment swallows the rest
+  if (/@(?:\\|import\b)/i.test(css)) out.unsupported.push("EXTERNAL_STYLESHEET_NOT_EVALUATED:@import");   // any @import (or a CSS-escaped @\69mport) anywhere, with or without a following rule, in a string or not: the imported sheet is never read
   const close = (t, from) => { let d = 1, j = from; while (j < t.length) { const c = t[j]; if (c === '"' || c === "'") { const e = t.indexOf(c, j + 1); j = e < 0 ? t.length : e + 1; continue; } if (c === "{") d++; else if (c === "}") { d--; if (!d) return j; } j++; } return -1; };
   const THEME = /\[data-theme\s*=\s*["']?(dark|light)["']?\]/ig, NOT_THEME = /:not\(\s*\[data-theme\s*=\s*["']?(?:dark|light)["']?\]\s*\)/ig;
   const decl = body => { const decls = new Map(); for (const d of body.split(";")) { const k = d.indexOf(":"); if (k > 0) { const name = d.slice(0, k).trim().toLowerCase(), val = d.slice(k + 1).trim(); decls.set(name, val); if (name === "background" || name === "background-color") decls.set("__bg", val); } } return decls; };   // __bg: whichever of the two was declared LAST wins, as in a browser
@@ -35,7 +36,7 @@ function blocks(css) {
     while (i < t.length) {
       const semi = t.indexOf(";", i), open = t.indexOf("{", i);
       if (open < 0) break;
-      if (semi >= 0 && semi < open) { if (/^@import\b/i.test(t.slice(i, semi))) out.unsupported.push("EXTERNAL_STYLESHEET_NOT_EVALUATED:@import"); i = semi + 1; continue; }                                    // statement at-rule such as @import / @charset
+      if (semi >= 0 && semi < open) { i = semi + 1; continue; }                                    // statement at-rule such as @import / @charset
       const prelude = t.slice(i, open).trim(), end = close(t, open + 1); if (end < 0) { out.unsupported.push("UNBALANCED_BRACES"); break; }
       const body = t.slice(open + 1, end);
       if (prelude.startsWith("@")) {
@@ -66,13 +67,21 @@ const bgOf = d => d.get("__bg") ?? "";
 
 /** Linear tokeniser: [{name, closing, attrs, text, map}] for every tag outside comments and raw-text elements (script/style/textarea/title bodies are not markup; <style> bodies are returned in .styles).
  *  Attributes are parsed as name[=value] tokens, so text inside a quoted value (title="alt=x") is never mistaken for an attribute. */
+function tagEnd(h, from) {                                                                         // the ">" that closes a tag: one inside a quoted attribute value (after "=") does not
+  let q = null, last = "";
+  for (let j = from; j < h.length && j < from + 20000; j++) { const c = h[j];
+    if (q) { if (c === q) q = null; continue; }
+    if ((c === '"' || c === "'") && last === "=") { q = c; continue; }
+    if (c === ">") return j; if (!/\s/.test(c)) last = c; }
+  return h.indexOf(">", from);                                                                     // an unterminated quote: fall back to the plain scan
+}
 function htmlTags(html) {
   const out = []; out.styles = []; let i = 0;
   const ATTR = /([^\s"'<>\/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
   while (i < html.length && out.length < LIMITS.maxTags) {
     const a = html.indexOf("<", i); if (a < 0) break;
     if (html.startsWith("<!--", a)) { const z1 = html.indexOf("-->", a + 2), z2 = html.indexOf("--!>", a + 2), z = z1 < 0 ? z2 : z2 < 0 ? z1 : Math.min(z1, z2); if (z < 0) break; i = z + (z === z2 ? 4 : 3); continue; }       // "<!-->" is a complete (empty) comment, as in browsers
-    const z = html.indexOf(">", a + 1); if (z < 0) break; const m = /^<(\/?)([A-Za-z][A-Za-z0-9-]*)/.exec(html.slice(a, a + 60)); i = z + 1; if (!m) continue;
+    const z = tagEnd(html, a + 1); if (z < 0) break; const m = /^<(\/?)([A-Za-z][A-Za-z0-9-]*)/.exec(html.slice(a, a + 60)); i = z + 1; if (!m) continue;
     const nextLt = html.indexOf("<", z + 1), name = m[2].toLowerCase(), attrs = html.slice(a + m[0].length, z), map = new Map();
     for (const am of attrs.matchAll(ATTR)) { const k = am[1].toLowerCase(); if (!map.has(k)) map.set(k, am[2] ?? am[3] ?? am[4] ?? ""); }
     out.push({ name, closing: m[1] === "/", attrs, map, text: m[1] ? "" : html.slice(z + 1, nextLt < 0 ? Math.min(html.length, z + 301) : Math.min(nextLt, z + 301)) });
@@ -168,7 +177,7 @@ export function auditAccessibility({ html = "", css = "", js = "", cssSources = 
   if (!/h\(\s*["'`]label["'`]/.test(js) && inputs.length && !namesFromPlaceholder) add("WARN", "NO_LABEL_ELEMENTS", "The script never builds <label> elements for its form controls.");
   for (const m of callArgs(js, /h\(\s*["'`]button["'`]\s*,\s*\{/g)) if (/^\s*,\s*(?:""|''|``)\s*\)/.test(js.slice(m.end + 1, m.end + 40))) add("FAIL", "BUTTON_NAME", "A script-built button has an empty name.");
   const sev = total;   // true totals, not only the findings that fit in the list
-  const incomplete = []; if (truncated) incomplete.push("FINDINGS_TRUNCATED"); if (unresolved) incomplete.push("CONTRAST_PAIRS_UNRESOLVED:" + unresolved); if (!checked) incomplete.push("NO_CONTRAST_PAIRS_CHECKED"); for (const u of bl.unsupported.slice(0, 10)) incomplete.push(u); if (tg.some(t => t.name === "link" && !t.closing && /(^|\s)stylesheet(\s|$)/i.test(attr(t, "rel") ?? "") && !covered.has(attr(t, "href") ?? ""))) incomplete.push("EXTERNAL_STYLESHEET_NOT_EVALUATED:<link>"); if (skipped.length) incomplete.push("COLOUR_RULES_NOT_EVALUATED:" + skipped.length); if (!html.trim()) incomplete.push("NO_HTML_SUPPLIED"); if (!css.trim()) incomplete.push("NO_CSS_SUPPLIED");
+  const incomplete = []; if (truncated) incomplete.push("FINDINGS_TRUNCATED"); if (unresolved) incomplete.push("CONTRAST_PAIRS_UNRESOLVED:" + unresolved); if (!checked) incomplete.push("NO_CONTRAST_PAIRS_CHECKED"); for (const u of bl.unsupported.slice(0, 10)) incomplete.push(u); if (tg.some(t => t.name === "link" && !t.closing && (/(^|\s)stylesheet(\s|$)/i.test(attr(t, "rel") ?? "") || /&/.test(attr(t, "rel") ?? "")) && !covered.has(attr(t, "href") ?? ""))) incomplete.push("EXTERNAL_STYLESHEET_NOT_EVALUATED:<link>"); if (skipped.length) incomplete.push("COLOUR_RULES_NOT_EVALUATED:" + skipped.length); if (!html.trim()) incomplete.push("NO_HTML_SUPPLIED"); if (!css.trim()) incomplete.push("NO_CSS_SUPPLIED");
   const enriched = findings.map(f => ({ ...f, location: f.selector ? "css: " + f.selector : "rule " + f.rule, remediation: REMEDIATION[f.rule] ?? "Review this item manually." }));
   // A clean-looking result is only ever reported for a COMPLETE audit; otherwise it is INCOMPLETE_AUDIT (failures that were found are still reported as FAIL_FOUND).
   return { ok: true, verdict: sev.FAIL ? "FAIL_FOUND" : incomplete.length ? "INCOMPLETE_AUDIT" : sev.WARN ? "WARNINGS_ONLY" : "NO_FAILS_BY_THESE_CHECKS", complete: incomplete.length === 0, incomplete, counts: sev, findings: enriched, truncated, contrast: { pairsChecked: checked, unresolved, unresolvedPairs: unresolvedList, notEvaluated: skipped.slice(0, 20) },

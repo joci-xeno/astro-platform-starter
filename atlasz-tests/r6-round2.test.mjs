@@ -31,7 +31,8 @@ test("M07: fillMissing accepts only plain scalar values and never echoes a secre
 });
 
 test("C01: unknown file types are NOT reviewed (never clean) and a 201-char path no longer hides other findings in a repo", () => {
-  for (const p of ["a.dart", "a.scala", "a.ex", "a.coffee", "a.zsh", "a.astro", "a.pyw", "a.pyi", "a.ipynb"]) { const r = reviewCode({ files: [{ path: p, content: "eval(x)" }] }); assert.equal(r.verdict, "INCOMPLETE_REVIEW", p); }
+  for (const p of ["a.dart", "a.scala", "a.ex", "a.coffee", "a.zsh", "a.astro", "a.pyw", "a.pyi", "a.ipynb", "bin/deploy", "install", ".envrc"]) { const r = reviewCode({ files: [{ path: p, content: "eval(x)" }] }); assert.equal(r.verdict, "INCOMPLETE_REVIEW", p); }
+  assert.equal(reviewCode({ files: [{ path: ".env", content: "X=1" }] }).verdict === "INCOMPLETE_REVIEW", false);
   assert.notEqual(reviewCode({ files: [{ path: "a.js", content: "const x = 1;" }] }).verdict, "INCOMPLETE_REVIEW");
 });
 
@@ -53,5 +54,55 @@ test("M12: deleting the profile store after an assignment existed denies (fail c
     const P = createProfiles({ file }), c = P.create("JOCI", { actor: "OWNER", id: "p1", name: "narrow", instructions: "x", tools: [] });
     assert.equal(c.ok, true, JSON.stringify(c)); assert.equal(P.assign("JOCI", "EXECUTION-3", "p1", { actor: "OWNER" }).ok, true);
     fs.rmSync(file); assert.equal(gate("EXECUTION-3", "sandbox.x").allowed, false);
+  } finally { rm(d); }
+});
+
+test("M12: emptying the store (assignments removed outside the owner's unassign) denies; an owner unassign to zero stays legitimate", async () => {
+  const { createProfiles, createAgentProfileGate } = await import("../atlasz-addons/assistant-profiles.mjs");
+  const d = tmp("pg2-"); try {
+    const file = path.join(d, "p.json"), gate = createAgentProfileGate({ file, tenantId: "JOCI" }), P = createProfiles({ file });
+    assert.equal(P.create("JOCI", { actor: "OWNER", id: "p1", name: "narrow", instructions: "x", tools: [] }).ok, true);
+    assert.equal(P.assign("JOCI", "EXECUTION-3", "p1", { actor: "OWNER" }).ok, true); assert.equal(gate("EXECUTION-3", "sandbox.x").allowed, false, "assigned profile has no tools");
+    const orig = fs.readFileSync(file, "utf8");
+    fs.writeFileSync(file, JSON.stringify({ tenants: {} })); assert.equal(gate("EXECUTION-3", "sandbox.x").allowed, false);
+    const j = JSON.parse(orig); j.tenants.JOCI.assignments = { "EXECUTION-3": null }; fs.writeFileSync(file, JSON.stringify(j)); assert.equal(gate("EXECUTION-3", "sandbox.x").allowed, false);
+    fs.writeFileSync(file, orig); fs.rmSync(file + ".in-use"); fs.mkdirSync(file + ".in-use"); assert.equal(gate("EXECUTION-3", "sandbox.x").allowed, false, "a directory in place of the marker fails closed");
+    fs.rmSync(file + ".in-use", { recursive: true }); fs.writeFileSync(file + ".in-use", "1");
+    assert.equal(P.assign("JOCI", "EXECUTION-3", null, { actor: "OWNER" }).ok, true); assert.equal(fs.readFileSync(file + ".in-use", "utf8"), "0");
+    assert.equal(gate("EXECUTION-3", "sandbox.x").allowed, true, "the owner's own unassign restores the baseline");
+  } finally { rm(d); }
+});
+
+test("R6 round 3: tutor clock bounds are enforced before any mutation; an unreadable stored course is never overwritten and the owner can delete it", () => {
+  const d = tmp("tu3-"); try {
+    const file = path.join(d, "t.json"), lessons = [{ id: "l1", title: "B", text: "Water boils at 100 C." }], questions = [{ id: "q1", lessonId: "l1", prompt: "Boil?", choices: ["90", "100"], answerIndex: 1 }];
+    const mkT = t => createTutor({ file, now: () => t }), base = { tenantId: "t1", id: "c", title: "C", lessons, questions, actor: "OWNER" };
+    assert.equal(mkT(5e12).createCourse(base).reason, "CLOCK_INVALID"); assert.equal(mkT(-5).createCourse(base).reason, "CLOCK_INVALID");
+    const tu = mkT(1_800_000_000_000); assert.equal(tu.createCourse(base).ok, true);
+    assert.equal(mkT(5e12).startQuiz({ tenantId: "t1", courseId: "c", actor: "OWNER" }).reason, "CLOCK_INVALID");
+    { const q = tu.startQuiz({ tenantId: "t1", courseId: "c", actor: "OWNER" }); assert.equal(q.ok, true);
+      assert.equal(mkT(5e12).answer({ tenantId: "t1", courseId: "c", questionId: "q1", choiceIndex: 1, actor: "OWNER" }).reason, "CLOCK_INVALID");
+      assert.equal(mkT(-1).answer({ tenantId: "t1", courseId: "c", questionId: "q1", choiceIndex: 1, actor: "OWNER" }).reason, "CLOCK_INVALID"); }
+    const j = JSON.parse(fs.readFileSync(file, "utf8")); Object.values(j.courses)[0].questions[0].choices = 7; fs.writeFileSync(file, JSON.stringify(j));
+    const t2 = mkT(1_800_000_000_000); assert.equal(t2.createCourse(base).reason, "COURSE_EXISTS", "never silently overwritten");
+    assert.equal(t2.remove({ tenantId: "t1", courseId: "c", actor: "OWNER" }).ok, true); assert.equal(t2.createCourse(base).ok, true);
+  } finally { rm(d); }
+});
+
+test("M07: markdown reports cannot carry links, images or raw HTML from headers or steps", async () => {
+  const { analyze, reportToMarkdown } = await import("../atlasz-addons/analyst.mjs");
+  const r = analyze("![p](http://evil/p.png),[l](http://evil),<img src=//evil/x.png>\n1,2,\n2,3,\n3,4,\n", { ops: [{ op: "fillMissing", column: "<img src=//evil/x.png>", value: "[x](http://evil)" }] });
+  assert.equal(r.ok, true, JSON.stringify(r)); const m = reportToMarkdown(r.report ?? r);
+  assert.ok(!/!\[|\]\(|<img|<script/i.test(m), m);
+});
+
+test("audit chain: a torn final line (crash mid-append) is cut off before the next append, never glued into a permanent 'tampered' state; a complete line only gets its newline", () => {
+  const d = tmp("ac2-"); try {
+    const f = path.join(d, "a.jsonl"), A = createAuditChain({ filePath: f }); A.append("ONE"); A.append("TWO");
+    fs.appendFileSync(f, '{"seq":3,"at":"x","ev'); const B = createAuditChain({ filePath: f }); assert.equal(B.entries().length, 2);
+    B.append("THREE"); B.append("FOUR"); const C = createAuditChain({ filePath: f }); assert.equal(C.entries().length, 4); assert.equal(C.verify().ok, true);
+    const lines = fs.readFileSync(f, "utf8"); fs.writeFileSync(f, lines.slice(0, -1));                      // a whole last entry whose newline was lost
+    const D = createAuditChain({ filePath: f }); assert.equal(D.entries().length, 4); D.append("FIVE"); assert.equal(createAuditChain({ filePath: f }).entries().length, 5);
+    fs.appendFileSync(f, "garbage\nmore\n"); assert.throws(() => D.append("SIX"), /AUDIT_FILE_CORRUPT|AUDIT_CHAIN_TAMPERED/, "tampering still refuses");
   } finally { rm(d); }
 });

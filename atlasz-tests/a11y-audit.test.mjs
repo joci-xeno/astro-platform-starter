@@ -176,3 +176,13 @@ test("R6 verification regressions: external stylesheets, --!> comments and aria-
   assert.ok(a(H("<div aria-hidden=TRUE><div><span></span></div><button>b</button></div>")).findings.some(f => f.rule === "ARIA_HIDDEN_FOCUSABLE"));
   assert.ok(!a(H("<div aria-hidden=true><div><span></span></div></div><a href=#>x</a>")).findings.some(f => f.rule === "ARIA_HIDDEN_FOCUSABLE"), "focusable content after the hidden container is fine");
 });
+
+test("R6 round 3: @import without a following rule, > inside a quoted attribute, entity-obfuscated rel", () => {
+  const C = ":root{--bg:#fff;--ink:#000}body{color:var(--ink);background:var(--bg)}", H = b => "<html lang=en><head><title>t</title><meta name=viewport content='width=device-width'></head><body><main>" + b + "</main></body></html>";
+  const a = (h, c = C) => auditAccessibility({ html: h, css: c });
+  for (const [h, c] of [[H("<style>@import 'evil.css';</style><p>x"), C], [H("<p>x"), C + "@import 'x.css';"], [H("<p>x"), "@import url(data:text/css;base64,AAA);" + C], [H("<p>x"), "@\\69mport 'x.css';" + C], [H("<style>@import 'e.css';"), C]]) { const r = a(h, c); assert.equal(r.complete, false, h + c); assert.ok(r.incomplete.some(x => x.startsWith("EXTERNAL_STYLESHEET")), h + c); }
+  assert.equal(a(H('<link title="a>b" rel="stylesheet" href="e.css"><p>x')).complete, false);
+  assert.equal(a(H('<link rel="style&#115;heet" href="e.css"><p>x')).complete, false);
+  assert.ok(a(H('<div title=">" aria-hidden="true"><button>x</button></div>')).findings.some(f => f.rule === "ARIA_HIDDEN_FOCUSABLE"));
+  assert.ok(!a(H('<input data-x=">" aria-label=L>')).findings.some(f => f.rule === "INPUT_LABEL"), "a > inside a quoted value no longer cuts the tag");
+});

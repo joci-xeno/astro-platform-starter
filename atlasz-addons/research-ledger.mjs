@@ -68,6 +68,12 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   let confMemo = { key: "", set: new Set() };
   /** What the owner actually confirmed: the claim text, the relation, the retrieval date and the quote. Any later edit of one of them (outside the hash chain) voids the confirmation. */
   const bindOf = (f, e) => sha([f.claim, e.relation, e.retrievedAt ?? "", e.citation.quote].join("\u0000"));
+  /** What the verified chain says happened (null when the chain is broken): evidence that was attached, contradictions declared and how each was resolved. The store must agree with it. */
+  let factMemo = { key: "", v: null };
+  const chainFacts = () => { const key = S.events.length + ":" + (S.events.at(-1)?.hash ?? ""); if (factMemo.key === key) return factMemo.v;
+    let v = null; if (verifyChain().ok) { v = { attached: new Map(), declared: [], resolved: new Map() };
+      for (const e of S.events) { if (e.type === "EVIDENCE_ATTACHED" && typeof e.findingId === "string") { if (!v.attached.has(e.findingId)) v.attached.set(e.findingId, new Set()); v.attached.get(e.findingId).add(e.evidence); } else if (e.type === "CONTRADICTION_DECLARED") v.declared.push({ id: e.id, a: e.a, b: e.b }); else if (e.type === "CONTRADICTION_RESOLVED") v.resolved.set(e.id, String(e.winner ?? null)); } }
+    factMemo = { key, v }; return v; };
   const confirmedSet = () => { const key = S.events.length + ":" + (S.events.at(-1)?.hash ?? ""); if (confMemo.key === key) return confMemo.set; const ok = verifyChain().ok; confMemo = { key, set: new Set(ok ? S.events.filter(e => e.type === "EVIDENCE_CONFIRMED" && e.by === "OWNER" && typeof e.bind === "string").map(e => e.findingId + "|" + e.evidence + "|" + e.bind) : []) }; return confMemo.set; };
   const who = w => ({ tenantId: w?.tenantId, role: w?.role ?? "OWNER", forAgent: Boolean(w?.forAgent) });
   const byOf = (w, by) => (who(w).forAgent ? "AGENT" : (typeof by === "string" && by ? by : "OWNER"));   // an agent can never name itself OWNER (or anyone else)
@@ -153,14 +159,17 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
     const ev = f.evidence.map(e => { const v = knowledge.verifyCitation(e.citation, w), age = ageDays(e.retrievedAt), aged = age != null && (age > freshnessDays || age < -1);   // a retrieval date in the future cannot be trusted as fresh
       return { id: e.id, relation: e.relation, title: e.citation.title, kind: e.citation.kind, url: e.citation.url, version: e.citation.version, quote: v.status === "SOURCE_UNAVAILABLE" && who(w).role !== "OWNER" ? "[withheld: source not readable by this role]" : e.citation.quote, retrievedAt: e.retrievedAt, verification: v.status, aged, ok: v.status === "OK" && !aged, memberId: e.citation.memberId, addedBy: e.addedBy, confirmed: confirmedSet().has(f.id + "|" + e.id + "|" + bindOf(f, e)) }; });
     const sup = ev.filter(e => e.relation === "SUPPORTS" && e.ok), ref = ev.filter(e => e.relation === "REFUTES" && e.ok), supC = sup.filter(e => e.confirmed), refC = ref.filter(e => e.confirmed), reasons = [];
-    const pairs = Object.values(S.contradictions).filter(k => k.tenantId === f.tenantId && (k.a === f.id || k.b === f.id));
+    const cf = chainFacts(), tamper = [];
+    if (cf) { const miss = [...(cf.attached.get(f.id) ?? [])].filter(x => !f.evidence.some(e => e.id === x)); if (miss.length) tamper.push("EVIDENCE_REMOVED_OUTSIDE_LEDGER:" + miss.join(",")); }
+    const pairs = Object.values(S.contradictions).filter(k => k.tenantId === f.tenantId && (k.a === f.id || k.b === f.id)).map(k => { if (cf && k.state === "RESOLVED" && cf.resolved.get(k.id) !== String(k.resolution?.winner ?? null)) { tamper.push("RESOLUTION_NOT_IN_CHAIN:" + k.id); return { ...k, state: "OPEN" }; } return k; });
+    if (cf) for (const dk of cf.declared) if ((dk.a === f.id || dk.b === f.id) && !S.contradictions[dk.id]) tamper.push("CONTRADICTION_REMOVED_OUTSIDE_LEDGER:" + dk.id);
     const rejected = pairs.some(k => k.state === "RESOLVED" && k.resolution.winner && k.resolution.winner !== f.id);
     const open = pairs.filter(k => k.state === "OPEN");
     const autoConf = f.topic ? Object.values(S.findings).filter(o => o.id !== f.id && o.questionId === f.questionId && o.kind === "CLAIM" && o.topic === f.topic && o.value !== f.value && !pairs.some(k => k.state === "RESOLVED" && [k.a, k.b].includes(o.id))) : [];
     let status;
     if (rejected) { status = "REJECTED"; reasons.push("OWNER_RESOLVED_CONTRADICTION_AGAINST_THIS_FINDING"); }
-    else if (open.length || autoConf.length) { status = "CONFLICTED"; if (open.length) reasons.push("OPEN_CONTRADICTION:" + open.map(k => k.id).join(",")); if (autoConf.length) reasons.push("SAME_TOPIC_DIFFERENT_VALUE:" + autoConf.map(o => o.id).join(",")); }
-    else if (sup.length && (ref.length || ev.some(e => e.relation === "REFUTES" && e.verification === "OK" && e.aged))) { status = "CONFLICTED"; reasons.push(ref.length ? "SUPPORTING_AND_REFUTING_EVIDENCE" : "AGED_REFUTING_EVIDENCE_NOT_RESOLVED"); }
+    else if (open.length || autoConf.length || tamper.length) { status = "CONFLICTED"; if (open.length) reasons.push("OPEN_CONTRADICTION:" + open.map(k => k.id).join(",")); if (tamper.length) reasons.push(...tamper); if (autoConf.length) reasons.push("SAME_TOPIC_DIFFERENT_VALUE:" + autoConf.map(o => o.id).join(",")); }
+    else if (sup.length && (ref.length || ev.some(e => e.relation === "REFUTES" && !e.ok))) { status = "CONFLICTED"; reasons.push(ref.length ? "SUPPORTING_AND_REFUTING_EVIDENCE" : "REFUTING_EVIDENCE_NOT_CURRENTLY_VERIFIABLE_NOT_RESOLVED"); }
     else if (refC.length) { status = "REFUTED"; reasons.push("OWNER_CONFIRMED_REFUTING_EVIDENCE"); }
     else if (ref.length) { status = "REFUTATION_CLAIMED"; reasons.push("REFUTING_QUOTE_MATCHED_AWAITING_OWNER_CONFIRMATION"); }
     else if (supC.length) { status = "VERIFIED"; }

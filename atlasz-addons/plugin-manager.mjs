@@ -116,20 +116,23 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
     const v = approve(ownerApproval, "PLUGIN_RESET_QUARANTINE", id); if (!v.allowed) return { ok: false, reason: "OWNER_APPROVAL_REQUIRED:" + v.reason };
     S.health[id] = { failures: 0 }; audit.append("PLUGIN_QUARANTINE_RESET", { id }); save(); return { ok: true };
   }
+  /** Audit write that cannot throw into timers/child callbacks: a failed audit (corrupt or unwritable log) is reported as false, never as an uncaught exception. */
+  const rec = (e, d) => { try { audit.append(e, d); return true; } catch { return false; } };
   function fail(id, why) {
     const h = (Object.hasOwn(S.health, id) ? S.health[id] : (S.health[id] = { failures: 0 })); h.failures++; h.lastError = scrub(String(why)).slice(0, 200);
-    if (h.failures >= quarantineAfter) { h.quarantined = true; delete S.enabled[id]; if (S.theme === id) S.theme = null; audit.append("PLUGIN_QUARANTINED", { id, why: h.lastError }); }
-    else audit.append("PLUGIN_FAILURE", { id, why: h.lastError });
+    if (h.failures >= quarantineAfter) { h.quarantined = true; delete S.enabled[id]; if (S.theme === id) S.theme = null; rec("PLUGIN_QUARANTINED", { id, why: h.lastError }); }
+    else rec("PLUGIN_FAILURE", { id, why: h.lastError });
     save();
   }
   /** Invoke a hook inside an isolated child process. NEVER throws into the caller. */
   function invoke(id, hook, input = {}) {
     return new Promise(resolve => {
+      try { audit.reload(); } catch { return resolve({ ok: false, reason: "AUDIT_UNAVAILABLE" }); }       // no hook runs when its run cannot be audited
       const p = scan().found.get(id);
       if (!p || !own(S.enabled, id) || own(S.health, id)?.quarantined) return resolve({ ok: false, reason: !p ? "UNKNOWN_PLUGIN" : "NOT_ENABLED" });
       if (!p.manifest.entry) return resolve({ ok: false, reason: "NO_CODE_ENTRY" });
-      { let st = true; try { st = Boolean(isStopped()); } catch { /* fail closed */ } if (st) { audit.append("PLUGIN_HOOK_NOT_RUN", { id, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" }); return resolve({ ok: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" }); } }
-      { const en = own(S.enabled, id), now0 = dirHash(p.dir); if (!en?.hash || now0 !== en.hash) { audit.append("PLUGIN_HOOK_NOT_RUN", { id, reason: "CODE_CHANGED_SINCE_ENABLE" }); return resolve({ ok: false, reason: "CODE_CHANGED_SINCE_ENABLE" }); } }   // only the exact code the owner enabled ever runs
+      { let st = true; try { st = Boolean(isStopped()); } catch { /* fail closed */ } if (st) { rec("PLUGIN_HOOK_NOT_RUN", { id, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" }); return resolve({ ok: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" }); } }
+      { const en = own(S.enabled, id), now0 = dirHash(p.dir); if (!en?.hash || now0 !== en.hash) { rec("PLUGIN_HOOK_NOT_RUN", { id, reason: "CODE_CHANGED_SINCE_ENABLE" }); return resolve({ ok: false, reason: "CODE_CHANGED_SINCE_ENABLE" }); } }   // only the exact code the owner enabled ever runs
       let out = "", err = "", done = false, timer = null;
       const finish = r => { if (done) return; done = true; clearTimeout(timer); resolve(r); };
       let child;
@@ -137,7 +140,7 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
       // was granted at enable time; no child processes or workers (Node permission model). A host that cannot restrict Node does not run the hook at all (fails closed, no quarantine).
       const granted = own(S.enabled, id)?.permissions ?? [];
       const rc = restrictedNodeCommand({ nodeBin, script: path.join(p.dir, p.manifest.entry), readDirs: [p.dir], writeDirs: granted.includes("FILESYSTEM_PLUGIN_DIR") ? [p.dir] : [], allowNetwork: granted.includes("NETWORK"), requireNoNetwork: !granted.includes("NETWORK"), env: { ATLASZ_PLUGIN_ID: id, ATLASZ_PLUGIN_HOOK: String(hook) } });
-      if (!rc.ok) { audit.append("PLUGIN_HOOK_NOT_RUN", { id, reason: rc.reason }); return finish({ ok: false, reason: rc.reason }); }
+      if (!rc.ok) { rec("PLUGIN_HOOK_NOT_RUN", { id, reason: rc.reason }); return finish({ ok: false, reason: rc.reason }); }
       try { child = spawn(rc.cmd, rc.args, { cwd: p.dir, env: rc.env, stdio: ["pipe", "pipe", "pipe"], windowsHide: true }); }
       catch (e) { fail(id, "SPAWN_FAILED:" + e.message); return finish({ ok: false, reason: "SPAWN_FAILED" }); }
       timer = setTimeout(() => { child.kill("SIGKILL"); fail(id, "TIMEOUT"); finish({ ok: false, reason: "TIMEOUT" }); }, hookTimeoutMs);
@@ -147,7 +150,7 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
       child.on("close", code => {
         if (done) return;
         if (code !== 0) { fail(id, "EXIT_" + code + ":" + err.split("\n")[0]); return finish({ ok: false, reason: "PLUGIN_CRASHED", exit: code }); }
-        try { const r = JSON.parse(out); if (own(S.health, id)) S.health[id].failures = 0; audit.append("PLUGIN_HOOK_RUN", { id, hook: String(hook).slice(0, 40) }); save(); finish({ ok: true, result: r }); }
+        try { const r = JSON.parse(out); if (own(S.health, id)) S.health[id].failures = 0; rec("PLUGIN_HOOK_RUN", { id, hook: String(hook).slice(0, 40) }); save(); finish({ ok: true, result: r }); }
         catch { fail(id, "INVALID_JSON_OUTPUT"); finish({ ok: false, reason: "INVALID_OUTPUT" }); }
       });
       child.stdin.on("error", () => {}); child.stdin.end(JSON.stringify({ hook, input }));

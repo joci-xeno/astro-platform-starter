@@ -340,6 +340,44 @@ test("R6 round 2: a confirmed REFUTES cannot be flipped to SUPPORTS by editing t
     const f2 = w.rl.addFinding(q2.id, { claim: "The monthly rent for the Maple Street warehouse is 4200 dollars" }, OWNER);
     w.att(f2.id, { citation: fresh }, OWNER); assert.equal(w.rl.report(q2.id, OWNER).verifiedFacts.length, 1);
     w.att(f2.id, { citation: old, relation: "REFUTES", confirm: false }, OWNER);
-    const r = w.rl.report(q2.id, OWNER); assert.equal(r.verifiedFacts.length, 0); assert.equal(r.conflicted.length, 1); assert.ok(r.conflicted[0].reasons.includes("AGED_REFUTING_EVIDENCE_NOT_RESOLVED"), JSON.stringify(r.conflicted[0].reasons));
+    const r = w.rl.report(q2.id, OWNER); assert.equal(r.verifiedFacts.length, 0); assert.equal(r.conflicted.length, 1); assert.ok(r.conflicted[0].reasons.includes("REFUTING_EVIDENCE_NOT_CURRENTLY_VERIFIABLE_NOT_RESOLVED"), JSON.stringify(r.conflicted[0].reasons));
+  } finally { w.done(); }
+});
+
+test("R6 round 3: removing a refuting source or editing the store (dropping evidence, flipping a contradiction) cannot turn a conflict into a verified fact", async () => {
+  const w = await world();
+  try {
+    const q = w.rl.openQuestion({ projectId: w.p.id, text: "Is the rent 4200?" }, OWNER);
+    w.web("Fresh", RENT, "https://example.org/fresh"); w.web("Other", "The monthly rent for the Maple Street warehouse is not 4200 dollars, it was raised.", "https://example.org/o");
+    const hits = w.kp.search(w.p.id, { query: "monthly rent Maple Street warehouse", ...OWNER }).results, fresh = hits.find(h => h.text.includes("payable")).citation, no = hits.find(h => h.text.includes("raised")).citation;
+    const fi = w.rl.addFinding(q.id, { claim: "The monthly rent for the Maple Street warehouse is 4200 dollars" }, OWNER);
+    w.att(fi.id, { citation: fresh }, OWNER); w.att(fi.id, { citation: no, relation: "REFUTES" }, OWNER);
+    assert.equal(w.rl.report(q.id, OWNER).conflicted.length, 1);
+    const file = path.join(w.d, "rl.json"), orig = fs.readFileSync(file, "utf8");
+    // 1) the refuting source is removed from the knowledge project
+    w.kp.removeMember(w.p.id, { tenantId: T, memberId: no.memberId });
+    let r = w.mk().report(q.id, OWNER); assert.equal(r.verifiedFacts.length, 0, "a refuter that can no longer be read keeps the finding conflicted"); assert.equal(r.conflicted.length, 1);
+    // 2) the evidence item is deleted from the store file only
+    fs.writeFileSync(file, orig); const j = JSON.parse(orig); const F = Object.values(j.findings)[0]; F.evidence = F.evidence.filter(e => e.relation !== "REFUTES"); fs.writeFileSync(file, JSON.stringify(j));
+    r = w.mk().report(q.id, OWNER); assert.equal(r.verifiedFacts.length, 0); assert.ok(JSON.stringify(r.conflicted).includes("EVIDENCE_REMOVED_OUTSIDE_LEDGER"));
+  } finally { w.done(); }
+});
+
+test("R6 round 3: a contradiction marked RESOLVED (or deleted) in the store without a chain event is still treated as open", async () => {
+  const w = await world();
+  try {
+    const q = w.rl.openQuestion({ projectId: w.p.id, text: "Rent?" }, OWNER);
+    w.web("A", RENT, "https://example.org/a"); w.web("B", RENT2, "https://example.org/b");
+    const hits = w.kp.search(w.p.id, { query: "monthly rent Maple Street warehouse", ...OWNER }).results, ca = hits.find(h => h.text.includes("4200")).citation, cb = hits.find(h => h.text.includes("4800")).citation;
+    const fa = w.rl.addFinding(q.id, { claim: "The monthly rent for the Maple Street warehouse is 4200 dollars" }, OWNER), fb = w.rl.addFinding(q.id, { claim: "The monthly rent for the Maple Street warehouse is 4800 dollars" }, OWNER);
+    w.att(fa.id, { citation: ca }, OWNER); w.att(fb.id, { citation: cb }, OWNER);
+    const k = w.rl.declareContradiction(fa.id, fb.id, { note: "different rents" }, OWNER);
+    const file = path.join(w.d, "rl.json"), orig = fs.readFileSync(file, "utf8");
+    const j = JSON.parse(orig); j.contradictions[k.id].state = "RESOLVED"; j.contradictions[k.id].resolution = { winner: fa.id, by: "OWNER", at: w.now() }; fs.writeFileSync(file, JSON.stringify(j));
+    let r = w.mk().report(q.id, OWNER); assert.equal(r.verifiedFacts.length, 0, JSON.stringify(r.verifiedFacts.map(x => x.claim)));
+    const j2 = JSON.parse(orig); delete j2.contradictions[k.id]; fs.writeFileSync(file, JSON.stringify(j2));
+    r = w.mk().report(q.id, OWNER); assert.equal(r.verifiedFacts.length, 0); assert.ok(JSON.stringify(r.conflicted).includes("CONTRADICTION_REMOVED_OUTSIDE_LEDGER"));
+    fs.writeFileSync(file, orig); w.mk().resolveContradiction(k.id, { winner: fa.id, note: "owner decided" }, OWNER);
+    r = w.mk().report(q.id, OWNER); assert.equal(r.verifiedFacts.length, 1, "a real owner resolution still works");
   } finally { w.done(); }
 });

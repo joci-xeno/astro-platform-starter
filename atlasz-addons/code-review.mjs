@@ -102,7 +102,7 @@ export function reviewCode(input) {
       }
     }
   }
-  const SUPPORTED = /(^|\/)(?:[^/.]+|\.env[^/]*|[^/]*\.(?:js|mjs|cjs|jsx|ts|tsx|py|sh|bash|json|md|txt|rst|yml|yaml|html|htm|css|toml|ini|cfg|conf|xml|env|csv|lock))$/i;   // closed list of what has rules; every other extension is reported as NOT reviewed
+  const SUPPORTED = /(^|\/)(?:\.env(?:\.[^/]*)?|[^/]*\.(?:js|mjs|cjs|jsx|ts|tsx|py|sh|bash|json|md|txt|rst|yml|yaml|html|htm|css|toml|ini|cfg|conf|xml|env|csv|lock))$/i;   // closed list of what has rules; every other extension is reported as NOT reviewed
   const UNSUPPORTED = { test: p => !SUPPORTED.test(p) }; let unsupported = 0;
   for (const f of files) if (UNSUPPORTED.test(f.path)) { unsupported++; add({ rule: "UNSUPPORTED_LANGUAGE", severity: "INFO", file: f.path, line: 0, message: "No rules exist for this language: the file was NOT reviewed.", snippet: "" }); }
   findings.sort((a, b) => SEV[b.severity] - SEV[a.severity] || (a.file < b.file ? -1 : a.file > b.file ? 1 : a.line - b.line));

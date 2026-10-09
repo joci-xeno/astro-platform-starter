@@ -30,7 +30,8 @@ export function createTutor({ file = null, now: nowFn = () => Date.now() } = {})
     if (typeof id !== "string" || !ID.test(id)) return { ok: false, reason: "COURSE_ID_INVALID" };
     if (!str(title, 160)) return { ok: false, reason: "TITLE_INVALID" };
     if (bad(title)) return { ok: false, reason: "SECRET_IN_INPUT" };
-    if (course(tenantId, id)) return { ok: false, reason: "COURSE_EXISTS" };
+    if (tenantOk(tenantId) && ownProp(d.courses, key(tenantId, id))) return { ok: false, reason: "COURSE_EXISTS" };      // an unreadable stored course still counts as existing: it is never silently overwritten
+    { const t0 = now(); if (!Number.isFinite(t0) || t0 < 0 || t0 > 3.9e12) return { ok: false, reason: "CLOCK_INVALID" }; }
     if (Object.values(d.courses).filter(c => c && c.tenantId === tenantId).length >= LIMITS.maxCourses) return { ok: false, reason: "TOO_MANY_COURSES" };
     if (!Array.isArray(lessons) || !lessons.length || lessons.length > LIMITS.maxLessons || Object.keys(lessons).length !== lessons.length) return { ok: false, reason: "LESSONS_INVALID" };
     if (!Array.isArray(questions) || !questions.length || questions.length > LIMITS.maxQuestions || Object.keys(questions).length !== questions.length) return { ok: false, reason: "QUESTIONS_INVALID" };
@@ -67,7 +68,8 @@ export function createTutor({ file = null, now: nowFn = () => Date.now() } = {})
     const c = course(tenantId, courseId); if (!c) return { ok: false, reason: "COURSE_NOT_FOUND" };
     if (!Number.isInteger(count) || count < 1 || count > LIMITS.maxQuiz) return { ok: false, reason: "COUNT_INVALID" };
     if (lessonId !== null && !c.lessons.some(l => l.id === lessonId)) return { ok: false, reason: "LESSON_NOT_FOUND" };
-    const t = now(), pool = c.questions.filter(q => lessonId === null || q.lessonId === lessonId);
+    const t = now(); if (!Number.isFinite(t) || t < 0 || t > 3.9e12) return { ok: false, reason: "CLOCK_INVALID" };
+    const pool = c.questions.filter(q => lessonId === null || q.lessonId === lessonId);
     const rank = q => (q.seen === 0 ? [1, 0, 0] : q.dueAt <= t ? [0, q.box, q.dueAt] : [2, q.dueAt, q.box]);
     const picked = [...pool].sort((a, b) => { const x = rank(a), y = rank(b); for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] - y[i]; return a.id < b.id ? -1 : 1; }).slice(0, count);
     return { ok: true, questions: picked.map(q => ({ id: q.id, lessonId: q.lessonId, prompt: q.prompt, choices: [...q.choices], due: q.seen === 0 ? "NEW" : q.dueAt <= t ? "DUE" : "NOT_DUE" })) };
@@ -78,7 +80,7 @@ export function createTutor({ file = null, now: nowFn = () => Date.now() } = {})
     const c = course(tenantId, courseId); if (!c) return { ok: false, reason: "COURSE_NOT_FOUND" };
     const q = c.questions.find(x => x.id === questionId); if (!q) return { ok: false, reason: "QUESTION_NOT_FOUND" };
     if (!Number.isInteger(choiceIndex) || choiceIndex < 0 || choiceIndex >= q.choices.length) return { ok: false, reason: "CHOICE_INVALID" };
-    const t = now(); if (!Number.isFinite(t) || Math.abs(t) > 8.64e15 - 40 * DAY * 1000) return { ok: false, reason: "CLOCK_INVALID" };       // nothing is changed on a broken clock
+    const t = now(); if (!Number.isFinite(t) || t < 0 || t > 3.9e12) return { ok: false, reason: "CLOCK_INVALID" };       // nothing is changed on a broken clock
     const right = choiceIndex === q.answerIndex;
     const wasDue = q.seen === 0 || q.dueAt <= t;     // answering again before the review is due is practice only: it cannot raise the box (no gaming "mastery" with instant repeats)
     q.seen++; if (wasDue || !right) { q.cSeen = (q.cSeen ?? 0) + 1; if (right) q.cCorrect = (q.cCorrect ?? 0) + 1; }       // accuracy counts only answers that counted for review: instant repeats are practice and cannot inflate it
@@ -108,7 +110,7 @@ export function createTutor({ file = null, now: nowFn = () => Date.now() } = {})
   }
   function remove({ tenantId, courseId, actor } = {}) {
     if (!owner(actor)) return { ok: false, reason: "ONLY_OWNER_MAY_DELETE" };
-    if (!course(tenantId, courseId)) return { ok: false, reason: "COURSE_NOT_FOUND" };
+    if (!(tenantOk(tenantId) && typeof courseId === "string" && ownProp(d.courses, key(tenantId, courseId)))) return { ok: false, reason: "COURSE_NOT_FOUND" };      // the owner can delete a course even when its stored shape is unreadable
     delete d.courses[key(tenantId, courseId)]; store.save(); return { ok: true };
   }
   return { createCourse, list, lesson, startQuiz, answer, progress, plan, remove };

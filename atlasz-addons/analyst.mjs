@@ -118,11 +118,11 @@ export function analyze(csvText, { ops = [] } = {}) {
   const hs = x => scrub(String(x)), body = { inputHash: p.inputHash, rows: c.rows.length, columns: c.headers.length, steps: c.log, profile: prof.map(x => ({ ...x, column: hs(x.column) })), stats: Object.fromEntries(Object.entries(stats).map(([k, v]) => [hs(k), v])), correlations: corr.map(x => ({ ...x, a: hs(x.a), b: hs(x.b) })) };
   return { ok: true, report: { ...body, reportHash: sha(JSON.stringify(body)) }, data: { headers: c.headers, rows: c.rows }, charts: chartSpecs(c, prof), note: "Descriptive statistics only. Correlation is not causation." };
 }
-const md = v => scrub(String(v).replace(/[\r\n\u2028\u2029]+/g, " ").replace(/\|/g, "\\|").replace(/[`*_#<>]/g, " "));
+const md = v => scrub(String(v).replace(/[\r\n\u2028\u2029]+/g, " ").replace(/\|/g, "\\|").replace(/[`*_#<>\[\]()!\\&~]/g, " "));
 /** The cleaned table as CSV (formula-neutralised by toCsv) so the owner can take the result away. */
 export const cleanedCsv = result => (result?.ok ? toCsv(result.data.headers, result.data.rows) : null);
 export function reportToMarkdown(rep) {
-  const L = ["# Analysis report", "", `Input hash: \`${rep.inputHash}\`  `, `Report hash: \`${rep.reportHash}\`  `, `Rows: ${rep.rows}, columns: ${rep.columns}`, "", "## Steps", ...(rep.steps.length ? rep.steps.map(s => "- " + JSON.stringify(s)) : ["- (none)"]), "", "## Columns", "| column | type | missing | unique |", "|---|---|---|---|", ...rep.profile.map(p => `| ${md(p.column)} | ${p.type} | ${p.missing} | ${p.unique} |`), "", "## Statistics"];
+  const L = ["# Analysis report", "", `Input hash: \`${rep.inputHash}\`  `, `Report hash: \`${rep.reportHash}\`  `, `Rows: ${rep.rows}, columns: ${rep.columns}`, "", "## Steps", ...(rep.steps.length ? rep.steps.map(s => "- " + md(JSON.stringify(s))) : ["- (none)"]), "", "## Columns", "| column | type | missing | unique |", "|---|---|---|---|", ...rep.profile.map(p => `| ${md(p.column)} | ${p.type} | ${p.missing} | ${p.unique} |`), "", "## Statistics"];
   for (const [k, s] of Object.entries(rep.stats)) L.push(`- **${md(k)}**: n=${s.count}, mean=${+s.mean.toPrecision(6)}, std=${+s.std.toPrecision(6)}, min=${s.min}, median=${s.median}, max=${s.max}`);
   if (rep.correlations.length) { L.push("", "## Correlations (Pearson)"); for (const c of rep.correlations) L.push(`- ${md(c.a)} ~ ${md(c.b)}: r=${+c.r.toPrecision(4)} (n=${c.n})`); }
   return L.join("\n") + "\n";

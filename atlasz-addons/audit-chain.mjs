@@ -46,9 +46,16 @@ export function createAuditChain({ filePath = null, now = () => new Date().toISO
   if (!initial.ok) throw new Error("AUDIT_CHAIN_TAMPERED:" + initial.reason + "@" + initial.brokenAt);
   if (filePath) fs.mkdirSync(path.dirname(filePath), { recursive: true });
 
+  /** A crash mid-append can leave a final line without its newline. A complete entry just gets its newline; an unparseable fragment is cut off (it was never a valid entry), so the next entry does not glue onto it and turn ordinary crash recovery into a permanent "tampered" state. */
+  function healTail() {
+    let raw; try { raw = fs.readFileSync(filePath, "utf8"); } catch { return; }
+    if (!raw || raw.endsWith("\n")) return;
+    const nl = raw.lastIndexOf("\n"), frag = raw.slice(nl + 1); let whole = false; try { JSON.parse(frag); whole = true; } catch { /* torn */ }
+    if (whole) fs.appendFileSync(filePath, "\n"); else fs.truncateSync(filePath, Buffer.byteLength(raw.slice(0, nl + 1)));
+  }
   function append(event, data = {}) {
     if (!event) throw new Error("AUDIT_EVENT_REQUIRED");
-    if (filePath) reload();                                  // another manager in this process (or the owner CLI) may have appended since we last looked: continue the real tail, never fork the chain
+    if (filePath) { reload(); healTail(); }                                  // another manager in this process (or the owner CLI) may have appended since we last looked: continue the real tail, never fork the chain
     const prev = entries.length ? entries[entries.length - 1].hash : GENESIS;
     const e = { seq: entries.length + 1, at: now(), event: String(event), data: structuredClone(data), prevHash: prev };
     e.hash = hashEntry(e);
