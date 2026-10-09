@@ -62,7 +62,7 @@ export function clean(data, ops = []) {
       else if (o.op === "toNumber") { const i = col(o.column); let bad = 0; rows = rows.map(r => { const v = r[i]; if (isNum(v)) r[i] = Number(v); else { if (!isBlank(v)) bad++; r[i] = null; } return r; }); log.push({ op: "toNumber", column: sc(o.column), invalidToNull: bad }); }
       else if (o.op === "fillMissing") {
         const i = col(o.column), blank = isBlank; let fill;
-        if ("value" in o) fill = o.value; else { const nums = rows.map(r => r[i]).filter(v => !blank(v) && isNum(v)).map(Number); if (!nums.length) throw new Error("NO_NUMERIC_VALUES:" + o.column); fill = o.strategy === "median" ? describe(nums).median : o.strategy === "mean" ? describe(nums).mean : (() => { throw new Error("STRATEGY_INVALID"); })(); }
+        if ("value" in o) { fill = o.value; if (!(typeof fill === "string" || typeof fill === "boolean" || (typeof fill === "number" && Number.isFinite(fill)))) throw new Error("FILL_VALUE_INVALID"); } else { const nums = rows.map(r => r[i]).filter(v => !blank(v) && isNum(v)).map(Number); if (!nums.length) throw new Error("NO_NUMERIC_VALUES:" + sc(o.column).slice(0, 60)); fill = o.strategy === "median" ? describe(nums).median : o.strategy === "mean" ? describe(nums).mean : (() => { throw new Error("STRATEGY_INVALID"); })(); }
         let n = 0; rows = rows.map(r => { if (blank(r[i])) { r[i] = fill; n++; } return r; }); log.push({ op: "fillMissing", column: sc(o.column), filled: n, with: sc(fill) });
       } else throw new Error("OP_UNKNOWN:" + sc(String(o.op)).slice(0, 40));
     }

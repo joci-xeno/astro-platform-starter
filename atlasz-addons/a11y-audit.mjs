@@ -35,7 +35,7 @@ function blocks(css) {
     while (i < t.length) {
       const semi = t.indexOf(";", i), open = t.indexOf("{", i);
       if (open < 0) break;
-      if (semi >= 0 && semi < open) { i = semi + 1; continue; }                                    // statement at-rule such as @import / @charset
+      if (semi >= 0 && semi < open) { if (/^@import\b/i.test(t.slice(i, semi))) out.unsupported.push("EXTERNAL_STYLESHEET_NOT_EVALUATED:@import"); i = semi + 1; continue; }                                    // statement at-rule such as @import / @charset
       const prelude = t.slice(i, open).trim(), end = close(t, open + 1); if (end < 0) { out.unsupported.push("UNBALANCED_BRACES"); break; }
       const body = t.slice(open + 1, end);
       if (prelude.startsWith("@")) {
@@ -71,7 +71,7 @@ function htmlTags(html) {
   const ATTR = /([^\s"'<>\/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
   while (i < html.length && out.length < LIMITS.maxTags) {
     const a = html.indexOf("<", i); if (a < 0) break;
-    if (html.startsWith("<!--", a)) { const z = html.indexOf("-->", a + 2); if (z < 0) break; i = z + 3; continue; }       // "<!-->" is a complete (empty) comment, as in browsers
+    if (html.startsWith("<!--", a)) { const z1 = html.indexOf("-->", a + 2), z2 = html.indexOf("--!>", a + 2), z = z1 < 0 ? z2 : z2 < 0 ? z1 : Math.min(z1, z2); if (z < 0) break; i = z + (z === z2 ? 4 : 3); continue; }       // "<!-->" is a complete (empty) comment, as in browsers
     const z = html.indexOf(">", a + 1); if (z < 0) break; const m = /^<(\/?)([A-Za-z][A-Za-z0-9-]*)/.exec(html.slice(a, a + 60)); i = z + 1; if (!m) continue;
     const nextLt = html.indexOf("<", z + 1), name = m[2].toLowerCase(), attrs = html.slice(a + m[0].length, z), map = new Map();
     for (const am of attrs.matchAll(ATTR)) { const k = am[1].toLowerCase(); if (!map.has(k)) map.set(k, am[2] ?? am[3] ?? am[4] ?? ""); }
@@ -101,7 +101,8 @@ export const REMEDIATION = Object.freeze({
   PLACEHOLDER_ONLY_LABEL: "Add a <label> or aria-label; a placeholder is not an accessible name.", NO_LABEL_ELEMENTS: "Build <label> elements (or aria-label) for form controls.",
   BUTTON_NAME: "Give every button visible text or an aria-label.", INPUT_LABEL: "Associate a <label for=id> (or wrap the control in <label>) or add aria-label / aria-labelledby.", DUPLICATE_ID: "Make every id unique.", ARIA_HIDDEN_FOCUSABLE: "Remove aria-hidden from focusable elements, or make them non-focusable (disabled / tabindex=-1 / inert).", ZOOM_BLOCKED: "Do not disable zooming (user-scalable=no / maximum-scale < 2)."
 });
-export function auditAccessibility({ html = "", css = "", js = "" } = {}) {
+export function auditAccessibility({ html = "", css = "", js = "", cssSources = [] } = {}) {
+  const covered = new Set((Array.isArray(cssSources) ? cssSources : []).filter(x => typeof x === "string").slice(0, 10));   // hrefs of the <link> stylesheets whose text the caller supplied as `css`
   for (const x of [html, css, js]) if (typeof x !== "string" || x.length > LIMITS.maxInputChars) return { ok: false, reason: "INPUT_INVALID_OR_TOO_LARGE" };
   const findings = []; let truncated = false; const total = { FAIL: 0, WARN: 0, INFO: 0 }; const add = (severity, rule, message, detail = {}) => { total[severity]++; if (findings.length >= LIMITS.maxFindings) { truncated = true; return; } findings.push({ severity, rule, message, ...detail }); };
   // ---- contrast of declared pairs, per theme AND per condition variant (a conditional rule is evaluated in its own variant; it never hides a failure of the base)
@@ -139,13 +140,17 @@ export function auditAccessibility({ html = "", css = "", js = "" } = {}) {
   for (const t of by("img")) if (attr(t, "alt") === undefined) add("FAIL", "IMG_ALT", "An <img> has no alt attribute.");
   { // form controls, buttons, ids, hidden-but-focusable (markup only; a control inside a <label> counts as labelled)
     const labelFor = new Set(by("label").map(t => attr(t, "for")).filter(x => x !== undefined)); let inLabel = 0, unlabeled = 0, emptyButtons = 0; const ids = new Map(), dup = new Set();
+    const VOID = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"]), hid = [];
     for (let k = 0; k < tg.length; k++) { const t = tg[k];
+      const hiddenSelf = !t.closing && String(attr(t, "aria-hidden") ?? "").trim().toLowerCase() === "true";
+      if (hid.length && !hiddenSelf && t.name === hid.at(-1).name && !VOID.has(t.name)) { if (t.closing) { if (hid.at(-1).d === 0) hid.pop(); else hid.at(-1).d--; } else hid.at(-1).d++; }
       if (t.name === "label") { inLabel += t.closing ? -1 : 1; if (inLabel < 0) inLabel = 0; continue; }
       if (t.closing) continue; const id = attr(t, "id"); if (id !== undefined && id !== "") { if (ids.has(id)) dup.add(id); ids.set(id, 1); }
       if (["input", "textarea", "select"].includes(t.name)) { const type = (attr(t, "type") ?? "text").toLowerCase(); if (["hidden", "submit", "button", "reset", "image"].includes(type)) continue;
         if (!inLabel && !attr(t, "aria-label")?.trim() && attr(t, "aria-labelledby") === undefined && !(id && labelFor.has(id))) unlabeled++; }
       if (t.name === "button" && !attr(t, "aria-label")?.trim() && attr(t, "aria-labelledby") === undefined && !attr(t, "title")?.trim()) { const nextClose = tg.findIndex((x, j) => j > k && x.name === "button" && x.closing), inner = tg.slice(k + 1, nextClose < 0 ? k + 1 : nextClose); if (!t.text.trim() && !inner.some(x => (x.name === "img" && attr(x, "alt")?.trim()) || attr(x, "aria-label")?.trim())) emptyButtons++; }
-      if (attr(t, "aria-hidden") === "true" && (["a", "button", "input", "select", "textarea"].includes(t.name) || (attr(t, "tabindex") !== undefined && Number(attr(t, "tabindex")) >= 0))) add("FAIL", "ARIA_HIDDEN_FOCUSABLE", "A focusable <" + t.name + "> is hidden from assistive technology with aria-hidden=\"true\".");
+      if (hiddenSelf && !VOID.has(t.name)) hid.push({ name: t.name, d: 0 });
+      if ((hiddenSelf || hid.length) && (["a", "button", "input", "select", "textarea"].includes(t.name) || (attr(t, "tabindex") !== undefined && Number(attr(t, "tabindex")) >= 0))) add("FAIL", "ARIA_HIDDEN_FOCUSABLE", "A focusable <" + t.name + "> is hidden from assistive technology with aria-hidden=\"true\".");
     }
     if (unlabeled) add("FAIL", "INPUT_LABEL", unlabeled + " form control(s) in the markup have no label, aria-label or aria-labelledby.", { count: unlabeled });
     if (emptyButtons) add("FAIL", "BUTTON_NAME", emptyButtons + " <button> element(s) in the markup have no accessible name.", { count: emptyButtons });
@@ -163,7 +168,7 @@ export function auditAccessibility({ html = "", css = "", js = "" } = {}) {
   if (!/h\(\s*["'`]label["'`]/.test(js) && inputs.length && !namesFromPlaceholder) add("WARN", "NO_LABEL_ELEMENTS", "The script never builds <label> elements for its form controls.");
   for (const m of callArgs(js, /h\(\s*["'`]button["'`]\s*,\s*\{/g)) if (/^\s*,\s*(?:""|''|``)\s*\)/.test(js.slice(m.end + 1, m.end + 40))) add("FAIL", "BUTTON_NAME", "A script-built button has an empty name.");
   const sev = total;   // true totals, not only the findings that fit in the list
-  const incomplete = []; if (truncated) incomplete.push("FINDINGS_TRUNCATED"); if (unresolved) incomplete.push("CONTRAST_PAIRS_UNRESOLVED:" + unresolved); if (!checked) incomplete.push("NO_CONTRAST_PAIRS_CHECKED"); for (const u of bl.unsupported.slice(0, 10)) incomplete.push(u); if (skipped.length) incomplete.push("COLOUR_RULES_NOT_EVALUATED:" + skipped.length); if (!html.trim()) incomplete.push("NO_HTML_SUPPLIED"); if (!css.trim()) incomplete.push("NO_CSS_SUPPLIED");
+  const incomplete = []; if (truncated) incomplete.push("FINDINGS_TRUNCATED"); if (unresolved) incomplete.push("CONTRAST_PAIRS_UNRESOLVED:" + unresolved); if (!checked) incomplete.push("NO_CONTRAST_PAIRS_CHECKED"); for (const u of bl.unsupported.slice(0, 10)) incomplete.push(u); if (tg.some(t => t.name === "link" && !t.closing && /(^|\s)stylesheet(\s|$)/i.test(attr(t, "rel") ?? "") && !covered.has(attr(t, "href") ?? ""))) incomplete.push("EXTERNAL_STYLESHEET_NOT_EVALUATED:<link>"); if (skipped.length) incomplete.push("COLOUR_RULES_NOT_EVALUATED:" + skipped.length); if (!html.trim()) incomplete.push("NO_HTML_SUPPLIED"); if (!css.trim()) incomplete.push("NO_CSS_SUPPLIED");
   const enriched = findings.map(f => ({ ...f, location: f.selector ? "css: " + f.selector : "rule " + f.rule, remediation: REMEDIATION[f.rule] ?? "Review this item manually." }));
   // A clean-looking result is only ever reported for a COMPLETE audit; otherwise it is INCOMPLETE_AUDIT (failures that were found are still reported as FAIL_FOUND).
   return { ok: true, verdict: sev.FAIL ? "FAIL_FOUND" : incomplete.length ? "INCOMPLETE_AUDIT" : sev.WARN ? "WARNINGS_ONLY" : "NO_FAILS_BY_THESE_CHECKS", complete: incomplete.length === 0, incomplete, counts: sev, findings: enriched, truncated, contrast: { pairsChecked: checked, unresolved, unresolvedPairs: unresolvedList, notEvaluated: skipped.slice(0, 20) },

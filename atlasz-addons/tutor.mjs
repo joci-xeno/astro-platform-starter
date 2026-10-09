@@ -16,7 +16,10 @@ export function createTutor({ file = null, now: nowFn = () => Date.now() } = {})
   const key = (t, id) => t + "\u0000" + id;
   const tenantOk = t => typeof t === "string" && TENANT.test(t);
   // A course whose stored shape is wrong (hand-edited file) is treated as absent instead of crashing half way through a write.
-  const sane = c => c && typeof c === "object" && Array.isArray(c.lessons) && Array.isArray(c.questions) && Array.isArray(c.attempts) && c.questions.every(q => q && typeof q === "object" && Number.isInteger(q.box) && q.box >= 0 && q.box < BOX_DAYS.length && Number.isFinite(q.dueAt) && Number.isInteger(q.seen) && Number.isInteger(q.correct));
+  const okQ = q => q && typeof q === "object" && typeof q.id === "string" && typeof q.lessonId === "string" && Number.isInteger(q.box) && q.box >= 0 && q.box < BOX_DAYS.length && Number.isFinite(q.dueAt) && q.dueAt >= 0 && q.dueAt < 4e12 && Number.isInteger(q.seen) && q.seen >= 0 && Number.isInteger(q.correct) && q.correct >= 0 && q.correct <= q.seen
+    && Array.isArray(q.choices) && q.choices.length >= 2 && q.choices.length <= 50 && q.choices.every(x => typeof x === "string") && Number.isInteger(q.answerIndex) && q.answerIndex >= 0 && q.answerIndex < q.choices.length
+    && (q.cSeen === undefined || (Number.isInteger(q.cSeen) && q.cSeen >= 0 && q.cSeen <= q.seen && (q.cCorrect === undefined || (Number.isInteger(q.cCorrect) && q.cCorrect >= 0 && q.cCorrect <= q.cSeen)))) && (q.seen > 0 || q.box === 0);
+  const sane = c => c && typeof c === "object" && Array.isArray(c.lessons) && c.lessons.every(l => l && typeof l === "object" && typeof l.id === "string") && Array.isArray(c.questions) && Array.isArray(c.attempts) && c.questions.every(okQ);
   const course = (t, id) => { if (!(tenantOk(t) && typeof id === "string")) return null; const c = ownProp(d.courses, key(t, id)) ?? null; return sane(c) ? c : null; };
   const owner = actor => actor === "OWNER";
   const str = (v, n) => typeof v === "string" && v.trim() !== "" && v.length <= n;
@@ -28,7 +31,7 @@ export function createTutor({ file = null, now: nowFn = () => Date.now() } = {})
     if (!str(title, 160)) return { ok: false, reason: "TITLE_INVALID" };
     if (bad(title)) return { ok: false, reason: "SECRET_IN_INPUT" };
     if (course(tenantId, id)) return { ok: false, reason: "COURSE_EXISTS" };
-    if (Object.values(d.courses).filter(c => c.tenantId === tenantId).length >= LIMITS.maxCourses) return { ok: false, reason: "TOO_MANY_COURSES" };
+    if (Object.values(d.courses).filter(c => c && c.tenantId === tenantId).length >= LIMITS.maxCourses) return { ok: false, reason: "TOO_MANY_COURSES" };
     if (!Array.isArray(lessons) || !lessons.length || lessons.length > LIMITS.maxLessons || Object.keys(lessons).length !== lessons.length) return { ok: false, reason: "LESSONS_INVALID" };
     if (!Array.isArray(questions) || !questions.length || questions.length > LIMITS.maxQuestions || Object.keys(questions).length !== questions.length) return { ok: false, reason: "QUESTIONS_INVALID" };
     const lessonIds = new Set(), L = [];
@@ -53,7 +56,7 @@ export function createTutor({ file = null, now: nowFn = () => Date.now() } = {})
   }
 
   const view = c => ({ id: c.id, title: c.title, lessons: c.lessons.map(l => ({ id: l.id, title: l.title })), questions: c.questions.length });
-  const list = ({ tenantId } = {}) => (tenantOk(tenantId) ? Object.values(d.courses).filter(c => c.tenantId === tenantId).map(view) : []);
+  const list = ({ tenantId } = {}) => (tenantOk(tenantId) ? Object.values(d.courses).filter(c => c && c.tenantId === tenantId && sane(c)).map(view) : []);
   function lesson({ tenantId, courseId, lessonId } = {}) {
     const c = course(tenantId, courseId); if (!c) return { ok: false, reason: "COURSE_NOT_FOUND" };
     const l = c.lessons.find(x => x.id === lessonId); return l ? { ok: true, lesson: clone(l) } : { ok: false, reason: "LESSON_NOT_FOUND" };

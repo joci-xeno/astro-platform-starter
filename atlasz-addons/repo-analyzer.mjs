@@ -45,7 +45,7 @@ export function walkRepo(root) {
   return { ok: true, files, skipped, bytes: total, capped };
 }
 const contentHash = files => { const h = createHash("sha256"); for (const f of files) h.update(f.rel + "\0" + createHash("sha256").update(fs.readFileSync(f.abs)).digest("hex") + "\n"); return h.digest("hex"); };
-const reviewable = p => typeof p === "string" && p.length > 0 && p.length <= 240 && !/[\0\\]/.test(p) && !/^[A-Za-z]:/.test(p) && !/(^|\/)\.\.(\/|$)/.test(p);   // what reviewCode accepts as a path; anything else is reported as notReviewed.badPath instead of aborting the whole review
+const reviewable = p => typeof p === "string" && p.length > 0 && p.length <= 200 && !/[\0\\]/.test(p) && !/^[A-Za-z]:/.test(p) && !/(^|\/)\.\.(\/|$)/.test(p);   // what reviewCode accepts as a path; anything else is reported as notReviewed.badPath instead of aborting the whole review
 const isText = buf => !buf.subarray(0, 4096).includes(0);
 
 /** Read-only analysis: inventory, languages, tests, package scripts and a static review of the source files. */

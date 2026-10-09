@@ -378,7 +378,7 @@ export function createControlCenterCore({ a11yWorkerUrl = null, a11yTimeoutMs = 
     if (target === "control-center") {
       if (b.html !== undefined || b.css !== undefined || b.js !== undefined) throw new Error("A11Y_TEXT_ONLY_WITH_CUSTOM_TARGET");
       const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), "public"); input = {};
-      for (const [k, f] of [["html", "index.html"], ["css", "style.css"], ["js", "app.js"]]) input[k] = fs.readFileSync(path.join(dir, f), "utf8");
+      for (const [k, f] of [["html", "index.html"], ["css", "style.css"], ["js", "app.js"]]) input[k] = fs.readFileSync(path.join(dir, f), "utf8"); input.cssSources = ["/style.css"];
     } else {
       input = { html: b.html ?? "", css: b.css ?? "", js: b.js ?? "" };
       for (const v of Object.values(input)) if (typeof v !== "string") throw new Error("A11Y_TEXT_MUST_BE_STRINGS");

@@ -110,7 +110,7 @@ test("verdicts, limits and input validation; the verdict never says 'accessible'
 });
 
 test("the real Control Center passes its own accessibility checks in both themes (regression guard)", () => {
-  const r = auditAccessibility({ html: fs.readFileSync(path.join(PUB, "index.html"), "utf8"), css: fs.readFileSync(path.join(PUB, "style.css"), "utf8"), js: fs.readFileSync(path.join(PUB, "app.js"), "utf8") });
+  const r = auditAccessibility({ html: fs.readFileSync(path.join(PUB, "index.html"), "utf8"), css: fs.readFileSync(path.join(PUB, "style.css"), "utf8"), js: fs.readFileSync(path.join(PUB, "app.js"), "utf8"), cssSources: ["/style.css"] });
   assert.equal(r.verdict, "NO_FAILS_BY_THESE_CHECKS", JSON.stringify(r.findings)); assert.ok(r.contrast.pairsChecked >= 15, "the stylesheet's colour pairs were actually evaluated: " + r.contrast.pairsChecked);
 });
 
@@ -163,4 +163,16 @@ test("R6 verification regressions: dark-token selectors, conditional overrides, 
   // script-built controls in single quotes
   assert.ok(rules(fails(":root{--ink:#000;--bg:#fff}" + BODY, GOOD_HTML, "h('input', {type:'text', placeholder:'x'});")).includes("PLACEHOLDER_ONLY_LABEL") || rules(fails(":root{--ink:#000;--bg:#fff}" + BODY, GOOD_HTML, "h('input', {type:'text', placeholder:'x'});")).includes("NO_LABEL_ELEMENTS"));
   assert.ok(rules(fails(":root{--ink:#000;--bg:#fff}" + BODY, GOOD_HTML, "h('button', {}, '')")).includes("BUTTON_NAME"));
+});
+
+test("R6 verification regressions: external stylesheets, --!> comments and aria-hidden containers are never silently clean", () => {
+  const C = ":root{--bg:#fff;--ink:#000}body{color:var(--ink);background:var(--bg)}", H = b => "<html lang=en><head><title>t</title><meta name=viewport content='width=device-width'></head><body><main>" + b + "</main></body></html>";
+  const a = (h, c = C) => auditAccessibility({ html: h, css: c });
+  const l = a(H("<link rel=stylesheet href=x.css><p>x")); assert.equal(l.complete, false); assert.ok(l.incomplete.some(x => x.startsWith("EXTERNAL_STYLESHEET")));
+  assert.equal(auditAccessibility({ html: H("<link rel=stylesheet href=x.css><p>x"), css: C, cssSources: ["x.css"] }).complete, true, "a link whose text the caller supplied is covered");
+  const i = a(H("<p>x"), "@import url(x.css);" + C); assert.equal(i.complete, false); assert.ok(i.incomplete.some(x => x.startsWith("EXTERNAL_STYLESHEET")));
+  assert.ok(a(H("<!-- x --!><input>")).findings.some(f => f.rule === "INPUT_LABEL"), "a comment closed by --!> does not swallow the page");
+  assert.ok(a(H("<div aria-hidden=true><a href=#>x</a></div>")).findings.some(f => f.rule === "ARIA_HIDDEN_FOCUSABLE"));
+  assert.ok(a(H("<div aria-hidden=TRUE><div><span></span></div><button>b</button></div>")).findings.some(f => f.rule === "ARIA_HIDDEN_FOCUSABLE"));
+  assert.ok(!a(H("<div aria-hidden=true><div><span></span></div></div><a href=#>x</a>")).findings.some(f => f.rule === "ARIA_HIDDEN_FOCUSABLE"), "focusable content after the hidden container is fine");
 });

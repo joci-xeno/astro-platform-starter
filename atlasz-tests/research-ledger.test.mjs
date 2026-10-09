@@ -302,3 +302,44 @@ test("R6 verification regressions: digits of other scripts, 4.200 vs 4200, curly
     assert.throws(() => w.rl.attachEvidence("constructor", { citation: {} }, OWNER), /UNKNOWN_FINDING/);
   } finally { w.done(); }
 });
+
+test("R6 round 2: a confirmation is bound to claim, relation and retrieval date; an edited store cannot flip a refutation into a fact; an aged refutation is not ignored", async () => {
+  const w = await world();
+  try {
+    const q = w.rl.openQuestion({ projectId: w.p.id, text: "What is the monthly rent?" }, OWNER);
+    w.web("Listing A", RENT, "https://example.org/a");
+    const fi = w.rl.addFinding(q.id, { claim: "The monthly rent for the Maple Street warehouse is 4200 dollars" }, OWNER);
+    const c = w.kp.search(w.p.id, { query: "monthly rent Maple Street warehouse", ...OWNER }).results[0].citation;
+    w.att(fi.id, { citation: c }, OWNER);
+    const file = path.join(w.d, "rl.json"), edit = fn => { const j = JSON.parse(fs.readFileSync(file, "utf8")); fn(Object.values(j.findings)[0]); fs.writeFileSync(file, JSON.stringify(j)); };
+    assert.equal(w.mk().report(q.id, OWNER).verifiedFacts.length, 1);
+    edit(f => { f.claim = "The monthly rent for the Maple Street warehouse is 4200 dollars and the building is free"; });
+    assert.equal(w.mk().report(q.id, OWNER).verifiedFacts.length, 0, "an edited claim voids the confirmation");
+    edit(f => { f.claim = "The monthly rent for the Maple Street warehouse is 4200 dollars"; f.evidence[0].relation = "REFUTES"; });
+    assert.equal(w.mk().report(q.id, OWNER).verifiedFacts.length, 0, "an edited relation voids the confirmation");
+    edit(f => { f.evidence[0].relation = "SUPPORTS"; f.evidence[0].retrievedAt = "2026-10-06T12:00:00.000Z"; });
+    assert.equal(w.mk().report(q.id, OWNER).verifiedFacts.length, 0, "an edited retrieval date voids the confirmation");
+    edit(f => { f.evidence[0].retrievedAt = w.now(); });
+    assert.equal(w.mk().report(q.id, OWNER).verifiedFacts.length, 1, "restoring the confirmed content restores the confirmation");
+  } finally { w.done(); }
+});
+
+test("R6 round 2: a confirmed REFUTES cannot be flipped to SUPPORTS by editing the store; an aged refuting source keeps a supported finding CONFLICTED", async () => {
+  const w = await world();
+  try {
+    const q = w.rl.openQuestion({ projectId: w.p.id, text: "Is parking included?" }, OWNER);
+    w.web("Terms", "Parking is not included in the monthly rent for the warehouse.", "https://example.org/t");
+    const no = w.kp.search(w.p.id, { query: "parking included monthly rent warehouse", ...OWNER }).results[0].citation;
+    const fi = w.rl.addFinding(q.id, { claim: "Parking is included in the monthly rent for the warehouse" }, OWNER);
+    w.att(fi.id, { citation: no, relation: "REFUTES" }, OWNER);
+    const file = path.join(w.d, "rl.json"), j = JSON.parse(fs.readFileSync(file, "utf8")); Object.values(j.findings)[0].evidence[0].relation = "SUPPORTS"; fs.writeFileSync(file, JSON.stringify(j));
+    assert.equal(w.mk().report(q.id, OWNER).verifiedFacts.length, 0, "the owner confirmed a refutation, not support");
+    const q2 = w.rl.openQuestion({ projectId: w.p.id, text: "Is the rent 4200?" }, OWNER);
+    w.web("Fresh", RENT, "https://example.org/fresh"); w.web("Old", "The monthly rent for the Maple Street warehouse is not 4200 dollars, it was raised.", "https://example.org/old", "2026-05-01T00:00:00.000Z");
+    const hits = w.kp.search(w.p.id, { query: "monthly rent Maple Street warehouse", ...OWNER }).results, fresh = hits.find(h => h.text.includes("payable")).citation, old = hits.find(h => h.text.includes("raised")).citation;
+    const f2 = w.rl.addFinding(q2.id, { claim: "The monthly rent for the Maple Street warehouse is 4200 dollars" }, OWNER);
+    w.att(f2.id, { citation: fresh }, OWNER); assert.equal(w.rl.report(q2.id, OWNER).verifiedFacts.length, 1);
+    w.att(f2.id, { citation: old, relation: "REFUTES", confirm: false }, OWNER);
+    const r = w.rl.report(q2.id, OWNER); assert.equal(r.verifiedFacts.length, 0); assert.equal(r.conflicted.length, 1); assert.ok(r.conflicted[0].reasons.includes("AGED_REFUTING_EVIDENCE_NOT_RESOLVED"), JSON.stringify(r.conflicted[0].reasons));
+  } finally { w.done(); }
+});

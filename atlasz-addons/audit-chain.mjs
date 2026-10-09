@@ -48,6 +48,7 @@ export function createAuditChain({ filePath = null, now = () => new Date().toISO
 
   function append(event, data = {}) {
     if (!event) throw new Error("AUDIT_EVENT_REQUIRED");
+    if (filePath) reload();                                  // another manager in this process (or the owner CLI) may have appended since we last looked: continue the real tail, never fork the chain
     const prev = entries.length ? entries[entries.length - 1].hash : GENESIS;
     const e = { seq: entries.length + 1, at: now(), event: String(event), data: structuredClone(data), prevHash: prev };
     e.hash = hashEntry(e);

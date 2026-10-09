@@ -89,7 +89,7 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
     const t = T(tenantId); t.assignments ??= {};
     if (profileId === null) { delete t.assignments[agentId]; store.save(); return { ok: true, agentId, profileId: null }; }
     if (typeof profileId !== "string" || !own(t.profiles, profileId)) return { ok: false, reason: "PROFILE_NOT_FOUND" };
-    t.assignments[agentId] = profileId; store.save(); return { ok: true, agentId, profileId };
+    t.assignments[agentId] = profileId; store.save(); if (file) { try { fs.writeFileSync(file + ".in-use", "1", { mode: 0o600 }); } catch { /* the gate then cannot tell a deleted store from a never-used one */ } } return { ok: true, agentId, profileId };
   }
   const assignments = tenantId => { const a = peek(tenantId)?.assignments ?? {}; return Object.keys(a).sort().map(k => ({ agentId: k, profileId: a[k] })); };
   /** The gate used by the tool broker. No assignment -> unchanged behaviour. Assigned -> the tool must be in the profile's CURRENT, still-granted tool list.
@@ -112,7 +112,7 @@ export function createAgentProfileGate({ file, tenantId, grantable = defaultGran
   return (agentId, tool) => {
     try {
       if (!file) return { allowed: true, profile: null };
-      let raw; try { raw = fs.readFileSync(file, "utf8"); } catch (e) { if (e?.code === "ENOENT") return { allowed: true, profile: null }; throw e; }      // no file yet = nothing was ever assigned
+      let raw; try { raw = fs.readFileSync(file, "utf8"); } catch (e) { if (e?.code === "ENOENT") { if (fs.existsSync(file + ".in-use")) return { allowed: false, reason: "PROFILE_STORE_MISSING" }; return { allowed: true, profile: null }; } throw e; }      // no file yet = nothing was ever assigned
       const j = JSON.parse(raw); if (j === null || typeof j !== "object" || Array.isArray(j) || j.tenants === null || typeof j.tenants !== "object" || Array.isArray(j.tenants)) return { allowed: false, reason: "PROFILE_STORE_CORRUPT" };   // a file this module wrote always has a tenants record
       return createProfiles({ file, grantable }).agentGate(tenantId, agentId, tool);
     }

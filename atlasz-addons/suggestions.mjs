@@ -12,7 +12,7 @@ import { okName, own } from "./safe-keys.mjs";
 
 export const LIMITS = Object.freeze({ maxCandidates: 100, maxInput: 1000, maxKnown: 200, keepDays: 7, keyChars: 80, titleChars: 120, detailChars: 300, maxShownHardCap: 20 });
 const KEY = /^[a-z0-9][a-z0-9:._-]{0,79}$/, SOURCE = /^[a-z][a-z0-9._-]{0,39}$/, TENANT = /^[A-Za-z0-9._-]{1,64}$/, DAY = 86400000;
-const clean = (v, n) => redactSecrets(String(v).replace(/[\u00ad\u061c\u200b-\u200f\u2060-\u2064\ufeff]/g, "").replace(/[\u0000-\u001f\u007f-\u009f‪-‮⁦-⁩]/g, " ").replace(/\s+/g, " ").trim()).slice(0, n);
+const clean = (v, n) => redactSecrets(String(v).replace(/[\p{Default_Ignorable_Code_Point}\p{Cf}]/gu, "").replace(/[\u0000-\u001f\u007f-\u009f‪-‮⁦-⁩]/g, " ").replace(/\s+/g, " ").trim()).slice(0, n);
 const dayOf = ms => new Date(ms).toISOString().slice(0, 10);
 
 /** Validate and normalise one candidate; returns null when malformed. */
@@ -21,7 +21,7 @@ export function normalizeCandidate(c) {
   const long = typeof c.key === "string" && c.key.length > 80 && c.key.length <= 400 && /^[a-z0-9][a-z0-9:._-]*$/.test(c.key);      // a long id is shortened with a hash of the whole key (distinct ids stay distinct) instead of being dropped
   const key = long ? c.key.slice(0, 70) + ".h" + crypto.createHash("sha256").update(c.key).digest("hex").slice(0, 8) : c.key;
   if (typeof key !== "string" || !KEY.test(key) || typeof c.source !== "string" || !SOURCE.test(c.source) || typeof c.title !== "string") return null;
-  const title = clean(c.title, LIMITS.titleChars); if (!title) return null;
+  const title = clean(c.title, LIMITS.titleChars); if (!title || !/[\p{L}\p{N}]/u.test(title.replace(/[\u2800\u3164\uffa0]/g, ""))) return null;
   const priority = Number.isInteger(c.priority) && c.priority >= 1 && c.priority <= 5 ? c.priority : 3;
   return { key, source: c.source, title, detail: typeof c.detail === "string" ? clean(c.detail, LIMITS.detailChars) : "", priority, where: typeof c.where === "string" && /^[a-z][a-z0-9-]{0,30}$/.test(c.where) ? c.where : null };
 }
