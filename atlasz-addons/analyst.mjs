@@ -21,6 +21,7 @@ export function parseCsv(text, { delimiter = "," } = {}) {
   }
   if (q) return { ok: false, reason: "UNTERMINATED_QUOTE" };
   if (cell !== "" || row.length) { row.push(cell); rows.push(row); }
+  if (rows.length > LIMITS.maxRows + 1) return { ok: false, reason: "TOO_MANY_ROWS" };
   while (rows.length && rows.at(-1).every(c => c === "")) rows.pop();
   if (rows.length < 1) return { ok: false, reason: "CSV_EMPTY" };
   const headers = rows[0].map(h => h.trim());
@@ -30,7 +31,7 @@ export function parseCsv(text, { delimiter = "," } = {}) {
   return { ok: true, headers, rows: body, inputHash: sha(text) };
 }
 export function toCsv(headers, rows) {
-  const esc = v => { let s = v === null || v === undefined ? "" : String(v); if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+(\.\d+)?$/.test(s)) s = "'" + s;   // neutralise formula injection (plain negative numbers are left alone)
+  const esc = v => { let s = v === null || v === undefined ? "" : String(v); if (/^[\s\u00a0\u200b-\u200f\u2060\ufeff\u0000]*[=+\-@\uff1d\uff0b\uff0d\uff20]/.test(s) && !/^-?\d+(\.\d+)?$/.test(s)) s = "'" + s;   // neutralise formula injection (plain negative numbers are left alone)
     return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
   return [headers, ...rows].map(r => r.map(esc).join(",")).join("\n") + "\n";
 }
@@ -50,18 +51,20 @@ export function profile({ headers, rows }) {
 /** ops: [{op:'trim'}|{op:'dropEmptyRows'}|{op:'dropDuplicates'}|{op:'fillMissing',column,value|strategy:'mean'|'median'}|{op:'toNumber',column}] -> {headers,rows,log} */
 export function clean(data, ops = []) {
   let { headers, rows } = data; rows = rows.map(r => r.slice()); const log = [];
-  const col = name => { const i = headers.indexOf(name); if (i < 0) throw new Error("COLUMN_NOT_FOUND:" + name); return i; };
+  const sc = x => (typeof x === "string" ? scrub(x) : x);                                  // names and fill values come from untrusted input: they are redacted in the log and in errors
+  const col = name => { const i = headers.indexOf(name); if (i < 0) throw new Error("COLUMN_NOT_FOUND:" + sc(String(name))); return i; };
   try {
     for (const o of ops) {
+      if (!o || typeof o !== "object" || Array.isArray(o)) throw new Error("OP_INVALID");
       if (o.op === "trim") { let n = 0; rows = rows.map(r => r.map(v => { const t = typeof v === "string" ? v.trim() : v; if (t !== v) n++; return t; })); log.push({ op: "trim", changed: n }); }
       else if (o.op === "dropEmptyRows") { const b = rows.length; rows = rows.filter(r => r.some(v => String(v ?? "").trim() !== "")); log.push({ op: "dropEmptyRows", removed: b - rows.length }); }
       else if (o.op === "dropDuplicates") { const seen = new Set(), b = rows.length; rows = rows.filter(r => { const k = JSON.stringify(r); if (seen.has(k)) return false; seen.add(k); return true; }); log.push({ op: "dropDuplicates", removed: b - rows.length }); }
-      else if (o.op === "toNumber") { const i = col(o.column); let bad = 0; rows = rows.map(r => { const v = r[i]; if (isNum(v)) r[i] = Number(v); else { if (!isBlank(v)) bad++; r[i] = null; } return r; }); log.push({ op: "toNumber", column: o.column, invalidToNull: bad }); }
+      else if (o.op === "toNumber") { const i = col(o.column); let bad = 0; rows = rows.map(r => { const v = r[i]; if (isNum(v)) r[i] = Number(v); else { if (!isBlank(v)) bad++; r[i] = null; } return r; }); log.push({ op: "toNumber", column: sc(o.column), invalidToNull: bad }); }
       else if (o.op === "fillMissing") {
         const i = col(o.column), blank = isBlank; let fill;
         if ("value" in o) fill = o.value; else { const nums = rows.map(r => r[i]).filter(v => !blank(v) && isNum(v)).map(Number); if (!nums.length) throw new Error("NO_NUMERIC_VALUES:" + o.column); fill = o.strategy === "median" ? describe(nums).median : o.strategy === "mean" ? describe(nums).mean : (() => { throw new Error("STRATEGY_INVALID"); })(); }
-        let n = 0; rows = rows.map(r => { if (blank(r[i])) { r[i] = fill; n++; } return r; }); log.push({ op: "fillMissing", column: o.column, filled: n, with: fill });
-      } else throw new Error("OP_UNKNOWN:" + o.op);
+        let n = 0; rows = rows.map(r => { if (blank(r[i])) { r[i] = fill; n++; } return r; }); log.push({ op: "fillMissing", column: sc(o.column), filled: n, with: sc(fill) });
+      } else throw new Error("OP_UNKNOWN:" + sc(String(o.op)).slice(0, 40));
     }
   } catch (e) { return { ok: false, reason: String(e.message) }; }
   return { ok: true, headers, rows, log };
@@ -92,15 +95,16 @@ export function groupBy(data, byColumn, valueColumn, agg = "sum") {
   if (!["sum", "mean", "count", "min", "max"].includes(agg)) return { ok: false, reason: "AGG_INVALID" };
   const g = new Map(); for (const r of data.rows) { const k = String(r[bi]); const v = num(r[vi]); if (!g.has(k)) g.set(k, []); if (Number.isFinite(v) && String(r[vi]).trim() !== "") g.get(k).push(v); }
   if (g.size > LIMITS.maxCategories) return { ok: false, reason: "TOO_MANY_CATEGORIES" };
-  const f = { sum: a => a.reduce((s, v) => s + v, 0), mean: a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : null, count: a => a.length, min: a => a.length ? Math.min(...a) : null, max: a => a.length ? Math.max(...a) : null }[agg];
+  const f = { sum: a => (a.length ? a.reduce((s, v) => s + v, 0) : null),   // a group with no present value has no sum (missing is never 0)
+     mean: a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : null, count: a => a.length, min: a => a.length ? Math.min(...a) : null, max: a => a.length ? Math.max(...a) : null }[agg];
   return { ok: true, groups: [...g.entries()].sort((a, b) => a[0] < b[0] ? -1 : 1).map(([key, vals]) => ({ key, value: f(vals), n: vals.length })) };
 }
 /** Chart specs for the renderer (render.mjs). Values come from the data; nothing is invented. */
 export function chartSpecs(data, prof = profile(data)) {
   const specs = [], numeric = prof.filter(p => p.type === "number" || p.type === "integer").map(p => p.column), cat = prof.find(p => p.type === "string" && p.unique > 1 && p.unique <= LIMITS.maxCategories);
-  for (const c of numeric.slice(0, 3)) specs.push({ type: "histogram", title: "Distribution of " + c, column: c, values: data.rows.map(r => num(r[data.headers.indexOf(c)])).filter(Number.isFinite) });
-  if (cat && numeric[0]) { const g = groupBy(data, cat.column, numeric[0], "sum"); if (g.ok) specs.push({ type: "bar", title: `${numeric[0]} by ${cat.column} (sum)`, labels: g.groups.map(x => x.key), values: g.groups.map(x => x.value) }); }
-  if (numeric.length >= 2) specs.push({ type: "scatter", title: `${numeric[1]} vs ${numeric[0]}`, points: data.rows.map(r => [num(r[data.headers.indexOf(numeric[0])]), num(r[data.headers.indexOf(numeric[1])])]).filter(([a, b]) => Number.isFinite(a) && Number.isFinite(b)).slice(0, 500) });
+  for (const c of numeric.slice(0, 3)) specs.push({ type: "histogram", title: scrub("Distribution of " + c), column: scrub(c), values: data.rows.map(r => num(r[data.headers.indexOf(c)])).filter(Number.isFinite) });
+  if (cat && numeric[0]) { const g = groupBy(data, cat.column, numeric[0], "sum"); if (g.ok) { const present = g.groups.filter(x => x.value !== null); if (present.length) specs.push({ type: "bar", title: scrub(`${numeric[0]} by ${cat.column} (sum)`), labels: present.map(x => scrub(x.key)), values: present.map(x => x.value) }); } }
+  if (numeric.length >= 2) specs.push({ type: "scatter", title: scrub(`${numeric[1]} vs ${numeric[0]}`), points: data.rows.map(r => [num(r[data.headers.indexOf(numeric[0])]), num(r[data.headers.indexOf(numeric[1])])]).filter(([a, b]) => Number.isFinite(a) && Number.isFinite(b)).slice(0, 500) });
   return specs;
 }
 /** Full reproducible analysis. The report hash covers input hash + steps + results (no timestamps), so equal inputs give equal hashes. */

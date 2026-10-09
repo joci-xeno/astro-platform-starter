@@ -132,3 +132,35 @@ test("mutation hardening: comment edges, unclosed rules, background-color, tabin
   assert.equal(imgs(GOOD_HTML.replace("</body>", "<!----><img src=\"a.png\"></body>")), 1, "the tag right after an empty comment is still inspected");
   assert.equal(imgs(GOOD_HTML.replace("</body>", "<!-- unterminated " + bad)), 0, "an unterminated html comment swallows the rest");
 });
+
+test("R6 verification regressions: dark-token selectors, conditional overrides, background order, tokenizer tricks and markup checks can no longer hide a failure behind a clean verdict", () => {
+  const BODY = "body{color:var(--ink);background:var(--bg)}", fails = (css, html = GOOD_HTML, js = "") => auditAccessibility({ html, css, js }), rules = r => r.findings.map(f => f.rule);
+  // dark tokens declared under :root:not([data-theme=light]) inside the dark media query, and under html[data-theme=dark]
+  let r = fails(":root{--ink:#000;--bg:#fff}@media (prefers-color-scheme: dark){:root:not([data-theme=\"light\"]){--ink:#222;--bg:#111}}" + BODY); assert.ok(r.findings.some(f => f.rule === "CONTRAST" && f.theme === "dark"), "dark pair #222 on #111 fails");
+  r = fails(":root{--ink:#000;--bg:#fff}html[data-theme=\"dark\"]{--ink:#222;--bg:#111}" + BODY); assert.ok(r.findings.some(f => f.rule === "CONTRAST" && f.theme === "dark"));
+  // a conditional @media override does not hide the base failure
+  r = fails(":root{--ink:#fff;--bg:#fff}@media (min-width:900px){:root{--ink:#000}}" + BODY); assert.ok(r.findings.some(f => f.rule === "CONTRAST" && !f.condition), "the base white-on-white is reported"); assert.equal(r.verdict, "FAIL_FOUND");
+  // ... and a failure that exists only under the condition is found too
+  r = fails(":root{--ink:#000;--bg:#fff}@media (min-width:900px){:root{--ink:#fff}}" + BODY); assert.ok(r.findings.some(f => f.rule === "CONTRAST" && /min-width:900px/.test(f.condition ?? "")), JSON.stringify(r.findings));
+  // background shorthand vs background-color: the later declaration wins
+  r = fails(".a{color:#fff;background:#000;background-color:#fff}"); assert.ok(r.findings.some(f => f.rule === "CONTRAST" && f.selector === ".a"));
+  assert.ok(!fails(".a{color:#fff;background-color:#fff;background:#000}").findings.some(f => f.rule === "CONTRAST" && f.selector === ".a"), "last declaration wins in this order");
+  // tokenizer
+  const shell = body => GOOD_HTML.replace("</body>", body + "</body>");
+  assert.ok(rules(fails("", shell("<!--><img src=x>"))).includes("IMG_ALT"), "<!--> is an empty comment");
+  assert.ok(rules(fails("", shell('<script>var s="<!--";</script><img src=x>'))).includes("IMG_ALT"), "a comment opener inside a script does not hide the page");
+  assert.ok(rules(fails("", shell('<img src=x title="alt=x">'))).includes("IMG_ALT"), "text inside another attribute value is not an alt attribute");
+  assert.ok(!rules(fails("", shell('<img src=x alt="">'))).includes("IMG_ALT"));
+  // markup checks and inline / embedded styles
+  assert.ok(rules(fails("", shell("<input type=text>"))).includes("INPUT_LABEL")); assert.ok(!rules(fails("", shell('<label for=q>Q</label><input id=q>'))).includes("INPUT_LABEL")); assert.ok(!rules(fails("", shell('<label>Q <input></label>'))).includes("INPUT_LABEL"));
+  assert.ok(rules(fails("", shell("<button></button>"))).includes("BUTTON_NAME")); assert.ok(!rules(fails("", shell('<button aria-label="Go"></button>'))).includes("BUTTON_NAME")); assert.ok(!rules(fails("", shell("<button>Go</button>"))).includes("BUTTON_NAME"));
+  assert.ok(rules(fails("", shell('<p id=a></p><p id=a></p>'))).includes("DUPLICATE_ID")); assert.ok(rules(fails("", shell('<a href=x aria-hidden="true">x</a>'))).includes("ARIA_HIDDEN_FOCUSABLE"));
+  assert.ok(rules(fails("", shell('<p style="color:#fff;background:#fff">x</p>'))).includes("CONTRAST"), "inline style evaluated");
+  assert.ok(rules(fails("", shell("<style>.z{color:#fff;background:#fff}</style>"))).includes("CONTRAST"), "<style> block evaluated");
+  const partial = fails(":root{--ink:#000;--bg:#fff}" + BODY, shell('<p style="color:#fff">x</p>')); assert.equal(partial.complete, false); assert.ok(partial.incomplete.some(x => x.startsWith("COLOUR_RULES_NOT_EVALUATED")), "an inline colour that cannot be evaluated makes the audit incomplete");
+  const kf = fails(":root{--ink:#000;--bg:#fff}" + BODY + "@keyframes k{from{color:#fff}to{color:#000}}"); assert.ok(kf.incomplete.includes("KEYFRAME_COLOURS_NOT_EVALUATED"));
+  const local = fails(":root{--ink:#000;--bg:#fff}" + BODY + ".card{--ink:#fff}"); assert.ok(local.incomplete.some(x => x.startsWith("LOCAL_CUSTOM_PROPERTY_NOT_EVALUATED")));
+  // script-built controls in single quotes
+  assert.ok(rules(fails(":root{--ink:#000;--bg:#fff}" + BODY, GOOD_HTML, "h('input', {type:'text', placeholder:'x'});")).includes("PLACEHOLDER_ONLY_LABEL") || rules(fails(":root{--ink:#000;--bg:#fff}" + BODY, GOOD_HTML, "h('input', {type:'text', placeholder:'x'});")).includes("NO_LABEL_ELEMENTS"));
+  assert.ok(rules(fails(":root{--ink:#000;--bg:#fff}" + BODY, GOOD_HTML, "h('button', {}, '')")).includes("BUTTON_NAME"));
+});

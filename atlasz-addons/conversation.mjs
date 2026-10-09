@@ -59,7 +59,7 @@ export function createConversationStore({ file = null, now = () => new Date().to
     if (c.model !== model) { c.switches.push({ at: now(), from: c.model, to: model, afterTurn: c.turns.length }); c.model = model; c.updatedAt = now(); persist(); }
     return { ok: true, model: c.model, switches: c.switches.length };
   }
-  const defuse = x => String(x).replace(/<</g, "\u2039\u2039").replace(/>>/g, "\u203a\u203a").replace(/\[(system|assistant|user|tool)\]/gi, "($1)");          // text inside a fence can never contain the fence delimiters
+  const defuse = x => String(x).replace(/<</g, "\u2039\u2039").replace(/>>/g, "\u203a\u203a").replace(/\[(system|assistant|user|tool)\]/gi, "($1)").replace(/<\|[^|>\n]{0,40}\|>/g, "(token)").replace(/^(\s*#{1,6}\s*)(system|assistant|user|developer|tool)\b/gim, "$1($2)").replace(/\[\/?(?:INST|SYS)\]/gi, "(inst)").replace(/\[PROFILE\b/g, "(PROFILE");          // text inside a fence can never contain the fence delimiters
   const fence = t => t.role === "user" ? defuse(t.text) : `<<${t.role === "tool" ? "UNTRUSTED TOOL RESULT" : "ASSISTANT (model " + defuse(String(t.modelId ?? "?").slice(0, 80)) + ")"}>>\n${defuse(t.text)}\n<<END>>`;
   function context(id, { tenantId, maxTokens = 4000, reserveOutput = Math.min(500, Math.floor(maxTokens / 4)) } = {}) {
     const c = find(id, tenantId); if (!c) return { ok: false, reason: "NOT_FOUND" };

@@ -74,7 +74,8 @@ export function createChainTail(file, { keep = 2000 } = {}) {
         const fd = fs.openSync(file, "r"); let chunk; try { const n = Math.min(st.size - offset, 8 * 1048576); chunk = Buffer.alloc(n); fs.readSync(fd, chunk, 0, n, offset); offset += n; } finally { fs.closeSync(fd); }
         buf += dec.write(chunk); const lines = buf.split("\n"); buf = lines.pop();
         if (buf.length > 1048576) { reset(); throw new Error("LOG_CORRUPT"); }                 // a "line" that never ends is not buffered without bound
-        for (const line of lines) { if (!line) continue; let e; try { e = JSON.parse(line); } catch { reset(); throw new Error("LOG_CORRUPT"); } if (Number.isSafeInteger(e?.seq)) {
+        for (const line of lines) { if (!line) continue; let e; try { e = JSON.parse(line); } catch { reset(); throw new Error("LOG_CORRUPT"); } if (!Number.isSafeInteger(e?.seq)) { reset(); throw new Error("LOG_CORRUPT"); }   // a complete line that is not a chain entry is corruption, never silently skipped
+          {
           // Every entry must be a well-formed link of the chain: own hash recomputed, prevHash equal to the previous hash (GENESIS for the first), seq strictly increasing from 1.
           // An entry without hash/prevHash (or the first entry not being seq 1) is NOT shown as genuine: the stream reports the log unreadable instead.
           let okHash = false; try { okHash = typeof e.hash === "string" && typeof e.prevHash === "string" && hashEntry(e) === e.hash; } catch { okHash = false; }

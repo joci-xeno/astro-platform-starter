@@ -141,3 +141,14 @@ test("round-4 fixes: the tail refuses a log whose sequence goes backwards or rep
     fs.writeFileSync(f, L(e1) + L({ ...e2, data: { n: 99 } })); assert.throws(() => createChainTail(f).read(), /LOG_CORRUPT/, "edited content with the old hash");
   } finally { rm(dir); }
 });
+
+test("createChainTail: a complete line that is valid JSON but not a chain entry is corruption, not something to skip", async () => {
+  const { createChainTail } = await import("../atlasz-addons/event-stream.mjs"); const fs = await import("node:fs"); const path = await import("node:path"); const { tmp, rm } = await import("./helpers.mjs");
+  const dir = tmp("es-junk-"); try {
+    const E = chain(2);
+    for (const junk of ['{"a":1}', "null", "[1]", "5", '{"seq":"1"}']) {
+      const f = path.join(dir, "j" + Buffer.from(junk).toString("hex").slice(0, 6) + ".jsonl"); fs.writeFileSync(f, JSON.stringify(E[0]) + "\n" + junk + "\n" + JSON.stringify(E[1]) + "\n");
+      assert.throws(() => createChainTail(f).read(), /LOG_CORRUPT/, junk);
+    }
+  } finally { rm(dir); }
+});

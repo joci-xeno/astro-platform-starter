@@ -323,6 +323,11 @@ export function createControlCenterCore({ a11yWorkerUrl = null, a11yTimeoutMs = 
   const rlInst = () => createResearchLedger({ file: path.join(stateDir, "research", "ledger.json"), knowledge: kpInst() }), RW = { tenantId: KP_T, role: "OWNER" };
   const research = () => { try { const r = rlInst(), qs = r.list(RW).map(q => r.report(q.id, RW)); return { state: "CONNECTED", summary: r.summary(RW), projects: kpInst().list({ tenantId: KP_T }), questions: qs, events: r.events(RW, { limit: 30 }) }; } catch (e) { return { state: "UNREADABLE", error: String(e.message) }; } };
   function researchAction({ op, ...a } = {}) {
+    if (op === "confirmEvidence" || op === "resolveContradiction") {          // decisions that turn a lexical match into a fact (or settle a conflict): signed from the passphrase, bound to the exact item, never just the dashboard token
+      const { passphrase, ...rest } = a; a = rest; const action = op === "confirmEvidence" ? "RESEARCH_CONFIRM" : "RESEARCH_RESOLVE", subject = op === "confirmEvidence" ? String(a.findingId ?? "") + "#" + String(a.evidenceId ?? "") : String(a.id ?? "") + ":" + String(a.winner ?? "none");
+      if (typeof passphrase !== "string" || !passphrase) throw new Error("PASSPHRASE_REQUIRED");
+      const v = ownerAuth().verifyApproval(sign(passphrase, action, subject), { action, subject }); if (!v.allowed) throw new Error("OWNER_APPROVAL_REQUIRED:" + v.reason);
+    }
     const r = rlInst();
     switch (op) {
       case "openQuestion": return r.openQuestion({ projectId: a.projectId, text: a.text }, RW);

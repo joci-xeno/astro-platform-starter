@@ -12,16 +12,18 @@ import { okName, own } from "./safe-keys.mjs";
 
 export const LIMITS = Object.freeze({ maxCandidates: 100, maxInput: 1000, maxKnown: 200, keepDays: 7, keyChars: 80, titleChars: 120, detailChars: 300, maxShownHardCap: 20 });
 const KEY = /^[a-z0-9][a-z0-9:._-]{0,79}$/, SOURCE = /^[a-z][a-z0-9._-]{0,39}$/, TENANT = /^[A-Za-z0-9._-]{1,64}$/, DAY = 86400000;
-const clean = (v, n) => redactSecrets(String(v).replace(/[\u0000-\u001f\u007f-\u009f‪-‮⁦-⁩]/g, " ").replace(/\s+/g, " ").trim()).slice(0, n);
+const clean = (v, n) => redactSecrets(String(v).replace(/[\u00ad\u061c\u200b-\u200f\u2060-\u2064\ufeff]/g, "").replace(/[\u0000-\u001f\u007f-\u009f‪-‮⁦-⁩]/g, " ").replace(/\s+/g, " ").trim()).slice(0, n);
 const dayOf = ms => new Date(ms).toISOString().slice(0, 10);
 
 /** Validate and normalise one candidate; returns null when malformed. */
 export function normalizeCandidate(c) {
   if (!c) return null;                                                 // non-objects and arrays have no usable .key and fail the checks below
-  if (typeof c.key !== "string" || !KEY.test(c.key) || typeof c.source !== "string" || !SOURCE.test(c.source) || typeof c.title !== "string") return null;
+  const long = typeof c.key === "string" && c.key.length > 80 && c.key.length <= 400 && /^[a-z0-9][a-z0-9:._-]*$/.test(c.key);      // a long id is shortened with a hash of the whole key (distinct ids stay distinct) instead of being dropped
+  const key = long ? c.key.slice(0, 70) + ".h" + crypto.createHash("sha256").update(c.key).digest("hex").slice(0, 8) : c.key;
+  if (typeof key !== "string" || !KEY.test(key) || typeof c.source !== "string" || !SOURCE.test(c.source) || typeof c.title !== "string") return null;
   const title = clean(c.title, LIMITS.titleChars); if (!title) return null;
   const priority = Number.isInteger(c.priority) && c.priority >= 1 && c.priority <= 5 ? c.priority : 3;
-  return { key: c.key, source: c.source, title, detail: typeof c.detail === "string" ? clean(c.detail, LIMITS.detailChars) : "", priority, where: typeof c.where === "string" && /^[a-z][a-z0-9-]{0,30}$/.test(c.where) ? c.where : null };
+  return { key, source: c.source, title, detail: typeof c.detail === "string" ? clean(c.detail, LIMITS.detailChars) : "", priority, where: typeof c.where === "string" && /^[a-z][a-z0-9-]{0,30}$/.test(c.where) ? c.where : null };
 }
 
 export function createSuggestions({ file = null, prefs, now = () => Date.now() } = {}) {
@@ -48,14 +50,17 @@ export function createSuggestions({ file = null, prefs, now = () => Date.now() }
     const ok = [...byKey.values()];
     if (!pv(tenantId, "suggestions.enabled")) { sup.disabled = ok.length; return { ok: true, shown: [], suppressed: sup, note: "Suggestions are turned off in the preferences." }; }
     const muted = new Set(pv(tenantId, "suggestions.mutedSources")), cap = Math.min(LIMITS.maxShownHardCap, pv(tenantId, "suggestions.maxPerDay")), today = (t.days[dayOf(t0)] ??= { shown: [] }), shownToday = new Set(today.shown);
-    ok.sort((a, b) => b.priority - a.priority || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));        // ALL valid candidates are ranked before anything is cut
-    today.urgent ??= []; const urgentToday = new Set(today.urgent);
-    const shown = []; let newCount = shownToday.size - urgentToday.size, urgentCount = urgentToday.size;     // priority 4-5 items (approvals, workflows needing review, quarantined plugins) (e.g. waiting approvals) have their own allowance and are never starved by lower priorities shown earlier in the day
+    // Rank ALL valid candidates before anything is cut: priority first, then the items shown on fewer of the previous days (so a long tail rotates in instead of the same alphabetical few winning every day), then key.
+    const prior = new Map(); for (const [day, v] of Object.entries(t.days)) if (day !== dayOf(t0)) for (const k of v?.shown ?? []) prior.set(k, (prior.get(k) ?? 0) + 1);
+    ok.sort((a, b) => b.priority - a.priority || (prior.get(a.key) ?? 0) - (prior.get(b.key) ?? 0) || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
+    today.urgent ??= []; today.urgent4 ??= []; const urgentToday = new Set(today.urgent), urgent4Today = new Set(today.urgent4);
+    const shown = []; let newCount = shownToday.size - urgentToday.size - urgent4Today.size, urgentCount = urgentToday.size, urgent4Count = urgent4Today.size;     // priority 4-5 items (approvals, workflows needing review, quarantined plugins) (e.g. waiting approvals) have their own allowance and are never starved by lower priorities shown earlier in the day
     for (const c of ok) {
       if (muted.has(c.source)) { sup.muted++; continue; }
       if (Object.hasOwn(t.snoozed, c.key)) { sup.snoozed++; continue; }               // prune() above already removed every snooze that has ended
       if (!shownToday.has(c.key)) {
-        if (c.priority >= 4) { if (urgentCount >= LIMITS.maxShownHardCap) { sup.dailyLimit++; continue; } urgentCount++; today.urgent.push(c.key); }
+        if (c.priority >= 5) { if (urgentCount >= LIMITS.maxShownHardCap) { sup.dailyLimit++; continue; } urgentCount++; today.urgent.push(c.key); }
+        else if (c.priority === 4) { if (urgent4Count >= LIMITS.maxShownHardCap) { sup.dailyLimit++; continue; } urgent4Count++; today.urgent4.push(c.key); }      // priority 4 has its own allowance too: a flood of priority 5 cannot starve it
         else { if (newCount >= cap) { sup.dailyLimit++; continue; } newCount++; }
         today.shown.push(c.key); shownToday.add(c.key);
       }

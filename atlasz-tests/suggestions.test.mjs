@@ -20,7 +20,7 @@ test("normalizeCandidate: valid shapes pass; malformed are dropped; text is sani
   assert.equal(normalizeCandidate({ key: "a", source: "x", title: "x".repeat(500), detail: "y".repeat(900) }).title.length, LIMITS.titleChars); assert.equal(normalizeCandidate({ key: "a", source: "x", title: "t", detail: "y".repeat(900) }).detail.length, LIMITS.detailChars);
   assert.equal(normalizeCandidate({ key: "a", source: "x", title: "t", priority: 3.5 }).priority, 3); assert.equal(normalizeCandidate({ key: "a", source: "x", title: "t", priority: "4" }).priority, 3); assert.equal(normalizeCandidate({ key: "a", source: "x", title: "t", detail: 5 }).detail, "");
   for (const bad of [{ key: ["a:1"], source: "x", title: "t" }, { key: "a", source: ["approvals"], title: "t" }, { key: { toString: () => "a" }, source: "x", title: "t" }]) assert.equal(normalizeCandidate(bad), null, "non-string key/source are refused even when they stringify to something valid");
-  for (const bad of [null, undefined, "x", 5, [], {}, { key: "A", source: "x", title: "t" }, { key: "a b", source: "x", title: "t" }, { key: "a", source: "X", title: "t" }, { key: "a", source: "x" }, { key: "a", source: "x", title: 5 }, { key: "a", source: "x", title: " \u0000 " }, { key: "k".repeat(81), source: "x", title: "t" }, { key: "a", source: "s".repeat(41), title: "t" }, { key: 5, source: "x", title: "t" }, { key: "a", source: 5, title: "t" }])
+  for (const bad of [null, undefined, "x", 5, [], {}, { key: "A", source: "x", title: "t" }, { key: "a b", source: "x", title: "t" }, { key: "a", source: "X", title: "t" }, { key: "a", source: "x" }, { key: "a", source: "x", title: 5 }, { key: "a", source: "x", title: " \u0000 " }, { key: "k".repeat(401), source: "x", title: "t" }, { key: "a", source: "s".repeat(41), title: "t" }, { key: 5, source: "x", title: "t" }, { key: "a", source: 5, title: "t" }])
     assert.equal(normalizeCandidate(bad), null, JSON.stringify(bad));
   assert.ok(normalizeCandidate({ key: "k".repeat(80), source: "s".repeat(40), title: "t" }));
 });
@@ -112,4 +112,18 @@ test("verification fixes S-2/S-3: unsnooze ignores inherited names; hostile cand
   const evil = { get key() { throw new Error("boom"); }, source: "approvals", title: "t" };
   const r = s.offer("t", [evil, cand("a", { priority: 2 }), cand("a", { priority: 5 }), cand("b")]); assert.equal(r.ok, true);
   assert.equal(r.shown.find(x => x.key === "a").priority, 5, "duplicate keys keep the higher priority"); assert.equal(r.suppressed.invalid, 1); assert.equal(r.suppressed.duplicate, 1);
+});
+
+test("R6 verification regressions: long ids are shortened (not dropped), invisible characters are stripped, priority 4 has its own allowance, and equal-priority items rotate over the days", () => {
+  const long = "decision:" + "a".repeat(40) + ":" + "b".repeat(40), long2 = "decision:" + "a".repeat(40) + ":" + "c".repeat(40);
+  const n1 = normalizeCandidate({ key: long, source: "decisions", title: "x" }), n2 = normalizeCandidate({ key: long2, source: "decisions", title: "y" });
+  assert.ok(n1 && n2 && n1.key.length <= 80 && n1.key !== n2.key, "distinct long ids stay distinct"); assert.equal(n1.key, normalizeCandidate({ key: long, source: "decisions", title: "x" }).key, "shortening is deterministic");
+  assert.equal(normalizeCandidate({ key: "A".repeat(81), source: "decisions", title: "x" }), null, "upper-case / bad characters are still refused"); assert.equal(normalizeCandidate({ key: "a".repeat(401), source: "decisions", title: "x" }), null);
+  assert.equal(normalizeCandidate({ key: "k", source: "x", title: "a​b‏c⁠d؜e﻿f" }).title, "abcdef", "zero-width and bidi marks are removed");
+  // 25 priority-5 items do not starve a priority-4 item
+  const { s } = mk(); const p5 = Array.from({ length: 25 }, (_, i) => cand("approval:a" + String(i).padStart(2, "0"), { priority: 5 })); const r = s.offer("u", [...p5, cand("plugin:q", { priority: 4 })]);
+  assert.ok(r.shown.some(x => x.key === "plugin:q"), "priority 4 still shown"); assert.equal(r.shown.filter(x => x.priority === 5).length, LIMITS.maxShownHardCap);
+  // rotation: 8 equal items, cap 5 per day: day 2 shows what day 1 did not
+  const m = mk(); const items = Array.from({ length: 8 }, (_, i) => cand("d" + i, { source: "decisions" })); const d1 = m.s.offer("u", items).shown.map(x => x.key); m.now.adv(DAY); const d2 = m.s.offer("u", items).shown.map(x => x.key);
+  assert.deepEqual(d1, ["d0", "d1", "d2", "d3", "d4"]); assert.deepEqual(d2.slice(0, 3), ["d5", "d6", "d7"], "items not shown yesterday come first"); assert.equal(new Set([...d1, ...d2]).size, 8, "every item gets a turn");
 });

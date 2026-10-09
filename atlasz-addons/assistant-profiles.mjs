@@ -5,6 +5,7 @@
 //   * Only the OWNER creates, edits, rolls back or deletes a profile. Every edit is a new hashed version; older versions are kept (bounded) and can be restored by the owner.
 //   * Instructions are plain text: secrets are redacted and instruction-injection phrases are refused. The fixed 5 SEARCH + 25 EXECUTION topology is untouched.
 import crypto from "node:crypto";
+import fs from "node:fs";
 import { createStore, clone } from "./business/store.mjs";
 import { redactSecrets, INJECTION_PATTERNS } from "./text-compare.mjs";
 import { TOOL_POLICY, ROLES, permissionFor, roleOf } from "./agent-tool-policy.mjs";
@@ -38,8 +39,11 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
     for (const s of skills) { let ok = false; try { ok = skillExists(s) === true; } catch { ok = false; } if (!ok) return { ok: false, reason: "SKILL_UNKNOWN:" + s }; }
     return { ok: true, def: { id: inp.id, name: redactSecrets(inp.name.trim()), instructions: redactSecrets(inp.instructions.trim()), tools: uniqSorted(tools), skills: uniqSorted(skills), memoryScopes: uniqSorted(scopes) } };
   }
+  // The file may have been damaged since this process loaded it: a write never replaces an unreadable file (the owner must repair or remove it first).
+  const writable = () => { if (!file) return true; try { JSON.parse(fs.readFileSync(file, "utf8")); return true; } catch (e) { return e?.code === "ENOENT"; } };
   function save(tenantId, inp, how) {
     if (inp?.actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" };
+    if (!writable()) return { ok: false, reason: "PROFILE_STORE_UNREADABLE" };
     const v = validate(inp); if (!v.ok) return v; const t = T(tenantId), cur = own(t.profiles, v.def.id);
     if (!cur && Object.keys(t.profiles).length >= LIMITS.maxProfiles) return { ok: false, reason: "TOO_MANY_PROFILES" };
     const hash = hashOf(v.def); if (cur && cur.versions.at(-1).hash === hash) return { ok: true, id: v.def.id, version: cur.versions.at(-1).version, unchanged: true };
@@ -55,7 +59,7 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
     if (hashOf(v.definition) !== v.hash) return { ok: false, reason: "STORED_VERSION_TAMPERED" };
     return save(tenantId, { ...clone(v.definition), actor: "OWNER" }, "ROLLBACK_TO_" + version);   // re-validated against today's grants, stored as a NEW version
   }
-  function remove(tenantId, id, { actor } = {}) { if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" }; const t = peek(tenantId); if (!t || typeof id !== "string" || !Object.hasOwn(t.profiles, id)) return { ok: false, reason: "PROFILE_NOT_FOUND" }; delete t.profiles[id]; store.save(); return { ok: true }; }
+  function remove(tenantId, id, { actor } = {}) { if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" }; if (!writable()) return { ok: false, reason: "PROFILE_STORE_UNREADABLE" }; const t = peek(tenantId); if (!t || typeof id !== "string" || !Object.hasOwn(t.profiles, id)) return { ok: false, reason: "PROFILE_NOT_FOUND" }; delete t.profiles[id]; store.save(); return { ok: true }; }
   const summary = p => { const v = p.versions.at(-1); return { id: p.id, name: v.definition.name, version: v.version, hash: v.hash, versions: p.versions.map(x => x.version), tools: v.definition.tools.length, skills: v.definition.skills.length, memoryScopes: v.definition.memoryScopes.length }; };
   const listAll = tenantId => Object.values(peek(tenantId)?.profiles ?? {}).map(summary);
   function get(tenantId, id) { const p = own(peek(tenantId)?.profiles, id); if (!p) return { ok: false, reason: "PROFILE_NOT_FOUND" }; const v = p.versions.at(-1); return { ok: true, profile: { ...summary(p), definition: clone(v.definition), history: p.versions.map(x => ({ version: x.version, hash: x.hash, at: x.at, how: x.how })) } }; }
@@ -81,6 +85,7 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
   function assign(tenantId, agentId, profileId, { actor } = {}) {
     if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" };
     if (typeof agentId !== "string" || !roleOf(agentId)) return { ok: false, reason: "UNKNOWN_AGENT" };
+    if (!writable()) return { ok: false, reason: "PROFILE_STORE_UNREADABLE" };
     const t = T(tenantId); t.assignments ??= {};
     if (profileId === null) { delete t.assignments[agentId]; store.save(); return { ok: true, agentId, profileId: null }; }
     if (typeof profileId !== "string" || !own(t.profiles, profileId)) return { ok: false, reason: "PROFILE_NOT_FOUND" };
@@ -90,6 +95,10 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
   /** The gate used by the tool broker. No assignment -> unchanged behaviour. Assigned -> the tool must be in the profile's CURRENT, still-granted tool list.
    *  A deleted, tampered or unreadable profile FAILS CLOSED (no tools) until the owner re-assigns; deleting a profile never widens an agent. */
   function agentGate(tenantId, agentId, tool) {
+    // A store whose SHAPE is wrong (null/array/string where a record belongs) is corruption, not "no assignment": it denies instead of silently dropping the narrowing.
+    const plain = x => x !== null && typeof x === "object" && !Array.isArray(x);
+    if (!plain(d) || !plain(d.tenants)) return { allowed: false, reason: "PROFILE_STORE_CORRUPT" };
+    if (typeof tenantId === "string" && okName(TENANT, tenantId) && Object.hasOwn(d.tenants, tenantId)) { const r0 = d.tenants[tenantId]; if (!plain(r0) || (r0.assignments !== undefined && !plain(r0.assignments)) || (r0.profiles !== undefined && !plain(r0.profiles))) return { allowed: false, reason: "PROFILE_STORE_CORRUPT" }; }
     const pid = own(peek(tenantId)?.assignments ?? {}, agentId); if (pid == null) return { allowed: true, profile: null };
     const role = roleOf(agentId); if (!role) return { allowed: false, reason: "UNKNOWN_AGENT" };
     const r = resolve(tenantId, pid, { role }); if (!r.ok) return { allowed: false, profile: pid, reason: r.reason };
@@ -101,7 +110,12 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
 /** Broker gate over the shared profiles file. The file is re-read on every call (the Control Center and the runtime are separate processes); an unreadable file denies instead of allowing. */
 export function createAgentProfileGate({ file, tenantId, grantable = defaultGrantable } = {}) {
   return (agentId, tool) => {
-    try { if (!file) return { allowed: true, profile: null }; return createProfiles({ file, grantable }).agentGate(tenantId, agentId, tool); }
+    try {
+      if (!file) return { allowed: true, profile: null };
+      let raw; try { raw = fs.readFileSync(file, "utf8"); } catch (e) { if (e?.code === "ENOENT") return { allowed: true, profile: null }; throw e; }      // no file yet = nothing was ever assigned
+      const j = JSON.parse(raw); if (j === null || typeof j !== "object" || Array.isArray(j) || j.tenants === null || typeof j.tenants !== "object" || Array.isArray(j.tenants)) return { allowed: false, reason: "PROFILE_STORE_CORRUPT" };   // a file this module wrote always has a tenants record
+      return createProfiles({ file, grantable }).agentGate(tenantId, agentId, tool);
+    }
     catch { return { allowed: false, reason: "PROFILE_STORE_UNREADABLE" }; }
   };
 }

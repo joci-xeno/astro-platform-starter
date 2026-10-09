@@ -87,3 +87,18 @@ test("analyst: NA / N/A / null / - cells are MISSING (never 0, never a text valu
   assert.ok(!JSON.stringify(h.report).includes(K), "a secret in a column name never reaches the report"); assert.equal(h.data.headers[1], K, "the data itself is unchanged");
   const csv = cleanedCsv(analyze("a,b\n=1+1,2\nok,3\n")); assert.match(csv, /^a,b\n'=1\+1,2\nok,3\n$/); assert.equal(cleanedCsv({ ok: false }), null);
 });
+
+test("R6 verification regressions: chart titles, fill values and error text are redacted; an all-missing group has no sum; export neutralises hidden-prefix formulas; the row cap is exact; bad ops are refused", async () => {
+  const { analyze, cleanedCsv, groupBy, parseCsv, LIMITS: AL2 } = await import("../atlasz-addons/analyst.mjs");
+  const K = "s" + "k-ABCDEFGHIJKLMNOPQRSTUVWX";
+  const h = analyze("k," + K + "\na,1\nb,2\nc,3\n"); assert.ok(h.charts.length > 0); assert.ok(!JSON.stringify(h.charts).includes(K), "no secret in any chart spec");
+  const f = analyze("a\n5\nNA\n7\n", { ops: [{ op: "fillMissing", column: "a", value: K }] }); assert.ok(!JSON.stringify(f.report).includes(K), "fill value redacted in the report steps");
+  assert.ok(!JSON.stringify(analyze("a\n1\n", { ops: [{ op: "trim" }, { op: "toNumber", column: K }] })).includes(K), "unknown column error text is redacted");
+  assert.equal(analyze("a\n1\n", { ops: [null] }).reason, "OP_INVALID"); assert.equal(analyze("a\n1\n", { ops: [[1]] }).reason, "OP_INVALID");
+  const g = groupBy({ headers: ["k", "v"], rows: [["a", "1"], ["a", "2"], ["b", "NA"], ["b", ""], ["c", "5"]] }, "k", "v", "sum"); assert.deepEqual(g.groups.map(x => x.value), [3, null, 5], "a group with only missing values has no sum, not 0");
+  const bar = analyze("k,v\na,1\na,2\nb,NA\nc,5\n").charts.find(c => c.type === "bar"); assert.deepEqual(bar.values, [3, 5]); assert.deepEqual(bar.labels, ["a", "c"]);
+  for (const pre of ["\n", " ", "\u00a0", "\u200b", "\ufeff", "\v", "\f", "\uff1d"]) { const out = cleanedCsv(analyze("a\n\"" + pre + "=1+1\"\nx\n")); assert.ok(out.includes("'" + pre + "=1+1") || out.includes("\"'" + pre + "=1+1"), "prefix " + JSON.stringify(pre) + " -> " + JSON.stringify(out)); }
+  assert.equal(cleanedCsv(analyze("a,b\n-5,2\nok,3\n")).includes("'-5"), false, "plain negative numbers are left alone");
+  const rows = n => "a\n" + Array.from({ length: n }, (_, i) => String(i)).join("\n");
+  assert.equal(parseCsv(rows(AL2.maxRows)).ok, true); assert.equal(parseCsv(rows(AL2.maxRows + 1)).reason, "TOO_MANY_ROWS", "the last row without a newline is counted");
+});

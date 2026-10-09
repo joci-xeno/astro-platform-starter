@@ -15,7 +15,9 @@ export function createTutor({ file = null, now: nowFn = () => Date.now() } = {})
   const store = createStore({ file, init: () => ({ courses: {} }), mode: 0o600 }), d = store.data;
   const key = (t, id) => t + "\u0000" + id;
   const tenantOk = t => typeof t === "string" && TENANT.test(t);
-  const course = (t, id) => (tenantOk(t) && typeof id === "string" ? ownProp(d.courses, key(t, id)) ?? null : null);
+  // A course whose stored shape is wrong (hand-edited file) is treated as absent instead of crashing half way through a write.
+  const sane = c => c && typeof c === "object" && Array.isArray(c.lessons) && Array.isArray(c.questions) && Array.isArray(c.attempts) && c.questions.every(q => q && typeof q === "object" && Number.isInteger(q.box) && q.box >= 0 && q.box < BOX_DAYS.length && Number.isFinite(q.dueAt) && Number.isInteger(q.seen) && Number.isInteger(q.correct));
+  const course = (t, id) => { if (!(tenantOk(t) && typeof id === "string")) return null; const c = ownProp(d.courses, key(t, id)) ?? null; return sane(c) ? c : null; };
   const owner = actor => actor === "OWNER";
   const str = (v, n) => typeof v === "string" && v.trim() !== "" && v.length <= n;
 
@@ -73,9 +75,11 @@ export function createTutor({ file = null, now: nowFn = () => Date.now() } = {})
     const c = course(tenantId, courseId); if (!c) return { ok: false, reason: "COURSE_NOT_FOUND" };
     const q = c.questions.find(x => x.id === questionId); if (!q) return { ok: false, reason: "QUESTION_NOT_FOUND" };
     if (!Number.isInteger(choiceIndex) || choiceIndex < 0 || choiceIndex >= q.choices.length) return { ok: false, reason: "CHOICE_INVALID" };
-    const t = now(), right = choiceIndex === q.answerIndex;
+    const t = now(); if (!Number.isFinite(t) || Math.abs(t) > 8.64e15 - 40 * DAY * 1000) return { ok: false, reason: "CLOCK_INVALID" };       // nothing is changed on a broken clock
+    const right = choiceIndex === q.answerIndex;
     const wasDue = q.seen === 0 || q.dueAt <= t;     // answering again before the review is due is practice only: it cannot raise the box (no gaming "mastery" with instant repeats)
-    q.seen++; if (right) { q.correct++; if (wasDue) q.box = Math.min(BOX_DAYS.length - 1, Math.max(q.box, 1) + 1); } else q.box = 1;
+    q.seen++; if (wasDue || !right) { q.cSeen = (q.cSeen ?? 0) + 1; if (right) q.cCorrect = (q.cCorrect ?? 0) + 1; }       // accuracy counts only answers that counted for review: instant repeats are practice and cannot inflate it
+    if (right) { q.correct++; if (wasDue) q.box = Math.min(BOX_DAYS.length - 1, Math.max(q.box, 1) + 1); } else q.box = 1;
     if (wasDue || !right) q.dueAt = t + BOX_DAYS[q.box] * DAY;
     c.attempts.push({ at: t, questionId, right }); if (c.attempts.length > LIMITS.maxAttempts) c.attempts.splice(0, c.attempts.length - LIMITS.maxAttempts);
     store.save();
@@ -85,7 +89,7 @@ export function createTutor({ file = null, now: nowFn = () => Date.now() } = {})
   /** Mastery of a lesson = share of its questions that reached box >= 4. Unseen questions are reported as unseen, never counted as failed or known. */
   function lessonStats(c, l) {
     const qs = c.questions.filter(q => q.lessonId === l.id), seen = qs.filter(q => q.seen > 0), t = now();
-    const mastered = qs.filter(q => q.box >= 4).length, answers = seen.reduce((s, q) => s + q.seen, 0), right = seen.reduce((s, q) => s + q.correct, 0);
+    const mastered = qs.filter(q => q.box >= 4).length, answers = seen.reduce((s, q) => s + (q.cSeen ?? q.seen), 0), right = seen.reduce((s, q) => s + (q.cSeen !== undefined ? q.cCorrect ?? 0 : q.correct), 0);
     return { lessonId: l.id, title: l.title, questions: qs.length, unseen: qs.length - seen.length, due: seen.filter(q => q.dueAt <= t).length, mastered, masteryPct: seen.length ? Math.round((mastered / qs.length) * 100) : null, accuracyPct: answers ? Math.round((right / answers) * 100) : null };
   }
   function progress({ tenantId, courseId } = {}) {

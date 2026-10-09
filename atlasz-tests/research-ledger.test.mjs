@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import crypto from "node:crypto";
 import path from "node:path";
 import { createDocumentCenter } from "../atlasz-addons/document-center.mjs";
 import { createKnowledgeProjects } from "../atlasz-addons/knowledge-projects.mjs";
@@ -234,9 +235,17 @@ test("a quotation match alone is QUOTE_MATCHED, never VERIFIED: only an owner-on
     w.rl.confirmEvidence(fi.id, ev.id, { note: "I read the listing" }, OWNER);
     assert.throws(() => w.rl.confirmEvidence(fi.id, ev.id, { note: "again" }, OWNER), /ALREADY_CONFIRMED/);
     r = w.rl.report(q.id, OWNER); assert.equal(r.verifiedFacts.length, 1); assert.equal(r.quoteMatched.length, 0); assert.equal(r.state, "ANSWERED"); assert.equal(r.verifiedFacts[0].evidence[0].confirmed, true);
-    // tampering with the stored file to fake a confirmation of a different quote is not honoured
-    const file = path.join(w.d, "rl.json"), j = JSON.parse(fs.readFileSync(file, "utf8")); const E = Object.values(j.findings)[0].evidence[0]; E.confirmedQuoteSha = "0".repeat(64); fs.writeFileSync(file, JSON.stringify(j));
-    assert.equal(w.mk().report(q.id, OWNER).verifiedFacts.length, 0);
+    // the authority is the hash-chained event log, not a field of the evidence: editing fields neither creates nor removes a confirmation
+    const file = path.join(w.d, "rl.json"), j0 = JSON.parse(fs.readFileSync(file, "utf8")); Object.values(j0.findings)[0].evidence[0].confirmedQuoteSha = "0".repeat(64); fs.writeFileSync(file, JSON.stringify(j0));
+    assert.equal(w.mk().report(q.id, OWNER).verifiedFacts.length, 1, "still confirmed: the event log says so");
+    // forging: an unconfirmed item with hand-written confirmation fields stays QUOTE_MATCHED
+    const q3 = w.rl.openQuestion({ projectId: w.p.id, text: "Rent 3?" }, OWNER); const f3 = w.rl.addFinding(q3.id, { claim: "The monthly rent for the Maple Street warehouse is 4200 dollars" }, AGENT);
+    const e3 = w.rl.attachEvidence(f3.id, { citation: w.kp.search(w.p.id, { query: "monthly rent", ...OWNER }).results[0].citation }, AGENT);
+    const j1 = JSON.parse(fs.readFileSync(file, "utf8")), E3 = j1.findings[f3.id].evidence.find(x => x.id === e3.id); E3.confirmedBy = "OWNER"; E3.confirmedAt = w.now(); E3.confirmedQuoteSha = crypto.createHash("sha256").update(E3.citation.quote).digest("hex"); fs.writeFileSync(file, JSON.stringify(j1));
+    let r3 = w.mk().report(q3.id, OWNER); assert.equal(r3.verifiedFacts.length, 0, "a forged confirmation field is not a confirmation"); assert.equal(r3.quoteMatched.length, 1);
+    // a forged confirmation EVENT breaks the chain and then no confirmation counts at all
+    const j2 = JSON.parse(fs.readFileSync(file, "utf8")); j2.events.push({ n: j2.events.length + 1, at: w.now(), type: "EVIDENCE_CONFIRMED", by: "OWNER", findingId: f3.id, evidence: e3.id, quoteSha: E3.confirmedQuoteSha, prev: "x", hash: "y" }); fs.writeFileSync(file, JSON.stringify(j2));
+    const broken = w.mk(); r3 = broken.report(q3.id, OWNER); assert.equal(r3.verifiedFacts.length, 0); assert.equal(broken.verifyChain().ok, false); assert.equal(broken.report(q.id, OWNER).verifiedFacts.length, 0, "with a broken chain no confirmation is trusted");
   } finally { w.done(); }
 });
 
@@ -276,5 +285,20 @@ test("confirmation is re-checked against the current source: a superseded docume
     const e1 = w.rl.attachEvidence(f2.id, { citation: hits[0].citation }, OWNER); w.rl.attachEvidence(f2.id, { citation: hits[1].citation }, OWNER);
     w.rl.confirmEvidence(f2.id, e1.id, { note: "read it" }, OWNER);
     const r = w.rl.report(q2.id, OWNER); assert.equal(r.verifiedFacts[0].confidence, "MEDIUM"); assert.equal(r.verifiedFacts[0].independentSources, 1);
+  } finally { w.done(); }
+});
+
+test("R6 verification regressions: digits of other scripts, 4.200 vs 4200, curly-apostrophe negation, more negation words and prototype ids cannot slip a mismatching quote in as support", async () => {
+  const w = await world();
+  try {
+    const q = w.rl.openQuestion({ projectId: w.p.id, text: "Facts?" }, OWNER);
+    const attempt = (claim, quote) => { w.web("S" + Math.random().toString(36).slice(2), quote, "https://example.org/" + Math.random().toString(36).slice(2)); const f2 = w.rl.addFinding(q.id, { claim }, OWNER); const c = w.kp.search(w.p.id, { query: quote, ...OWNER }).results.find(x => x.text.includes(quote.slice(0, 15)))?.citation; return () => w.rl.attachEvidence(f2.id, { citation: c }, OWNER); };
+    assert.throws(attempt("Revenue was ٤٢٠٠ euros this year", "Revenue was 100 euros this year and ٤٢٠٠ is shown"), /EVIDENCE_NON_ASCII_DIGITS/);
+    assert.throws(attempt("The monthly fee is 4200 dollars for everyone", "The monthly fee is 4.200 dollars for everyone"), /EVIDENCE_NUMBER_NOT_IN_QUOTE:4200/);
+    assert.throws(attempt("The service is available to all customers today", "The service isn’t available to all customers today"), /EVIDENCE_NEGATION_MISMATCH/);
+    for (const [c, qt] of [["The service is available to every customer now", "The service is unavailable to every customer now"], ["The vendor delivers the order on time always", "The vendor failed the order on time always"], ["The plan includes support and hosting", "The plan lacks support and hosting"]]) assert.throws(attempt(c, qt), /EVIDENCE_NEGATION_MISMATCH/, qt);
+    assert.ok(attempt("The monthly rent for the warehouse is 4,200 dollars", "The monthly rent for the warehouse is 4,200 dollars")().id, "a genuine match still attaches");
+    assert.throws(() => w.rl.report("__proto__", { tenantId: undefined, role: "OWNER" }), /TENANT_REQUIRED|UNKNOWN_QUESTION/); assert.throws(() => w.rl.addFinding("__proto__", { claim: "x" }, { role: "OWNER" }), /UNKNOWN_QUESTION|TENANT_REQUIRED/);
+    assert.throws(() => w.rl.attachEvidence("constructor", { citation: {} }, OWNER), /UNKNOWN_FINDING/);
   } finally { w.done(); }
 });

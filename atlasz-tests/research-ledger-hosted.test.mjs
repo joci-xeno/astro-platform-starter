@@ -42,12 +42,14 @@ test("hosted: an agent runs the whole research loop through typed tools; its own
   } finally { rm(dir); }
 });
 
+const PW0 = "correct horse battery";
 test("Control Center: research view/actions are token-protected; owner resolves a contradiction; bad input is 400; unreadable store reported and not replaced", async () => {
   const base = tmp("rlc-"), cc = createControlCenterServer({ stateDir: path.join(base, "s"), configDir: path.join(base, "c"), port: await freePort() });
   const { port, token } = await cc.listen();
   const post = (b) => call(port, token, "POST", "/api/research/action", b), kp = b => call(port, token, "POST", "/api/knowledge/action", b);
   try {
     assert.equal((await call(port, "wrong", "GET", "/api/research")).status, 401); assert.equal((await call(port, "wrong", "POST", "/api/research/action", { op: "openQuestion" })).status, 401);
+    await call(port, token, "POST", "/api/owner-key", { passphrase: PW0 });
     const pid = (await kp({ op: "create", name: "R" })).body.result.id;
     const qid = (await post({ op: "openQuestion", projectId: pid, text: "Rent?" })).body.result.id;
     await post({ op: "addSource", projectId: pid, url: "https://example.org/a", retrievedAt: new Date().toISOString(), title: "A", text: RENT });
@@ -57,11 +59,15 @@ test("Control Center: research view/actions are token-protected; owner resolves 
     const ea = await post({ op: "attachEvidence", findingId: fa.id, citation: await hit("4200") }); assert.equal(ea.status, 200); assert.equal((await post({ op: "attachEvidence", findingId: fb.id, citation: await hit("4800") })).status, 200);
     const k = (await post({ op: "declareContradiction", a: fa.id, b: fb.id, note: "listings differ" })).body.result;
     let v = (await call(port, token, "GET", "/api/research")).body; assert.equal(v.state, "CONNECTED"); assert.equal(v.questions[0].state, "CONTESTED"); assert.equal(v.questions[0].verifiedFacts.length, 0); assert.equal(v.summary.unresolved, 1);
-    assert.equal((await post({ op: "resolveContradiction", id: k.id, winner: fa.id, note: "" })).status, 400);                    // note required
-    assert.equal((await post({ op: "resolveContradiction", id: k.id, winner: fa.id, note: "Lease says 4200" })).status, 200);
+    assert.equal((await post({ op: "resolveContradiction", id: k.id, winner: fa.id, note: "Lease says 4200" })).status, 400, "the dashboard token alone cannot resolve");
+    assert.equal((await post({ op: "resolveContradiction", id: k.id, winner: fa.id, note: "Lease says 4200", passphrase: "not the passphrase" })).status, 400);
+    assert.equal((await post({ op: "resolveContradiction", id: k.id, winner: fa.id, note: "", passphrase: PW0 })).status, 400);                    // note required
+    assert.equal((await post({ op: "resolveContradiction", id: k.id, winner: fa.id, note: "Lease says 4200", passphrase: PW0 })).status, 200);
     v = (await call(port, token, "GET", "/api/research")).body; assert.equal(v.questions[0].state, "UNRESOLVED", "resolved, but the quotation match is not yet owner-confirmed"); assert.equal(v.questions[0].quoteMatched[0].id, fa.id);
-    assert.equal((await post({ op: "confirmEvidence", findingId: fa.id, evidenceId: ea.body.result.id, note: "" })).status, 400);
-    assert.equal((await post({ op: "confirmEvidence", findingId: fa.id, evidenceId: ea.body.result.id, note: "Lease says 4200" })).status, 200);
+    assert.equal((await post({ op: "confirmEvidence", findingId: fa.id, evidenceId: ea.body.result.id, note: "Lease says 4200" })).status, 400, "the dashboard token alone cannot confirm");
+    assert.equal((await post({ op: "confirmEvidence", findingId: fa.id, evidenceId: ea.body.result.id, note: "x", passphrase: "not the passphrase" })).status, 400);
+    assert.equal((await post({ op: "confirmEvidence", findingId: fa.id, evidenceId: ea.body.result.id, note: "", passphrase: PW0 })).status, 400);
+    assert.equal((await post({ op: "confirmEvidence", findingId: fa.id, evidenceId: ea.body.result.id, note: "Lease says 4200", passphrase: PW0 })).status, 200);
     v = (await call(port, token, "GET", "/api/research")).body; assert.equal(v.questions[0].state, "ANSWERED"); assert.equal(v.questions[0].rejected[0].id, fb.id); assert.equal(v.summary.chain.ok, true);
     assert.ok(v.events.some(e => e.type === "CONTRADICTION_RESOLVED" && e.by === "OWNER"));
     assert.equal((await post({ op: "wipe" })).status, 400); assert.equal((await post({ op: "openQuestion", projectId: "kp-nope", text: "x" })).status, 400);

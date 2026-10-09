@@ -21,11 +21,15 @@ import fs from "node:fs";
 export const FINDING_KINDS = Object.freeze(["CLAIM", "ASSUMPTION"]);
 export const RELATIONS = Object.freeze(["SUPPORTS", "REFUTES"]);
 export const STATUSES = Object.freeze(["VERIFIED", "QUOTE_MATCHED", "REFUTATION_CLAIMED", "UNSUPPORTED", "ASSUMPTION", "OUTDATED", "CONFLICTED", "REFUTED", "REJECTED", "UNVERIFIABLE"]);
-const NEG = /\b(not|no|never|none|neither|nor|cannot|without|n't|isn't|aren't|doesn't|don't|didn't|won't|wasn't|weren't|hasn't|haven't|nem|nincs|soha|sem)\b|n't\b/gi;
-const nums = t => new Set((String(t).normalize("NFKC").match(/\d[\d.,]*\d|\d/g) ?? []).map(n => n.replace(/[,.](?=\d{3}\b)/g, "").replace(/[.,]$/, "")));
+const NEG = /\b(not|no|never|none|neither|nor|cannot|without|unable|unavailable|lacks?|lacked|fail(?:s|ed)?|absent|n't|isn't|aren't|doesn't|don't|didn't|won't|wasn't|weren't|hasn't|haven't|nem|nincs|soha|sem)\b|n't\b/gi;
+const norm0 = t => String(t).normalize("NFKC").replace(/[\u2018\u2019\u02bc]/g, "'");          // curly apostrophes count as apostrophes
+/** Numbers as written: thousands commas are removed, a dot is ALWAYS a decimal point (so 4.200 is not 4200: an ambiguous format never passes as a match). */
+const nums = t => new Set((norm0(t).match(/\d[\d.,]*\d|\d/g) ?? []).map(n => n.replace(/,(?=\d{3}\b)/g, "").replace(/[.,]$/, "")));
+const FOREIGN_DIGITS = /\p{Nd}/u, ASCII_DIGITS_ONLY = t => !/[^\u0000-\u007f]/.test(String(t).replace(/[^\p{Nd}]/gu, ""));
 /** Offline support check (no semantics): a SUPPORTING quote must contain every number the claim states and must not flip its polarity. Lexical overlap alone is NOT entailment. */
 function supportMismatch(claim, quote) {
-  const q = nums(quote); for (const n of nums(claim)) if (!q.has(n)) return "EVIDENCE_NUMBER_NOT_IN_QUOTE:" + n;
+  if (!ASCII_DIGITS_ONLY(claim) || !ASCII_DIGITS_ONLY(quote)) return "EVIDENCE_NON_ASCII_DIGITS";            // digits of other scripts cannot be compared by this check: refused rather than guessed
+  claim = norm0(claim); quote = norm0(quote); const q = nums(quote); for (const n of nums(claim)) if (!q.has(n)) return "EVIDENCE_NUMBER_NOT_IN_QUOTE:" + n;
   if ((String(claim).match(NEG) ?? []).length % 2 !== (String(quote).match(NEG) ?? []).length % 2) return "EVIDENCE_NEGATION_MISMATCH";
   return null;
 }
@@ -60,14 +64,17 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
     if (!anchorOk()) return { ok: false, brokenAt: S.events.length + 1, reason: readHead() ? "HEAD_ANCHOR_MISMATCH" : "HEAD_ANCHOR_MISSING" };
     return { ok: true, events: S.events.length };
   }
+  // Owner confirmations live in the hash-chained event log (not in a field of the evidence): a hand-edited store cannot create one without also forging the chain AND its head anchor.
+  let confMemo = { key: "", set: new Set() };
+  const confirmedSet = () => { const key = S.events.length + ":" + (S.events.at(-1)?.hash ?? ""); if (confMemo.key === key) return confMemo.set; const ok = verifyChain().ok; confMemo = { key, set: new Set(ok ? S.events.filter(e => e.type === "EVIDENCE_CONFIRMED" && e.by === "OWNER" && typeof e.quoteSha === "string").map(e => e.findingId + "|" + e.evidence + "|" + e.quoteSha) : []) }; return confMemo.set; };
   const who = w => ({ tenantId: w?.tenantId, role: w?.role ?? "OWNER", forAgent: Boolean(w?.forAgent) });
   const byOf = (w, by) => (who(w).forAgent ? "AGENT" : (typeof by === "string" && by ? by : "OWNER"));   // an agent can never name itself OWNER (or anyone else)
   function access(projectId, w) {                                   // the caller must be allowed to use the project (tenant + role), else it does not exist for them
     if (!w?.tenantId) throw new Error("TENANT_REQUIRED");
     if (!knowledge.list({ tenantId: w.tenantId, role: who(w).role }).some(p => p.id === projectId)) throw new Error("PROJECT_NOT_PERMITTED");
   }
-  const question = (qid, w) => { const q = S.questions[qid]; if (!q || q.tenantId !== w?.tenantId) throw new Error("UNKNOWN_QUESTION"); access(q.projectId, w); return q; };
-  const finding = (fid, w) => { const f = S.findings[fid]; if (!f || f.tenantId !== w?.tenantId) throw new Error("UNKNOWN_FINDING"); question(f.questionId, w); return f; };
+  const question = (qid, w) => { const q = Object.hasOwn(S.questions, qid) ? S.questions[qid] : null; if (!q || q.tenantId !== w?.tenantId) throw new Error("UNKNOWN_QUESTION"); access(q.projectId, w); return q; };
+  const finding = (fid, w) => { const f = Object.hasOwn(S.findings, fid) ? S.findings[fid] : null; if (!f || f.tenantId !== w?.tenantId) throw new Error("UNKNOWN_FINDING"); question(f.questionId, w); return f; };
   function vet(text, max, field, by) {
     const t = String(text ?? "").trim(); if (!t) throw new Error(field + "_REQUIRED"); if (t.length > max) throw new Error(field + "_TOO_LONG");
     if (looksSecret(t)) throw new Error(field + "_CONTAINS_SECRET");
@@ -113,13 +120,13 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   /** Only the OWNER turns a quotation match into VERIFIED (or a refutation claim into REFUTED): the ledger itself cannot judge meaning. The citation must still verify now. */
   function confirmEvidence(fid, eid, { note } = {}, w) {
     reload(); if (who(w).forAgent || who(w).role !== "OWNER") throw new Error("OWNER_ONLY");
-    const f = finding(fid, w), e = f.evidence.find(x => x.id === eid); if (!e) throw new Error("UNKNOWN_EVIDENCE"); if (e.confirmedBy) throw new Error("ALREADY_CONFIRMED");
+    const f = finding(fid, w), e = f.evidence.find(x => x.id === eid); if (!e) throw new Error("UNKNOWN_EVIDENCE"); if (confirmedSet().has(f.id + "|" + e.id + "|" + sha(e.citation.quote))) throw new Error("ALREADY_CONFIRMED");
     const v = knowledge.verifyCitation(e.citation, w); if (v.status !== "OK") throw new Error("CITATION_" + v.status);
     const age = ageDays(e.retrievedAt); if (age != null && (age > freshnessDays || age < -1)) throw new Error("EVIDENCE_AGED_OR_DATED_IN_FUTURE");
     if (e.relation === "SUPPORTS") { const bad = supportMismatch(f.claim, e.citation.quote); if (bad) throw new Error(bad); }
     const n = vet(note, LIMITS.noteChars, "NOTE", "OWNER");
     e.confirmedBy = "OWNER"; e.confirmedAt = now(); e.confirmNote = n.text; e.confirmedQuoteSha = sha(e.citation.quote);
-    event("EVIDENCE_CONFIRMED", "OWNER", { findingId: f.id, evidence: e.id, relation: e.relation }); store.save(); return { id: e.id, relation: e.relation, confirmed: true };
+    event("EVIDENCE_CONFIRMED", "OWNER", { findingId: f.id, evidence: e.id, relation: e.relation, quoteSha: e.confirmedQuoteSha }); store.save(); return { id: e.id, relation: e.relation, confirmed: true };
   }
   function declareContradiction(aId, bId, { note = "", by } = {}, w) {
     reload(); const a = finding(aId, w), c = finding(bId, w), b = byOf(w, by); if (a.id === c.id) throw new Error("SAME_FINDING");
@@ -142,7 +149,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
     const q = S.questions[f.questionId], base = { id: f.id, questionId: f.questionId, claim: f.claim, kind: f.kind, topic: f.topic, value: f.value, createdBy: f.createdBy, createdAt: f.createdAt };
     if (f.kind === "ASSUMPTION") return { ...base, status: "ASSUMPTION", confidence: "NONE", reasons: ["AUTHOR_MARKED_ASSUMPTION"], evidence: [] };
     const ev = f.evidence.map(e => { const v = knowledge.verifyCitation(e.citation, w), age = ageDays(e.retrievedAt), aged = age != null && (age > freshnessDays || age < -1);   // a retrieval date in the future cannot be trusted as fresh
-      return { id: e.id, relation: e.relation, title: e.citation.title, kind: e.citation.kind, url: e.citation.url, version: e.citation.version, quote: v.status === "SOURCE_UNAVAILABLE" && who(w).role !== "OWNER" ? "[withheld: source not readable by this role]" : e.citation.quote, retrievedAt: e.retrievedAt, verification: v.status, aged, ok: v.status === "OK" && !aged, memberId: e.citation.memberId, addedBy: e.addedBy, confirmed: Boolean(e.confirmedBy) && e.confirmedQuoteSha === sha(e.citation.quote) }; });
+      return { id: e.id, relation: e.relation, title: e.citation.title, kind: e.citation.kind, url: e.citation.url, version: e.citation.version, quote: v.status === "SOURCE_UNAVAILABLE" && who(w).role !== "OWNER" ? "[withheld: source not readable by this role]" : e.citation.quote, retrievedAt: e.retrievedAt, verification: v.status, aged, ok: v.status === "OK" && !aged, memberId: e.citation.memberId, addedBy: e.addedBy, confirmed: confirmedSet().has(f.id + "|" + e.id + "|" + sha(e.citation.quote)) }; });
     const sup = ev.filter(e => e.relation === "SUPPORTS" && e.ok), ref = ev.filter(e => e.relation === "REFUTES" && e.ok), supC = sup.filter(e => e.confirmed), refC = ref.filter(e => e.confirmed), reasons = [];
     const pairs = Object.values(S.contradictions).filter(k => k.tenantId === f.tenantId && (k.a === f.id || k.b === f.id));
     const rejected = pairs.some(k => k.state === "RESOLVED" && k.resolution.winner && k.resolution.winner !== f.id);

@@ -85,3 +85,23 @@ test("plan: a lesson with reviews that are due outranks one that merely has new 
   tu.answer({ tenantId: T, courseId: "c", questionId: "qa", choiceIndex: 0, ...O }); clock.t += 5 * DAY;
   const steps = tu.plan({ tenantId: T, courseId: "c" }).steps; assert.deepEqual(steps.map(s => [s.lessonId, s.action]), [["a", "REVIEW_DUE"], ["b", "READ_THEN_FIRST_QUIZ"]]);
 });
+
+test("R6 verification regressions: a broken clock changes nothing, a hand-edited course is refused instead of crashing, and instant repeats cannot inflate accuracy", async () => {
+  const { createTutor } = await import("../atlasz-addons/tutor.mjs"); const fs = await import("node:fs"); const path = await import("node:path"); const { tmp, rm } = await import("./helpers.mjs");
+  const dir = tmp("tu6-"); const file = path.join(dir, "t.json"); let clock = 1_700_000_000_000;
+  try {
+    const tu = createTutor({ file, now: () => clock });
+    const lessons = [{ id: "l1", title: "L", text: "text" }], questions = [{ id: "q1", lessonId: "l1", prompt: "2+2?", choices: ["3", "4"], answerIndex: 1 }];
+    assert.equal(tu.createCourse({ tenantId: "T", id: "c", title: "C", lessons, questions, actor: "OWNER" }).ok, true);
+    for (const bad of [NaN, undefined, 8.64e15 + 1, Infinity, -Infinity]) { clock = bad; const before = fs.readFileSync(file, "utf8"); const r = tu.answer({ tenantId: "T", courseId: "c", questionId: "q1", choiceIndex: 1, actor: "OWNER" }); assert.deepEqual([r.ok, r.reason], [false, "CLOCK_INVALID"], String(bad)); assert.equal(fs.readFileSync(file, "utf8"), before, "nothing was written"); }
+    clock = 1_700_000_000_000;
+    assert.equal(tu.answer({ tenantId: "T", courseId: "c", questionId: "q1", choiceIndex: 1, actor: "OWNER" }).countedForReview, true);
+    for (let i = 0; i < 50; i++) tu.answer({ tenantId: "T", courseId: "c", questionId: "q1", choiceIndex: 1, actor: "OWNER" });         // 50 instant repeats
+    assert.equal(tu.progress({ tenantId: "T", courseId: "c" }).lessons[0].accuracyPct, 100, "one counted answer, right");
+    assert.equal(tu.answer({ tenantId: "T", courseId: "c", questionId: "q1", choiceIndex: 0, actor: "OWNER" }).correct, false);       // a wrong answer always counts
+    assert.equal(tu.progress({ tenantId: "T", courseId: "c" }).lessons[0].accuracyPct, 50, "1 right of 2 counted answers, not 51 of 52");
+    const j = JSON.parse(fs.readFileSync(file, "utf8")); const c = Object.values(j.courses)[0]; c.attempts = "x"; fs.writeFileSync(file, JSON.stringify(j));
+    const tu2 = createTutor({ file, now: () => clock }); assert.equal(tu2.answer({ tenantId: "T", courseId: "c", questionId: "q1", choiceIndex: 1, actor: "OWNER" }).reason, "COURSE_NOT_FOUND"); assert.equal(tu2.progress({ tenantId: "T", courseId: "c" }).reason, "COURSE_NOT_FOUND");
+    c.attempts = []; c.questions[0].box = 99; fs.writeFileSync(file, JSON.stringify(j)); assert.equal(createTutor({ file, now: () => clock }).progress({ tenantId: "T", courseId: "c" }).reason, "COURSE_NOT_FOUND", "an impossible box value is refused");
+  } finally { rm(dir); }
+});
