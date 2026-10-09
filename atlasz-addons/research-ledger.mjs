@@ -6,8 +6,10 @@
 //
 // Truth rules:
 //  * A finding's status is COMPUTED at read time from re-verified evidence, never stored and never set by its author.
-//  * VERIFIED needs >=1 supporting citation that verifies OK now, is not aged out, and whose quote covers the claim's terms. Otherwise the claim is
-//    UNSUPPORTED / ASSUMPTION / OUTDATED / UNVERIFIABLE / CONFLICTED / REFUTED and is listed in its own section of the report - never among the facts.
+//  * A literal quotation match is NOT semantic verification. A supporting citation that verifies OK now, is not aged out and covers the claim's terms (numbers present,
+//    same polarity) only makes the finding QUOTE_MATCHED. VERIFIED additionally needs the OWNER to confirm that evidence item (confirmEvidence: owner-only, never an agent).
+//    Likewise unconfirmed refuting evidence only makes REFUTATION_CLAIMED; REFUTED needs owner confirmation. Everything else is
+//    UNSUPPORTED / ASSUMPTION / OUTDATED / UNVERIFIABLE / CONFLICTED and is listed in its own section of the report - never among the facts.
 //  * Confidence reflects number of independent verified sources and freshness - NOT truth. Author-claimed confidence does not exist.
 //  * Contradictions (declared, same-topic/different-value, or supporting-vs-refuting evidence) keep a finding CONFLICTED until the OWNER resolves them.
 //  * Retrieval underneath is keyword-based (not semantic); this ledger does no semantic judgement of its own: it checks quote coverage of claim terms.
@@ -18,7 +20,7 @@ import fs from "node:fs";
 
 export const FINDING_KINDS = Object.freeze(["CLAIM", "ASSUMPTION"]);
 export const RELATIONS = Object.freeze(["SUPPORTS", "REFUTES"]);
-export const STATUSES = Object.freeze(["VERIFIED", "UNSUPPORTED", "ASSUMPTION", "OUTDATED", "CONFLICTED", "REFUTED", "REJECTED", "UNVERIFIABLE"]);
+export const STATUSES = Object.freeze(["VERIFIED", "QUOTE_MATCHED", "REFUTATION_CLAIMED", "UNSUPPORTED", "ASSUMPTION", "OUTDATED", "CONFLICTED", "REFUTED", "REJECTED", "UNVERIFIABLE"]);
 const NEG = /\b(not|no|never|none|neither|nor|cannot|without|n't|isn't|aren't|doesn't|don't|didn't|won't|wasn't|weren't|hasn't|haven't|nem|nincs|soha|sem)\b|n't\b/gi;
 const nums = t => new Set((String(t).normalize("NFKC").match(/\d[\d.,]*\d|\d/g) ?? []).map(n => n.replace(/[,.](?=\d{3}\b)/g, "").replace(/[.,]$/, "")));
 /** Offline support check (no semantics): a SUPPORTING quote must contain every number the claim states and must not flip its polarity. Lexical overlap alone is NOT entailment. */
@@ -108,6 +110,17 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
       retrievedAt: meta?.retrievedAt ?? null, coverage: Number(cov.toFixed(2)), addedBy: b, addedAt: now() };
     f.evidence.push(e); event("EVIDENCE_ATTACHED", b, { findingId: f.id, evidence: e.id, relation, member: citation.memberId }); store.save(); return { id: e.id, relation, coverage: e.coverage };
   }
+  /** Only the OWNER turns a quotation match into VERIFIED (or a refutation claim into REFUTED): the ledger itself cannot judge meaning. The citation must still verify now. */
+  function confirmEvidence(fid, eid, { note } = {}, w) {
+    reload(); if (who(w).forAgent || who(w).role !== "OWNER") throw new Error("OWNER_ONLY");
+    const f = finding(fid, w), e = f.evidence.find(x => x.id === eid); if (!e) throw new Error("UNKNOWN_EVIDENCE"); if (e.confirmedBy) throw new Error("ALREADY_CONFIRMED");
+    const v = knowledge.verifyCitation(e.citation, w); if (v.status !== "OK") throw new Error("CITATION_" + v.status);
+    const age = ageDays(e.retrievedAt); if (age != null && (age > freshnessDays || age < -1)) throw new Error("EVIDENCE_AGED_OR_DATED_IN_FUTURE");
+    if (e.relation === "SUPPORTS") { const bad = supportMismatch(f.claim, e.citation.quote); if (bad) throw new Error(bad); }
+    const n = vet(note, LIMITS.noteChars, "NOTE", "OWNER");
+    e.confirmedBy = "OWNER"; e.confirmedAt = now(); e.confirmNote = n.text; e.confirmedQuoteSha = sha(e.citation.quote);
+    event("EVIDENCE_CONFIRMED", "OWNER", { findingId: f.id, evidence: e.id, relation: e.relation }); store.save(); return { id: e.id, relation: e.relation, confirmed: true };
+  }
   function declareContradiction(aId, bId, { note = "", by } = {}, w) {
     reload(); const a = finding(aId, w), c = finding(bId, w), b = byOf(w, by); if (a.id === c.id) throw new Error("SAME_FINDING");
     if (a.questionId !== c.questionId) throw new Error("DIFFERENT_QUESTIONS");
@@ -128,9 +141,9 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   function evaluate(f, w) {
     const q = S.questions[f.questionId], base = { id: f.id, questionId: f.questionId, claim: f.claim, kind: f.kind, topic: f.topic, value: f.value, createdBy: f.createdBy, createdAt: f.createdAt };
     if (f.kind === "ASSUMPTION") return { ...base, status: "ASSUMPTION", confidence: "NONE", reasons: ["AUTHOR_MARKED_ASSUMPTION"], evidence: [] };
-    const ev = f.evidence.map(e => { const v = knowledge.verifyCitation(e.citation, w), age = ageDays(e.retrievedAt), aged = age != null && age > freshnessDays;
-      return { id: e.id, relation: e.relation, title: e.citation.title, kind: e.citation.kind, url: e.citation.url, version: e.citation.version, quote: v.status === "SOURCE_UNAVAILABLE" && who(w).role !== "OWNER" ? "[withheld: source not readable by this role]" : e.citation.quote, retrievedAt: e.retrievedAt, verification: v.status, aged, ok: v.status === "OK" && !aged, memberId: e.citation.memberId, addedBy: e.addedBy }; });
-    const sup = ev.filter(e => e.relation === "SUPPORTS" && e.ok), ref = ev.filter(e => e.relation === "REFUTES" && e.ok), reasons = [];
+    const ev = f.evidence.map(e => { const v = knowledge.verifyCitation(e.citation, w), age = ageDays(e.retrievedAt), aged = age != null && (age > freshnessDays || age < -1);   // a retrieval date in the future cannot be trusted as fresh
+      return { id: e.id, relation: e.relation, title: e.citation.title, kind: e.citation.kind, url: e.citation.url, version: e.citation.version, quote: v.status === "SOURCE_UNAVAILABLE" && who(w).role !== "OWNER" ? "[withheld: source not readable by this role]" : e.citation.quote, retrievedAt: e.retrievedAt, verification: v.status, aged, ok: v.status === "OK" && !aged, memberId: e.citation.memberId, addedBy: e.addedBy, confirmed: Boolean(e.confirmedBy) && e.confirmedQuoteSha === sha(e.citation.quote) }; });
+    const sup = ev.filter(e => e.relation === "SUPPORTS" && e.ok), ref = ev.filter(e => e.relation === "REFUTES" && e.ok), supC = sup.filter(e => e.confirmed), refC = ref.filter(e => e.confirmed), reasons = [];
     const pairs = Object.values(S.contradictions).filter(k => k.tenantId === f.tenantId && (k.a === f.id || k.b === f.id));
     const rejected = pairs.some(k => k.state === "RESOLVED" && k.resolution.winner && k.resolution.winner !== f.id);
     const open = pairs.filter(k => k.state === "OPEN");
@@ -139,30 +152,32 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
     if (rejected) { status = "REJECTED"; reasons.push("OWNER_RESOLVED_CONTRADICTION_AGAINST_THIS_FINDING"); }
     else if (open.length || autoConf.length) { status = "CONFLICTED"; if (open.length) reasons.push("OPEN_CONTRADICTION:" + open.map(k => k.id).join(",")); if (autoConf.length) reasons.push("SAME_TOPIC_DIFFERENT_VALUE:" + autoConf.map(o => o.id).join(",")); }
     else if (sup.length && ref.length) { status = "CONFLICTED"; reasons.push("SUPPORTING_AND_REFUTING_EVIDENCE"); }
-    else if (ref.length) { status = "REFUTED"; reasons.push("VERIFIED_REFUTING_EVIDENCE"); }
-    else if (sup.length) { status = "VERIFIED"; }
+    else if (refC.length) { status = "REFUTED"; reasons.push("OWNER_CONFIRMED_REFUTING_EVIDENCE"); }
+    else if (ref.length) { status = "REFUTATION_CLAIMED"; reasons.push("REFUTING_QUOTE_MATCHED_AWAITING_OWNER_CONFIRMATION"); }
+    else if (supC.length) { status = "VERIFIED"; }
+    else if (sup.length) { status = "QUOTE_MATCHED"; reasons.push("QUOTE_MATCHES_LEXICALLY_NOT_SEMANTICALLY_VERIFIED_AWAITING_OWNER_CONFIRMATION"); }
     else if (!ev.length) { status = "UNSUPPORTED"; reasons.push("NO_EVIDENCE"); }
     else if (ev.some(e => e.verification === "STALE_SOURCE" || e.aged)) { status = "OUTDATED"; reasons.push(...[...new Set(ev.filter(e => e.verification === "STALE_SOURCE" || e.aged).map(e => e.verification === "STALE_SOURCE" ? "SOURCE_CHANGED_OR_SUPERSEDED" : "RETRIEVED_MORE_THAN_" + freshnessDays + "_DAYS_AGO"))]); }
     else { status = "UNVERIFIABLE"; reasons.push(...[...new Set(ev.map(e => e.verification))]); }
     // A finding built on sources this caller cannot read must not leak their content through the claim text either.
     const redact = who(w).role !== "OWNER" && ev.some(e => e.verification === "SOURCE_UNAVAILABLE"); if (redact) { base.claim = "[withheld: finding rests on a source this role cannot read]"; reasons.push("CLAIM_REDACTED_FOR_ROLE"); }
-    const distinct = new Set(sup.map(e => e.memberId)).size;
-    const confidence = status === "VERIFIED" ? (distinct >= 2 ? "HIGH" : "MEDIUM") : status === "CONFLICTED" ? "LOW" : "NONE";
-    return { ...base, status, confidence, independentSources: distinct, reasons, evidence: ev, note: "Status is recomputed from the current sources on every read. Confidence = independent verified sources + freshness, not proof of truth. Support is lexical (all claim numbers present, same polarity, term overlap), not semantic entailment: the owner still judges meaning." };
+    const distinct = new Set(supC.map(e => e.memberId)).size;
+    const confidence = status === "VERIFIED" ? (distinct >= 2 ? "HIGH" : "MEDIUM") : status === "CONFLICTED" || status === "QUOTE_MATCHED" ? "LOW" : "NONE";
+    return { ...base, status, confidence, independentSources: distinct, reasons, evidence: ev, note: "Status is recomputed from the current sources on every read. Confidence = independent verified sources + freshness, not proof of truth. A quotation match is lexical (all claim numbers present, same polarity, term overlap), NOT semantic verification: only an owner-confirmed evidence item makes a finding VERIFIED." };
   }
   /** Structured report: facts only from VERIFIED findings; every other class is listed separately. */
   function report(qid, w) {
     reload(); const q = question(qid, w), fs = Object.values(S.findings).filter(f => f.questionId === qid && f.tenantId === w.tenantId).map(f => evaluate(f, w)), by = s => fs.filter(f => f.status === s);
     const contradictions = Object.values(S.contradictions).filter(k => k.questionId === qid).map(k => structuredClone(k));
     const state = by("VERIFIED").length && !by("CONFLICTED").length ? "ANSWERED" : by("CONFLICTED").length ? "CONTESTED" : "UNRESOLVED";
-    return { question: { id: q.id, text: q.text, projectId: q.projectId, createdAt: q.createdAt }, state, verifiedFacts: by("VERIFIED"), conflicted: by("CONFLICTED"), refuted: by("REFUTED"), outdated: by("OUTDATED"), unverifiable: by("UNVERIFIABLE"),
+    return { question: { id: q.id, text: q.text, projectId: q.projectId, createdAt: q.createdAt }, state, verifiedFacts: by("VERIFIED"), conflicted: by("CONFLICTED"), refuted: by("REFUTED"), quoteMatched: by("QUOTE_MATCHED"), refutationClaimed: by("REFUTATION_CLAIMED"), outdated: by("OUTDATED"), unverifiable: by("UNVERIFIABLE"),
       unsupported: by("UNSUPPORTED"), assumptions: by("ASSUMPTION"), rejected: by("REJECTED"), contradictions, asOf: now(),
-      note: state === "ANSWERED" ? "Answered only by findings whose evidence verifies against the current sources." : "Not answered: no verified, uncontested finding. Unsupported claims and assumptions are NOT facts." };
+      note: state === "ANSWERED" ? "Answered only by findings whose evidence verifies against the current sources AND was confirmed by the owner (a quotation match alone is not verification)." : "Not answered: no verified, uncontested finding. Unsupported claims and assumptions are NOT facts." };
   }
   const unresolved = (w, { projectId = null } = {}) => { reload(); return Object.values(S.questions).filter(q => q.tenantId === w?.tenantId && (!projectId || q.projectId === projectId)).filter(q => { try { access(q.projectId, w); return true; } catch { return false; } })
-    .map(q => { const r = report(q.id, w); return { id: q.id, text: q.text, projectId: q.projectId, state: r.state, counts: { verified: r.verifiedFacts.length, conflicted: r.conflicted.length, unsupported: r.unsupported.length, assumptions: r.assumptions.length, outdated: r.outdated.length } }; }).filter(x => x.state !== "ANSWERED"); };
+    .map(q => { const r = report(q.id, w); return { id: q.id, text: q.text, projectId: q.projectId, state: r.state, counts: { verified: r.verifiedFacts.length, conflicted: r.conflicted.length, unsupported: r.unsupported.length, assumptions: r.assumptions.length, outdated: r.outdated.length, quoteMatched: r.quoteMatched.length } }; }).filter(x => x.state !== "ANSWERED"); };
   function list(w, { projectId = null } = {}) { reload(); return Object.values(S.questions).filter(q => q.tenantId === w?.tenantId && (!projectId || q.projectId === projectId)).filter(q => { try { access(q.projectId, w); return true; } catch { return false; } }).map(q => ({ id: q.id, text: q.text, projectId: q.projectId, createdBy: q.createdBy, createdAt: q.createdAt })); }
   function summary(w) { const l = list(w), u = unresolved(w); return { questions: l.length, unresolved: u.length, answered: l.length - u.length, events: S.events.length, chain: verifyChain(), method: "EXTRACTIVE_CITATIONS_OVER_KEYWORD_RETRIEVAL" }; }
   const events = (w, { limit = 100 } = {}) => { reload(); if (who(w).forAgent) throw new Error("OWNER_ONLY"); return S.events.slice(-Math.min(limit, 500)).map(e => structuredClone(e)); };
-  return { openQuestion, addSource, addFinding, attachEvidence, declareContradiction, resolveContradiction, report, unresolved, list, summary, events, verifyChain: () => (reload(), verifyChain()) };
+  return { openQuestion, addSource, addFinding, attachEvidence, declareContradiction, resolveContradiction, confirmEvidence, report, unresolved, list, summary, events, verifyChain: () => (reload(), verifyChain()) };
 }

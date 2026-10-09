@@ -20,23 +20,35 @@ export function contrastRatio(fg, bg) {
 /** The same ratio rounded to two decimals, for display. */
 export const contrast = (fg, bg) => { const r = contrastRatio(fg, bg); return r === null ? null : Math.round(r * 100) / 100; };
 
-function blocks(css) {                                                  // flatten simple CSS into [{sel, decls:Map, dark}] (handles one @media nesting level)
-  const out = []; { let r = "", i = 0; for (;;) { const a = css.indexOf("/*", i); if (a < 0) { r += css.slice(i); break; } r += css.slice(i, a); const z = css.indexOf("*/", a + 2); if (z < 0) break; i = z + 2; } css = r; }   // strip comments in linear time; an unterminated comment swallows the rest
-  const rule = (text, dark) => {                                          // linear scan (a regex here would be quadratic on brace-free input)
+const NEUTRAL_AT = /^@(?:font-face|page|property|counter-style|keyframes|-webkit-keyframes|namespace|import|charset|view-transition)\b/i, GROUPING_AT = /^@(?:media|supports|layer|container|scope|document)\b/i;
+/** Brace-aware CSS reader (linear). Returns the rules AND an account of what it could not understand: unsupported at-rules and nested rules make the audit incomplete instead of being skipped silently. */
+function blocks(css) {
+  const out = []; out.unsupported = [];
+  { let r = "", i = 0; for (;;) { const a = css.indexOf("/*", i); if (a < 0) { r += css.slice(i); break; } r += css.slice(i, a); const z = css.indexOf("*/", a + 2); if (z < 0) break; i = z + 2; } css = r; }   // strip comments in linear time; an unterminated comment swallows the rest
+  const close = (t, from) => { let d = 1, j = from; while (j < t.length) { const c = t[j]; if (c === '"' || c === "'") { const e = t.indexOf(c, j + 1); j = e < 0 ? t.length : e + 1; continue; } if (c === "{") d++; else if (c === "}") { d--; if (!d) return j; } j++; } return -1; };
+  const darkSel = sel => /\[data-theme\s*=\s*["']?dark["']?\]/i.test(sel), lightSel = sel => /\[data-theme\s*=\s*["']?light["']?\]/i.test(sel), stripTheme = sel => sel.replace(/\[data-theme\s*=\s*["']?(?:dark|light)["']?\]/ig, "").trim() || ":root";
+  const walk = (t, dark, depth) => {
     let i = 0;
-    while (i < text.length) {
-      const open = text.indexOf("{", i); if (open < 0) break; const close = text.indexOf("}", open + 1); if (close < 0) break;
-      const decls = new Map(); for (const d of text.slice(open + 1, close).split(";")) { const k = d.indexOf(":"); if (k > 0) decls.set(d.slice(0, k).trim().toLowerCase(), d.slice(k + 1).trim()); }
-      for (const sel of text.slice(i, open).split(",")) if (sel.trim()) out.push({ sel: sel.trim(), decls, dark }); i = close + 1;
+    while (i < t.length) {
+      const semi = t.indexOf(";", i), open = t.indexOf("{", i);
+      if (open < 0) break;
+      if (semi >= 0 && semi < open) { i = semi + 1; continue; }                                    // statement at-rule such as @import / @charset
+      const prelude = t.slice(i, open).trim(), end = close(t, open + 1); if (end < 0) { out.unsupported.push("UNBALANCED_BRACES"); break; }
+      const body = t.slice(open + 1, end);
+      if (prelude.startsWith("@")) {
+        if (NEUTRAL_AT.test(prelude)) { /* no text-colour rules of interest */ }
+        else if (GROUPING_AT.test(prelude) && depth < 8) walk(body, dark || (/^@media/i.test(prelude) && /prefers-color-scheme\s*:\s*dark/i.test(prelude)), depth + 1);
+        else out.unsupported.push("UNSUPPORTED_AT_RULE:" + prelude.slice(0, 30));
+      } else {
+        const nested = body.includes("{"); if (nested) out.unsupported.push("NESTED_CSS_RULES:" + prelude.slice(0, 30));
+        const own = nested ? body.slice(0, body.indexOf("{")).split(";").slice(0, -1).join(";") : body;      // declarations before the first nested rule
+        const decls = new Map(); for (const d of own.split(";")) { const k = d.indexOf(":"); if (k > 0) decls.set(d.slice(0, k).trim().toLowerCase(), d.slice(k + 1).trim()); }
+        for (const sel0 of prelude.split(",")) { const sel = sel0.trim(); if (!sel) continue; const isDark = dark || darkSel(sel); out.push({ sel: darkSel(sel) || lightSel(sel) ? stripTheme(sel) : sel, decls, dark: isDark }); }
+      }
+      i = end + 1;
     }
   };
-  let i = 0, plain = "";
-  while (i < css.length) {
-    const at = css.indexOf("@media", i); if (at < 0) { plain += css.slice(i); break; }
-    plain += css.slice(i, at); const open = css.indexOf("{", at); if (open < 0) break; let depth = 1, j = open + 1; while (j < css.length && depth) { if (css[j] === "{") depth++; else if (css[j] === "}") depth--; j++; }
-    const cond = css.slice(at, open), inner = css.slice(open + 1, j - 1); rule(inner, /prefers-color-scheme\s*:\s*dark/.test(cond)); i = j;
-  }
-  rule(plain, false); return out;
+  walk(css, false, 0); return out;
 }
 const tokensFor = (bl, dark) => { const t = {}; for (const pass of dark ? [false, true] : [false]) for (const b of bl) if (b.sel === ":root" && b.dark === pass) for (const [k, v] of b.decls) t[k] = v; return t; };   // light first, dark overrides it
 const resolve = (v, tok) => { if (typeof v !== "string") return null; const m = /^var\((--[a-z0-9-]+)\)$/i.exec(v); return m ? (tok[m[1]] ?? v) : v; };   // an unknown token stays as text, so the pair is counted as unresolved instead of silently skipped   // declaration values are already trimmed
@@ -71,9 +83,9 @@ export const REMEDIATION = Object.freeze({
 });
 export function auditAccessibility({ html = "", css = "", js = "" } = {}) {
   for (const x of [html, css, js]) if (typeof x !== "string" || x.length > LIMITS.maxInputChars) return { ok: false, reason: "INPUT_INVALID_OR_TOO_LARGE" };
-  const findings = []; let truncated = false; const add = (severity, rule, message, detail = {}) => { if (findings.length >= LIMITS.maxFindings) { truncated = true; return; } findings.push({ severity, rule, message, ...detail }); };
+  const findings = []; let truncated = false; const total = { FAIL: 0, WARN: 0, INFO: 0 }; const add = (severity, rule, message, detail = {}) => { total[severity]++; if (findings.length >= LIMITS.maxFindings) { truncated = true; return; } findings.push({ severity, rule, message, ...detail }); };
   // ---- contrast of declared pairs, per theme
-  const bl = blocks(css), pairs = [];
+  const bl = blocks(css), pairs = [], skipped = [];
   for (const dark of [false, true]) {
     if (dark && !bl.some(b => b.dark)) continue; const tok = tokensFor(bl, dark), theme = dark ? "dark" : "light", page = tok["--bg"] ?? null, panel = tok["--panel"] ?? null, ink = tok["--ink"] ?? null;
     const eff = new Map(); for (const pass of dark ? [false, true] : [false]) for (const b of bl) if (b.dark === pass) { const m = eff.get(b.sel) ?? new Map(); for (const [k, v] of b.decls) m.set(k, v); eff.set(b.sel, m); }   // same-selector cascade: the dark block overrides the base
@@ -81,8 +93,9 @@ export function auditAccessibility({ html = "", css = "", js = "" } = {}) {
       const b = { sel, decls }; const fg = resolve(b.decls.get("color"), tok), bgRaw = resolve(bgOf(b.decls), tok), bg = typeof bgRaw === "string" && /^(none|transparent|inherit|initial|unset)$/i.test(bgRaw.trim()) ? null : bgRaw;   // "no own background": the text sits on the page or panel colour
       const px = Number(/^(\d+(?:\.\d+)?)px$/.exec(b.decls.get("font-size") ?? "")?.[1] ?? 0), w = b.decls.get("font-weight") ?? "", bold = w === "bold" || Number(w) >= 700, large = px >= 24 || (px >= 18.66 && bold);   // WCAG large text
       if (fg && bg) pairs.push({ theme, sel: b.sel, fg, bg, large });
-      else if (fg) { for (const base of [page, panel]) if (base) pairs.push({ theme, sel: b.sel, fg, bg: base, large, assumedBackground: true }); }                     // text colour only: it sits on the page or a panel
-      else if (bg && ink && parseHex(bg)) pairs.push({ theme, sel: b.sel, fg: ink, bg, large, assumedForeground: true });                                              // background only: text inherits the ink colour
+      else if (fg) { let any = false; for (const base of [page, panel]) if (base) { any = true; pairs.push({ theme, sel: b.sel, fg, bg: base, large, assumedBackground: true }); } if (!any) skipped.push(theme + ": " + b.sel + " (colour without a known page background)"); }                     // text colour only: it sits on the page or a panel
+      else if (bg && ink && parseHex(bg)) pairs.push({ theme, sel: b.sel, fg: ink, bg, large, assumedForeground: true });
+      else if (bg && !fg && !/::backdrop\s*$/.test(b.sel) && !/^(none|transparent)$/i.test(String(bg)) && !/gradient|url\(/i.test(String(bg))) skipped.push(theme + ": " + b.sel + " (background without a known text colour)");                                              // background only: text inherits the ink colour
     }
   }
   const seen = new Set(); let checked = 0, unresolved = 0; const unresolvedList = [];
@@ -93,14 +106,17 @@ export function auditAccessibility({ html = "", css = "", js = "" } = {}) {
   }
   // ---- structure of the html shell (tags are tokenised in one linear pass; comments are skipped)
   const tg = htmlTags(html), by = n => tg.filter(t => t.name === n && !t.closing), attr = (t, n) => new RegExp("(?:^|[\\s\"'])" + n + "\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s\"'>]+))", "i").exec(t.attrs)?.slice(1).find(x => x !== undefined);
+  const htmlOk = html.trim() !== "";   // an empty page is "nothing supplied" (reported as INCOMPLETE), not a list of invented failures
+  if (htmlOk) {
   const root = by("html")[0], lang = root ? attr(root, "lang") : undefined; if (!lang || !/^[a-zA-Z]{2,3}(?:-[A-Za-z0-9]+)*$/.test(lang)) add("FAIL", "HTML_LANG", "The <html> element has no valid lang attribute.");
   if (!by("title").some(t => t.text.trim())) add("FAIL", "TITLE", "The page has no non-empty <title>.");
   const vp = by("meta").find(t => attr(t, "name")?.toLowerCase() === "viewport"); if (!vp) add("WARN", "VIEWPORT", "No viewport meta tag."); else { const content = attr(vp, "content") ?? "", ms = /maximum-scale\s*=\s*([0-9.]+)/i.exec(content); if (/user-scalable\s*=\s*(no|0)/i.test(content) || (ms && Number(ms[1]) < 2)) add("FAIL", "ZOOM_BLOCKED", "The viewport meta tag stops users from zooming to 200%."); }
   if (!by("main").length) add("FAIL", "LANDMARK_MAIN", "No <main> landmark."); if (by("nav").some(t => attr(t, "aria-label") === undefined && attr(t, "aria-labelledby") === undefined)) add("WARN", "NAV_LABEL", "A <nav> has no aria-label.");
   for (const t of by("img")) if (attr(t, "alt") === undefined) add("FAIL", "IMG_ALT", "An <img> has no alt attribute.");
   for (const t of tg) { const ti = attr(t, "tabindex"); if (ti !== undefined && Number(ti) > 0) add("WARN", "TABINDEX_POSITIVE", "A positive tabindex changes the natural focus order."); }
+  }
   // ---- focus visibility: outline removed on interactive selectors without a replacement
-  for (const b of bl) { const o = (b.decls.get("outline") ?? "").toLowerCase(); if ((o === "none" || o === "0") && /\b(button|a|input|textarea|select|summary)\b|\[tabindex\]/.test(b.sel) && !b.decls.has("box-shadow") && !/:not\(\s*:focus-visible\s*\)/.test(b.sel)) add("FAIL", "FOCUS_REMOVED", `${b.sel} removes the focus outline without a replacement.`, { selector: b.sel }); }
+  for (const b of bl) { const o = (b.decls.get("outline") ?? "").toLowerCase(), os = (b.decls.get("outline-style") ?? "").toLowerCase(); if ((o === "none" || o === "0" || os === "none") && (/\b(button|a|input|textarea|select|summary)\b|\[tabindex\]/.test(b.sel) || /:focus(?!-visible)/.test(b.sel)) && !b.decls.has("box-shadow") && !/:not\(\s*:focus-visible\s*\)/.test(b.sel)) add("FAIL", "FOCUS_REMOVED", `${b.sel} removes the focus outline without a replacement.`, { selector: b.sel }); }
   // ---- script-built controls (advisory): placeholder-only inputs and unlabeled controls
   const inputs = callArgs(js, /h\(\s*"(?:input|textarea|select)"\s*,\s*\{/g); let placeholderOnly = 0, labelled = 0;
   const namesFromPlaceholder = /setAttribute\(\s*["']aria-label["']\s*,\s*String\(\s*attrs\.placeholder\s*\)/.test(js);                        // the element helper copies the placeholder into aria-label
@@ -108,10 +124,10 @@ export function auditAccessibility({ html = "", css = "", js = "" } = {}) {
   if (placeholderOnly) add("WARN", "PLACEHOLDER_ONLY_LABEL", `${placeholderOnly} script-built form control(s) rely on a placeholder as their only label (it disappears on input and is not a reliable accessible name).`, { count: placeholderOnly });
   if (js.includes('h("label"') === false && inputs.length && !namesFromPlaceholder) add("WARN", "NO_LABEL_ELEMENTS", "The script never builds <label> elements for its form controls.");
   for (const m of callArgs(js, /h\(\s*"button"\s*,\s*\{/g)) if (/^\s*,\s*""\s*\)/.test(js.slice(m.end + 1, m.end + 40))) add("FAIL", "BUTTON_NAME", "A script-built button has an empty name.");
-  const sev = { FAIL: 0, WARN: 0, INFO: 0 }; for (const f of findings) sev[f.severity]++;
-  const incomplete = []; if (truncated) incomplete.push("FINDINGS_TRUNCATED"); if (unresolved) incomplete.push("CONTRAST_PAIRS_UNRESOLVED:" + unresolved); if (!checked) incomplete.push("NO_CONTRAST_PAIRS_CHECKED"); if (!html.trim()) incomplete.push("NO_HTML_SUPPLIED"); if (!css.trim()) incomplete.push("NO_CSS_SUPPLIED");
+  const sev = total;   // true totals, not only the findings that fit in the list
+  const incomplete = []; if (truncated) incomplete.push("FINDINGS_TRUNCATED"); if (unresolved) incomplete.push("CONTRAST_PAIRS_UNRESOLVED:" + unresolved); if (!checked) incomplete.push("NO_CONTRAST_PAIRS_CHECKED"); for (const u of bl.unsupported.slice(0, 10)) incomplete.push(u); if (skipped.length) incomplete.push("COLOUR_RULES_NOT_EVALUATED:" + skipped.length); if (!html.trim()) incomplete.push("NO_HTML_SUPPLIED"); if (!css.trim()) incomplete.push("NO_CSS_SUPPLIED");
   const enriched = findings.map(f => ({ ...f, location: f.selector ? "css: " + f.selector : "rule " + f.rule, remediation: REMEDIATION[f.rule] ?? "Review this item manually." }));
   // A clean-looking result is only ever reported for a COMPLETE audit; otherwise it is INCOMPLETE_AUDIT (failures that were found are still reported as FAIL_FOUND).
-  return { ok: true, verdict: sev.FAIL ? "FAIL_FOUND" : incomplete.length ? "INCOMPLETE_AUDIT" : sev.WARN ? "WARNINGS_ONLY" : "NO_FAILS_BY_THESE_CHECKS", complete: incomplete.length === 0, incomplete, counts: sev, findings: enriched, truncated, contrast: { pairsChecked: checked, unresolved, unresolvedPairs: unresolvedList },
+  return { ok: true, verdict: sev.FAIL ? "FAIL_FOUND" : incomplete.length ? "INCOMPLETE_AUDIT" : sev.WARN ? "WARNINGS_ONLY" : "NO_FAILS_BY_THESE_CHECKS", complete: incomplete.length === 0, incomplete, counts: sev, findings: enriched, truncated, contrast: { pairsChecked: checked, unresolved, unresolvedPairs: unresolvedList, notEvaluated: skipped.slice(0, 20) },
     notes: ["Static source checks only: no browser, no screen reader, no keyboard walk-through. 'NO_FAILS_BY_THESE_CHECKS' is not a statement that the interface is accessible."] };
 }

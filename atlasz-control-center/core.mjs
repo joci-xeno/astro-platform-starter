@@ -4,7 +4,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
-import { randomBytes } from "node:crypto";
+import { randomBytes, createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { Worker } from "node:worker_threads";
 import { scrub } from "../atlasz-addons/secret-patterns.mjs";
@@ -331,6 +331,7 @@ export function createControlCenterCore({ a11yWorkerUrl = null, a11yTimeoutMs = 
       case "attachEvidence": return r.attachEvidence(a.findingId, { citation: a.citation, relation: a.relation }, RW);
       case "declareContradiction": return r.declareContradiction(a.a, a.b, { note: a.note }, RW);
       case "resolveContradiction": return r.resolveContradiction(a.id, { winner: a.winner ?? null, note: a.note }, RW);
+      case "confirmEvidence": return r.confirmEvidence(a.findingId, a.evidenceId, { note: a.note }, RW);
       case "report": return r.report(a.questionId, RW);
       default: throw new Error("UNKNOWN_RESEARCH_OP");
     }
@@ -378,11 +379,12 @@ export function createControlCenterCore({ a11yWorkerUrl = null, a11yTimeoutMs = 
       for (const v of Object.values(input)) if (typeof v !== "string") throw new Error("A11Y_TEXT_MUST_BE_STRINGS");
       if (input.html.length + input.css.length + input.js.length > A11Y_MAX) throw new Error("A11Y_INPUT_TOO_LARGE");
     }
-    const r = await new Promise(resolve => {
+    let r = await new Promise(resolve => {
       let done = false, w; const fin = v => { if (done) return; done = true; clearTimeout(t); try { w?.terminate(); } catch { /* gone */ } resolve(v); };
       const t = setTimeout(() => fin({ ok: false, reason: "AUDIT_TIMEOUT" }), a11yTimeoutMs);
-      try { w = new Worker(a11yWorkerUrl ?? new URL("../atlasz-addons/a11y-worker.mjs", import.meta.url), { workerData: input }); w.once("message", m => fin(m.ok ? m.result : m)); w.once("error", () => fin({ ok: false, reason: "AUDIT_ENGINE_FAILED" })); w.once("exit", () => fin({ ok: false, reason: "AUDIT_ENGINE_FAILED" })); } catch { fin({ ok: false, reason: "AUDIT_ENGINE_FAILED" }); }
+      try { w = new Worker(a11yWorkerUrl ?? new URL("../atlasz-addons/a11y-worker.mjs", import.meta.url), { workerData: input }); w.once("message", m => fin(m && typeof m === "object" ? (m.ok ? m.result : m) : { ok: false, reason: "AUDIT_ENGINE_FAILED" })); w.once("error", () => fin({ ok: false, reason: "AUDIT_ENGINE_FAILED" })); w.once("exit", () => fin({ ok: false, reason: "AUDIT_ENGINE_FAILED" })); } catch { fin({ ok: false, reason: "AUDIT_ENGINE_FAILED" }); }
     });
+    if (!r || typeof r !== "object" || (r.ok !== true && r.ok !== false) || (r.ok && (typeof r.verdict !== "string" || !r.counts || typeof r.counts !== "object" || !Array.isArray(r.findings) || typeof r.complete !== "boolean")) || (!r.ok && typeof r.reason !== "string")) r = { ok: false, reason: "AUDIT_ENGINE_FAILED" };   // a worker answer of the wrong shape is a failure, never a result
     if (!r.ok) return { ok: false, verdict: "AUDIT_NOT_COMPLETED", reason: r.reason, note: "No result: a failed audit says nothing about accessibility." };
     return { ...r, target, wcagClaim: "NONE", note: "Automated static checks cover only part of WCAG (contrast of declared colours, document structure, some control names). They cannot establish compliance; manual keyboard and screen-reader testing is still required." };
   }
@@ -411,6 +413,12 @@ export function createControlCenterCore({ a11yWorkerUrl = null, a11yTimeoutMs = 
       const { passphrase, ...rest } = a; a = rest; const verb = String(op).slice(9).toUpperCase(), subject = String(a.id ?? "") + (a.stepId ? "#" + a.stepId : a.toStepId ? "#" + a.toStepId : "") + (verb === "REVIEW" ? ":" + String(a.decision ?? "") : "");
       if (typeof passphrase !== "string" || !passphrase) throw new Error("PASSPHRASE_REQUIRED");
       const v = ownerAuth().verifyApproval(sign(passphrase, "WORKFLOW_" + verb, subject), { action: "WORKFLOW_" + verb, subject }); if (!v.allowed) throw new Error("OWNER_APPROVAL_REQUIRED:" + v.reason);
+    }
+    if (/^profile\.(create|assign|remove|rollback)$/.test(String(op))) {      // a profile (or its assignment/removal) changes what an agent may do within the owner matrix: signed from the passphrase, bound to the exact change, never just the dashboard token
+      const { passphrase, ...rest } = a; a = rest; const verb = String(op).slice(8).toUpperCase();
+      const subject = verb === "ASSIGN" ? String(a.agentId ?? "") + "=" + String(a.profile ?? "") : verb === "ROLLBACK" ? String(a.id ?? "") + "#" + String(a.version ?? "") : verb === "CREATE" ? String(a.id ?? "") + ":" + createHash("sha256").update(JSON.stringify([a.name, a.instructions, a.tools, a.skills, a.memoryScopes])).digest("hex").slice(0, 16) : String(a.id ?? "");
+      if (typeof passphrase !== "string" || !passphrase) throw new Error("PASSPHRASE_REQUIRED");
+      const v = ownerAuth().verifyApproval(sign(passphrase, "PROFILE_" + verb, subject), { action: "PROFILE_" + verb, subject }); if (!v.allowed) throw new Error("OWNER_APPROVAL_REQUIRED:" + v.reason);
     }
     const r = await wbInst().run(String(op), a);
     if (!r || r.ok === false) throw new Error(String(r?.reason ?? "FAILED"));
@@ -501,7 +509,8 @@ export function createControlCenterCore({ a11yWorkerUrl = null, a11yTimeoutMs = 
       let js; try { js = JSON.stringify(input ?? {}); } catch { return { ok: false, error: "INPUT_NOT_JSON" }; } if (!input || typeof input !== "object" || Array.isArray(input) || js.length > 10000) return { ok: false, error: "INPUT_INVALID_OR_TOO_LARGE" };
       const r = await plugins().invoke(id, hook, JSON.parse(js)); if (!r.ok) return { ok: true, result: r };
       let out = JSON.stringify(r.result ?? null); if (out.length > 20000) return { ok: true, result: { ok: false, reason: "RESULT_TOO_LARGE" } };
-      let clean; try { clean = JSON.parse(scrub(out)); } catch { clean = scrub(out); } return { ok: true, result: { ok: true, result: clean, untrusted: true } };
+      const deep = (v, d = 0) => (typeof v === "string" ? scrub(v) : d > 20 ? "[TOO_DEEP]" : Array.isArray(v) ? v.map(x => deep(x, d + 1)) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([k, x]) => [scrub(k), deep(x, d + 1)])) : v);   // redact per string so the JSON stays well-formed
+      return { ok: true, result: { ok: true, result: deep(JSON.parse(out)), untrusted: true } };
     },
     disable: ({ id }) => act(() => plugins().disable(id)),
     setTheme: ({ id = null }) => act(() => plugins().setTheme(id)),

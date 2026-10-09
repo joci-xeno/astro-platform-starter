@@ -24,6 +24,7 @@ test("course creation: only the owner, strict validation of every lesson and que
     [{ questions: [{ ...questions[0], answerIndex: 1.5 }] }, "ANSWER_INDEX_INVALID:q1"], [{ lessons: [{ ...lessons[0], text: "x".repeat(LIMITS.maxText + 1) }] }, "LESSON_INVALID"]]) assert.equal(course(tu, patch).reason, why, JSON.stringify(Object.keys(patch)));
   const K = "gh" + "p_" + "a".repeat(36);
   assert.equal(course(tu, { lessons: [{ ...lessons[0], text: "token " + K }] }).reason, "SECRET_IN_INPUT"); assert.equal(course(tu, { questions: [{ ...questions[0], explanation: K }] }).reason, "SECRET_IN_INPUT");
+  assert.equal(course(tu, { title: "Course " + K }).reason, "SECRET_IN_INPUT", "the course title is screened like every other text");
   assert.equal(tu.list({ tenantId: T }).length, 0); assert.deepEqual(course(tu), { ok: true, id: "phys", lessons: 2, questions: 3 }); assert.equal(course(tu).reason, "COURSE_EXISTS");
 });
 

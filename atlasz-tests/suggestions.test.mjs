@@ -97,6 +97,7 @@ test("hardening: urgent items are ranked before the cut and are never starved by
   const low = Array.from({ length: 30 }, (_, i) => cand("low" + i, { priority: 1 }));
   assert.equal(s.offer("u", low).shown.length, 5, "default daily cap for ordinary items");
   const r = s.offer("u", [...low, cand("approval:late", { priority: 5 })]); assert.ok(r.shown.some(x => x.key === "approval:late"), "a priority-5 item arriving later in the day is still shown"); assert.equal(r.shown.length, 6);
+  const r4 = s.offer("u", [...low, cand("approval:late", { priority: 5 }), cand("plugin:late", { priority: 4 })]); assert.ok(r4.shown.some(x => x.key === "plugin:late"), "a priority-4 item (quarantined plugin / workflow needing review) arriving after the daily cap is not starved");
   // priority ranking happens over ALL valid candidates (the urgent one is item 500)
   const { s: s2 } = mk(); const many = Array.from({ length: 500 }, (_, i) => cand("m" + i, { priority: 1 })); many.push(cand("zz-urgent", { priority: 5 })); const r2 = s2.offer("v", many); assert.equal(r2.shown[0].key, "zz-urgent");
   // urgent allowance is bounded

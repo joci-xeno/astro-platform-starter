@@ -110,11 +110,11 @@ export async function runRepoTests({ name, root, ownerAuth, ownerApproval = null
       const take = d => { if (out.length < LIMITS.outputChars * 4) out += d; };
       child.stdout.on("data", take); child.stderr.on("data", take);
       child.on("error", () => fin({ status: "ERROR", exitCode: null, output: "PROCESS_ERROR" }));
-      child.on("close", code => fin({ status: code === 0 ? "PASSED" : "FAILED", exitCode: code, output: redactSecrets(out).slice(-LIMITS.outputChars) }));
+      child.on("close", code => fin({ status: code === 0 ? "PASSED" : "FAILED", exitCode: code, silent: out.trim() === "", output: redactSecrets(out).slice(-LIMITS.outputChars) }));
     }));
   }
   if (stoppedMid) return { ok: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE", results, hash: a.hash };      // a stop during a run kills the running file and ends the run
   const failed = results.filter(r => r.status !== "PASSED").length;
   const after = analyzeRepo(root), unchanged = after.ok && after.hash === a.hash;
-  return { ok: true, untrusted: true, hash: a.hash, contentUnchanged: unchanged, ran: results.length, notRun, complete: notRun === 0, passed: results.length - failed, failed, results, isolation: level, note: "Each file ran alone in a read-only, no-child-process sandbox with no network (note: this does not cover unix sockets reachable through the filesystem, and there is no disk quota on the scratch folder). A pass means the file exited 0 here, not that the repo is correct." };
+  return { ok: true, untrusted: true, hash: a.hash, contentUnchanged: unchanged, ran: results.length, notRun, complete: notRun === 0, passed: results.length - failed, exitedZero: results.length - failed, silentZeroExits: results.filter(r => r.status === "PASSED" && r.silent).length, semantics: "EXIT_CODE_ONLY", failed, results, isolation: level, note: "Each file ran alone in a read-only, no-child-process sandbox with no network (note: this does not cover unix sockets reachable through the filesystem, and there is no disk quota on the scratch folder). \"passed\" means only that the file exited 0 here: it does not prove that any assertion ran (a silent file that exits 0 counts) and it is not evidence that the repo is correct." };
 }

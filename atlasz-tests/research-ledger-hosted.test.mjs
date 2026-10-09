@@ -28,13 +28,16 @@ test("hosted: an agent runs the whole research loop through typed tools; its own
     const f = (await inv("research.add_finding", { questionId: q.id, claim: "monthly rent Maple Street warehouse 4200 dollars" })).result; assert.equal(f.createdBy, "AGENT");
     let r = (await inv("research.report", { questionId: q.id })).result; assert.equal(r.verifiedFacts.length, 0); assert.equal(r.unsupported.length, 1);        // an agent's claim is not a fact
     const cite = rt.knowledge.search(p.id, { query: "monthly rent", tenantId: "JOCI", role: "AGENT", forAgent: true }).results[0].citation;
-    assert.equal((await inv("research.attach_evidence", { findingId: f.id, citation: cite })).status, "OK");
+    const att = await inv("research.attach_evidence", { findingId: f.id, citation: cite }); assert.equal(att.status, "OK");
+    r = (await inv("research.report", { questionId: q.id })).result; assert.equal(r.state, "UNRESOLVED"); assert.equal(r.verifiedFacts.length, 0); assert.equal(r.quoteMatched.length, 1, "an agent-attached quote match is not verification");
+    assert.ok(!names.some(n => /confirm/.test(n)), "no tool can confirm evidence");
+    rt.research.confirmEvidence(f.id, att.result.id, { note: "owner read it" }, { tenantId: "JOCI", role: "OWNER" });
     r = (await inv("research.report", { questionId: q.id })).result; assert.equal(r.state, "ANSWERED"); assert.equal(r.verifiedFacts[0].confidence, "MEDIUM");
     assert.equal((await inv("research.attach_evidence", { findingId: f.id, citation: { ...cite, quote: "forged" } })).status, "HANDLER_ERROR");
     assert.equal((await inv("research.add_finding", { questionId: q.id, claim: "x", tenantId: "OTHER" })).status, "INVALID_ARGUMENTS");
     assert.equal((await inv("research.unresolved", {})).result.questions.length, 0);
     assert.equal(rt.dashboard().research.questions, 1); assert.equal(rt.dashboard().research.chain.ok, true);
-    assert.equal(rt.research.summary({ tenantId: "JOCI", role: "OWNER" }).events, 4);
+    assert.equal(rt.research.summary({ tenantId: "JOCI", role: "OWNER" }).events, 5);
     rt.stop?.();
   } finally { rm(dir); }
 });
@@ -51,11 +54,14 @@ test("Control Center: research view/actions are token-protected; owner resolves 
     await post({ op: "addSource", projectId: pid, url: "https://example.org/b", retrievedAt: new Date().toISOString(), title: "B", text: "A second listing says the monthly rent for the Maple Street warehouse is 4800 dollars." });
     const hit = async t => (await kp({ op: "search", projectId: pid, query: "monthly rent Maple Street warehouse" })).body.result.results.find(x => x.text.includes(t)).citation;
     const fa = (await post({ op: "addFinding", questionId: qid, claim: "monthly rent Maple Street warehouse 4200 dollars" })).body.result, fb = (await post({ op: "addFinding", questionId: qid, claim: "monthly rent Maple Street warehouse 4800 dollars" })).body.result;
-    assert.equal((await post({ op: "attachEvidence", findingId: fa.id, citation: await hit("4200") })).status, 200); assert.equal((await post({ op: "attachEvidence", findingId: fb.id, citation: await hit("4800") })).status, 200);
+    const ea = await post({ op: "attachEvidence", findingId: fa.id, citation: await hit("4200") }); assert.equal(ea.status, 200); assert.equal((await post({ op: "attachEvidence", findingId: fb.id, citation: await hit("4800") })).status, 200);
     const k = (await post({ op: "declareContradiction", a: fa.id, b: fb.id, note: "listings differ" })).body.result;
     let v = (await call(port, token, "GET", "/api/research")).body; assert.equal(v.state, "CONNECTED"); assert.equal(v.questions[0].state, "CONTESTED"); assert.equal(v.questions[0].verifiedFacts.length, 0); assert.equal(v.summary.unresolved, 1);
     assert.equal((await post({ op: "resolveContradiction", id: k.id, winner: fa.id, note: "" })).status, 400);                    // note required
     assert.equal((await post({ op: "resolveContradiction", id: k.id, winner: fa.id, note: "Lease says 4200" })).status, 200);
+    v = (await call(port, token, "GET", "/api/research")).body; assert.equal(v.questions[0].state, "UNRESOLVED", "resolved, but the quotation match is not yet owner-confirmed"); assert.equal(v.questions[0].quoteMatched[0].id, fa.id);
+    assert.equal((await post({ op: "confirmEvidence", findingId: fa.id, evidenceId: ea.body.result.id, note: "" })).status, 400);
+    assert.equal((await post({ op: "confirmEvidence", findingId: fa.id, evidenceId: ea.body.result.id, note: "Lease says 4200" })).status, 200);
     v = (await call(port, token, "GET", "/api/research")).body; assert.equal(v.questions[0].state, "ANSWERED"); assert.equal(v.questions[0].rejected[0].id, fb.id); assert.equal(v.summary.chain.ok, true);
     assert.ok(v.events.some(e => e.type === "CONTRADICTION_RESOLVED" && e.by === "OWNER"));
     assert.equal((await post({ op: "wipe" })).status, 400); assert.equal((await post({ op: "openQuestion", projectId: "kp-nope", text: "x" })).status, 400);

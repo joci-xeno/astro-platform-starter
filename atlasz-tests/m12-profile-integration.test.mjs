@@ -116,3 +116,17 @@ test("fail-closed seams: a throwing/garbage profile gate or resolver never turns
   assert.equal(hit, 0, "the tool handler was never reached");
   r.stop?.();
 });
+
+test("a corrupt profiles file does not brick the workbench and is never replaced: profile operations fail closed, other workbench functions keep working", async () => {
+  const dir = tmp("m12e-"), files = { conversationFile: path.join(dir, "c.json"), profilesFile: path.join(dir, "p.json") };
+  try {
+    fs.writeFileSync(files.profilesFile, "{broken");
+    const w = createWorkbench(files);
+    assert.equal((await w.run("profile.create", { id: "x", name: "X", instructions: "ok", tools: [] })).ok, false);
+    assert.equal((await w.run("profile.assign", { agentId: "SEARCH-1", profile: "x" })).ok, false);
+    assert.equal((await w.run("conv.create", { title: "t", systemPrompt: "S", profile: "x" })).ok, false, "a conversation cannot select a profile from an unreadable store");
+    assert.equal((await w.run("conv.create", { title: "plain", systemPrompt: "S" })).ok, true, "the rest of the workbench still works");
+    assert.equal(fs.readFileSync(files.profilesFile, "utf8"), "{broken", "the unreadable store is left untouched");
+    const g = createAgentProfileGate({ file: files.profilesFile, tenantId: "JOCI" }); assert.equal(g("SEARCH-1", "atlasz.queue").allowed, false);
+  } finally { rm(dir); }
+});

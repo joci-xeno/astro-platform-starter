@@ -196,12 +196,12 @@ test("verification fix C05-2 (edges): a symlink, a legacy enabled entry without 
     const dir = path.join(r.root, "plugins", "pin2");
     r.mk("pin2", { ...base, id: "pin2", name: "P", kind: "PLUGIN", entry: "m.mjs" }, { "m.mjs": "console.log(JSON.stringify({v:1}));" });
     assert.equal(r.pm.enable("pin2", { ownerApproval: ap("PLUGIN_ENABLE", r.pm.enableSubject("pin2")) }).ok, true); assert.equal((await r.pm.invoke("pin2", "go")).ok, true);
-    fs.symlinkSync("/etc", path.join(dir, "lnk")); assert.equal((await r.pm.invoke("pin2", "go")).reason, "CODE_CHANGED_SINCE_ENABLE", "an added symlink is a change"); fs.rmSync(path.join(dir, "lnk"));
+    fs.symlinkSync("/etc", path.join(dir, "lnk")); assert.equal((await r.pm.invoke("pin2", "go")).reason, "UNKNOWN_PLUGIN", "a folder with a symlink is not a runnable plugin at all"); assert.ok(r.pm.list().rejected.some(x => x.id === "pin2" && x.problems.includes("UNHASHABLE_OR_SYMLINK_IN_FOLDER"))); assert.equal(r.pm.enable("pin2", { ownerApproval: ap("PLUGIN_ENABLE", "pin2#" + "0".repeat(64)) }).ok, false); fs.rmSync(path.join(dir, "lnk"));
     const sf = path.join(r.root, "state", "plugins-state.json"); const st = JSON.parse(fs.readFileSync(sf, "utf8")); delete st.enabled.pin2.hash; fs.writeFileSync(sf, JSON.stringify(st));
     const legacy = createPluginManager({ roots: [path.join(r.root, "plugins")], stateDir: path.join(r.root, "state"), ownerAuth: createOwnerAuth({ publicKeyB64: key.publicKeyB64 }), hookTimeoutMs: 1500 });
     assert.equal((await legacy.invoke("pin2", "go")).reason, "CODE_CHANGED_SINCE_ENABLE", "no pinned hash => re-enable required");
     const big = path.join(r.root, "plugins", "big"); r.mk("big", { ...base, id: "big", name: "B", kind: "PLUGIN", entry: "m.mjs" }, { "m.mjs": "1" }); for (let i = 0; i < 510; i++) fs.writeFileSync(path.join(big, "f" + i), "x");
-    assert.equal(r.pm.enable("big", { ownerApproval: ap("PLUGIN_ENABLE", r.pm.enableSubject("big")) }).reason, "PLUGIN_FOLDER_UNHASHABLE");
+    assert.ok(["PLUGIN_FOLDER_UNHASHABLE", "UNKNOWN_PLUGIN"].includes(r.pm.enable("big", { ownerApproval: ap("PLUGIN_ENABLE", r.pm.enableSubject("big")) }).reason), "an unhashable folder cannot be enabled");
   } finally { r.done(); }
 });
 

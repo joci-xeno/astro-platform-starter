@@ -24,6 +24,7 @@ export function createTutor({ file = null, now: nowFn = () => Date.now() } = {})
     if (!tenantOk(tenantId)) return { ok: false, reason: "TENANT_INVALID" };
     if (typeof id !== "string" || !ID.test(id)) return { ok: false, reason: "COURSE_ID_INVALID" };
     if (!str(title, 160)) return { ok: false, reason: "TITLE_INVALID" };
+    if (bad(title)) return { ok: false, reason: "SECRET_IN_INPUT" };
     if (course(tenantId, id)) return { ok: false, reason: "COURSE_EXISTS" };
     if (Object.values(d.courses).filter(c => c.tenantId === tenantId).length >= LIMITS.maxCourses) return { ok: false, reason: "TOO_MANY_COURSES" };
     if (!Array.isArray(lessons) || !lessons.length || lessons.length > LIMITS.maxLessons || Object.keys(lessons).length !== lessons.length) return { ok: false, reason: "LESSONS_INVALID" };

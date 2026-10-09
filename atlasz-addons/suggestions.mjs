@@ -50,12 +50,12 @@ export function createSuggestions({ file = null, prefs, now = () => Date.now() }
     const muted = new Set(pv(tenantId, "suggestions.mutedSources")), cap = Math.min(LIMITS.maxShownHardCap, pv(tenantId, "suggestions.maxPerDay")), today = (t.days[dayOf(t0)] ??= { shown: [] }), shownToday = new Set(today.shown);
     ok.sort((a, b) => b.priority - a.priority || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));        // ALL valid candidates are ranked before anything is cut
     today.urgent ??= []; const urgentToday = new Set(today.urgent);
-    const shown = []; let newCount = shownToday.size - urgentToday.size, urgentCount = urgentToday.size;     // priority-5 items (e.g. waiting approvals) have their own allowance and are never starved by lower priorities shown earlier in the day
+    const shown = []; let newCount = shownToday.size - urgentToday.size, urgentCount = urgentToday.size;     // priority 4-5 items (approvals, workflows needing review, quarantined plugins) (e.g. waiting approvals) have their own allowance and are never starved by lower priorities shown earlier in the day
     for (const c of ok) {
       if (muted.has(c.source)) { sup.muted++; continue; }
       if (Object.hasOwn(t.snoozed, c.key)) { sup.snoozed++; continue; }               // prune() above already removed every snooze that has ended
       if (!shownToday.has(c.key)) {
-        if (c.priority >= 5) { if (urgentCount >= LIMITS.maxShownHardCap) { sup.dailyLimit++; continue; } urgentCount++; today.urgent.push(c.key); }
+        if (c.priority >= 4) { if (urgentCount >= LIMITS.maxShownHardCap) { sup.dailyLimit++; continue; } urgentCount++; today.urgent.push(c.key); }
         else { if (newCount >= cap) { sup.dailyLimit++; continue; } newCount++; }
         today.shown.push(c.key); shownToday.add(c.key);
       }

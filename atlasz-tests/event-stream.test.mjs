@@ -4,6 +4,9 @@ import { EventEmitter } from "node:events";
 import { createEventStream, frame, parseLastEventId, LIMITS } from "../atlasz-addons/event-stream.mjs";
 
 const SK = "s" + "k-ABCDEFGHIJKLMNOPQRSTUV";
+import { hashEntry, GENESIS } from "../atlasz-addons/audit-chain.mjs";
+/** n genuine chain entries (seq 1..n); datas[i] overrides the data of entry i+1. */
+const chain = (n, datas = []) => { const out = []; let prev = GENESIS; for (let i = 1; i <= n; i++) { const e = { seq: i, at: "2026-10-08T00:00:00.000Z", event: "BB_TOOL", data: datas[i - 1] ?? {}, prevHash: prev }; e.hash = hashEntry(e); prev = e.hash; out.push(e); } return out; };
 const ent = (seq, data = {}, event = "BB_TOOL") => ({ seq, at: "2026-10-08T00:00:00.000Z", event, data });
 function fakeRes() { const r = new EventEmitter(); r.out = []; r.ended = false; r.writableLength = 0; r.head = null; r.writeHead = (c, h) => { r.head = { c, h }; }; r.write = s => { r.out.push(s); return true; }; r.end = () => { r.ended = true; }; return r; }
 const fakeReq = (h = {}) => Object.assign(new EventEmitter(), { headers: h });
@@ -88,35 +91,34 @@ test("createChainTail: reads only appended lines, keeps the newest window, survi
   const { createChainTail } = await import("../atlasz-addons/event-stream.mjs"); const fs = await import("node:fs"); const path = await import("node:path"); const { tmp, rm } = await import("./helpers.mjs");
   const dir = tmp("tail-"); const f = path.join(dir, "bb.jsonl"); try {
     const tail = createChainTail(f, { keep: 3 }); assert.deepEqual(tail.read(), [], "a missing file is an empty log");
-    const line = n => JSON.stringify(ent(n)) + "\n"; fs.writeFileSync(f, line(1) + line(2));
+    const E = chain(5), line = n => JSON.stringify(E[n - 1]) + "\n"; fs.writeFileSync(f, line(1) + line(2));
     assert.deepEqual(tail.read().map(e => e.seq), [1, 2]); fs.appendFileSync(f, line(3).slice(0, 10)); assert.deepEqual(tail.read().map(e => e.seq), [1, 2], "a torn last line waits");
     fs.appendFileSync(f, line(3).slice(10) + line(4) + line(5)); assert.deepEqual(tail.read().map(e => e.seq), [3, 4, 5], "only the newest `keep` entries are retained");
     const same = tail.read(); assert.equal(tail.read(), same, "nothing changed: the cached array is returned");
     fs.writeFileSync(f, line(1)); assert.deepEqual(tail.read().map(e => e.seq), [1], "a shrunken file is re-read from the start");
     fs.appendFileSync(f, "not json\n"); assert.throws(() => tail.read(), /LOG_CORRUPT/); fs.writeFileSync(f, line(1) + line(2)); assert.deepEqual(tail.read().map(e => e.seq), [1, 2], "recovers once the file is sound");
-    fs.writeFileSync(f, JSON.stringify(ent(1, { t: "é€😀" })) + "\n"); const t2 = createChainTail(f); assert.equal(t2.read()[0].data.t, "é€😀");
+    fs.writeFileSync(f, JSON.stringify(chain(1, [{ t: "é€😀" }])[0]) + "\n"); const t2 = createChainTail(f); assert.equal(t2.read()[0].data.t, "é€😀");
   } finally { rm(dir); }
 });
 
 test("verification fixes G12: a replaced (rotated) file is detected even when bigger; an endless line and huge entries are bounded", async () => {
   const { createChainTail } = await import("../atlasz-addons/event-stream.mjs"); const fs = await import("node:fs"); const path = await import("node:path"); const { tmp, rm } = await import("./helpers.mjs");
   const dir = tmp("tail2-"); const f = path.join(dir, "bb.jsonl"); try {
-    const line = (n, d) => JSON.stringify(ent(n, d)) + "\n";
+    const E = chain(3), line = n => JSON.stringify(E[n - 1]) + "\n";
     fs.writeFileSync(f, line(1) + line(2) + line(3)); const tail = createChainTail(f); assert.deepEqual(tail.read().map(e => e.seq), [1, 2, 3]);
     // rotation: a NEW file (different inode) that is already longer than the old offset, with a first line ending exactly at the old offset
-    fs.renameSync(f, f + ".1"); fs.writeFileSync(f, line(101, { pad: "x".repeat(2000) }) + line(102) + line(103) + line(104)); assert.deepEqual(tail.read().map(e => e.seq), [101, 102, 103, 104], "no stale entries from the old file");
+    const R = chain(4, [{ pad: "x".repeat(2000) }]); fs.renameSync(f, f + ".1"); fs.writeFileSync(f, R.map(e => JSON.stringify(e) + "\n").join("")); assert.deepEqual(tail.read().map(e => e.hash), R.map(e => e.hash), "no stale entries from the old file");
     // an endless line is refused instead of buffered
     const f2 = path.join(dir, "endless.jsonl"); fs.writeFileSync(f2, "x".repeat(2 * 1048576)); const t2 = createChainTail(f2); assert.throws(() => t2.read(), /LOG_CORRUPT/);
     // a huge entry is kept at a bounded size
-    const f3 = path.join(dir, "big.jsonl"); fs.writeFileSync(f3, line(1, { blob: "y".repeat(300000) }) + line(2)); const t3 = createChainTail(f3), got = t3.read(); assert.deepEqual(got.map(e => e.seq), [1, 2]); assert.equal(got[0].oversize, true); assert.ok(JSON.stringify(got[0]).length < 500);
+    const f3 = path.join(dir, "big.jsonl"); const B = chain(2, [{ blob: "y".repeat(300000) }]); fs.writeFileSync(f3, JSON.stringify(B[0]) + "\n" + JSON.stringify(B[1]) + "\n"); const t3 = createChainTail(f3), got = t3.read(); assert.deepEqual(got.map(e => e.seq), [1, 2]); assert.equal(got[0].oversize, true); assert.ok(JSON.stringify(got[0]).length < 500);
   } finally { rm(dir); }
 });
 
 test("createChainTail: a log larger than one read chunk is caught up over successive reads", async () => {
   const { createChainTail } = await import("../atlasz-addons/event-stream.mjs"); const fs = await import("node:fs"); const path = await import("node:path"); const { tmp, rm } = await import("./helpers.mjs");
   const d = tmp(); try {
-    const f = path.join(d, "big.jsonl"); const pad = "x".repeat(400); const n = 24000; const lines = [];
-    for (let i = 1; i <= n; i++) lines.push(JSON.stringify({ seq: i, event: "E", pad }));
+    const f = path.join(d, "big.jsonl"); const pad = "x".repeat(400); const n = 24000; const lines = chain(n, Array.from({ length: n }, () => ({ pad }))).map(e => JSON.stringify(e));
     fs.writeFileSync(f, lines.join("\n") + "\n"); assert.ok(fs.statSync(f).size > 8 * 1048576);
     const tail = createChainTail(f, { keep: 5 }); let last = 0;
     for (let i = 0; i < 5 && last < n; i++) { const r = tail.read(); last = r.length ? r[r.length - 1].seq : 0; }

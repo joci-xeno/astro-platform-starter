@@ -81,6 +81,7 @@ test('secret in output is redacted by the runner', () => console.log('key ${SK}'
     assert.equal(by["tests/isolation.test.mjs"].status, "PASSED", by["tests/isolation.test.mjs"].output);
     assert.ok(!JSON.stringify(res).includes("ABCDEFGHIJKLMNOPQRSTUV") && by["tests/isolation.test.mjs"].output.includes("[redacted]"));
     assert.deepEqual([res.passed, res.failed], [2, 2]); assert.equal(fs.existsSync(path.join(r.root, "poison.txt")), false);
+    assert.equal(res.semantics, "EXIT_CODE_ONLY"); assert.equal(res.exitedZero, res.passed); assert.equal(typeof res.silentZeroExits, "number"); assert.match(res.note, /does not prove that any assertion ran/);
     assert.deepEqual(fs.readdirSync(scr), [], "scratch directories are removed");
     const once = ap("REPO_TEST_RUN", subject), a1 = await runRepoTests({ name: "demo", root: r.root, ownerAuth: auth, ownerApproval: once, timeoutMs: 6000, scratchRoot: scr }); assert.equal(a1.ok, true);
     assert.equal((await runRepoTests({ name: "demo", root: r.root, ownerAuth: auth, ownerApproval: once, timeoutMs: 6000, scratchRoot: scr })).reason, "OWNER_APPROVAL_REQUIRED:REPLAY_DETECTED", "an approval runs the tests once");

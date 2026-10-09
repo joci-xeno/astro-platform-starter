@@ -35,12 +35,14 @@ export function toCsv(headers, rows) {
   return [headers, ...rows].map(r => r.map(esc).join(",")).join("\n") + "\n";
 }
 /** A blank / null / undefined cell is MISSING (NaN, excluded from every statistic), never 0. */
-const num = v => (v === null || v === undefined || (typeof v === "string" && v.trim() === "") ? NaN : Number(v));
+const NA = /^(na|n\/a|#n\/a|nan|null|none|nil|-|--|\?)$/i;   // the usual spellings of "no value": missing, never a number and never 0
+const isBlank = v => v === null || v === undefined || String(v).trim() === "" || NA.test(String(v).trim());
+const num = v => (isBlank(v) ? NaN : Number(v));
 const isNum = v => Number.isFinite(Number(v)) && /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/.test(String(v).trim());
 const isDate = v => { const t = String(v).trim(); if (!/^\d{4}-\d{2}-\d{2}$/.test(t)) return false; const d = new Date(t + "T00:00:00Z"); return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === t; };   // round trip: rejects 2024-02-30
 export function profile({ headers, rows }) {
   return headers.map((h, c) => {
-    const vals = rows.map(r => r[c]), present = vals.filter(v => v !== null && String(v).trim() !== ""), missing = vals.length - present.length;
+    const vals = rows.map(r => r[c]), present = vals.filter(v => !isBlank(v)), missing = vals.length - present.length;
     let type = "string"; if (present.length) { if (present.every(isNum)) type = present.every(v => /^[-+]?\d+$/.test(String(v).trim())) ? "integer" : "number"; else if (present.every(isDate)) type = "date"; else if (present.every(v => /^(true|false)$/i.test(String(v).trim()))) type = "boolean"; }
     return { column: h, type, count: vals.length, missing, unique: new Set(present.map(v => String(v).trim())).size };
   });
@@ -54,9 +56,9 @@ export function clean(data, ops = []) {
       if (o.op === "trim") { let n = 0; rows = rows.map(r => r.map(v => { const t = typeof v === "string" ? v.trim() : v; if (t !== v) n++; return t; })); log.push({ op: "trim", changed: n }); }
       else if (o.op === "dropEmptyRows") { const b = rows.length; rows = rows.filter(r => r.some(v => String(v ?? "").trim() !== "")); log.push({ op: "dropEmptyRows", removed: b - rows.length }); }
       else if (o.op === "dropDuplicates") { const seen = new Set(), b = rows.length; rows = rows.filter(r => { const k = JSON.stringify(r); if (seen.has(k)) return false; seen.add(k); return true; }); log.push({ op: "dropDuplicates", removed: b - rows.length }); }
-      else if (o.op === "toNumber") { const i = col(o.column); let bad = 0; rows = rows.map(r => { const v = r[i]; if (isNum(v)) r[i] = Number(v); else { if (String(v ?? "").trim() !== "") bad++; r[i] = null; } return r; }); log.push({ op: "toNumber", column: o.column, invalidToNull: bad }); }
+      else if (o.op === "toNumber") { const i = col(o.column); let bad = 0; rows = rows.map(r => { const v = r[i]; if (isNum(v)) r[i] = Number(v); else { if (!isBlank(v)) bad++; r[i] = null; } return r; }); log.push({ op: "toNumber", column: o.column, invalidToNull: bad }); }
       else if (o.op === "fillMissing") {
-        const i = col(o.column), blank = v => v === null || String(v).trim() === ""; let fill;
+        const i = col(o.column), blank = isBlank; let fill;
         if ("value" in o) fill = o.value; else { const nums = rows.map(r => r[i]).filter(v => !blank(v) && isNum(v)).map(Number); if (!nums.length) throw new Error("NO_NUMERIC_VALUES:" + o.column); fill = o.strategy === "median" ? describe(nums).median : o.strategy === "mean" ? describe(nums).mean : (() => { throw new Error("STRATEGY_INVALID"); })(); }
         let n = 0; rows = rows.map(r => { if (blank(r[i])) { r[i] = fill; n++; } return r; }); log.push({ op: "fillMissing", column: o.column, filled: n, with: fill });
       } else throw new Error("OP_UNKNOWN:" + o.op);
@@ -108,10 +110,13 @@ export function analyze(csvText, { ops = [] } = {}) {
   const prof = profile(c), numeric = prof.filter(x => x.type === "number" || x.type === "integer");
   const stats = Object.fromEntries(numeric.map(x => [x.column, describe(c.rows.map(r => num(r[c.headers.indexOf(x.column)])))]));
   const corr = []; for (let i = 0; i < numeric.length; i++) for (let j = i + 1; j < numeric.length; j++) { const r = correlation(c.rows.map(r => r[c.headers.indexOf(numeric[i].column)]), c.rows.map(r => r[c.headers.indexOf(numeric[j].column)])); if (r.ok) corr.push({ a: numeric[i].column, b: numeric[j].column, r: r.r, n: r.n }); }
-  const body = { inputHash: p.inputHash, rows: c.rows.length, columns: c.headers.length, steps: c.log, profile: prof, stats, correlations: corr };
+  // Column names come from untrusted input: they are redacted in the REPORT (the cleaned data keeps the real headers).
+  const hs = x => scrub(String(x)), body = { inputHash: p.inputHash, rows: c.rows.length, columns: c.headers.length, steps: c.log, profile: prof.map(x => ({ ...x, column: hs(x.column) })), stats: Object.fromEntries(Object.entries(stats).map(([k, v]) => [hs(k), v])), correlations: corr.map(x => ({ ...x, a: hs(x.a), b: hs(x.b) })) };
   return { ok: true, report: { ...body, reportHash: sha(JSON.stringify(body)) }, data: { headers: c.headers, rows: c.rows }, charts: chartSpecs(c, prof), note: "Descriptive statistics only. Correlation is not causation." };
 }
 const md = v => scrub(String(v).replace(/[\r\n\u2028\u2029]+/g, " ").replace(/\|/g, "\\|").replace(/[`*_#<>]/g, " "));
+/** The cleaned table as CSV (formula-neutralised by toCsv) so the owner can take the result away. */
+export const cleanedCsv = result => (result?.ok ? toCsv(result.data.headers, result.data.rows) : null);
 export function reportToMarkdown(rep) {
   const L = ["# Analysis report", "", `Input hash: \`${rep.inputHash}\`  `, `Report hash: \`${rep.reportHash}\`  `, `Rows: ${rep.rows}, columns: ${rep.columns}`, "", "## Steps", ...(rep.steps.length ? rep.steps.map(s => "- " + JSON.stringify(s)) : ["- (none)"]), "", "## Columns", "| column | type | missing | unique |", "|---|---|---|---|", ...rep.profile.map(p => `| ${md(p.column)} | ${p.type} | ${p.missing} | ${p.unique} |`), "", "## Statistics"];
   for (const [k, s] of Object.entries(rep.stats)) L.push(`- **${md(k)}**: n=${s.count}, mean=${+s.mean.toPrecision(6)}, std=${+s.std.toPrecision(6)}, min=${s.min}, median=${s.median}, max=${s.max}`);

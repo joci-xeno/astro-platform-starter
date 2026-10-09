@@ -18,7 +18,7 @@ async function boot() {
   const cc = createControlCenterServer({ stateDir, configDir, port: await freePort() }); const { port, token } = await cc.listen(); const H = { host: "127.0.0.1:" + port };
   const post = (p, b, t = token) => raw(port, p, { method: "POST", headers: { ...H, "content-type": "application/json", ...(t ? { "x-atlasz-token": t } : {}) }, body: JSON.stringify(b) });
   const get = (p, t = token) => raw(port, p, { headers: { ...H, ...(t ? { "x-atlasz-token": t } : {}) } });
-  const J = r => JSON.parse(r.body), P = async (p, b) => J(await post(p, b)).result, W = async (op, args = {}) => { const r = J(await post("/api/workbench/action", { op, args })); return r.result ?? (r.error !== undefined ? { ok: false, reason: String(r.error) } : r); };
+  const J = r => JSON.parse(r.body), P = async (p, b) => J(await post(p, b)).result, W = async (op, args = {}) => { if (/^profile\.(create|assign|remove|rollback)$/.test(op) && args.passphrase === undefined) args = { ...args, passphrase: PW }; const r = J(await post("/api/workbench/action", { op, args })); return r.result ?? (r.error !== undefined ? { ok: false, reason: String(r.error) } : r); };
   return { base, configDir, cc, post, get, J, P, W, done: async () => { await cc.close?.(); rm(base); } };
 }
 test("HTTP: profiles are owner-only, narrowed by grants, versioned and rollbackable; unsafe tools and injected instructions are refused", async () => {
@@ -26,6 +26,11 @@ test("HTTP: profiles are owner-only, narrowed by grants, versioned and rollbacka
   try {
     assert.equal((await t.post("/api/workbench/action", { op: "profile.list", args: {} }, null)).status, 401);
     await t.post("/api/owner-key", { passphrase: PW });
+    for (const [op, args] of [["profile.create", { id: "gated", name: "G", instructions: "x", tools: [] }], ["profile.assign", { agentId: "SEARCH-1", profile: null }], ["profile.remove", { id: "gated" }], ["profile.rollback", { id: "gated", version: 1 }]]) {
+      const none = await t.post("/api/workbench/action", { op, args }), wrong = await t.post("/api/workbench/action", { op, args: { ...args, passphrase: "not the passphrase" } });
+      assert.equal(none.status, 400, op + ": the dashboard token alone cannot change profiles"); assert.equal(wrong.status, 400, op + ": wrong passphrase refused");
+    }
+    assert.equal((await t.W("profile.list")).profiles.length, 0, "refused attempts changed nothing");
     const L = await t.W("profile.list"); assert.equal(L.ok, true);
     for (const r of ["SEARCH", "EXECUTION"]) for (const bad of ["pcc.status", "voice.status", "model.complete", "sandbox.run_process_only"]) assert.ok(!L.grantable[r].includes(bad), r + " must not be able to grant " + bad);
     const c = await t.W("profile.create", { id: "reviewer", name: "Reviewer", instructions: "Review the notes and report findings.", actor: "SEARCH-1" });

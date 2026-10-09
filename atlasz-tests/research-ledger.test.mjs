@@ -20,7 +20,9 @@ async function world() {
   const rl = mk(), p = kp.create({ tenantId: T, name: "Warehouse", allowedRoles: ["OWNER", "AGENT"] });
   const web = (title, text, url, at = now()) => kp.addWebSnapshot(p.id, { tenantId: T, url, retrievedAt: at, title, text });
   const cite = (q, text) => kp.answer(p.id, { query: q, ...OWNER }).passages.find(x => x.text.includes(text)).citation;
-  return { d, src, r, dc, kp, rl, mk, p, clock, now, web, cite, done: () => { rm(d); rm(src); r.stop?.(); } };
+  // att = attach + the OWNER confirms the meaning (a quotation match alone is only QUOTE_MATCHED; see the dedicated tests below)
+  const att = (fid, o, who = OWNER) => { const x = rl.attachEvidence(fid, o, who); if (o.confirm !== false) rl.confirmEvidence(fid, x.id, { note: "owner read the source and agrees" }, OWNER); return x; };
+  return { d, src, r, dc, kp, rl, att, mk, p, clock, now, web, cite, done: () => { rm(d); rm(src); r.stop?.(); } };
 }
 
 test("verified fact: claim + covering citation => VERIFIED/MEDIUM; second independent source => HIGH; report lists it as a fact with the live quote", async () => {
@@ -32,9 +34,9 @@ test("verified fact: claim + covering citation => VERIFIED/MEDIUM; second indepe
     const hits = w.kp.search(w.p.id, { query: "monthly rent Maple Street warehouse", ...OWNER }).results;
     assert.equal(w.rl.report(q.id, OWNER).state, "UNRESOLVED");                                     // nothing attached yet: not a fact
     assert.equal(w.rl.report(q.id, OWNER).unsupported.length, 1);
-    w.rl.attachEvidence(fi.id, { citation: hits[0].citation }, OWNER);
+    w.att(fi.id, { citation: hits[0].citation }, OWNER);
     let r = w.rl.report(q.id, OWNER); assert.equal(r.state, "ANSWERED"); assert.equal(r.verifiedFacts[0].confidence, "MEDIUM"); assert.equal(r.verifiedFacts[0].independentSources, 1);
-    w.rl.attachEvidence(fi.id, { citation: hits[1].citation }, OWNER);
+    w.att(fi.id, { citation: hits[1].citation }, OWNER);
     r = w.rl.report(q.id, OWNER); assert.equal(r.verifiedFacts[0].confidence, "HIGH"); assert.match(r.verifiedFacts[0].evidence[0].quote, /4200/);
     assert.throws(() => w.rl.attachEvidence(fi.id, { citation: hits[1].citation }, OWNER), /ALREADY_ATTACHED/);
   } finally { w.done(); }
@@ -64,13 +66,13 @@ test("outdated: a superseded document version and an aged web snapshot flip a VE
     const q = w.rl.openQuestion({ projectId: w.p.id, text: "Rent?" }, OWNER);
     const doc = await w.dc.ingest({ filePath: f(w.src, "lease.txt", RENT), tenantId: T }); w.kp.addDocument(w.p.id, { tenantId: T, documentId: doc.id });
     const fi = w.rl.addFinding(q.id, { claim: "monthly rent Maple Street warehouse 4200 dollars" }, OWNER);
-    w.rl.attachEvidence(fi.id, { citation: w.cite("monthly rent warehouse", "4200") }, OWNER);
+    w.att(fi.id, { citation: w.cite("monthly rent warehouse", "4200") }, OWNER);
     assert.equal(w.rl.report(q.id, OWNER).verifiedFacts.length, 1);
     await w.dc.ingest({ filePath: f(w.src, "lease.txt", RENT.replace("4200", "4500")), tenantId: T });      // v2 supersedes
     let r = w.rl.report(q.id, OWNER); assert.equal(r.verifiedFacts.length, 0); assert.equal(r.outdated.length, 1); assert.deepEqual(r.outdated[0].reasons, ["SOURCE_CHANGED_OR_SUPERSEDED"]);
     // aged snapshot
     const q2 = w.rl.openQuestion({ projectId: w.p.id, text: "Parking?" }, OWNER); w.web("Parking", "Parking costs 150 dollars per month for the warehouse.", "https://example.org/p");
-    const f2 = w.rl.addFinding(q2.id, { claim: "Parking costs 150 dollars per month" }, OWNER); w.rl.attachEvidence(f2.id, { citation: w.kp.search(w.p.id, { query: "parking costs", ...OWNER }).results[0].citation }, OWNER);
+    const f2 = w.rl.addFinding(q2.id, { claim: "Parking costs 150 dollars per month" }, OWNER); w.att(f2.id, { citation: w.kp.search(w.p.id, { query: "parking costs", ...OWNER }).results[0].citation }, OWNER);
     assert.equal(w.rl.report(q2.id, OWNER).verifiedFacts.length, 1);
     w.clock.t += 31 * 86400000; r = w.rl.report(q2.id, OWNER); assert.equal(r.verifiedFacts.length, 0); assert.match(r.outdated[0].reasons[0], /RETRIEVED_MORE_THAN_30_DAYS_AGO/);
     w.clock.t -= 2 * 86400000; assert.equal(w.rl.report(q2.id, OWNER).verifiedFacts.length, 1);               // 29 days: still fresh (boundary)
@@ -83,8 +85,8 @@ test("conflicts: same topic/different value, declared contradictions, supporting
     const q = w.rl.openQuestion({ projectId: w.p.id, text: "Rent?" }, OWNER); w.web("A", RENT, "https://example.org/a"); w.web("B", RENT2, "https://example.org/b");
     const hits = w.kp.search(w.p.id, { query: "monthly rent Maple Street warehouse", ...OWNER }).results, ca = hits.find(h => h.text.includes("4200")).citation, cb = hits.find(h => h.text.includes("4800")).citation;
     const a = w.rl.addFinding(q.id, { claim: "monthly rent Maple Street warehouse 4200 dollars", topic: "Warehouse Rent", value: "4200" }, OWNER);
-    w.rl.attachEvidence(a.id, { citation: ca }, OWNER); assert.equal(w.rl.report(q.id, OWNER).verifiedFacts.length, 1);
-    const b = w.rl.addFinding(q.id, { claim: "monthly rent Maple Street warehouse 4800 dollars", topic: "warehouse  rent", value: "4800" }, AGENT); w.rl.attachEvidence(b.id, { citation: cb }, AGENT);
+    w.att(a.id, { citation: ca }, OWNER); assert.equal(w.rl.report(q.id, OWNER).verifiedFacts.length, 1);
+    const b = w.rl.addFinding(q.id, { claim: "monthly rent Maple Street warehouse 4800 dollars", topic: "warehouse  rent", value: "4800" }, AGENT); w.att(b.id, { citation: cb }, AGENT);
     let r = w.rl.report(q.id, OWNER); assert.equal(r.state, "CONTESTED"); assert.equal(r.verifiedFacts.length, 0); assert.equal(r.conflicted.length, 2); assert.equal(r.conflicted[0].confidence, "LOW");
     const k = w.rl.declareContradiction(a.id, b.id, { note: "different listings" }, AGENT);
     assert.throws(() => w.rl.declareContradiction(b.id, a.id, {}, OWNER), /ALREADY_DECLARED/);
@@ -103,9 +105,9 @@ test("refuting evidence: refuted when only refuting evidence verifies, conflicte
     w.web("Terms", "Parking is not included in the monthly rent for the warehouse.", "https://example.org/t"); w.web("Promo", "Parking is included in the monthly rent for the warehouse this year.", "https://example.org/pr");
     const hits = w.kp.search(w.p.id, { query: "parking included monthly rent warehouse", ...OWNER }).results, no = hits.find(h => h.text.includes("not included")).citation, yes = hits.find(h => h.text.includes("is included")).citation;
     const fi = w.rl.addFinding(q.id, { claim: "Parking is included in the monthly rent for the warehouse" }, OWNER);
-    w.rl.attachEvidence(fi.id, { citation: no, relation: "REFUTES" }, OWNER);
+    w.att(fi.id, { citation: no, relation: "REFUTES" }, OWNER);
     assert.equal(w.rl.report(q.id, OWNER).refuted.length, 1);
-    w.rl.attachEvidence(fi.id, { citation: yes, relation: "SUPPORTS" }, OWNER);
+    w.att(fi.id, { citation: yes, relation: "SUPPORTS" }, OWNER);
     const r = w.rl.report(q.id, OWNER); assert.equal(r.conflicted.length, 1); assert.deepEqual(r.conflicted[0].reasons, ["SUPPORTING_AND_REFUTING_EVIDENCE"]); assert.equal(r.verifiedFacts.length, 0);
     assert.throws(() => w.rl.attachEvidence(fi.id, { citation: yes, relation: "MAYBE" }, OWNER), /RELATION_INVALID/);
   } finally { w.done(); }
@@ -125,7 +127,7 @@ test("permissions: tenant isolation, project role gate, agents re-verify through
     // an owner-only document inside an agent-visible project: owner can cite it, an agent cannot verify it => UNVERIFIABLE for the agent
     const doc = await w.dc.ingest({ filePath: f(w.src, "memo.txt", "The owner memo says the monthly rent budget for the warehouse is 5000 dollars."), tenantId: T }); w.kp.addDocument(w.p.id, { tenantId: T, documentId: doc.id });
     const fi = w.rl.addFinding(q.id, { claim: "monthly rent budget warehouse 5000 dollars" }, OWNER);
-    w.rl.attachEvidence(fi.id, { citation: w.kp.search(w.p.id, { query: "rent budget memo", ...OWNER }).results[0].citation }, OWNER);
+    w.att(fi.id, { citation: w.kp.search(w.p.id, { query: "rent budget memo", ...OWNER }).results[0].citation }, OWNER);
     assert.equal(w.rl.report(q.id, OWNER).verifiedFacts.length, 1);
     const ag = w.rl.report(q.id, AGENT); assert.equal(ag.verifiedFacts.length, 0); assert.equal(ag.unverifiable.length, 1);
     assert.ok(!JSON.stringify(ag).includes("5000"), "owner-only memo text never appears in the agent's report");
@@ -156,9 +158,9 @@ test("persistence and audit: restart recovery, hash-chained event log detects ta
   try {
     const q = w.rl.openQuestion({ projectId: w.p.id, text: "Rent?" }, OWNER); w.web("A", RENT, "https://example.org/a");
     const fi = w.rl.addFinding(q.id, { claim: "monthly rent Maple Street warehouse 4200 dollars" }, AGENT);
-    w.rl.attachEvidence(fi.id, { citation: w.kp.search(w.p.id, { query: "monthly rent", ...OWNER }).results[0].citation }, AGENT);
-    const again = w.mk(); assert.equal(again.report(q.id, OWNER).verifiedFacts.length, 1); assert.equal(again.summary(OWNER).events, 3);
-    assert.deepEqual(again.events(OWNER).map(e => e.type), ["QUESTION_OPENED", "FINDING_ADDED", "EVIDENCE_ATTACHED"]); assert.equal(again.events(OWNER)[2].by, "AGENT");
+    w.att(fi.id, { citation: w.kp.search(w.p.id, { query: "monthly rent", ...OWNER }).results[0].citation }, AGENT);
+    const again = w.mk(); assert.equal(again.report(q.id, OWNER).verifiedFacts.length, 1); assert.equal(again.summary(OWNER).events, 4);
+    assert.deepEqual(again.events(OWNER).map(e => e.type), ["QUESTION_OPENED", "FINDING_ADDED", "EVIDENCE_ATTACHED", "EVIDENCE_CONFIRMED"]); assert.equal(again.events(OWNER)[2].by, "AGENT"); assert.equal(again.events(OWNER)[3].by, "OWNER");
     assert.equal(again.verifyChain().ok, true);
     assert.throws(() => again.events(AGENT), /OWNER_ONLY/);
     // two instances over one file see each other's writes (runtime + Control Center)
@@ -213,5 +215,66 @@ test("round-4 fixes: cutting events off the research log, or deleting its head a
     assert.equal(cut.verifyChain().ok, false); assert.throws(() => cut.openQuestion({ projectId: w.p.id, text: "extends the cut chain" }, OWNER), /CHAIN_BROKEN/);
     fs.writeFileSync(file, full); assert.equal(w.mk().verifyChain().ok, true);
     const live = w.mk(); fs.rmSync(file + ".head"); assert.equal(live.verifyChain().ok, false); assert.throws(() => live.openQuestion({ projectId: w.p.id, text: "no anchor" }, OWNER), /CHAIN_BROKEN/);
+  } finally { w.done(); }
+});
+
+test("a quotation match alone is QUOTE_MATCHED, never VERIFIED: only an owner-only confirmation promotes it, and an edited source withdraws the confirmation", async () => {
+  const w = await world();
+  try {
+    const q = w.rl.openQuestion({ projectId: w.p.id, text: "Rent?" }, OWNER); w.web("A", RENT, "https://example.org/a");
+    const fi = w.rl.addFinding(q.id, { claim: "The monthly rent for the Maple Street warehouse is 4200 dollars" }, AGENT);
+    const ev = w.rl.attachEvidence(fi.id, { citation: w.kp.search(w.p.id, { query: "monthly rent", ...OWNER }).results[0].citation }, AGENT);
+    let r = w.rl.report(q.id, OWNER); assert.equal(r.verifiedFacts.length, 0); assert.equal(r.quoteMatched.length, 1); assert.equal(r.state, "UNRESOLVED"); assert.equal(r.quoteMatched[0].confidence, "LOW");
+    assert.match(r.quoteMatched[0].reasons[0], /NOT_SEMANTICALLY_VERIFIED/);
+    assert.throws(() => w.rl.confirmEvidence(fi.id, ev.id, { note: "ok" }, AGENT), /OWNER_ONLY/);                            // an agent can never confirm
+    assert.throws(() => w.rl.confirmEvidence(fi.id, ev.id, { note: "ok" }, { tenantId: T, role: "AGENT" }), /OWNER_ONLY/);
+    assert.throws(() => w.rl.confirmEvidence(fi.id, ev.id, { note: "" }, OWNER), /NOTE_REQUIRED/);
+    assert.throws(() => w.rl.confirmEvidence(fi.id, "re-nope", { note: "ok" }, OWNER), /UNKNOWN_EVIDENCE/);
+    assert.equal(w.rl.report(q.id, OWNER).verifiedFacts.length, 0);                                                         // failed attempts changed nothing
+    w.rl.confirmEvidence(fi.id, ev.id, { note: "I read the listing" }, OWNER);
+    assert.throws(() => w.rl.confirmEvidence(fi.id, ev.id, { note: "again" }, OWNER), /ALREADY_CONFIRMED/);
+    r = w.rl.report(q.id, OWNER); assert.equal(r.verifiedFacts.length, 1); assert.equal(r.quoteMatched.length, 0); assert.equal(r.state, "ANSWERED"); assert.equal(r.verifiedFacts[0].evidence[0].confirmed, true);
+    // tampering with the stored file to fake a confirmation of a different quote is not honoured
+    const file = path.join(w.d, "rl.json"), j = JSON.parse(fs.readFileSync(file, "utf8")); const E = Object.values(j.findings)[0].evidence[0]; E.confirmedQuoteSha = "0".repeat(64); fs.writeFileSync(file, JSON.stringify(j));
+    assert.equal(w.mk().report(q.id, OWNER).verifiedFacts.length, 0);
+  } finally { w.done(); }
+});
+
+test("an unconfirmed refuting quote is only REFUTATION_CLAIMED; the owner confirms it to REFUTED; a retrieval date in the future is never fresh", async () => {
+  const w = await world();
+  try {
+    const q = w.rl.openQuestion({ projectId: w.p.id, text: "Parking?" }, OWNER);
+    w.web("Terms", "Parking is not included in the monthly rent for the warehouse.", "https://example.org/t");
+    const no = w.kp.search(w.p.id, { query: "parking included monthly rent warehouse", ...OWNER }).results[0].citation;
+    const fi = w.rl.addFinding(q.id, { claim: "Parking is included in the monthly rent for the warehouse" }, OWNER);
+    const ev = w.rl.attachEvidence(fi.id, { citation: no, relation: "REFUTES" }, OWNER);
+    let r = w.rl.report(q.id, OWNER); assert.equal(r.refuted.length, 0); assert.equal(r.refutationClaimed.length, 1);
+    w.rl.confirmEvidence(fi.id, ev.id, { note: "yes it says not included" }, OWNER); assert.equal(w.rl.report(q.id, OWNER).refuted.length, 1);
+    const q2 = w.rl.openQuestion({ projectId: w.p.id, text: "Rent again?" }, OWNER); w.web("Future", RENT, "https://example.org/f", new Date(w.clock.t + 40 * 86400000).toISOString());
+    const f2 = w.rl.addFinding(q2.id, { claim: "The monthly rent for the Maple Street warehouse is 4200 dollars" }, OWNER);
+    const hit = w.kp.search(w.p.id, { query: "monthly rent Maple Street", ...OWNER }).results.find(x => x.text.includes("4200"));
+    const e2 = w.rl.attachEvidence(f2.id, { citation: hit.citation }, OWNER);
+    assert.throws(() => w.rl.confirmEvidence(f2.id, e2.id, { note: "ok" }, OWNER), /EVIDENCE_AGED_OR_DATED_IN_FUTURE/);
+    assert.equal(w.rl.report(q2.id, OWNER).verifiedFacts.length, 0);
+  } finally { w.done(); }
+});
+
+test("confirmation is re-checked against the current source: a superseded document cannot be confirmed; confidence counts only confirmed independent sources", async () => {
+  const w = await world();
+  try {
+    const q = w.rl.openQuestion({ projectId: w.p.id, text: "Rent?" }, OWNER);
+    const doc = await w.dc.ingest({ filePath: f(w.src, "lease.txt", RENT), tenantId: T }); w.kp.addDocument(w.p.id, { tenantId: T, documentId: doc.id });
+    const fi = w.rl.addFinding(q.id, { claim: "monthly rent Maple Street warehouse 4200 dollars" }, OWNER);
+    const ev = w.rl.attachEvidence(fi.id, { citation: w.cite("monthly rent warehouse", "4200") }, OWNER);
+    await w.dc.ingest({ filePath: f(w.src, "lease.txt", RENT.replace("4200", "4500")), tenantId: T });      // v2 supersedes before the owner confirms
+    assert.throws(() => w.rl.confirmEvidence(fi.id, ev.id, { note: "ok" }, OWNER), /CITATION_/);
+    assert.equal(w.rl.report(q.id, OWNER).verifiedFacts.length, 0);
+    // two independent sources, only one confirmed: VERIFIED but MEDIUM, not HIGH
+    const q2 = w.rl.openQuestion({ projectId: w.p.id, text: "Parking?" }, OWNER); w.web("P1", "Parking costs 150 dollars per month for the warehouse.", "https://example.org/p1"); w.web("P2", "Parking costs 150 dollars per month for the warehouse lot.", "https://example.org/p2");
+    const f2 = w.rl.addFinding(q2.id, { claim: "Parking costs 150 dollars per month for the warehouse" }, OWNER);
+    const hits = w.kp.search(w.p.id, { query: "parking costs 150 dollars month warehouse", ...OWNER }).results.filter(h => h.text.includes("Parking costs 150"));
+    const e1 = w.rl.attachEvidence(f2.id, { citation: hits[0].citation }, OWNER); w.rl.attachEvidence(f2.id, { citation: hits[1].citation }, OWNER);
+    w.rl.confirmEvidence(f2.id, e1.id, { note: "read it" }, OWNER);
+    const r = w.rl.report(q2.id, OWNER); assert.equal(r.verifiedFacts[0].confidence, "MEDIUM"); assert.equal(r.verifiedFacts[0].independentSources, 1);
   } finally { w.done(); }
 });

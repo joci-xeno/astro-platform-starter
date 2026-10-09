@@ -52,7 +52,7 @@ test("research ledger: a quote with a different number, or the opposite polarity
     const f2 = w.rl.addFinding(w.q.id, { claim: "The warehouse lease costs 9999 dollars per month" }, OWNER);
     assert.throws(() => w.rl.attachEvidence(f2.id, { citation: w.cite("The warehouse lease costs 4200 dollars per month and 9 days notice") }, OWNER), /EVIDENCE_NUMBER_NOT_IN_QUOTE:9999/);
     assert.ok(w.rl.attachEvidence(f1.id, { citation: w.cite("The warehouse lease costs 4,200 dollars per month payable monthly") }, OWNER).id);
-    const rep = w.rl.report(w.q.id, OWNER); assert.ok(JSON.stringify(rep).includes("not semantic entailment"));
+    const rep = w.rl.report(w.q.id, OWNER); assert.ok(JSON.stringify(rep).includes("NOT semantic verification")); assert.equal(rep.verifiedFacts.length, 0, "a genuine quote is only QUOTE_MATCHED until the owner confirms it"); assert.equal(rep.quoteMatched.length, 1);
   } finally { w.done(); }
 });
 

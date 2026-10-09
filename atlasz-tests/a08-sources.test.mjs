@@ -72,3 +72,26 @@ test("authorization: suggestions are read-only pointers; an agent cannot dismiss
   const w = await world();
   try { for (const k of ["../../etc/passwd", "__proto__", "A B", "x".repeat(200), 5, null]) await assert.rejects(() => w.W("suggest.dismiss", { key: k }), /KEY_INVALID|KEY/, String(k)); } finally { w.done(); }
 });
+
+test("approvals source via the REAL broker path: an approval-class tool call files a PENDING request in the same store and it surfaces as a suggestion; the production matrix has no approval-class agent tool", async () => {
+  const { createToolRegistry } = await import("../atlasz-addons/typed-tools.mjs");
+  const { createAgentToolBroker } = await import("../atlasz-addons/agent-tool-broker.mjs");
+  const { TOOL_POLICY, DEFAULT_LIMITS, permissionFor } = await import("../atlasz-addons/agent-tool-policy.mjs");
+  const { approvalActionName } = await import("../atlasz-addons/owner-control/owner-authority.mjs");
+  const { rig } = await import("./owner-control-rig.mjs");
+  assert.deepEqual(Object.keys(TOOL_POLICY).filter(t => ["SEARCH", "EXECUTION"].some(r => permissionFor(r, t) === "APPROVAL")), [], "no agent tool is approval-class in production: this producer is wired but inactive until the owner enables one");
+  const w = await world(), roster = [...Array.from({ length: 5 }, (_, i) => "SEARCH-" + (i + 1)), ...Array.from({ length: 25 }, (_, i) => "EXECUTION-" + (i + 1))].map(id => ({ id, team: id.startsWith("S") ? "SEARCH" : "EXECUTION" }));
+  const r = rig({ roster });
+  try {
+    const reg = createToolRegistry({ chain: r.sys.chain, blackBox: r.blackBox }); let ran = 0;
+    for (const e of Object.values(TOOL_POLICY)) reg.register({ name: e.tool, description: e.tool, operation: e.operation, input: { type: "object", properties: { x: { type: "string", maxLength: 100 } }, additionalProperties: false }, handler: async () => { ran++; return { ok: true }; } });
+    const policy = { ...TOOL_POLICY, "sandbox.run_process_only": { ...TOOL_POLICY["sandbox.run_process_only"], EXECUTION: "APPROVAL" } };
+    const approvalRequests = createApprovalRequests({ dir: path.join(w.stateDir, "approvals") });
+    const broker = createAgentToolBroker({ tools: reg, blackBox: r.blackBox, policy, limits: DEFAULT_LIMITS, approvalRequests, approvalAction: approvalActionName, approvalSubject: (op, p, s) => r.sys.chain.subjectFor(op, p, s), isStopped: () => false });
+    const res = await broker.call({ agentId: "EXECUTION-1", jobId: "j-a08", tool: "sandbox.run_process_only", args: { x: "go" } });
+    assert.equal(res.status, "PENDING_OWNER_APPROVAL"); assert.equal(ran, 0, "nothing ran before the owner decided");
+    const l = await w.W("suggest.list"), ap = l.shown.filter(x => x.source === "approvals");
+    assert.equal(ap.length, 1); assert.equal(ap[0].canAct, false); assert.ok(ap[0].key.startsWith("approval:"));
+    assert.equal((await w.W("suggest.list")).shown.filter(x => x.source === "approvals").length, 1, "asking again does not duplicate it");
+  } finally { r.stop?.(); w.done(); }
+});

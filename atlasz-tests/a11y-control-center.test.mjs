@@ -64,6 +64,21 @@ test("an engine that crashes or hangs yields AUDIT_NOT_COMPLETED (never a clean 
   } finally { rm(dir); }
 });
 
+test("an engine that answers with a wrong-shaped result (a fake clean verdict) is rejected as AUDIT_ENGINE_FAILED", async () => {
+  const dir = tmp("a11ys-"); const files = {
+    clean: 'import { parentPort } from "node:worker_threads"; parentPort.postMessage({ ok: true, result: { ok: true, verdict: "NO_FINDINGS_BY_THESE_RULES" } });',
+    string: 'import { parentPort } from "node:worker_threads"; parentPort.postMessage("all good");',
+    badFindings: 'import { parentPort } from "node:worker_threads"; parentPort.postMessage({ ok: true, result: { ok: true, verdict: "NO_FINDINGS_BY_THESE_RULES", counts: { FAIL: 0, WARN: 0 }, findings: "none", complete: true } });',
+  };
+  try {
+    for (const [name, src] of Object.entries(files)) {
+      const f = path.join(dir, name + ".mjs"); fs.writeFileSync(f, src);
+      const t = await boot({ a11yWorkerUrl: new URL("file://" + f), a11yTimeoutMs: 2000 });
+      try { const a = JSON.parse((await t.post({})).body).result; assert.equal(a.ok, false, name); assert.equal(a.verdict, "AUDIT_NOT_COMPLETED", name); assert.equal(a.reason, "AUDIT_ENGINE_FAILED", name); } finally { await t.done(); }
+    }
+  } finally { rm(dir); }
+});
+
 test("the UI view exists, is navigable and uses only the audit route", () => {
   const js = fs.readFileSync(new URL("../atlasz-control-center/public/app.js", import.meta.url), "utf8");
   assert.match(js, /a11y: "Accessibility audit"/); assert.match(js, /views\.a11y = async/); assert.match(js, /\/api\/a11y\/audit/); assert.match(js, /Audit this console/);
@@ -81,4 +96,33 @@ test("engine: every reason for an incomplete audit blocks a clean verdict on its
   const imgs = "<img src=x>".repeat(400); const trunc = auditAccessibility({ html: HTML.replace("<main>x</main>", "<main>" + imgs + "</main>"), css: CSS });
   assert.equal(trunc.truncated, true); assert.equal(trunc.verdict, "FAIL_FOUND");
   const warnTrunc = auditAccessibility({ html: HTML.replace("<main>x</main>", "<main>" + "<a tabindex=3>a</a>".repeat(400) + "</main>"), css: CSS }); assert.equal(warnTrunc.truncated, true); assert.ok(warnTrunc.incomplete.includes("FINDINGS_TRUNCATED"));
+});
+
+test("verifier findings: at-rules, nested CSS, dropped selectors and [data-theme=dark] can never yield a clean verdict by silence; empty html invents no failures; totals are true totals", async () => {
+  const { auditAccessibility } = await import("../atlasz-addons/a11y-audit.mjs");
+  const HTML = "<!doctype html><html lang=en><head><title>t</title><meta name=viewport content='width=device-width, initial-scale=1'></head><body><main>x</main></body></html>";
+  const GOOD = "z{color:#000;background:#fff}", a = css => auditAccessibility({ html: HTML, css });
+  assert.equal(a(GOOD).verdict, "NO_FAILS_BY_THESE_CHECKS");
+  for (const css of ["@supports (display:grid){b{color:#ccc;background:#fff}}", "@layer base{b{color:#ccc;background:#fff}}", "@container (min-width:1px){b{color:#ccc;background:#fff}}"]) { const r = a(GOOD + css); assert.equal(r.verdict, "FAIL_FOUND", css); assert.ok(r.findings.some(f => f.rule === "CONTRAST"), "grouping at-rules are read, not skipped: " + css); }
+  const weird = a(GOOD + "@unknownrule x{b{color:#ccc;background:#fff}}"); assert.equal(weird.verdict, "INCOMPLETE_AUDIT"); assert.ok(weird.incomplete.some(x => x.startsWith("UNSUPPORTED_AT_RULE")));
+  const nested = a(GOOD + "p{color:#000;& i{color:#ccc;background:#fff}}"); assert.equal(nested.verdict, "INCOMPLETE_AUDIT"); assert.ok(nested.incomplete.some(x => x.startsWith("NESTED_CSS_RULES")));
+  const drop = a(GOOD + "b{color:#ccc}"); assert.equal(drop.verdict, "INCOMPLETE_AUDIT"); assert.ok(drop.incomplete.some(x => x.startsWith("COLOUR_RULES_NOT_EVALUATED")), JSON.stringify(drop.incomplete));
+  const dark = a(":root{--bg:#fff;--panel:#fff;--ink:#000}:root[data-theme=dark]{--bg:#000;--panel:#000;--ink:#111}body{color:var(--ink);background:var(--bg)}"); assert.equal(dark.verdict, "FAIL_FOUND", "dark theme via data-theme is audited"); assert.ok(dark.findings.some(f => f.rule === "CONTRAST" && f.theme === "dark"));
+  const empty = auditAccessibility({ html: "", css: GOOD }); assert.deepEqual(empty.findings.filter(f => ["HTML_LANG", "TITLE", "LANDMARK_MAIN"].includes(f.rule)), [], "nothing supplied is not a failure of the page"); assert.equal(empty.verdict, "INCOMPLETE_AUDIT");
+  const focus = a(GOOD + ".btn:focus{outline:none}.k:focus{outline-style:none}"); assert.equal(focus.findings.filter(f => f.rule === "FOCUS_REMOVED").length, 2);
+  const many = auditAccessibility({ html: HTML.replace("<main>x</main>", "<main>" + "<img src=x>".repeat(400) + "</main>"), css: GOOD }); assert.equal(many.truncated, true); assert.equal(many.counts.FAIL, 400, "counts are the true totals");
+});
+
+test("UI: the real view code renders the real HTTP response (verdict, counts, findings table) and a failed audit message", async () => {
+  const js = fs.readFileSync(new URL("../atlasz-control-center/public/app.js", import.meta.url), "utf8");
+  const src = js.slice(js.indexOf("const show = r => {", js.indexOf("views.a11y")), js.indexOf("const run = body =>", js.indexOf("views.a11y")));
+  const seen = []; const h = (...a) => ({ h: a }), note = (t, k) => { seen.push(["note", t, k]); return { note: t }; }, table = (cols, rows) => { seen.push(["table", cols, rows]); return { table: rows }; }, pill = x => String(x);
+  const out = { replaceChildren: (...c) => seen.push(["out", c.length]) };
+  const show = new Function("out", "note", "table", "pill", src + "; return show;")(out, note, table, pill);
+  const t = await boot();
+  try {
+    const res = JSON.parse((await t.post(BAD)).body); show(res.result);
+    assert.ok(seen.some(x => x[0] === "note" && /Verdict: FAIL_FOUND/.test(x[1]))); const tb = seen.find(x => x[0] === "table"); assert.ok(tb[2].length >= 3 && tb[2].every(r => r.length === 5));
+    seen.length = 0; show({ ok: false, reason: "AUDIT_TIMEOUT", note: "x" }); assert.ok(seen.some(x => x[0] === "note" && /did not complete \(AUDIT_TIMEOUT\)/.test(x[1]) && x[2] === "bad"));
+  } finally { await t.done(); }
 });

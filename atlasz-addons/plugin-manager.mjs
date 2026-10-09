@@ -40,12 +40,12 @@ export function validateManifest(m, { atlaszVersion = "7.3.0" } = {}) {
   return { ok: problems.length === 0, problems: problems.map(x => scrub(String(x)).slice(0, 200)) };      // problem texts quote manifest values: never a credential, never unbounded
 }
 
-/** Content hash of a plugin folder (names + bytes, symlinks hashed as links). null = too large or unreadable: such a plugin is never run. */
+/** Content hash of a plugin folder (names + bytes). null = too large, unreadable or CONTAINS A SYMLINK: such a plugin is never approved or run. */
 function dirHash(dir) {
   const h = crypto.createHash("sha256"); let files = 0, bytes = 0;
   const walkDir = (d, rel) => { for (const e of fs.readdirSync(d, { withFileTypes: true }).sort((x, y) => (x.name < y.name ? -1 : 1))) {
     const abs = path.join(d, e.name), r = rel + "/" + e.name;
-    if (e.isSymbolicLink()) { h.update("L:" + r + "\0"); continue; }
+    if (e.isSymbolicLink()) throw new Error("SYMLINK_IN_PLUGIN");   // a link can point outside the folder and its target is not covered by the hash: such a plugin is never approved or run
     if (e.isDirectory()) { h.update("D:" + r + "\0"); walkDir(abs, r); continue; }
     if (!e.isFile()) { h.update("S:" + r + "\0"); continue; }
     if (++files > 500) throw new Error("TOO_MANY"); const b = fs.readFileSync(abs); bytes += b.length; if (bytes > 20 * 1024 * 1024) throw new Error("TOO_BIG");
@@ -80,6 +80,7 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
         if (!v.ok) { rejected.push({ dir, id: m?.id ?? null, problems: v.problems }); continue; }
         if (m.entry && !fs.existsSync(path.join(dir, m.entry))) { rejected.push({ dir, id: m.id, problems: ["ENTRY_FILE_MISSING"] }); continue; }
         if (found.has(m.id)) { rejected.push({ dir, id: m.id, problems: ["DUPLICATE_ID"] }); continue; }
+        if (dirHash(dir) === null) { rejected.push({ dir, id: m.id, problems: ["UNHASHABLE_OR_SYMLINK_IN_FOLDER"] }); continue; }
         found.set(m.id, { manifest: m, dir });
       }
     }
@@ -135,7 +136,7 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
       // Least privilege (ATLASZ-T3-002): read-only access to the plugin's own directory; write access only with the granted FILESYSTEM_PLUGIN_DIR permission; no network unless NETWORK
       // was granted at enable time; no child processes or workers (Node permission model). A host that cannot restrict Node does not run the hook at all (fails closed, no quarantine).
       const granted = own(S.enabled, id)?.permissions ?? [];
-      const rc = restrictedNodeCommand({ nodeBin, script: path.join(p.dir, p.manifest.entry), readDirs: [p.dir], writeDirs: granted.includes("FILESYSTEM_PLUGIN_DIR") ? [p.dir] : [], allowNetwork: granted.includes("NETWORK"), env: { ATLASZ_PLUGIN_ID: id, ATLASZ_PLUGIN_HOOK: String(hook) } });
+      const rc = restrictedNodeCommand({ nodeBin, script: path.join(p.dir, p.manifest.entry), readDirs: [p.dir], writeDirs: granted.includes("FILESYSTEM_PLUGIN_DIR") ? [p.dir] : [], allowNetwork: granted.includes("NETWORK"), requireNoNetwork: !granted.includes("NETWORK"), env: { ATLASZ_PLUGIN_ID: id, ATLASZ_PLUGIN_HOOK: String(hook) } });
       if (!rc.ok) { audit.append("PLUGIN_HOOK_NOT_RUN", { id, reason: rc.reason }); return finish({ ok: false, reason: rc.reason }); }
       try { child = spawn(rc.cmd, rc.args, { cwd: p.dir, env: rc.env, stdio: ["pipe", "pipe", "pipe"], windowsHide: true }); }
       catch (e) { fail(id, "SPAWN_FAILED:" + e.message); return finish({ ok: false, reason: "SPAWN_FAILED" }); }

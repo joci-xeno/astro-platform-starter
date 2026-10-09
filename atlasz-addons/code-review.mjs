@@ -12,8 +12,8 @@ const JS = /\.(mjs|cjs|js|jsx|ts|tsx|mts|cts|vue|svelte|html?)$/i, PY = /\.py$/i
 const RULES = [
   ["SECRET_LITERAL", "HIGH", null, /-----BEGIN [A-Z ]*PRIVATE KEY-----|(?<![A-Za-z0-9])sk-[A-Za-z0-9_-]{20,}|(?<![A-Za-z0-9])AKIA[0-9A-Z]{16}\b|(?<![A-Za-z0-9])ghp_[A-Za-z0-9]{30,}|(?<![A-Za-z0-9])xox[baprs]-[A-Za-z0-9-]{10,}/, "A credential-shaped literal is committed in source."],
   ["SECRET_ASSIGNMENT", "HIGH", null, /\b(?:password|passwd|secret|api[_-]?key|token|private[_-]?key)\b\s*[:=]\s*["'`][^"'`\s]{8,}["'`]/i, "A secret-named variable is assigned a literal value."],
-  ["DYNAMIC_EVAL", "HIGH", JS, /\beval\s*\(|\bnew Function\s*\(|\bsetTimeout\s*\(\s*["'`]/, "Dynamic code evaluation: input becoming code."],
-  ["SHELL_INJECTION", "HIGH", JS, /\b(?:exec|execSync)\s*\(\s*(?:`[^`]*\$\{|[^)]*(?:["'`]\s*\+|\+\s*["'`]|\+\s*[A-Za-z_$])|[a-zA-Z_$][\w$]*\s*[,)])|\bspawn(?:Sync)?\s*\(\s*["'](?:sh|bash|cmd(?:\.exe)?|powershell)["']\s*,\s*\[\s*["']-?-?[ck]["']/, "Shell command built from a variable or concatenation (use execFile with an argument array)."],
+  ["DYNAMIC_EVAL", "HIGH", JS, /\beval\s*\(|\bnew Function\s*\(|(?<![\w$.])Function\s*\(|\b(?:setTimeout|setInterval)\s*\(\s*["'`]|\bvm\.(?:runIn\w+|compileFunction)\s*\(|\bnew\s+vm\.Script\b/, "Dynamic code evaluation: input becoming code."],
+  ["SHELL_INJECTION", "HIGH", JS, /\b(?:exec|execSync)\s*\(\s*(?:`[^`]*\$\{|[^)]*(?:["'`]\s*\+|\+\s*["'`]|\+\s*[A-Za-z_$])|[a-zA-Z_$][\w$]*\s*[,)])|\b(?:spawn|spawnSync|execFile|execFileSync)\s*\(\s*["'](?:\/bin\/)?(?:sh|bash|zsh|dash|cmd(?:\.exe)?|powershell(?:\.exe)?|pwsh)["']\s*,\s*\[\s*["']\/?-{0,2}[A-Za-z]*[cC][A-Za-z]*["']|\b(?:spawn|spawnSync|execFile|execFileSync|exec|execSync)\s*\([^;]*\bshell\s*:\s*(?:true|["'])/, "Shell command built from a variable or concatenation (use execFile with an argument array)."],
   ["SHELL_INJECTION", "HIGH", PY, /\bos\.system\s*\(|\bsubprocess\.[a-z_]+\([^)]*shell\s*=\s*True|\beval\s*\(|\bexec\s*\(/, "Shell/dynamic execution in Python."],
   ["SHELL_INJECTION", "MEDIUM", SH, /\beval\b|\bsh\s+-c\b.*\$|\bcurl\b[^|]*\|\s*(?:sudo\s+)?(?:ba)?sh\b/, "Dynamic evaluation or pipe-to-shell."],
   ["SQL_INJECTION", "HIGH", null, /["'`]\s*(?:SELECT|INSERT|UPDATE|DELETE)\b[^"'`]*["'`]\s*\+|`\s*(?:SELECT|INSERT|UPDATE|DELETE)\b[^`]*\$\{|\b(?:SELECT|INSERT|UPDATE|DELETE)\b[^"']*["']\s*%\s*\(?|(?:execute|query)\(\s*f["']/i, "SQL text built from variables (use parameterised queries)."],
@@ -68,6 +68,19 @@ export function reviewCode(input) {
       if (INJECTION_PATTERNS.some(p => p.test(raw))) add({ rule: "INSTRUCTION_IN_CONTENT", severity: "INFO", file: f.path, line: i + 1, message: "The file contains text that tries to instruct a reader/model. Reported only; never followed.", snippet: redactSecrets(raw.trim()).slice(0, LIMITS.maxSnippet) });
     }
   }
+  // Statements that continue over several lines are invisible to the per-line rules: a second pass looks at each exec( call together with the text up to its closing statement.
+  for (const f of files) {
+    if (!JS.test(f.path) || f.content.length > LIMITS.maxFileChars) continue; let n = 0;
+    for (const m of f.content.matchAll(/\b(?:exec|execSync)\s*\(/g)) {
+      if (++n > 500) { truncated = true; break; }
+      const stmt = f.content.slice(m.index, m.index + 600).split(/;\s*\n|;\s*$/)[0]; if (!stmt.includes("\n")) continue;       // single-line calls were already judged line by line
+      const one = stmt.replace(/\s+/g, " ");
+      if (/^(?:exec|execSync)\s*\(\s*(?:`[^`]*\$\{|[^)]*(?:["'`]\s*\+|\+\s*["'`]|\+\s*[A-Za-z_$])|[a-zA-Z_$][\w$]*\s*[,)])/.test(one)) {
+        const line = f.content.slice(0, m.index).split("\n").length;
+        if (!findings.some(x => x.file === f.path && x.line === line && x.rule === "SHELL_INJECTION")) add({ rule: "SHELL_INJECTION", severity: "HIGH", file: f.path, line, message: "Shell command built from a variable or concatenation across several lines (use execFile with an argument array).", snippet: redactSecrets(one).slice(0, LIMITS.maxSnippet) });
+      }
+    }
+  }
   findings.sort((a, b) => SEV[b.severity] - SEV[a.severity] || (a.file < b.file ? -1 : a.file > b.file ? 1 : a.line - b.line));
   if (findings.length > LIMITS.maxFindings) { findings.length = LIMITS.maxFindings; truncated = true; }
   // test presence: a source file counts as covered when some supplied test file mentions its base name
@@ -76,7 +89,8 @@ export function reviewCode(input) {
   const codeOf = c => c.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|\s)(?:\/\/|#).*$/gm, "$1").trim();   // a test file holding only comments covers nothing
   const esc = x => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const importText = new Map(tests.map(t => [t, t.content.split("\n").filter(l => /from|require|import/.test(l)).slice(0, 5000).map(l => l.slice(0, 2000)).join("\n")]));   // only import-looking lines, each capped: the matching below is linear in what it is given
-  const covers = (t, b) => codeOf(t.content).length > 0 && (new RegExp("(?:from|require|import)[^\\n]*(?<![A-Za-z0-9_])" + esc(b) + "(?![A-Za-z0-9_])").test(importText.get(t)) || t.path.split("/").pop().replace(/\.(test|spec)\.[a-z]+$|^test_|_test\.[a-z]+$|\.[a-z]+$/gi, "") === b);
+  const hasCases = t => /\b(?:test|it|describe|suite)\s*\(|\bdef\s+test_|\bfunc\s+Test|\bassert|\bexpect\s*\(/.test(codeOf(t.content));   // a test file needs real cases, not just an import
+  const covers = (t, b) => codeOf(t.content).length > 0 && hasCases(t) && (new RegExp("(?:from|require|import)[^\\n]*(?<![A-Za-z0-9_])" + esc(b) + "(?![A-Za-z0-9_])").test(importText.get(t)) || t.path.split("/").pop().replace(/\.(test|spec)\.[a-z]+$|^test_|_test\.[a-z]+$|\.[a-z]+$/gi, "") === b);
   const untested = sources.filter(s => !tests.some(t => covers(t, base(s.path)))).map(s => s.path);
   const verdict = counts.HIGH ? "BLOCK" : truncated || longLines ? "INCOMPLETE_REVIEW" : counts.MEDIUM || counts.LOW || counts.INFO ? "REVIEW" : "NO_FINDINGS_BY_THESE_RULES";
   return { ok: true, verdict, counts, findings, truncated, tests: { testFiles: tests.map(t => redactSecrets(t.path)), sourceFiles: sources.length, untested: untested.map(u => redactSecrets(u)) }, files: files.length,

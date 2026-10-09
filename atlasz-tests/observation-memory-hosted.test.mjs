@@ -40,7 +40,9 @@ test("hosted: agents use memory only through obs.* tools; consent cannot be supp
     const q = rt.research.openQuestion({ projectId: p.id, text: "Rent?" }, { tenantId: "JOCI", role: "OWNER" });
     const cite = rt.knowledge.search(p.id, { query: "monthly rent", tenantId: "JOCI", role: "AGENT", forAgent: true }).results[0].citation;
     const f1 = rt.research.addFinding(q.id, { claim: "monthly rent Maple Street warehouse 4200 dollars" }, { tenantId: "JOCI", role: "OWNER" }); rt.research.addFinding(q.id, { claim: "The landlord loves cats" }, { tenantId: "JOCI", role: "OWNER" });
-    rt.research.attachEvidence(f1.id, { citation: cite }, { tenantId: "JOCI", role: "AGENT", forAgent: true });
+    const ev1 = rt.research.attachEvidence(f1.id, { citation: cite }, { tenantId: "JOCI", role: "AGENT", forAgent: true });
+    assert.equal((await inv("obs.capture_research", { questionId: q.id })).result.captured, 0, "a quotation match that the owner has not confirmed is not captured as verified research");
+    rt.research.confirmEvidence(f1.id, ev1.id, { note: "owner confirmed the listing" }, { tenantId: "JOCI", role: "OWNER" });
     const cap = (await inv("obs.capture_research", { questionId: q.id })).result; assert.equal(cap.captured, 1, "only the VERIFIED finding is captured; the unsupported claim is not"); assert.equal(cap.questionState, "ANSWERED");
     const got = (await inv("obs.recall", { query: "monthly rent", scopes: ["BUSINESS"] })).result.results[0]; assert.equal(got.verification, "VERIFIED_AT_CAPTURE"); assert.equal(got.ref.id, f1.id);
     assert.equal((await inv("obs.recall", { query: "landlord cats", scopes: ["BUSINESS"] })).result.results.length, 0); assert.equal(got.source.type, "AGENT", "captured by an agent => attributed to the agent");

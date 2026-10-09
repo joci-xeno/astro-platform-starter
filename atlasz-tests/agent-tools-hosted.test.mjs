@@ -45,7 +45,9 @@ test("hosted: SEARCH agents run the whole research loop through the broker; EXEC
     assert.equal((await S("research.add_finding", { questionId: q.id, claim: "x" }, "EXECUTION-9")).status, "DENIED");
     assert.equal((await S("research.add_finding", { questionId: q.id, claim: "x", tenantId: "OTHER" })).status, "INVALID_ARGUMENTS");
     const cite = rt.knowledge.search(p.id, { query: "monthly rent", tenantId: "JOCI", role: "AGENT", forAgent: true }).results[0].citation;
-    assert.equal((await S("research.attach_evidence", { findingId: f.id, citation: cite })).status, "OK");
+    const att = await S("research.attach_evidence", { findingId: f.id, citation: cite }); assert.equal(att.status, "OK");
+    r = (await S("research.report", { questionId: q.id })).result; assert.equal(r.state, "UNRESOLVED", "an agent's quotation match is not verification"); assert.equal(r.quoteMatched.length, 1);
+    rt.research.confirmEvidence(f.id, att.result.id, { note: "owner read the source" }, { tenantId: "JOCI", role: "OWNER" });
     r = (await S("research.report", { questionId: q.id })).result; assert.equal(r.state, "ANSWERED");
     const priv = rt.knowledge.create({ tenantId: "JOCI", name: "Owner only" });
     assert.equal((await S("research.open_question", { projectId: priv.id, text: "x?" })).status, "HANDLER_ERROR", "the tool's own project permission still applies");

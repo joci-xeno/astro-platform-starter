@@ -75,3 +75,15 @@ test("analyze: reproducible report (same input+steps => same hash, different inp
   const md = reportToMarkdown(a.report); assert.match(md, /Report hash: `[0-9a-f]{64}`/); assert.match(md, /units/);
   assert.equal(analyze("").reason, "CSV_REQUIRED"); assert.equal(analyze(csv, { ops: [{ op: "zzz" }] }).ok, false);
 });
+
+test("analyst: NA / N/A / null / - cells are MISSING (never 0, never a text value breaking the column type); headers are redacted in the report; the cleaned table can be exported with formula neutralisation", async () => {
+  const { analyze, cleanedCsv } = await import("../atlasz-addons/analyst.mjs");
+  const r = analyze("a,b\n1,x\nNA,y\n3,z\nn/a,w\n-,v\nnull,u\n");
+  assert.equal(r.ok, true); const col = r.report.profile.find(p => p.column === "a");
+  assert.equal(col.type, "integer"); assert.equal(col.missing, 4); assert.equal(r.report.stats.a.count, 2); assert.equal(r.report.stats.a.mean, 2, "missing values are excluded, not counted as 0");
+  const t = analyze("a\n5\nNA\n-\n", { ops: [{ op: "toNumber", column: "a" }] }); assert.equal(t.report.steps[0].invalidToNull, 0, "NA is not an invalid number, it is simply missing");
+  const f = analyze("a\n5\nNA\n7\n", { ops: [{ op: "fillMissing", column: "a", strategy: "mean" }] }); assert.deepEqual(f.data.rows.map(x => x[0]), ["5", 6, "7"]);
+  const K = "s" + "k-ABCDEFGHIJKLMNOPQRSTUVWX", h = analyze("name," + K + "\nx,1\ny,2\n");
+  assert.ok(!JSON.stringify(h.report).includes(K), "a secret in a column name never reaches the report"); assert.equal(h.data.headers[1], K, "the data itself is unchanged");
+  const csv = cleanedCsv(analyze("a,b\n=1+1,2\nok,3\n")); assert.match(csv, /^a,b\n'=1\+1,2\nok,3\n$/); assert.equal(cleanedCsv({ ok: false }), null);
+});

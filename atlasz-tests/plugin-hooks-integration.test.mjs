@@ -89,3 +89,17 @@ test("plugin output is untrusted (secrets redacted, size capped) and a hook cann
     assert.deepEqual(pr.result, { readState: "DENIED", readEtc: "DENIED", spawn: "DENIED", write: "DENIED" }); assert.equal(fs.existsSync(path.join(t.base, "pwned")), false);
   } finally { await t.done(); }
 });
+
+test("a symlink inside a plugin folder (to the config or state dir) makes the plugin unrunnable: it cannot be enabled and can never read through the link", { skip: !caps.permission }, async () => {
+  const t = await boot();
+  try {
+    await t.P("/api/owner-key", { passphrase: PW });
+    const dir = t.plug("l", "linky", `import fs from "node:fs"; let o; try { o = fs.readdirSync("./cfg").join(","); } catch { o = "DENIED"; } process.stdout.write(JSON.stringify({ o }));`);
+    fs.symlinkSync(t.configDir, path.join(dir, "cfg"));
+    const enable = await t.P("/api/plugins/enable", { id: "linky", passphrase: PW }); assert.equal(enable.result.result.ok, false, JSON.stringify(enable));
+    assert.equal((await I(t, { id: "linky", hook: "go" })).ok, false);
+    assert.ok((await t.get("/api/plugins")).rejected.some(x => x.id === "linky") || !(await t.get("/api/plugins")).plugins.some(x => x.id === "linky"), "listed as rejected, not as a plugin");
+    fs.rmSync(path.join(dir, "cfg")); assert.equal((await t.P("/api/plugins/enable", { id: "linky", passphrase: PW })).result.result.ok, true);
+    fs.symlinkSync(t.configDir, path.join(dir, "cfg")); assert.equal((await I(t, { id: "linky", hook: "go" })).ok, false, "a link added AFTER approval stops the plugin");
+  } finally { await t.done(); }
+});

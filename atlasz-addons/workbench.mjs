@@ -5,7 +5,7 @@
 import { createConversationStore } from "./conversation.mjs";
 import { chooseEffort } from "./effort-allocation.mjs";
 import { chunkText, mapReducePlan } from "./chunker.mjs";
-import { analyze, reportToMarkdown } from "./analyst.mjs";
+import { analyze, reportToMarkdown, cleanedCsv } from "./analyst.mjs";
 import { renderChart, renderDiagram, renderTextPreview, renderAnnotationOverlay, buildGuidance, renderGuidanceStep, svgToDataUri } from "./render.mjs";
 import { chooseDetail } from "./detail-level.mjs";
 import { createProjectMemory } from "./project-memory.mjs";
@@ -43,7 +43,9 @@ export function createWorkbench({ conversationFile = null, memoryFile = null, no
   const wf = createWorkflowEngine({ file: workflowFile, actions: wfActions, isStopped, ...(now ? { now } : {}) });
   const skills = createSkillRegistry({ file: skillsFile, actions: wfActions, isStopped, ownerAuth });       // declarative skills; only pure wfActions; the console is the OWNER
   const prefs = createPreferences({ file: prefsFile, ...(now ? { now } : {}) });                  // owner preferences; the console is the OWNER, learning only proposes
-  const profiles = createProfiles({ file: profilesFile, skillExists: id => skills.list(T.tenantId).some(k => k.id === id), ...(now ? { now } : {}) });   // configuration for the existing agents only; narrowed by the tool matrix at every use
+  const mkProfiles = () => createProfiles({ file: profilesFile, skillExists: id => skills.list(T.tenantId).some(k => k.id === id), ...(now ? { now } : {}) });   // configuration for the existing agents only; narrowed by the tool matrix at every use
+  // A corrupt/unreadable profiles file must not brick the workbench: every profile operation then fails closed with PROFILE_STORE_UNREADABLE (nothing is replaced or widened).
+  const profiles = (() => { try { return mkProfiles(); } catch { const no = () => ({ ok: false, reason: "PROFILE_STORE_UNREADABLE" }); return { create: no, rollback: no, remove: no, assign: no, assignments: () => ({}), agentGate: () => ({ allowed: false, reason: "PROFILE_STORE_UNREADABLE" }), list: () => [], get: no, resolve: no, check: () => ({ allowed: false, reason: "PROFILE_STORE_UNREADABLE" }), grantable: () => [], limits: {} }; } })();
   const study = createStudy({ file: studyFile, ...(now ? { now } : {}) }), sug = createSuggestions({ file: suggestionsFile, prefs, ...(now ? { now } : {}) });
   // Snapshot of what needs the owner: this workbench's own data plus whatever the host supplies (approvals, plugins). Read-only; a suggestion never acts.
   const snapshots = () => {
@@ -74,7 +76,8 @@ export function createWorkbench({ conversationFile = null, memoryFile = null, no
       if (a.ops !== undefined && (!Array.isArray(a.ops) || a.ops.length > 50 || !a.ops.every(isObj))) return { ok: false, reason: "OPS_INVALID" };
       const r = analyze(a.csv, { ops: a.ops ?? [] }); if (!r.ok) return r;
       const charts = r.charts.slice(0, WB_LIMITS.maxChartsReturned).map(c => { const s = renderChart(c); return s.ok ? { title: c.title, type: c.type, dataUri: svgToDataUri(s.svg) } : { title: c.title, type: c.type, error: s.reason }; });
-      return { ok: true, report: r.report, markdown: reportToMarkdown(r.report), charts, note: r.note, rowsReturned: 0 };
+      const csv = a.exportCsv === true ? cleanedCsv(r) : null; if (csv !== null && csv.length > WB_LIMITS.csvChars) return { ok: false, reason: "EXPORT_TOO_LARGE" };
+      return { ok: true, report: r.report, markdown: reportToMarkdown(r.report), charts, note: r.note, rowsReturned: 0, ...(csv !== null ? { cleanedCsv: csv } : {}) };
     },
     "render.chart": a => { const r = renderChart(a.spec, a.size ?? {}); return r.ok ? { ok: true, dataUri: svgToDataUri(r.svg), bytes: r.bytes } : r; },
     "render.diagram": a => { const r = renderDiagram(a.diagram); return r.ok ? { ok: true, dataUri: svgToDataUri(r.svg), nodes: r.nodes, edges: r.edges } : r; },
