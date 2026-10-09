@@ -52,7 +52,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   const readHead = () => { if (!headFile || !fs.existsSync(headFile)) return null; try { const h = JSON.parse(fs.readFileSync(headFile, "utf8")); return Number.isInteger(h?.n) && typeof h?.hash === "string" ? h : { n: -1, hash: "" }; } catch { return { n: -1, hash: "" }; } };
   store.save = () => { baseSave(); if (headFile && S.events.length) { try { fs.writeFileSync(headFile, JSON.stringify({ n: S.events.length, hash: S.events.at(-1).hash }), { mode: 0o600 }); } catch { /* the store itself is saved */ } } };
   if (headFile && S.events.length && !fs.existsSync(headFile)) store.save();            // a store written before anchors existed adopts one when opened
-  const anchorOk = () => { if (!headFile || !S.events.length) return true; const h = readHead(); return Boolean(h) && h.n === S.events.length && S.events.at(-1).hash === h.hash; };
+  const anchorOk = () => { if (!headFile) return true; if (!S.events.length) { const h0 = readHead(); return !(h0 && h0.n > 0); } const h = readHead(); return Boolean(h) && h.n === S.events.length && S.events.at(-1).hash === h.hash; };
   function event(type, by, d) {
     if (!anchorOk()) throw new Error("CHAIN_BROKEN");
     const prev = S.events.length ? S.events[S.events.length - 1].hash : "GENESIS", e = { n: S.events.length + 1, at: now(), type, by, ...d, prev };
@@ -161,6 +161,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
       return { id: e.id, relation: e.relation, title: e.citation.title, kind: e.citation.kind, url: e.citation.url, version: e.citation.version, quote: v.status === "SOURCE_UNAVAILABLE" && who(w).role !== "OWNER" ? "[withheld: source not readable by this role]" : e.citation.quote, retrievedAt: e.retrievedAt, verification: v.status, aged, ok: v.status === "OK" && !aged, memberId: e.citation.memberId, addedBy: e.addedBy, confirmed: confirmedSet().has(f.id + "|" + e.id + "|" + bindOf(f, e)) }; });
     const sup = ev.filter(e => e.relation === "SUPPORTS" && e.ok), ref = ev.filter(e => e.relation === "REFUTES" && e.ok), supC = sup.filter(e => e.confirmed), refC = ref.filter(e => e.confirmed), reasons = [];
     const cf = chainFacts(), tamper = [];
+    if (cf) { const extra = f.evidence.filter(e => !cf.attached.get(f.id)?.has(e.id)).map(e => e.id); if (extra.length) tamper.push("EVIDENCE_NOT_IN_CHAIN:" + extra.join(",")); }
     if (cf) { const miss = [...(cf.attached.get(f.id) ?? [])].filter(x => !f.evidence.some(e => e.id === x)); if (miss.length) tamper.push("EVIDENCE_REMOVED_OUTSIDE_LEDGER:" + miss.join(",")); }
     const pairs = Object.values(S.contradictions).filter(k => k.tenantId === f.tenantId && (k.a === f.id || k.b === f.id)).map(k => { if (cf && k.state === "RESOLVED" && cf.resolved.get(k.id) !== String(k.resolution?.winner ?? null)) { tamper.push("RESOLUTION_NOT_IN_CHAIN:" + k.id); return { ...k, state: "OPEN" }; } return k; });
     if (cf) for (const dk of cf.declared) if (dk.a === f.id || dk.b === f.id) { const sk = S.contradictions[dk.id]; if (!sk || sk.a !== dk.a || sk.b !== dk.b || sk.tenantId !== f.tenantId) tamper.push("CONTRADICTION_REMOVED_OR_ALTERED_OUTSIDE_LEDGER:" + dk.id); }

@@ -105,19 +105,21 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
     let stopped = true; try { stopped = Boolean(isStopped()); } catch { /* fail closed */ } if (stopped && !codeLess) return { ok: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" };
     const hash = codeLess ? null : dirHash(p.dir); if (!codeLess && !hash) return { ok: false, reason: "PLUGIN_FOLDER_UNHASHABLE" };
     if (!codeLess) { const v = approve(ownerApproval, "PLUGIN_ENABLE", id + "#" + hash); if (!v.allowed) return { ok: false, reason: "OWNER_APPROVAL_REQUIRED:" + v.reason, subject: id + "#" + hash }; }   // the owner approves these exact bytes, not just a name
-    S.enabled[id] = { since: now(), version: p.manifest.version, permissions: p.manifest.permissions, ...(hash ? { hash } : {}) }; S.health[id] = { failures: 0 };
-    audit.append("PLUGIN_ENABLED", { id, version: p.manifest.version, permissions: p.manifest.permissions }); if (!save()) return { ok: false, reason: "STATE_NOT_WRITTEN" }; return { ok: true };
+    const snap = structuredClone(S); S.enabled[id] = { since: now(), version: p.manifest.version, permissions: p.manifest.permissions, ...(hash ? { hash } : {}) }; S.health[id] = { failures: 0 };
+    return commit("PLUGIN_ENABLED", { id, version: p.manifest.version, permissions: p.manifest.permissions }, snap);
   }
   /** What the owner signs for PLUGIN_ENABLE: the plugin id and the content hash of its folder as it is now (a code-less theme needs no approval). */
   const enableSubject = id => { const p = scan().found.get(id); if (!p || p.manifest.kind === "THEME" || p.manifest.kind === "SKIN") return null; const h = dirHash(p.dir); return h ? id + "#" + h : null; };
-  function disable(id) { if (!own(S.enabled, id)) return { ok: true, already: true }; delete S.enabled[id]; if (S.theme === id) S.theme = null; audit.append("PLUGIN_DISABLED", { id }); if (!save()) return { ok: false, reason: "STATE_NOT_WRITTEN" }; return { ok: true }; }
+  function disable(id) { if (!own(S.enabled, id)) return { ok: true, already: true }; const snap = structuredClone(S); delete S.enabled[id]; if (S.theme === id) S.theme = null; return commit("PLUGIN_DISABLED", { id }, snap); }
   function resetQuarantine(id, { ownerApproval = null } = {}) {
     if (unreadable) return STATE_BAD;
     const v = approve(ownerApproval, "PLUGIN_RESET_QUARANTINE", id); if (!v.allowed) return { ok: false, reason: "OWNER_APPROVAL_REQUIRED:" + v.reason };
-    S.health[id] = { failures: 0 }; audit.append("PLUGIN_QUARANTINE_RESET", { id }); if (!save()) return { ok: false, reason: "STATE_NOT_WRITTEN" }; return { ok: true };
+    const snap = structuredClone(S); S.health[id] = { failures: 0 }; return commit("PLUGIN_QUARANTINE_RESET", { id }, snap);
   }
   /** Audit write that cannot throw into timers/child callbacks: a failed audit (corrupt or unwritable log) is reported as false, never as an uncaught exception. */
   const rec = (e, d) => { try { audit.append(e, d); return true; } catch { return false; } };
+  /** Persist a management change: audit first, then state; if either cannot be written the in-memory change is rolled back (never an enabled-in-memory plugin the disk does not know about). */
+  const commit = (ev, data, snap) => { let ok = true; try { audit.append(ev, data); } catch { ok = false; } if (ok && !save()) ok = false; if (!ok) { S = snap; return { ok: false, reason: "STATE_NOT_WRITTEN_OR_AUDIT_UNAVAILABLE" }; } return { ok: true }; };
   function fail(id, why) {
     const h = (Object.hasOwn(S.health, id) ? S.health[id] : (S.health[id] = { failures: 0 })); h.failures++; h.lastError = scrub(String(why)).slice(0, 200);
     if (h.failures >= quarantineAfter) { h.quarantined = true; delete S.enabled[id]; if (S.theme === id) S.theme = null; rec("PLUGIN_QUARANTINED", { id, why: h.lastError }); }
@@ -126,13 +128,16 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
   }
   /** Invoke a hook inside an isolated child process. NEVER throws into the caller. */
   function invoke(id, hook, input = {}) {
-    return new Promise(resolve => {
+    return new Promise(resolve => { try { run(resolve); } catch { resolve({ ok: false, reason: "INVOKE_FAILED" }); } });      // NEVER throws or rejects: any failure while starting is a result
+    function run(resolve) {
       try { audit.reload(); } catch { return resolve({ ok: false, reason: "AUDIT_UNAVAILABLE" }); }       // no hook runs when its run cannot be audited
       const p = scan().found.get(id);
       if (!p || !own(S.enabled, id) || own(S.health, id)?.quarantined) return resolve({ ok: false, reason: !p ? "UNKNOWN_PLUGIN" : "NOT_ENABLED" });
       if (!p.manifest.entry) return resolve({ ok: false, reason: "NO_CODE_ENTRY" });
       { let st = true; try { st = Boolean(isStopped()); } catch { /* fail closed */ } if (st) { rec("PLUGIN_HOOK_NOT_RUN", { id, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" }); return resolve({ ok: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" }); } }
       { const en = own(S.enabled, id), now0 = dirHash(p.dir); if (!en?.hash || now0 !== en.hash) { rec("PLUGIN_HOOK_NOT_RUN", { id, reason: "CODE_CHANGED_SINCE_ENABLE" }); return resolve({ ok: false, reason: "CODE_CHANGED_SINCE_ENABLE" }); } }   // only the exact code the owner enabled ever runs
+      let payload; try { payload = JSON.stringify({ hook, input }); } catch { return resolve({ ok: false, reason: "INPUT_NOT_SERIALISABLE" }); }
+      if (!rec("PLUGIN_HOOK_STARTED", { id, hook: String(hook).slice(0, 40) })) return resolve({ ok: false, reason: "AUDIT_UNAVAILABLE" });      // a hook only runs when its start can be audited
       let out = "", err = "", done = false, timer = null;
       const finish = r => { if (done) return; done = true; clearTimeout(timer); resolve(r); };
       let child;
@@ -153,14 +158,14 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
         try { const r = JSON.parse(out); if (own(S.health, id)) S.health[id].failures = 0; rec("PLUGIN_HOOK_RUN", { id, hook: String(hook).slice(0, 40) }); save(); finish({ ok: true, result: r }); }
         catch { fail(id, "INVALID_JSON_OUTPUT"); finish({ ok: false, reason: "INVALID_OUTPUT" }); }
       });
-      child.stdin.on("error", () => {}); child.stdin.end(JSON.stringify({ hook, input }));
-    });
+      child.stdin.on("error", () => {}); child.stdin.end(payload);
+    }
   }
   function setTheme(id) {
     if (unreadable) return STATE_BAD;
-    if (id === null) { S.theme = null; audit.append("THEME_CLEARED", {}); if (!save()) return { ok: false, reason: "STATE_NOT_WRITTEN" }; return { ok: true }; }
+    if (id === null) { const snap = structuredClone(S); S.theme = null; return commit("THEME_CLEARED", {}, snap); }
     const p = scan().found.get(id); if (!p || !["THEME", "SKIN"].includes(p.manifest.kind)) return { ok: false, reason: "NOT_A_THEME" };
-    S.theme = id; S.enabled[id] ??= { since: now(), version: p.manifest.version, permissions: ["UI_THEME"] }; audit.append("THEME_SET", { id }); if (!save()) return { ok: false, reason: "STATE_NOT_WRITTEN" }; return { ok: true };
+    const snap = structuredClone(S); S.theme = id; S.enabled[id] ??= { since: now(), version: p.manifest.version, permissions: ["UI_THEME"] }; return commit("THEME_SET", { id }, snap);
   }
   function activeTheme() { if (!S.theme) return { id: null, variables: {} }; const p = scan().found.get(S.theme); return p ? { id: S.theme, name: p.manifest.name, variables: p.manifest.variables } : { id: null, variables: {} }; }
   return { scan: () => { const s = scan(); return { found: [...s.found.keys()], rejected: s.rejected }; }, list, enable, enableSubject, disable, resetQuarantine, invoke, setTheme, activeTheme, auditVerify: () => audit.verify(), validateManifest };

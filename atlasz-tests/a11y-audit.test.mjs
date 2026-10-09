@@ -193,3 +193,9 @@ test("R6 round 4: many comments are linear time; bogus-comment shapes with a quo
   assert.ok(Date.now() - t0 < 5000, "comment scanning is linear: " + (Date.now() - t0) + " ms");
   for (const pre of ['<?x a=">', '<!x a=">', '</ a=">', '< a=">', '<1 a=">']) { const r = auditAccessibility({ html: H(pre + '\n<link rel=stylesheet href=x.css>\n">'), css: C }); assert.equal(r.complete, false, pre); }
 });
+
+test("R6 round 5: <style/> still hides nothing; '=' inside an unquoted value does not open a quote", () => {
+  const C = ":root{--bg:#fff;--ink:#000}body{color:var(--ink);background:var(--bg)}", H = b => "<html lang=en><head><title>t</title><meta name=viewport content='width=device-width'></head><body><main>" + b + "</main></body></html>";
+  for (const b of ['<style/>@import url(x.css);</style><p>x', '<style a=b/>@import "x.css";</style><p>x', '<a b=c=" ><link rel=stylesheet href=x.css><a d=">x</a>', "<a b=c=' ><link rel=stylesheet href=x.css><a d='>x</a>"]) { const r = auditAccessibility({ html: H(b), css: C }); assert.equal(r.complete, false, b); }
+  assert.equal(auditAccessibility({ html: H('<a title="x>y" href=#>ok</a>'), css: C }).complete, true, "a quoted > after a real value start is still handled");
+});

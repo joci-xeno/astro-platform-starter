@@ -66,10 +66,11 @@ test("M12: emptying the store (assignments removed outside the owner's unassign)
     const orig = fs.readFileSync(file, "utf8");
     fs.writeFileSync(file, JSON.stringify({ tenants: {} })); assert.equal(gate("EXECUTION-3", "sandbox.x").allowed, false);
     const j = JSON.parse(orig); j.tenants.JOCI.assignments = { "EXECUTION-3": null }; fs.writeFileSync(file, JSON.stringify(j)); assert.equal(gate("EXECUTION-3", "sandbox.x").allowed, false);
+    { P.create("JOCI", { actor: "OWNER", id: "p2", name: "broad", instructions: "y", tools: [] }); const rt = JSON.parse(fs.readFileSync(file, "utf8")); rt.tenants.JOCI.assignments["EXECUTION-3"] = "p2"; fs.writeFileSync(file, JSON.stringify(rt)); assert.equal(gate("EXECUTION-3", "sandbox.x").allowed, false, "retargeting an assignment outside the owner's assign is refused"); }
     fs.writeFileSync(file, orig); fs.rmSync(file + ".in-use"); fs.mkdirSync(file + ".in-use"); assert.equal(gate("EXECUTION-3", "sandbox.x").allowed, false, "a directory in place of the marker fails closed");
-    fs.rmSync(file + ".in-use", { recursive: true }); fs.writeFileSync(file + ".in-use", '["JOCI/EXECUTION-3"]');
+    fs.rmSync(file + ".in-use", { recursive: true }); fs.writeFileSync(file + ".in-use", '{"JOCI/EXECUTION-3":"p1"}');
     { const sw = JSON.parse(orig); sw.tenants.JOCI.assignments = { "EXECUTION-4": "p1" }; fs.writeFileSync(file, JSON.stringify(sw)); assert.equal(gate("EXECUTION-3", "sandbox.x").allowed, false, "moving the assignment to another agent keeps the count but frees the restricted agent"); fs.writeFileSync(file, orig); }
-    assert.equal(P.assign("JOCI", "EXECUTION-3", null, { actor: "OWNER" }).ok, true); assert.equal(fs.readFileSync(file + ".in-use", "utf8"), "[]");
+    assert.equal(P.assign("JOCI", "EXECUTION-3", null, { actor: "OWNER" }).ok, true); assert.equal(fs.readFileSync(file + ".in-use", "utf8"), "{}");
     assert.equal(gate("EXECUTION-3", "sandbox.x").allowed, true, "the owner's own unassign restores the baseline");
   } finally { rm(d); }
 });

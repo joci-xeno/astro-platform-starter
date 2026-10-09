@@ -426,3 +426,19 @@ test("R6 round 4b: a tampered contradiction (no topic shortcut) and a swapped id
     void ea;
   } finally { w.done(); }
 });
+
+test("R6 round 5: an emptied chain with a surviving head, and evidence inserted into the store without a chain event, never produce a verified or quote-matched finding", async () => {
+  const w = await world();
+  try {
+    const q = w.rl.openQuestion({ projectId: w.p.id, text: "Rent?" }, OWNER);
+    w.web("A", RENT, "https://example.org/a");
+    const c = w.kp.search(w.p.id, { query: "monthly rent Maple Street warehouse", ...OWNER }).results[0].citation;
+    const fa = w.rl.addFinding(q.id, { claim: "The monthly rent for the Maple Street warehouse is 4200 dollars" }, OWNER), f2 = w.rl.addFinding(q.id, { claim: "The monthly rent for the Maple Street warehouse is 4200 dollars payable" }, OWNER);
+    w.att(fa.id, { citation: c }, OWNER);
+    const file = path.join(w.d, "rl.json"), orig = fs.readFileSync(file, "utf8");
+    const j = JSON.parse(orig); j.events = []; fs.writeFileSync(file, JSON.stringify(j));
+    const m = w.mk(); assert.equal(m.verifyChain().ok, false, "head says n>0 but the chain is empty"); assert.equal(m.report(q.id, OWNER).verifiedFacts.length, 0);
+    fs.writeFileSync(file, orig); const j2 = JSON.parse(orig); const ev = JSON.parse(JSON.stringify(j2.findings[fa.id].evidence[0])); ev.id = "re-injected"; j2.findings[f2.id].evidence.push(ev); fs.writeFileSync(file, JSON.stringify(j2));
+    const r = w.mk().report(q.id, OWNER); const x = [...r.verifiedFacts, ...r.quoteMatched].filter(f => f.id === f2.id); assert.equal(x.length, 0, "injected evidence is not accepted"); assert.ok(JSON.stringify(r.conflicted).includes("EVIDENCE_NOT_IN_CHAIN"));
+  } finally { w.done(); }
+});

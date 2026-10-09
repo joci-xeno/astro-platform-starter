@@ -67,12 +67,14 @@ const bgOf = d => d.get("__bg") ?? "";
 
 /** Linear tokeniser: [{name, closing, attrs, text, map}] for every tag outside comments and raw-text elements (script/style/textarea/title bodies are not markup; <style> bodies are returned in .styles).
  *  Attributes are parsed as name[=value] tokens, so text inside a quoted value (title="alt=x") is never mistaken for an attribute. */
-function tagEnd(h, from) {                                                                         // the ">" that closes a tag: one inside a quoted attribute value (after "=") does not
-  let q = null, last = "";
+function tagEnd(h, from) {                                                                         // the ">" that closes a tag: one inside a quoted attribute value does not; a quote only opens a value right after "=" that starts the value ("b=c=\"" is an unquoted value)
+  let st = 0, q = null;                                                                            // 0 name/space, 1 after "=" (value expected), 2 unquoted value, 3 quoted value
   for (let j = from; j < h.length && j < from + 20000; j++) { const c = h[j];
-    if (q) { if (c === q) q = null; continue; }
-    if ((c === '"' || c === "'") && last === "=") { q = c; continue; }
-    if (c === ">") return j; if (!/\s/.test(c)) last = c; }
+    if (st === 3) { if (c === q) st = 0; continue; }
+    if (st === 2) { if (/\s/.test(c)) st = 0; else if (c === ">") return j; continue; }
+    if (c === ">") return j;
+    if (st === 1) { if (/\s/.test(c)) continue; if (c === '"' || c === "'") { q = c; st = 3; } else st = 2; continue; }
+    if (c === "=") st = 1; }
   return h.indexOf(">", from);                                                                     // an unterminated quote: fall back to the plain scan
 }
 function htmlTags(html) {
@@ -86,7 +88,7 @@ function htmlTags(html) {
     const nextLt = html.indexOf("<", z + 1), name = m[2].toLowerCase(), attrs = html.slice(a + m[0].length, z), map = new Map();
     for (const am of attrs.matchAll(ATTR)) { const k = am[1].toLowerCase(); if (!map.has(k)) map.set(k, am[2] ?? am[3] ?? am[4] ?? ""); }
     out.push({ name, closing: m[1] === "/", attrs, map, text: m[1] ? "" : html.slice(z + 1, nextLt < 0 ? Math.min(html.length, z + 301) : Math.min(nextLt, z + 301)) });
-    if (!m[1] && /^(?:script|style|textarea|title)$/.test(name) && !/\/\s*$/.test(attrs)) {       // raw text: skip to the matching close tag
+    if (!m[1] && /^(?:script|style|textarea|title)$/.test(name) && true) {       // raw text: skip to the matching close tag
       const re = new RegExp("</" + name + "\\b", "ig"); re.lastIndex = i; const e = re.exec(html);
       if (name === "style") out.styles.push(html.slice(i, e ? e.index : html.length).slice(0, LIMITS.maxInputChars));
       if (name === "title") { out[out.length - 1].text = html.slice(i, e ? e.index : html.length).slice(0, 300); }
