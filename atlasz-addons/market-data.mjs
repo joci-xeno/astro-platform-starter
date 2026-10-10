@@ -87,7 +87,8 @@ export function parseCsv(text, interval) {
   const cols = ["time", "open", "high", "low", "close", "volume"].map(idx); if (cols.some(i => i < 0)) return { ok: false, reason: "CSV_HEADER_INVALID" };
   const out = [];
   for (let i = 1; i < lines.length; i++) {
-    const f = lines[i].split(",").map(x => x.trim()); let t = f[cols[0]]; let ms = /^\d+$/.test(t) ? Number(t) : Date.parse(t); if (/^\d+$/.test(t) && ms < 1e11) ms *= 1000;
+    const f = lines[i].split(",").map(x => x.trim()); let t = f[cols[0]]; if (!/^\d+$/.test(t) && !/(Z|[+-]\d\d:?\d\d)$/i.test(t)) return { ok: false, reason: "CSV_TIME_ZONE_REQUIRED", line: i + 1 };      // an ISO time without a zone would be read in the server's local zone
+    let ms = /^\d+$/.test(t) ? Number(t) : Date.parse(t); if (/^\d+$/.test(t) && ms < 1e11) ms *= 1000;
     if (!Number.isFinite(ms)) return { ok: false, reason: "CSV_TIME_INVALID", line: i + 1 };
     out.push({ t: ms, o: Number(f[cols[1]]), h: Number(f[cols[2]]), l: Number(f[cols[3]]), c: Number(f[cols[4]]), v: Number(f[cols[5]]) });
   }

@@ -74,7 +74,7 @@ export function walkForward({ dataset, baseConfig = {}, grid = { rr: [1.5, 2, 3]
     windows.push({ trainFrom: di.keys[s], trainTo: di.keys[s + trainDays - 1], testFrom: di.keys[s + trainDays], testTo: di.keys[s + trainDays + testDays - 1], chosen: best.combo, inSampleExpectancyR: best.metrics.expectancyR, inSampleTrades: best.metrics.trades, outOfSampleTrades: t.metrics.trades, outOfSampleExpectancyR: t.metrics.expectancyR });
   }
   const used = windows.filter(w => w.chosen), isExp = used.length ? used.reduce((a, w) => a + w.inSampleExpectancyR, 0) / used.length : null, m = metrics(oos, startingEquity);
-  return { ok: true, windows, gridSize: combos.length, multipleTestingNote: `${combos.length} parameter sets were compared in every training window; the best-in-sample choice is optimistic by construction`, inSampleExpectancyR: isExp, outOfSample: m, outOfSampleToInSample: isExp && isExp > 0 && m.expectancyR !== null ? m.expectancyR / isExp : null };
+  return { ok: true, windows, gridSize: combos.length, multipleTestingNote: `${combos.length} parameter sets were compared in every training window; the best-in-sample choice is optimistic by construction`, gridOverrides: names, gridNote: `The grid varies ${names.join(", ")}: out-of-sample results describe the parameters chosen in each window, not necessarily the candidate's own values of those settings.`, inSampleExpectancyR: isExp, outOfSample: m, outOfSampleToInSample: isExp && isExp > 0 && m.expectancyR !== null ? m.expectancyR / isExp : null };
 }
 
 /** Null model: same range, stops, targets, costs and timing, coin-flip side. Returns the distribution of expectancy over n runs and the percentile of the strategy's own expectancy. */

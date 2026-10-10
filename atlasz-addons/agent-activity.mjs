@@ -13,6 +13,7 @@ const kindState = kind => { const k = String(kind); if (/^search\./.test(k)) ret
 
 export function agentActivity({ ledgerFile, coordFile, tenantId = "JOCI", now = Date.now() } = {}) {
   const led = readJson(ledgerFile), co = coordFile ? readJson(coordFile) : { ok: false, reason: "NOT_CONFIGURED" };
+  if (led.ok && (led.data === null || typeof led.data !== "object" || Array.isArray(led.data))) { led.ok = false; led.reason = "UNREADABLE"; }
   if (!led.ok) return { ok: true, available: false, reason: "COORDINATION_LEDGER_" + led.reason, note: "The runtime has not written any coordination state; agent states are UNKNOWN, not idle.", agents: ROSTER.map(id => ({ id, role: id.split("-")[0], state: "UNKNOWN" })), counts: { UNKNOWN: ROSTER.length }, tasks: {} };
   const t = led.data?.tenants?.[tenantId] ?? { tasks: {}, events: [] }, tasks = Object.values(t.tasks ?? {}), events = Array.isArray(t.events) ? t.events : [];
   let cs = {}; if (co.ok) { try { cs = JSON.parse(co.data.body ?? "{}"); } catch { cs = {}; } }
@@ -23,7 +24,7 @@ export function agentActivity({ ledgerFile, coordFile, tenantId = "JOCI", now = 
     const running = mine.filter(k => k.status === "IN_PROGRESS"), queued = mine.filter(k => k.status === "ASSIGNED"), pending = mine.filter(k => k.status === "HANDOFF_PENDING"), verifying = mine.filter(k => k.status === "VERIFYING");
     const mineEvents = events.filter(e => e.by === id || t.tasks[e.task]?.owner === id), lastBeat = Number.isFinite(beats[id]) ? beats[id] : null; let state = "IDLE", task = null, why = "no open task owned by this agent";
     if (checks.length) { state = "REVIEWING"; task = checks[0]; why = "assigned independent verifier of " + checks[0]; }
-    else if (running.length) { const k = running[0]; task = k.id; if (lastBeat !== null && now - lastBeat > STALL_MS) { state = "BLOCKED"; why = `no heartbeat for ${Math.round((now - lastBeat) / 60000)} min while running ${k.id}`; } else { state = kindState(k.kind); why = `owns IN_PROGRESS task ${k.id} (${k.kind})`; } }
+    else if (running.length) { const k = running[0]; task = k.id; if (lastBeat !== null && now - lastBeat > STALL_MS) { state = "BLOCKED"; why = `no heartbeat for ${Math.round((now - lastBeat) / 60000)} min while running ${k.id}`; } else if (lastBeat === null && now - led.mtime > STALL_MS) { state = "BLOCKED"; why = `task ${k.id} is IN_PROGRESS but no heartbeat is recorded and the ledger has not changed for ${Math.round((now - led.mtime) / 60000)} min`; } else { state = kindState(k.kind); why = `owns IN_PROGRESS task ${k.id} (${k.kind})`; } }
     else if (queued.length) { const k = queued[0], waiting = (k.dependsOn ?? []).filter(d => !done(d)); task = k.id; if (waiting.length) { state = "BLOCKED"; why = `task ${k.id} waits for dependencies ${waiting.join(",")}`; } else { state = "IDLE"; why = `has assigned task ${k.id} not started yet`; } }
     else if (pending.length) { state = "IDLE"; task = pending[0].id; why = `handoff of ${task} awaits the receiving agent`; }
     else if (verifying.length) { state = "WAITING_FOR_CHECKER"; task = verifying[0].id; why = `submitted ${task}; waiting for the independent checker`; }
@@ -33,7 +34,7 @@ export function agentActivity({ ledgerFile, coordFile, tenantId = "JOCI", now = 
       recentActions: mineEvents.slice(-8).map(e => ({ at: e.at, type: e.type, task: e.task })) };
   });
   const counts = {}; for (const a of agents) counts[a.state] = (counts[a.state] ?? 0) + 1;
-  return { ok: true, available: true, source: { ledgerUpdatedAt: new Date(led.mtime).toISOString(), coordinatorUpdatedAt: co.ok ? new Date(co.mtime).toISOString() : null, ledgerAgeMs: now - led.mtime }, permanentAgents: 30, agents, counts, tasks: byStatus,
+  return { ok: true, available: true, source: { ledgerUpdatedAt: new Date(led.mtime).toISOString(), coordinatorUpdatedAt: co.ok ? new Date(co.mtime).toISOString() : null, ledgerAgeMs: now - led.mtime }, permanentAgents: 30, heartbeatsAvailable: co.ok, agents, counts, tasks: byStatus,
     recentEvents: events.slice(-30).map(e => ({ at: e.at, type: e.type, task: e.task, by: e.by })), note: "Derived from the coordination ledger; idle means no open task is recorded for the agent." };
 }
 export const isRosterId = id => AGENT_ID_RE.test(String(id));

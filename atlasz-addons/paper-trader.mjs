@@ -22,7 +22,7 @@ const dayOf = ms => new Date(ms).toISOString().slice(0, 10);
 export function createPaperTrader({ dir, nowFn = () => Date.now(), ownerAuth = null, isStopped = () => false, limits = {}, startingBalance = 100_000 } = {}) {
   if (!dir) throw new Error("PAPER_DIR_REQUIRED"); if (!Number.isFinite(startingBalance) || startingBalance <= 0 || startingBalance > 1e9) throw new Error("STARTING_BALANCE_INVALID");
   const L = { ...DEFAULT_LIMITS, ...limits }; fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-  const stateFile = path.join(dir, "paper-state.json"), audit = createAuditChain({ filePath: path.join(dir, "paper-audit.jsonl") });
+  const stateFile = path.join(dir, "paper-state.json"), auditFile = path.join(dir, "paper-audit.jsonl"); let audit = null, auditBootError = null; try { audit = createAuditChain({ filePath: auditFile }); } catch (e) { auditBootError = String(e?.message ?? e).slice(0, 80); }      // a damaged chain must not stop the process from starting: trading is simply halted (fail closed)
   const fail = (reason, extra = {}) => ({ ok: false, reason, ...extra });
   const stopped = () => { try { return Boolean(isStopped()); } catch { return true; } };
   const fresh = () => ({ v: 1, currency: CURRENCY, realMoney: false, createdAt: new Date(nowFn()).toISOString(), account: { starting: startingBalance, equity: startingBalance, peak: startingBalance }, daily: {}, strategies: {}, trades: [], events: [], suspendAll: null });
@@ -33,7 +33,10 @@ export function createPaperTrader({ dir, nowFn = () => Date.now(), ownerAuth = n
     catch { try { fs.renameSync(stateFile, stateFile + ".corrupt-" + Date.now()); } catch { /* ignore */ } S = fresh(); loadedFrom = "CORRUPT_STARTED_EMPTY"; }
   }
   const save = () => { const t = stateFile + "." + crypto.randomBytes(4).toString("hex") + ".tmp"; fs.writeFileSync(t, wrap(JSON.stringify(S)), { mode: 0o600 }); fs.renameSync(t, stateFile); };
-  const log = (event, data = {}) => { audit.append(event, data); S.events.push({ at: new Date(nowFn()).toISOString(), event, ...data }); if (S.events.length > 500) S.events.shift(); };
+  const auditOk = () => { try { if (!audit) return false; audit.reload(); return audit.verify().ok === true; } catch { return false; } };
+  const halt = why => { if (!S.halted) { S.halted = { reason: why, at: new Date(nowFn()).toISOString() }; try { save(); } catch { /* reported by the next call */ } } };
+  if (auditBootError && !S.halted) halt("AUDIT_CHAIN_FAILED_AT_START: " + auditBootError);
+  const log = (event, data = {}) => { try { if (!audit) throw new Error("AUDIT_UNAVAILABLE"); audit.append(event, data); } catch (e) { halt("AUDIT_APPEND_FAILED"); throw e; } S.events.push({ at: new Date(nowFn()).toISOString(), event, ...data }); if (S.events.length > 500) S.events.shift(); };
   const engines = new Map();
   const engineOf = st => { let e = engines.get(st.id); if (!e) { e = createOrbEngine({ config: st.config, interval: st.interval }); if (st.engine) e.restore(st.engine); engines.set(st.id, e); } return e; };
   const equityNow = () => S.account.equity + unrealised();
@@ -47,8 +50,8 @@ export function createPaperTrader({ dir, nowFn = () => Date.now(), ownerAuth = n
     st.status = "SUSPENDED"; st.suspendedReason = reason; st.suspensions = (st.suspensions ?? 0) + 1; st.engine = eng.snapshot(); log("STRATEGY_SUSPENDED", { id: st.id, reason, suspensions: st.suspensions });
   }
   function applyExit(st, tr, t, noLimits = false) {
-    const trade = { ...tr, strategy: st.id, instrument: st.instrument, dataKind: st.dataKind, simulated: true }; S.account.equity += tr.pnl; S.account.peak = Math.max(S.account.peak, S.account.equity);
-    const d = dayRec(dayOf(tr.exitT)); d.pnl += tr.pnl; d.trades++; st.position = null; st.stats.trades++; st.stats.net += tr.pnl; st.stats.consecutiveLosses = tr.pnl > 0 ? 0 : st.stats.consecutiveLosses + 1;
+    const d = dayRec(dayOf(tr.exitT)); const trade = { ...tr, id: `${st.id}:${tr.id}`, strategy: st.id, instrument: st.instrument, dataKind: st.dataKind, simulated: true }; S.account.equity += tr.pnl; S.account.peak = Math.max(S.account.peak, S.account.equity);
+    d.pnl += tr.pnl; d.trades++; st.position = null; st.stats.trades++; st.stats.net += tr.pnl; st.stats.consecutiveLosses = tr.pnl > 0 ? 0 : st.stats.consecutiveLosses + 1;
     S.trades.push(trade); if (S.trades.length > L.maxTradesKept) S.trades.shift(); log("PAPER_EXIT", { id: st.id, trade: tr.id, side: tr.side, pnl: Number(tr.pnl.toFixed(2)), r: Number(tr.r.toFixed(3)), reason: tr.exitReason, simulated: true });
     if (noLimits) return;
     const dd = (S.account.peak - S.account.equity) / S.account.peak * 100, dayLossPct = -d.pnl / d.startEquity * 100;
@@ -58,10 +61,10 @@ export function createPaperTrader({ dir, nowFn = () => Date.now(), ownerAuth = n
   }
 
   function addStrategy({ id, instrument, interval, config = {}, evaluation = null, dataKind = "SIMULATED", ownerOverride = null } = {}) {
-    if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); if (typeof id !== "string" || !ID.test(id)) return fail("ID_INVALID"); if (S.strategies[id]) return fail("ID_EXISTS");
+    if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); if (S.halted) return fail("TRADING_HALTED_AUDIT_FAILURE"); if (typeof id !== "string" || !ID.test(id)) return fail("ID_INVALID"); if (S.strategies[id]) return fail("ID_EXISTS");
     if (Object.keys(S.strategies).length >= L.maxStrategies) return fail("TOO_MANY_STRATEGIES"); if (typeof instrument !== "string" || !INSTR.test(instrument)) return fail("INSTRUMENT_INVALID"); if (!INTERVALS[interval]) return fail("INTERVAL_INVALID");
     if (!KINDS.includes(dataKind) || dataKind === "UNAVAILABLE") return fail("DATA_KIND_INVALID"); if (config.mode !== undefined || config.live !== undefined || config.broker !== undefined || config.apiKey !== undefined) return fail("LIVE_TRADING_NOT_AUTHORIZED");
-    const n = normaliseConfig(config); if (!n.ok) return n; if (n.config.riskPct > 2) return fail("RISK_PER_TRADE_ABOVE_PAPER_CAP");
+    const n = normaliseConfig(config); if (!n.ok) return n; if (n.config.riskPct > 2) return fail("RISK_PER_TRADE_ABOVE_PAPER_CAP"); if (n.config.entryRule !== "breakout") return fail("ENTRY_RULE_NOT_ALLOWED_FOR_PAPER_TRADING");
     let basis = "VERDICT"; if (!(evaluation && ELIGIBLE.has(evaluation.status) && typeof evaluation.evidenceSha256 === "string")) {
       if (!ownerAuth) return fail("RESEARCH_VERDICT_REQUIRED"); const v = ownerAuth.verifyApproval(ownerOverride, { action: "PAPER_STRATEGY_OVERRIDE", subject: "paper:" + id }); if (!v.allowed) return fail("RESEARCH_VERDICT_REQUIRED", { overrideReason: v.reason }); basis = "OWNER_OVERRIDE";
     }
@@ -73,8 +76,9 @@ export function createPaperTrader({ dir, nowFn = () => Date.now(), ownerAuth = n
   /** Feed one COMPLETED candle. Idempotent: a candle at or before lastT is ignored (restart replays are safe). */
   function onCandle(id, candle, { kind = null } = {}) {
     if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const st = S.strategies[id]; if (!st) return fail("NO_SUCH_STRATEGY");
+    if (S.halted) return fail("TRADING_HALTED_AUDIT_FAILURE", { since: S.halted.at }); if (!auditOk()) { halt("AUDIT_CHAIN_FAILED"); return fail("TRADING_HALTED_AUDIT_FAILURE"); }      // fail closed: no simulated P&L is booked that cannot be audited
     const dk = kind ?? st.dataKind; if (!KINDS.includes(dk) || dk === "UNAVAILABLE") { log("CANDLE_REFUSED_DATA_UNAVAILABLE", { id }); save(); return fail("DATA_UNAVAILABLE"); }
-    if (!candle || ![candle.t, candle.o, candle.h, candle.l, candle.c, candle.v].every(Number.isFinite) || candle.t % INTERVALS[st.interval] !== 0 || candle.h < Math.max(candle.o, candle.c, candle.l) || candle.l > Math.min(candle.o, candle.c, candle.h)) return fail("CANDLE_INVALID");
+    if (!candle || ![candle.t, candle.o, candle.h, candle.l, candle.c, candle.v].every(Number.isFinite) || candle.t % INTERVALS[st.interval] !== 0 || candle.o <= 0 || candle.h <= 0 || candle.l <= 0 || candle.c <= 0 || candle.v < 0 || ((dk === "LIVE" || dk === "DELAYED") && candle.t > nowFn() + 86_400_000) || candle.h < Math.max(candle.o, candle.c, candle.l) || candle.l > Math.min(candle.o, candle.c, candle.h)) return fail("CANDLE_INVALID");
     if (st.lastT !== null && candle.t <= st.lastT) return { ok: true, ignored: "ALREADY_PROCESSED" };
     st.lastT = candle.t; st.lastClose = candle.c; st.lastDataKind = dk; st.lastCandleAt = candle.t; st.stats.candles++;
     if (st.status !== "ACTIVE") { save(); return { ok: true, status: st.status }; }
@@ -86,14 +90,16 @@ export function createPaperTrader({ dir, nowFn = () => Date.now(), ownerAuth = n
       else if (ev.type === "EXIT") { applyExit(st, ev.trade, candle.t); out.push(ev); }
       else if (ev.type === "NO_ENTRY" || ev.type === "NO_TRADE") { log("PAPER_NO_TRADE", { id, reason: stale && ev.reason === "ENTRY_BLOCKED_BY_RISK_LIMIT" ? "STALE_DATA" : ev.reason }); }
     }
+    if (!S.suspendAll) { const eq = equityNow(), ddm = (S.account.peak - eq) / S.account.peak * 100, d2 = S.daily[dayOf(candle.t)] ?? { pnl: 0, startEquity: S.account.equity }, dl = -(d2.pnl + unrealised()) / d2.startEquity * 100;      // limits also see open-position losses
+      if (ddm >= L.maxDrawdownPct) suspendAll(`MAX_DRAWDOWN_MARKED_TO_MARKET ${ddm.toFixed(2)}% >= ${L.maxDrawdownPct}%`, candle.t); else if (dl >= L.dailyLossPct) suspendAll(`DAILY_LOSS_MARKED_TO_MARKET ${dl.toFixed(2)}% >= ${L.dailyLossPct}%`, candle.t); }
     if (st.status === "ACTIVE") st.engine = eng.snapshot(); save(); return { ok: true, events: out.map(e => e.type), equity: equityNow() };
   }
 
   function resume(id, ownerApproval) {
-    if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const st = S.strategies[id]; if (!st) return fail("NO_SUCH_STRATEGY"); if (st.status !== "SUSPENDED") return fail("NOT_SUSPENDED"); if (!ownerAuth) return fail("OWNER_AUTH_REQUIRED");
+    if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); if (S.halted) return fail("TRADING_HALTED_AUDIT_FAILURE"); const st = S.strategies[id]; if (!st) return fail("NO_SUCH_STRATEGY"); if (st.status !== "SUSPENDED") return fail("NOT_SUSPENDED"); if (!ownerAuth) return fail("OWNER_AUTH_REQUIRED");
+    if (S.suspendAll && (S.account.peak - S.account.equity) / S.account.peak * 100 >= L.maxDrawdownPct) return fail("DRAWDOWN_STILL_ABOVE_LIMIT");      // checked BEFORE the approval is spent
     const subject = `paper:${id}:${st.suspensions}`, v = ownerAuth.verifyApproval(ownerApproval, { action: "PAPER_STRATEGY_RESUME", subject }); if (!v.allowed) return fail("OWNER_APPROVAL_REQUIRED:" + v.reason, { subject });
-    if (S.suspendAll) { const dd = (S.account.peak - S.account.equity) / S.account.peak * 100; if (dd >= L.maxDrawdownPct) return fail("DRAWDOWN_STILL_ABOVE_LIMIT"); S.suspendAll = null; }
-    st.status = "ACTIVE"; st.suspendedReason = null; st.stats.consecutiveLosses = 0; log("STRATEGY_RESUMED", { id, nonce: v.nonce }); save(); return { ok: true };
+    S.suspendAll = null; st.status = "ACTIVE"; st.suspendedReason = null; st.stats.consecutiveLosses = 0; log("STRATEGY_RESUMED", { id, nonce: v.nonce }); save(); return { ok: true };
   }
   const resumeSubject = id => (S.strategies[id] ? { action: "PAPER_STRATEGY_RESUME", subject: `paper:${id}:${S.strategies[id].suspensions}` } : null);
   function stopStrategy(id) { const st = S.strategies[id]; if (!st) return fail("NO_SUCH_STRATEGY"); if (st.status === "STOPPED") return { ok: true }; const eng = engineOf(st); if (st.lastClose) { const ev = eng.flatten(st.lastClose, st.lastT + INTERVALS[st.interval], "STOPPED_BY_OWNER"); if (ev) applyExit(st, ev.trade, st.lastT, true); } st.status = "STOPPED"; st.engine = eng.snapshot(); log("STRATEGY_STOPPED", { id }); save(); return { ok: true }; }
@@ -103,11 +109,12 @@ export function createPaperTrader({ dir, nowFn = () => Date.now(), ownerAuth = n
   function report() {
     const t = nowFn(), eq = equityNow(), dd = (S.account.peak - eq) / S.account.peak * 100, today = dayOf(t), d = S.daily[today] ?? { pnl: 0, trades: 0 }, warnings = [];
     const dayLoss = d.startEquity ? -d.pnl / d.startEquity * 100 : 0; if (dd >= 0.7 * L.maxDrawdownPct) warnings.push(`drawdown ${dd.toFixed(2)}% is near the ${L.maxDrawdownPct}% limit`); if (dayLoss >= 0.7 * L.dailyLossPct) warnings.push(`today's loss ${dayLoss.toFixed(2)}% is near the ${L.dailyLossPct}% limit`);
-    if (S.suspendAll) warnings.push("all strategies suspended: " + S.suspendAll.reason);
-    return { ok: true, currency: CURRENCY, realMoney: false, label: "SIMULATED PAPER TRADING - NOT REAL MONEY, NOT REAL REVENUE", loadedFrom, account: { starting: S.account.starting, realisedEquity: S.account.equity, equityMarkedToMarket: eq, unrealised: unrealised(), peak: S.account.peak, drawdownPct: Math.max(0, dd), totalReturnPct: (eq / S.account.starting - 1) * 100, today: { day: today, pnl: d.pnl, trades: d.trades } }, limits: L,
+    if (S.suspendAll) warnings.push("all strategies suspended: " + S.suspendAll.reason); if (S.halted) warnings.push("TRADING HALTED: audit log failed verification (" + S.halted.reason + "); an owner-signed account reset archives it and restarts");
+    return { ok: true, currency: CURRENCY, realMoney: false, label: "SIMULATED PAPER TRADING - NOT REAL MONEY, NOT REAL REVENUE", loadedFrom, halted: S.halted ?? null, account: { starting: S.account.starting, realisedEquity: S.account.equity, equityMarkedToMarket: eq, unrealised: unrealised(), peak: S.account.peak, drawdownPct: Math.max(0, dd), totalReturnPct: (eq / S.account.starting - 1) * 100, today: { day: today, pnl: d.pnl, trades: d.trades } }, limits: L,
       strategies: Object.values(S.strategies).map(st => ({ id: st.id, instrument: st.instrument, interval: st.interval, status: st.status, suspendedReason: st.suspendedReason ?? null, suspensions: st.suspensions, basis: st.basis, verdict: st.verdict, evidenceSha256: st.evidenceSha256, dataKind: st.dataKind, lastDataKind: st.lastDataKind, lastCandleAt: st.lastCandleAt ? new Date(st.lastCandleAt).toISOString() : null, position: st.position, performance: metrics(S.trades.filter(x => x.strategy === st.id), S.account.starting), candles: st.stats.candles })),
-      trades: S.trades.slice(-100), recentEvents: S.events.slice(-60), warnings, auditHead: audit.head(), auditLength: audit.length() };
+      trades: S.trades.slice(-100), recentEvents: S.events.slice(-60), warnings, auditHead: audit ? audit.head() : null, auditLength: audit ? audit.length() : null };
   }
-  function reset(ownerApproval) { if (!ownerAuth) return fail("OWNER_AUTH_REQUIRED"); const v = ownerAuth.verifyApproval(ownerApproval, { action: "PAPER_ACCOUNT_RESET", subject: "paper:account" }); if (!v.allowed) return fail("OWNER_APPROVAL_REQUIRED:" + v.reason); log("PAPER_ACCOUNT_RESET", { nonce: v.nonce, previousEquity: S.account.equity }); const ev = S.events; S = fresh(); S.events = ev; engines.clear(); save(); return { ok: true }; }
-  return { addStrategy, onCandle, resume, resumeSubject, stopStrategy, requestLiveTrading, report, reset, auditVerify: () => { try { audit.reload(); } catch (e) { return { ok: false, reason: String(e.message).slice(0, 80) }; } return audit.verify(); }, auditEntries: (n = 50) => audit.entries().slice(-n), limits: L, loadedFrom: () => loadedFrom, trades: () => S.trades.map(t => ({ ...t })) };
+  function reset(ownerApproval) { if (!ownerAuth) return fail("OWNER_AUTH_REQUIRED"); const v = ownerAuth.verifyApproval(ownerApproval, { action: "PAPER_ACCOUNT_RESET", subject: "paper:account" }); if (!v.allowed) return fail("OWNER_APPROVAL_REQUIRED:" + v.reason); if (S.halted || !auditOk()) { try { fs.renameSync(auditFile, auditFile + ".tampered-" + nowFn()); } catch { /* nothing to archive */ } audit = createAuditChain({ filePath: auditFile }); auditBootError = null; }      // a broken audit chain is archived, never overwritten, and a new one starts with the reset
+    log("PAPER_ACCOUNT_RESET", { nonce: v.nonce, previousEquity: S.account.equity }); const ev = S.events; S = fresh(); S.events = ev; engines.clear(); save(); return { ok: true }; }
+  return { addStrategy, onCandle, resume, resumeSubject, stopStrategy, requestLiveTrading, report, reset, auditVerify: () => { if (!audit) return { ok: false, reason: auditBootError ?? "AUDIT_UNAVAILABLE" }; try { audit.reload(); } catch (e) { return { ok: false, reason: String(e.message).slice(0, 80) }; } return audit.verify(); }, auditEntries: (n = 50) => (audit ? audit.entries().slice(-n) : []), limits: L, loadedFrom: () => loadedFrom, trades: () => S.trades.map(t => ({ ...t })) };
 }

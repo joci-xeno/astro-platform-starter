@@ -125,3 +125,39 @@ test("paper trader: a win resets the consecutive-loss counter; while an account-
   const b = make({ limits: { dailyLossPct: 0.5, maxConsecutiveLosses: 99 } }).pt; add(b, "a"); feed(b, "a", 0, LOSS); assert.ok(b.report().warnings.some(w => /suspended/.test(w)));
   add(b, "late"); const n = b.report().trades.length; feed(b, "late", 1, WIN); assert.equal(b.report().trades.length, n, "no new position while the account is suspended"); assert.ok(b.auditEntries(200).some(e => /ENTRY_BLOCKED_BY_RISK_LIMIT/.test(JSON.stringify(e))));
 });
+
+// ---- independent verification round 1 (M6): regression tests ----
+test("verification: a broken audit log halts trading (fail closed) - no un-audited P&L is booked, the halt survives a restart, and only a signed reset archives the log and restarts", () => {
+  const dir = tmp("pt-"), a = make({ dir }); add(a.pt); feed(a.pt, "s1", 0, WIN); const eq = a.pt.report().account.realisedEquity, f = path.join(dir, "paper-audit.jsonl");
+  fs.writeFileSync(f, fs.readFileSync(f, "utf8").replace("STRATEGY_ADDED", "STRATEGY_ADDEd")); const r = feed(a.pt, "s1", 1, LOSS);
+  assert.equal(r.reason, "TRADING_HALTED_AUDIT_FAILURE"); assert.equal(a.pt.report().account.realisedEquity, eq); assert.equal(a.pt.report().trades.length, 1); assert.ok(a.pt.report().warnings.some(w => /TRADING HALTED/.test(w))); assert.equal(add(a.pt, "again").reason, "TRADING_HALTED_AUDIT_FAILURE");
+  const b = make({ dir }); assert.ok(b.pt.report().halted, "the halt is persisted"); assert.equal(feed(b.pt, "s1", 2, WIN).reason, "TRADING_HALTED_AUDIT_FAILURE");
+  assert.match(b.pt.reset(null).reason, /OWNER_APPROVAL_REQUIRED/); assert.equal(b.pt.reset(ap("PAPER_ACCOUNT_RESET", "paper:account")).ok, true);
+  assert.ok(fs.readdirSync(dir).some(n => n.startsWith("paper-audit.jsonl.tampered-")), "the broken log is archived, not deleted"); assert.equal(b.pt.report().halted, null); assert.equal(b.pt.auditVerify().ok, true); assert.equal(add(b.pt, "fresh").ok, true);
+});
+
+test("verification: limits also see open-position losses (marked to market); a first loss of the day is measured against the start-of-day equity", () => {
+  const { pt } = make({ limits: { maxDrawdownPct: 0.3, dailyLossPct: 50, maxConsecutiveLosses: 99 } }); add(pt); const cs = [...RANGE, [100, 103.5, 100, 103], [103.2, 104, 103, 103.8], [103.8, 103.9, 100.5, 100.6]];
+  for (const c of day(0, cs)) pt.onCandle("s1", c); const r = pt.report(); assert.equal(r.strategies[0].status, "SUSPENDED"); assert.match(r.strategies[0].suspendedReason, /MARKED_TO_MARKET/); assert.ok(r.trades.some(t => t.exitReason === "SUSPENSION_FLATTEN"), "the open position was flattened");
+  const q = make({ limits: { dailyLossPct: 1.005, maxConsecutiveLosses: 99 } }).pt; add(q); feed(q, "s1", 0, LOSS); assert.equal(q.report().strategies[0].status, "ACTIVE", "a -1.000% day is below a 1.005% limit (start-of-day equity 100000, not the post-loss equity)");
+});
+
+test("verification: trade ids are unique across strategies; random-rule and unknown/ill-typed configurations are refused; implausible candles are refused", () => {
+  const { pt } = make(); add(pt, "a"); add(pt, "b"); feed(pt, "a", 0, WIN); feed(pt, "b", 0, WIN); const t = pt.report().trades; assert.equal(t.length, 2); assert.equal(new Set(t.map(x => x.id)).size, 2);
+  assert.equal(add(pt, "r", { config: { ...CFG, entryRule: "random" } }).reason, "ENTRY_RULE_NOT_ALLOWED_FOR_PAPER_TRADING"); assert.match(add(pt, "u", { config: { ...CFG, bogus: 1 } }).reason, /CONFIG_KEY_UNKNOWN/); assert.equal(add(pt, "s", { config: "abcdef" }).reason, "CONFIG_MUST_BE_AN_OBJECT");
+  const c0 = day(5, WIN)[0]; for (const bad of [{ o: 0 }, { c: -1 }, { v: -5 }]) assert.equal(pt.onCandle("a", { ...c0, ...bad }).reason, "CANDLE_INVALID", JSON.stringify(bad));
+  add(pt, "live", { dataKind: "LIVE" }); assert.equal(pt.onCandle("live", { ...c0, t: Date.now() + 3 * 86_400_000 - (Date.now() % 300_000) }).reason, "CANDLE_INVALID", "a far-future live candle would block every later real candle");
+});
+
+test("verification: a refused resume (drawdown still above the limit) does not spend the owner's approval", () => {
+  const auth = mkAuth(), pt = createPaperTrader({ dir: tmp("pt-"), nowFn: () => D0, ownerAuth: auth, limits: { maxDrawdownPct: 1.5, dailyLossPct: 50, maxConsecutiveLosses: 99 } }); add(pt); feed(pt, "s1", 0, LOSS); feed(pt, "s1", 1, LOSS);
+  const s = pt.resumeSubject("s1"), a = ap(s.action, s.subject); assert.equal(pt.resume("s1", a).reason, "DRAWDOWN_STILL_ABOVE_LIMIT"); assert.equal(auth.verifyApproval(a, { action: s.action, subject: s.subject }).allowed, true, "the approval is still unspent");
+});
+
+test("verification: the halt flag itself blocks trading even if the audit file is later restored; the marked-to-market DAILY loss limit also suspends", () => {
+  const dir = tmp("pt-"), a = make({ dir }); add(a.pt); feed(a.pt, "s1", 0, WIN); const f = path.join(dir, "paper-audit.jsonl"), good = fs.readFileSync(f, "utf8");
+  fs.writeFileSync(f, good.replace("STRATEGY_ADDED", "STRATEGY_ADDEd")); assert.equal(feed(a.pt, "s1", 1, LOSS).reason, "TRADING_HALTED_AUDIT_FAILURE"); fs.writeFileSync(f, good); assert.equal(a.pt.auditVerify().ok, true, "the audit file is healthy again");
+  assert.equal(feed(a.pt, "s1", 2, LOSS).reason, "TRADING_HALTED_AUDIT_FAILURE", "but the persisted halt stays until the owner's signed reset");
+  const { pt } = make({ limits: { dailyLossPct: 0.3, maxDrawdownPct: 50, maxConsecutiveLosses: 99 } }); add(pt); for (const c of day(0, [...RANGE, [100, 103.5, 100, 103], [103.2, 104, 103, 103.8], [103.8, 103.9, 100.5, 100.6]])) pt.onCandle("s1", c);
+  assert.match(pt.report().strategies[0].suspendedReason, /DAILY_LOSS_MARKED_TO_MARKET/);
+});

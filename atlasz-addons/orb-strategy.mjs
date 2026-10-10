@@ -17,6 +17,7 @@ export const DEFAULT_ORB = Object.freeze({
 });
 const num = (v, lo, hi) => Number.isFinite(v) && v >= lo && v <= hi;
 export function normaliseConfig(cfg = {}) {
+  if (cfg === null || typeof cfg !== "object" || Array.isArray(cfg)) return { ok: false, reason: "CONFIG_MUST_BE_AN_OBJECT" }; for (const k of Object.keys(cfg)) if (!Object.hasOwn(DEFAULT_ORB, k)) return { ok: false, reason: "CONFIG_KEY_UNKNOWN:" + String(k).slice(0, 30) };
   const c = { ...DEFAULT_ORB, ...cfg };
   if (!Object.hasOwn(SESSIONS, c.anchor)) return { ok: false, reason: "ANCHOR_UNKNOWN" };
   if (![5, 10, 15, 30, 60].includes(c.rangeMinutes)) return { ok: false, reason: "RANGE_MINUTES_INVALID" };
@@ -48,7 +49,7 @@ export function createOrbEngine({ config, interval, rng = null }) {
     const sess = sessionFor(c.t, cfg.anchor), state = sess ? sessionState(c.t, cfg.anchor) : { open: false };
     const key = state.open ? sess.key : null;
     if (S.day && key !== S.day) {      // the previous session is over
-      if (S.phase === "OPEN") ev.push(closePosition({}, S.position, S.lastClose, "DATA_GAP_SESSION_CLOSED", S.lastT));
+      if (S.phase === "OPEN") ev.push(closePosition({}, S.position, S.lastClose * (1 - (S.position.side === "LONG" ? 1 : -1) * (half + cfg.slippageBps) / 1e4), "DATA_GAP_SESSION_CLOSED", S.lastT));
       else if (S.phase === "PENDING") ev.push({ type: "NO_ENTRY", t: c.t, reason: "SESSION_ENDED_BEFORE_ENTRY" });
       else if (S.phase === "WATCH") ev.push({ type: "NO_TRADE", t: c.t, day: S.day, reason: "NO_BREAKOUT" });
       S = { day: null, phase: "IDLE", lastT: S.lastT, lastClose: S.lastClose };
@@ -87,6 +88,7 @@ export function createOrbEngine({ config, interval, rng = null }) {
     }
     if (S.phase === "PENDING") {
       if (!allowEntry) { S.phase = "SKIP"; ev.push({ type: "NO_ENTRY", t: c.t, reason: "ENTRY_BLOCKED_BY_RISK_LIMIT" }); return ev; }
+      if (c.t !== S.pending.signalT + step) { S.phase = "SKIP"; ev.push({ type: "NO_ENTRY", t: c.t, reason: "DATA_GAP_BEFORE_ENTRY" }); return ev; }      // the entry candle must be the one right after the signal candle
       const p = S.pending, long = p.side === "LONG", entry = c.o * (1 + (long ? 1 : -1) * (half + cfg.slippageBps) / 1e4);
       const stop = cfg.stopMode === "range_mid" ? (S.hi + S.lo) / 2 : long ? S.lo : S.hi, risk = long ? entry - stop : stop - entry, riskBps = risk / entry * 1e4;
       if (!(risk > 0)) { S.phase = "SKIP"; ev.push({ type: "NO_ENTRY", t: c.t, reason: "RISK_NOT_POSITIVE" }); return ev; }

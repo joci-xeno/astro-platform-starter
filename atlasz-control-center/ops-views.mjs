@@ -16,7 +16,7 @@ export function createOpsViews({ stateDir, status, finance, approvals, tradingVi
       topology: st.topology, agents: { available: ag.available, reason: ag.reason ?? null, permanent: 30, counts: ag.counts, tasks: ag.tasks, source: ag.source ?? null },
       approvals: { pending: ap.pending.length, items: ap.pending.slice(0, 10).map(x => ({ id: x.id, what: x.what, action: x.action })) },
       events: ag.available ? ag.recentEvents.slice(-15) : [], memory: mem, trading: tr,
-      revenue: { verifiedReceivedUsd: f.revenue.verifiedReceivedUsd, state: f.revenue.source === "LEDGER_UNREADABLE" ? "LEDGER_UNREADABLE" : f.revenue.paymentRecords ? "VERIFIED_RECEIPTS_RECORDED" : "NO_PAYMENT_EVIDENCE_RECORDED", note: "Paper trading is not revenue and is not included." },
+      revenue: { verifiedReceivedUsd: f.revenue.source === "LEDGER_UNREADABLE" || f.error ? null : f.revenue.verifiedReceivedUsd, state: f.revenue.source === "LEDGER_UNREADABLE" || f.error ? "LEDGER_UNREADABLE" : f.revenue.paymentRecords ? "VERIFIED_RECEIPTS_RECORDED" : "NO_PAYMENT_EVIDENCE_RECORDED", note: "Paper trading is not revenue and is not included." },
       securityAlerts: [...blockers.map(b => ({ kind: "BLOCKER", text: String(b).slice(0, 200) })), ...(st.emergency.mode !== "RUNNING" ? [{ kind: "KILL_SWITCH", text: "mode " + st.emergency.mode }] : []), ...(st.safeMode.mode !== "NORMAL" ? [{ kind: "SAFE_MODE", text: "mode " + st.safeMode.mode }] : []), ...(f.chain && f.chain.ok === false ? [{ kind: "LEDGER_CHAIN", text: "financial ledger chain failed verification" }] : [])],
       queue: st.queue ?? null };
   }

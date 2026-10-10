@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-10-10T21:29:17.108Z",
+ "generatedAt": "2026-10-10T22:04:27.103Z",
  "host": "linux x64 node v22.22.0",
  "items": {
   "1_launch": {
@@ -31,25 +31,25 @@
     },
     "recentEvents": [
      {
-      "at": "2026-10-10T21:29:17.508Z",
+      "at": "2026-10-10T22:04:27.587Z",
       "type": "REGISTERED",
       "task": "wf-orb-1",
       "by": "EXECUTION-3"
      },
      {
-      "at": "2026-10-10T21:29:17.513Z",
+      "at": "2026-10-10T22:04:27.592Z",
       "type": "STARTED",
       "task": "wf-orb-1",
       "by": "EXECUTION-3"
      },
      {
-      "at": "2026-10-10T21:29:17.869Z",
+      "at": "2026-10-10T22:04:27.954Z",
       "type": "SUBMITTED_FOR_VERIFICATION",
       "task": "wf-orb-1",
       "by": "EXECUTION-3"
      },
      {
-      "at": "2026-10-10T21:29:17.931Z",
+      "at": "2026-10-10T22:04:28.009Z",
       "type": "VERIFIED_DONE",
       "task": "wf-orb-1",
       "by": "EXECUTION-1"
@@ -72,7 +72,7 @@
    "note": "Real coordinator hand-offs and a real independent re-computation; no language model was involved in this demo."
   },
   "4_charts": {
-   "banner": "SIMULATED - generated locally, NOT market data",
+   "banner": "SIMULATED - generated locally, NOT market data - full stored series with backtest markers",
    "source": "ATLASZ_SYNTHETIC_GENERATOR seed=42 drift=0.0001 vol=0.12% (NOT market data)",
    "kind": "SIMULATED",
    "datasetSha256": "101604b42cc3847c25c720087017a0d1f0d3cfa128b56bf5eaa14db76a712abc",
@@ -167,7 +167,7 @@
   },
   "7b_risk_limit_and_signed_resume": {
    "statusAfterLoss": "SUSPENDED",
-   "reason": "DAILY_LOSS 1.01% >= 0.4%",
+   "reason": "DAILY_LOSS 1.00% >= 0.4%",
    "resumeWithoutApproval": "OWNER_APPROVAL_REQUIRED:APPROVAL_OBJECT_REQUIRED",
    "resumeWithSignedApproval": true,
    "secondResume": "NOT_SUSPENDED",

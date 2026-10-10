@@ -51,3 +51,13 @@ test("agent activity: submitted work shows WAITING_FOR_CHECKER for the maker and
     assert.equal(c.connect(ver).verify("t-qa", { decision: "ACCEPT", resultSha256: "a".repeat(64) }).ok, true); r = act(); assert.equal(by(r, ver).state, "IDLE"); assert.equal(by(r, "EXECUTION-9").state, "IDLE"); assert.ok(by(r, "EXECUTION-1").lastCompleted);
   } finally { rm(d); }
 });
+
+test("verification: stale or incomplete coordination state degrades honestly - no heartbeat record + old ledger = BLOCKED; a ledger that is not an object = UNKNOWN; heartbeat availability is reported", () => {
+  const d = tmp("aa-"); try {
+    const lf = path.join(d, "ledger.json"), now = Date.now(); fs.writeFileSync(lf, JSON.stringify({ tenants: { JOCI: { tasks: { t1: { id: "t1", kind: "search.leads", owner: "SEARCH-1", status: "IN_PROGRESS" } }, events: [] } } }));
+    const fresh = agentActivity({ ledgerFile: lf, coordFile: path.join(d, "none.json"), now }); assert.equal(fresh.heartbeatsAvailable, false); assert.equal(fresh.agents.find(a => a.id === "SEARCH-1").state, "SEARCHING", "a just-written ledger is believed");
+    const old = new Date(now - 30 * 86_400_000); fs.utimesSync(lf, old, old); const stale = agentActivity({ ledgerFile: lf, coordFile: path.join(d, "none.json"), now }), a = stale.agents.find(x => x.id === "SEARCH-1"); assert.equal(a.state, "BLOCKED"); assert.match(a.why, /no heartbeat is recorded and the ledger has not changed/);
+    fs.writeFileSync(lf, "null"); const nul = agentActivity({ ledgerFile: lf, now }); assert.equal(nul.available, false); assert.ok(nul.agents.every(x => x.state === "UNKNOWN"));
+    fs.writeFileSync(lf, JSON.stringify({ tenants: {} })); const empty = agentActivity({ ledgerFile: lf, now }); assert.equal(empty.available, true); assert.ok(empty.agents.every(x => x.state === "IDLE"));
+  } finally { rm(d); }
+});

@@ -162,3 +162,13 @@ test("metrics: hand-computed - a breakeven trade is not a win, profit factor and
   assert.equal(m.maxDrawdownR, 2); assert.equal(m.maxDrawdownMoney, 20); assert.ok(Math.abs(m.maxDrawdownPct - 20 / 1030 * 100) < 1e-9); assert.equal(m.netPnl, 30); assert.equal(m.longs, 4); assert.equal(m.shorts, 1); assert.equal(m.costsPaid, 5);
   assert.equal(metrics([T(5, 1)], 100).profitFactor, null); assert.equal(metrics([], 100).expectancyR, null);
 });
+
+test("verification: data gaps - a pending entry needs the very next candle, a position closed by a session gap pays the exit costs, CSV times need a zone, configuration keys are checked", () => {
+  const gap = mk([...RANGE, [100, 103.5, 100, 103], [103.2, 104, 103, 103.8]]); gap[4] = { ...gap[4], t: gap[4].t + M5 }; const e1 = createOrbEngine({ config: ZERO, interval: "5m" }), out = []; for (const c of gap) out.push(...e1.push(c, { equity: 100000 }));
+  assert.ok(out.some(e => e.type === "NO_ENTRY" && e.reason === "DATA_GAP_BEFORE_ENTRY")); assert.ok(!out.some(e => e.type === "ENTRY"));
+  const cfg = { spreadBps: 10, slippageBps: 10, commissionBps: 0 }, e2 = createOrbEngine({ config: { ...ZERO, ...cfg }, interval: "5m" }), o2 = []; for (const c of mk([...RANGE, [100, 103.5, 100, 103], [103.2, 104, 103, 103.8]])) o2.push(...e2.push(c, { equity: 100000 }));
+  o2.push(...e2.push({ t: D0 + 86_400_000, o: 100, h: 101, l: 99, c: 100, v: 1 }, { equity: 100000 })); const ex = o2.find(e => e.type === "EXIT").trade; assert.equal(ex.exitReason, "DATA_GAP_SESSION_CLOSED"); assert.ok(Math.abs(ex.exit - 103.8 * (1 - 15 / 1e4)) < 1e-9);
+  const csv = t => `time,open,high,low,close,volume\n${t},1,2,1,1.5,10\n`; assert.equal(parseCsv(csv("2026-01-06T00:00:00"), "5m").reason, "CSV_TIME_ZONE_REQUIRED"); assert.equal(parseCsv(csv("2026-01-06T00:00:00Z"), "5m").ok, true); assert.equal(parseCsv(csv("2026-01-06T01:00:00+01:00"), "5m").candles[0].t, Date.UTC(2026, 0, 6)); assert.equal(parseCsv(csv(String(Date.UTC(2026, 0, 6))), "5m").ok, true);
+  assert.match(normaliseConfig({ bogus: 1 }).reason, /CONFIG_KEY_UNKNOWN/); assert.equal(normaliseConfig("abc").reason, "CONFIG_MUST_BE_AN_OBJECT"); assert.equal(normaliseConfig(null).reason, "CONFIG_MUST_BE_AN_OBJECT"); assert.equal(normaliseConfig({ rr: 3 }).ok, true);
+  assert.ok(walkForward({ dataset: simDs, baseConfig: { anchor: "UTC_ASIA" } }).gridNote.includes("rr, rangeMinutes"));
+});

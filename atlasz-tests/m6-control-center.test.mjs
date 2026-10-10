@@ -143,3 +143,50 @@ test("M6 datasets: size limits, licence/kind rules, an edited dataset file is de
     const cur = (await c.json("/api/trading")).paper.feeds.pa.cursor; await c.act({ op: "paperTick", candles: 50 }); assert.equal((await c.json("/api/trading")).paper.feeds.pa.cursor, cur, "a stopped strategy is not fed");
   } finally { await c.cc.close(); }
 });
+
+// ---- independent verification round 1 (M6): regression tests ----
+test("verification: a stored verdict is bound to the dataset's content and kind; relabelling a dataset on disk is detected", async () => {
+  const c = await boot();
+  try {
+    await c.key(); await c.act(DRIFT); assert.equal((await c.act({ op: "evaluate", dataset: "drift1", config: CFG })).result.status, "SIMULATED_ONLY_NO_EDGE_CLAIM");
+    assert.equal((await c.act({ op: "deleteDataset", id: "drift1" })).result.ok, true);
+    const row = i => `${Date.UTC(2026, 0, 6) + i * 300_000},100,100.1,99.9,100,10`, csv = "time,open,high,low,close,volume\n" + Array.from({ length: 200 }, (_, i) => row(i)).join("\n");
+    assert.equal((await c.act({ op: "importCsv", id: "drift1", csv, kind: "HISTORICAL", instrument: "BTCUSD", source: "owner file", licence: "own data" })).result.ok, true);
+    assert.equal((await c.act({ op: "paperAdd", id: "p1", dataset: "drift1", config: CFG })).result.reason, "RESEARCH_VERDICT_REQUIRED", "the verdict belongs to the old (simulated) data, not to this series");
+    await c.act({ ...SIM, id: "sim2" }); const f = path.join(c.stateDir, "trading", "datasets", "sim2.json"), j = JSON.parse(fs.readFileSync(f, "utf8")); j.kind = "HISTORICAL"; j.source = "relabelled"; j.licence = "fake licence"; fs.writeFileSync(f, JSON.stringify(j));
+    assert.equal((await c.json("/api/trading")).datasets.find(d => d.id === "sim2").error, "DATASET_UNREADABLE_OR_ALTERED"); assert.equal((await c.act({ op: "evaluate", dataset: "sim2", config: CFG })).result.reason, "DATASET_NOT_FOUND");
+    const vd = path.join(c.stateDir, "trading", "verdicts"), vf = fs.readdirSync(vd)[0], vj = JSON.parse(fs.readFileSync(path.join(vd, vf), "utf8")); vj.status = "ELIGIBLE_FOR_PAPER_TRADING"; fs.writeFileSync(path.join(vd, vf), JSON.stringify(vj));
+    assert.equal((await c.json("/api/trading")).verdicts.length, 0, "an edited verdict record fails its self-hash and is not listed");
+  } finally { await c.cc.close(); }
+});
+
+test("verification: the replay chart never shows future candles (also at cursor 0), work per request is bounded, and a random-side strategy cannot be added", async () => {
+  const c = await boot();
+  try {
+    await c.key(); await c.act(DRIFT); await c.act({ op: "evaluate", dataset: "drift1", config: CFG }); await c.act({ op: "paperAdd", id: "pa", dataset: "drift1", config: CFG });
+    const q = `/api/trading/candles?dataset=drift1&limit=500&config=${encodeURIComponent(JSON.stringify(CFG))}&markers=paper`; let r = await c.json(q); assert.equal(r.empty, true); assert.equal(r.candles.length, 0); assert.equal(r.replay.cursor, 0);
+    await c.act({ op: "paperTick", candles: 7 }); r = await c.json(q); assert.equal(r.candles.length, 7); assert.equal(r.replay.cursor, 7); assert.ok(r.candles.at(-1).t < (await c.json(`/api/trading/candles?dataset=drift1&limit=1500&config=${encodeURIComponent(JSON.stringify(CFG))}&markers=backtest`)).candles.at(-1).t);
+    const bt = await c.json(`/api/trading/candles?dataset=drift1&limit=100&config=${encodeURIComponent(JSON.stringify(CFG))}&markers=backtest`); assert.match(bt.banner, /full stored series/); assert.match(bt.markersSource, /FULL stored series/);
+    assert.equal((await c.act({ op: "generate", id: "huge", interval: "1m", days: 30 })).status, 400, "43,200 candles exceed the per-dataset cap"); for (let i = 0; i < 19; i++) assert.equal((await c.act({ ...SIM, id: "g" + i, days: 2 })).status, 200); assert.equal((await c.act({ ...SIM, id: "one-too-many", days: 2 })).status, 400, "dataset count is capped");
+    assert.equal((await c.act({ op: "paperAdd", id: "pr", dataset: "g1", config: { anchor: "UTC_ASIA", entryRule: "random" }, passphrase: PW })).result.reason, "ENTRY_RULE_NOT_ALLOWED_FOR_PAPER_TRADING");
+    const t = await c.act({ op: "paperTick", candles: 3 }); assert.equal(t.result.ok, true); assert.ok(t.result.strategies.pa.fed >= 1);
+  } finally { await c.cc.close(); }
+});
+
+test("verification: /api/operations never reports a revenue number while the ledger is unreadable", async () => {
+  const c = await boot();
+  try {
+    const led = createFinancialLedger({ dir: path.join(c.stateDir, "ledger") }); led.recordRevenue({ entity: "ATLASZ_EXTERNAL", jobId: "j1", amountUsd: 500, stage: "PAID", confirmedReceived: true, evidence: { source: "bank-statement", reference: "TEST-REF-2", verifiedAt: new Date().toISOString() } });
+    assert.equal((await c.json("/api/operations")).revenue.verifiedReceivedUsd, 500); const f = path.join(c.stateDir, "ledger", "ledger.jsonl"); fs.writeFileSync(f, fs.readFileSync(f, "utf8").replace('"amountUsd":500', '"amountUsd":5000'));
+    const o = await c.json("/api/operations"); assert.equal(o.revenue.state, "LEDGER_UNREADABLE"); assert.equal(o.revenue.verifiedReceivedUsd, null); assert.ok(o.securityAlerts.some(a => a.kind === "LEDGER_CHAIN") || o.revenue.state === "LEDGER_UNREADABLE");
+  } finally { await c.cc.close(); }
+});
+
+test("verification: an edited verdict record cannot admit a strategy", async () => {
+  const c = await boot();
+  try {
+    await c.key(); await c.act(SIM); const ev = await c.act({ op: "evaluate", dataset: "sim1", config: CFG }); assert.equal(ev.result.status, "REJECTED");
+    const vd = path.join(c.stateDir, "trading", "verdicts"), vf = fs.readdirSync(vd)[0], vj = JSON.parse(fs.readFileSync(path.join(vd, vf), "utf8")); vj.status = "ELIGIBLE_FOR_PAPER_TRADING"; vj.reasons = []; fs.writeFileSync(path.join(vd, vf), JSON.stringify(vj));
+    assert.equal((await c.act({ op: "paperAdd", id: "p1", dataset: "sim1", config: CFG })).result.reason, "RESEARCH_VERDICT_REQUIRED");
+  } finally { await c.cc.close(); }
+});
