@@ -5,5 +5,5 @@
  "fail": 0,
  "cancelled": 0,
  "skipped": 0,
- "recorded": "2026-10-09 stage R6 (fourteen independent verification rounds + fixes; round-14 fixes not yet re-verified independently): 1090/1090 in one process; independent probes 52/52; all new R6 mutants killed (equivalent/defence-in-depth survivors documented)."
+ "recorded": "2026-10-09 stage R6 (fifteen independent verification rounds + fixes; round 15 re-verified the round-14 launcher fixes: no HIGH/CRITICAL, 3 LOW documented): 1090/1090 in one process; independent probes 52/52; all new R6 mutants killed (equivalent/defence-in-depth survivors documented)."
 }
