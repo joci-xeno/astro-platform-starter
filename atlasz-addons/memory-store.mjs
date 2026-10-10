@@ -23,6 +23,9 @@ const RANK = Object.freeze({ PUBLIC: 0, PERSONAL: 1, CONFIDENTIAL: 2 });
 export const LIMITS = Object.freeze({ maxNotes: 5000, maxBody: 20000, maxTitle: 160, maxTags: 10, maxTag: 32, maxSource: 200, maxQuery: 300, maxResults: 20, passageChars: 400, maxFileBytes: 60000, dim: 256, versionsKept: 20 });
 const ID_RE = /^[0-9a-f]{16}$/, AGENT_RE = /^[A-Za-z0-9_.:-]{1,40}$/, TENANT_RE = /^[A-Za-z0-9_.-]{1,40}$/, TAG_RE = /^[\p{L}\p{N}_.-]{1,32}$/u;
 const KEYS = ["id", "title", "tags", "classification", "tenant", "author", "source", "createdAt", "updatedAt", "version", "bodySha"];
+const isClass = c => typeof c === "string" && Object.hasOwn(RANK, c);
+const bodyBad = b => typeof b !== "string" || !b.trim() || b.length > LIMITS.maxBody || Buffer.byteLength(b) > 50000 || !b.isWellFormed() || b.includes("\0");
+const sensitive = t => containsSecret(t) || scrub(t) !== t;
 const sha = t => crypto.createHash("sha256").update(t).digest("hex");
 const oneLine = (v, max) => typeof v === "string" && v.length <= max && v.isWellFormed() && !/[\u0000-\u001f\u007f\u2028\u2029\p{Cf}]/u.test(v);
 const memorySubject = (id, bodySha, extra = "") => "memory:" + id + ":" + bodySha.slice(0, 16) + extra;
@@ -53,7 +56,7 @@ function parse(text) {
 }
 function validateMeta(m, tenant) {
   if (!ID_RE.test(m.id) || !oneLine(m.title, LIMITS.maxTitle) || !m.title.trim()) return "TITLE_OR_ID";
-  if (!(m.classification in RANK)) return "CLASSIFICATION";
+  if (!isClass(m.classification)) return "CLASSIFICATION";
   if (m.tenant !== tenant) return "TENANT";
   if (!AGENT_RE.test(m.author) || !oneLine(m.source, LIMITS.maxSource)) return "AUTHOR_OR_SOURCE";
   const tags = m.tags === "" ? [] : m.tags.split(", ");
@@ -114,6 +117,10 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
   const notesDir = path.join(dir, "notes"), versionsDir = path.join(dir, "versions"), trashDir = path.join(dir, "trash"), quarDir = path.join(dir, "quarantine");
   for (const d of [dir, notesDir, versionsDir, trashDir, quarDir]) fs.mkdirSync(d, { recursive: true, mode: 0o700 });
   const audit = createAuditChain({ filePath: path.join(dir, "memory-audit.jsonl") });
+  // Last audited classification per note: a hand edit of the file can raise a class but never lower it (lowering needs the signed approval path).
+  const floor = new Map();
+  const noteFloor = (id, cls) => { if (isClass(cls)) floor.set(id, cls); };
+  for (const e of audit.entries()) { const d = e.data ?? {}; if ((e.event === "MEMORY_WRITTEN" || e.event === "MEMORY_UPDATED") && ID_RE.test(String(d.id))) noteFloor(d.id, d.classification); else if (e.event === "MEMORY_FORGOTTEN") floor.delete(d.id); }
   const fail = (reason, extra = {}) => ({ ok: false, reason, ...extra });
   const stopped = () => { try { return Boolean(isStopped()); } catch { return true; } };
   const stats = { searches: 0, hidden: 0 };
@@ -148,7 +155,7 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
   /** Bring the index in line with the files: new/changed files are (re)read, vanished ones removed, broken ones quarantined, hand edits recorded. */
   function sync(force = false) {
     const st = stampOf(); if (!force && st === dirStamp) return;
-    const names = fs.readdirSync(notesDir).filter(n => n.endsWith(".md") && !n.includes(".tmp")), seen = new Set(); let changed = 0;
+    const names = fs.readdirSync(notesDir).filter(n => n.endsWith(".md") && !n.includes(".tmp")), seen = new Set(); let changed = 0, total = recs.size;
     for (const n of names) {
       const file = path.join(notesDir, n), id = n.slice(0, -3);
       let s; try { s = fs.statSync(file); } catch { continue; }
@@ -156,42 +163,46 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
       if (!force && known && known.mtime === s.mtimeMs && known.size === s.size) { seen.add(id); continue; }
       const r = readNote(file);
       if (r.bad) { quarantine(file, r.bad); continue; }
+      const fl = floor.get(r.rec.id);
+      if (fl && RANK[r.rec.classification] < RANK[fl]) { try { audit.append("MEMORY_EXTERNAL_DECLASSIFY_IGNORED", { id: r.rec.id, fileClass: r.rec.classification, keptClass: fl }); } catch { /* ignore */ } r.rec.classification = fl; r.rec.classMismatch = true; }
       if (r.edited) { try { audit.append("MEMORY_EXTERNAL_EDIT", { id: r.rec.id, newBodySha: r.rec.bodySha }); } catch { /* ignore */ } }
-      if (recs.size >= maxNotes && !known) { quarantine(file, "NOTE_LIMIT"); continue; }
-      index.upsert(r.rec); seen.add(r.rec.id); changed++;
+      if (total >= maxNotes && !known) { quarantine(file, "NOTE_LIMIT"); continue; }
+      index.upsert(r.rec); seen.add(r.rec.id); changed++; if (!known) total++;
     }
-    for (const id of [...recs.keys()]) if (!seen.has(id)) { index.remove(id); changed++; }
+    for (const row of index.rows()) if (!seen.has(row.id)) { index.remove(row.id); changed++; }      // also rows left behind by files that vanished while the store was closed
     loadRecs(); dirStamp = stampOf();
     return changed;
   }
   if (index.rebuiltFromDamage) { index.clear(); try { audit.append("MEMORY_INDEX_REBUILT", { reason: "DATABASE_DAMAGED" }); } catch { /* ignore */ } }
-  sync(true);
 
-  const readerOk = r => r && typeof r === "object" && typeof r.id === "string" && AGENT_RE.test(r.id) && typeof r.clearance === "string" && r.clearance in RANK;
+  const readerOk = r => r && typeof r === "object" && typeof r.id === "string" && AGENT_RE.test(r.id) && typeof r.clearance === "string" && isClass(r.clearance);
+  const syncRead = (force = false) => { if (!force && stampOf() === dirStamp) return; try { lock(() => sync(force)); } catch { /* another process holds the index: keep serving the last consistent view */ } };
   const canSee = (rec, reader) => RANK[rec.classification] <= RANK[reader.clearance];
   const lock = fn => withFileLock(path.join(dir, "memory"), fn);
+  lock(() => sync(true));
 
   // ---------------------------------------------------------------- write
-  function write({ authorId, title, body, tags = [], classification = "PERSONAL", source = "" } = {}) {
+  function write({ authorId, title, body, tags = [], classification = "PERSONAL", source = "", clearance = "PUBLIC" } = {}) {
     if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE");
     if (typeof authorId !== "string" || !AGENT_RE.test(authorId)) return fail("AUTHOR_INVALID");
     if (classification === "SECRET") return fail("SECRET_NOT_STORABLE_USE_THE_VAULT");
-    if (!(classification in RANK)) return fail("CLASSIFICATION_INVALID");
+    if (!isClass(classification)) return fail("CLASSIFICATION_INVALID");
     if (!oneLine(title, LIMITS.maxTitle) || !title.trim()) return fail("TITLE_INVALID");
-    if (typeof body !== "string" || !body.trim() || body.length > LIMITS.maxBody || !body.isWellFormed() || body.includes("\0")) return fail("BODY_INVALID");
+    if (bodyBad(body)) return fail("BODY_INVALID");
     if (!Array.isArray(tags) || tags.length > LIMITS.maxTags || !tags.every(t => typeof t === "string" && TAG_RE.test(t))) return fail("TAGS_INVALID");
     if (!oneLine(source, LIMITS.maxSource)) return fail("SOURCE_INVALID");
-    if (containsSecret(title) || containsSecret(body) || containsSecret(source)) return fail("SECRET_DETECTED_NOT_STORED");
+    if (sensitive(title) || sensitive(body) || sensitive(source)) return fail("SECRET_DETECTED_NOT_STORED");
     try {
       return lock(() => {
         sync();
         if (recs.size >= maxNotes) return fail("MEMORY_FULL");
         const bodySha = sha(body);
-        for (const r of recs.values()) if (r.bodySha === bodySha) return fail("DUPLICATE_OF:" + r.id);
+        const wr = { id: authorId, clearance: isClass(clearance) ? clearance : "PUBLIC" };
+        for (const r of recs.values()) if (r.bodySha === bodySha && canSee(r, wr)) return fail("DUPLICATE_OF:" + r.id);      // a hidden note is never revealed by a duplicate answer
         const id = crypto.randomBytes(8).toString("hex"), t = nowFn();
         const meta = { id, title: title.trim(), tags: [...new Set(tags)].join(", "), classification, tenant: tenantId, author: authorId, source, createdAt: t, updatedAt: t, version: "1", bodySha };
         const file = path.join(notesDir, id + ".md"); writeAtomic(file, render(meta, body));
-        audit.append("MEMORY_WRITTEN", { id, authorId, classification, bodySha, title: meta.title.slice(0, 80) });
+        noteFloor(id, classification); audit.append("MEMORY_WRITTEN", { id, authorId, classification, bodySha, titleSha: sha(meta.title).slice(0, 16) });
         sync(); return { ok: true, id, version: 1 };
       });
     } catch (e) { return fail(e?.message === "LOCK_TIMEOUT" ? "MEMORY_BUSY" : "WRITE_ERROR"); }
@@ -210,15 +221,16 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
         const parsed = readNote(path.join(notesDir, id + ".md")); if (parsed.bad) return fail("NOTE_UNREADABLE");
         const cls = patch.classification ?? cur.classification;
         if (cls === "SECRET") return fail("SECRET_NOT_STORABLE_USE_THE_VAULT");
-        if (!(cls in RANK)) return fail("CLASSIFICATION_INVALID");
+        if (!isClass(cls)) return fail("CLASSIFICATION_INVALID");
         const title = patch.title ?? cur.title, body = patch.body ?? parsed.rec.body, tags = patch.tags ?? cur.tags, source = patch.source ?? parsed.rec.source;
         if (!oneLine(title, LIMITS.maxTitle) || !title.trim()) return fail("TITLE_INVALID");
-        if (typeof body !== "string" || !body.trim() || body.length > LIMITS.maxBody || !body.isWellFormed() || body.includes("\0")) return fail("BODY_INVALID");
+        if (bodyBad(body)) return fail("BODY_INVALID");
         if (!Array.isArray(tags) || tags.length > LIMITS.maxTags || !tags.every(t => typeof t === "string" && TAG_RE.test(t))) return fail("TAGS_INVALID");
         if (!oneLine(source, LIMITS.maxSource)) return fail("SOURCE_INVALID");
-        if (containsSecret(title) || containsSecret(body) || containsSecret(source)) return fail("SECRET_DETECTED_NOT_STORED");
+        if (sensitive(title) || sensitive(body) || sensitive(source)) return fail("SECRET_DETECTED_NOT_STORED");
         const bodySha = sha(body);
         if (RANK[cls] < RANK[cur.classification]) {
+          if (bodySha !== cur.bodySha) return fail("DECLASSIFY_AND_EDIT_SEPARATELY");      // the approval covers the body it was issued for
           if (!ownerAuth) return fail("OWNER_AUTH_REQUIRED");
           const v = ownerAuth.verifyApproval(ownerApproval, { action: "MEMORY_DECLASSIFY", subject: memorySubject(id, cur.bodySha, ":" + cur.classification + ">" + cls) });
           if (!v.allowed) return fail("OWNER_APPROVAL_REQUIRED:" + v.reason);
@@ -230,7 +242,7 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
         for (const n of old.slice(0, Math.max(0, old.length - LIMITS.versionsKept))) { try { fs.unlinkSync(path.join(versionsDir, n)); } catch { /* gone */ } }
         const meta = { id, title: title.trim(), tags: [...new Set(tags)].join(", "), classification: cls, tenant: tenantId, author: parsed.rec.author, source, createdAt: parsed.rec.created, updatedAt: t, version: String(version), bodySha };
         writeAtomic(path.join(notesDir, id + ".md"), render(meta, body));
-        audit.append("MEMORY_UPDATED", { id, by: patch.authorId, version, classification: cls, bodySha });
+        noteFloor(id, cls); audit.append("MEMORY_UPDATED", { id, by: patch.authorId, version, classification: cls, bodySha });
         sync(); return { ok: true, id, version };
       });
     } catch (e) { return fail(e?.message === "LOCK_TIMEOUT" ? "MEMORY_BUSY" : "UPDATE_ERROR"); }
@@ -247,35 +259,37 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
         const v = ownerAuth.verifyApproval(ownerApproval, { action: "MEMORY_FORGET", subject: memorySubject(id, cur.bodySha) });
         if (!v.allowed) return fail("OWNER_APPROVAL_REQUIRED:" + v.reason, { subject: memorySubject(id, cur.bodySha) });
         fs.renameSync(path.join(notesDir, id + ".md"), path.join(trashDir, id + "." + Date.now() + ".md"));
+        for (const n of fs.readdirSync(versionsDir).filter(x => x.startsWith(id + ".v"))) { try { fs.renameSync(path.join(versionsDir, n), path.join(trashDir, n + "." + Date.now() + ".old")); } catch { /* left */ } }
+        floor.delete(id);
         audit.append("MEMORY_FORGOTTEN", { id, bodySha: cur.bodySha, nonce: v.nonce });
-        sync(); return { ok: true, id, note: "moved to the trash folder; the owner can restore it by moving the file back" };
+        sync(); return { ok: true, id, note: "the note and its old versions were moved to the trash folder (still on disk until the owner deletes them); the owner can restore the note by moving the file back" };
       });
     } catch (e) { return fail(e?.message === "LOCK_TIMEOUT" ? "MEMORY_BUSY" : "FORGET_ERROR"); }
   }
 
   // ---------------------------------------------------------------- read / list / search
-  const fence = (rec, text) => "<<UNTRUSTED_MEMORY id=" + rec.id + " classification=" + rec.classification + " author=" + rec.author + ">>\n" + text + "\n<<END_UNTRUSTED_MEMORY>>";
+  const fence = (rec, text) => "<<UNTRUSTED_MEMORY id=" + rec.id + " classification=" + rec.classification + " author=" + rec.author + ">>\n" + String(text).replace(/<</g, "<\u200b<") + "\n<<END_UNTRUSTED_MEMORY>>";
   function get(id, reader) {
     if (!readerOk(reader)) return fail("READER_INVALID");
     if (typeof id !== "string" || !ID_RE.test(id)) return fail("NOT_FOUND");
-    sync(); const rec = recs.get(id);
+    syncRead(); const rec = recs.get(id);
     if (!rec || !canSee(rec, reader)) { if (rec) stats.hidden++; return fail("NOT_FOUND"); }      // hidden and missing look identical
     const p = readNote(path.join(notesDir, id + ".md")); if (p.bad) return fail("NOT_FOUND");
     return { ok: true, untrusted: true, id, title: rec.title, tags: rec.tags, classification: rec.classification, author: rec.author, source: p.rec.source, version: p.rec.version, updated: rec.updated, text: fence(rec, scrub(p.rec.body)) };
   }
   function list(reader, { limit = 50 } = {}) {
     if (!readerOk(reader)) return fail("READER_INVALID");
-    sync(); const n = Math.max(1, Math.min(200, Number.isInteger(limit) ? limit : 50));
+    syncRead(); const n = Math.max(1, Math.min(200, Number.isInteger(limit) ? limit : 50));
     return { ok: true, notes: [...recs.values()].filter(r => canSee(r, reader)).sort((a, b) => (a.updated < b.updated ? 1 : -1)).slice(0, n).map(r => ({ id: r.id, title: r.title, tags: r.tags, classification: r.classification, updated: r.updated })) };
   }
   function search({ query, reader, limit = 5 } = {}) {
     if (!readerOk(reader)) return fail("READER_INVALID");
     if (typeof query !== "string" || !query.trim() || query.length > LIMITS.maxQuery || !query.isWellFormed()) return fail("QUERY_INVALID");
     const qterms = [...new Set(terms(query))].slice(0, 12); if (!qterms.length) return fail("QUERY_HAS_NO_SEARCHABLE_TERMS");
-    sync(); stats.searches++;
+    syncRead(); stats.searches++;
     const visible = new Set([...recs.values()].filter(r => canSee(r, reader)).map(r => r.id));
     const n = Math.max(1, Math.min(LIMITS.maxResults, Number.isInteger(limit) ? limit : 5));
-    const lex = index.lexical(qterms, 200).filter(x => visible.has(x.id)).slice(0, 50);
+    const lex = index.lexical(qterms, 2000).filter(x => visible.has(x.id)).slice(0, 50);
     const qv = embed(query), sem = [];
     for (const id of visible) { const c = cosine(qv, vecs.get(id)); if (c > 0.2) sem.push({ id, score: c }); }
     sem.sort((a, b) => b.score - a.score); sem.length = Math.min(sem.length, 50);
@@ -300,11 +314,11 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
   }
   /** Compare every file with the index and the recorded hash. Read-only. */
   function verify() {
-    sync(true);
-    let edited = 0, bad = 0, files = 0;
-    for (const n of fs.readdirSync(notesDir).filter(x => x.endsWith(".md"))) { files++; const r = readNote(path.join(notesDir, n)); if (r.bad) bad++; else if (r.edited) edited++; }
-    return { ok: true, files, indexed: recs.size, externallyEdited: edited, unreadable: bad, consistent: files === recs.size && bad === 0, backend: index.backend, auditOk: audit.verify().ok };
+    syncRead(true);
+    let edited = 0, bad = 0, files = 0, mismatched = 0;
+    for (const n of fs.readdirSync(notesDir).filter(x => x.endsWith(".md"))) { files++; const r = readNote(path.join(notesDir, n)); if (r.bad) bad++; else { if (r.edited) edited++; const kept = recs.get(r.rec.id); if (kept && kept.classification !== r.rec.classification) mismatched++; } }
+    return { ok: true, files, indexed: recs.size, externallyEdited: edited, unreadable: bad, classificationMismatch: mismatched, consistent: files === recs.size && bad === 0 && mismatched === 0, backend: index.backend, auditOk: audit.verify().ok };
   }
-  const status = () => { sync(); const c = {}; for (const r of recs.values()) c[r.classification] = (c[r.classification] ?? 0) + 1; return { backend: index.backend, notes: recs.size, byClassification: c, searches: stats.searches, hiddenAttempts: stats.hidden, quarantined: fs.readdirSync(quarDir).length, trashed: fs.readdirSync(trashDir).length, auditHead: audit.head() }; };
+  const status = () => { syncRead(); const c = {}; for (const r of recs.values()) c[r.classification] = (c[r.classification] ?? 0) + 1; return { backend: index.backend, notes: recs.size, byClassification: c, searches: stats.searches, hiddenAttempts: stats.hidden, quarantined: fs.readdirSync(quarDir).length, trashed: fs.readdirSync(trashDir).length, auditHead: audit.head() }; };
   return { write, update, forget, get, list, search, rebuildIndex, verify, status, auditVerify: () => audit.verify(), auditEntries: () => audit.entries(), close: () => index.close() };
 }
