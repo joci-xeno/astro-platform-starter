@@ -170,7 +170,7 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
       // Least privilege (ATLASZ-T3-002): read-only access to the plugin's own directory; write access only with the granted FILESYSTEM_PLUGIN_DIR permission; no network unless NETWORK
       // was granted at enable time; no child processes or workers (Node permission model). A host that cannot restrict Node does not run the hook at all (fails closed, no quarantine).
       const granted = own(S.enabled, id)?.permissions ?? [];
-      const rc = restrictedNodeCommand({ nodeBin, script: path.join(p.dir, p.manifest.entry), readDirs: [p.dir], writeDirs: granted.includes("FILESYSTEM_PLUGIN_DIR") ? [p.dir] : [], allowNetwork: granted.includes("NETWORK"), requireNoNetwork: !granted.includes("NETWORK"), env: { ATLASZ_PLUGIN_ID: id, ATLASZ_PLUGIN_HOOK: String(hook) } });
+      const rc = restrictedNodeCommand({ nodeBin, script: path.join(p.dir, p.manifest.entry), readDirs: [p.dir], writeDirs: granted.includes("FILESYSTEM_PLUGIN_DIR") ? [p.dir] : [], allowNetwork: granted.includes("NETWORK"), requireNoNetwork: !granted.includes("NETWORK"), requireHostIsolation: true, maxLifetimeSec: Math.ceil(hookTimeoutMs / 1000) + 5, env: { ATLASZ_PLUGIN_ID: id, ATLASZ_PLUGIN_HOOK: String(hook) } });
       if (!rc.ok) { rec("PLUGIN_HOOK_NOT_RUN", { id, reason: rc.reason }); return finish({ ok: false, reason: rc.reason }); }
       try { child = spawn(rc.cmd, rc.args, { cwd: p.dir, env: rc.env, stdio: ["pipe", "pipe", "pipe"], detached: process.platform !== "win32", windowsHide: true }); }
       catch (e) { fail(id, "SPAWN_FAILED:" + e.message); return finish({ ok: false, reason: "SPAWN_FAILED" }); }
