@@ -60,6 +60,7 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
   const audit = createAuditChain({ filePath: path.join(stateDir, "plugins-audit.jsonl"), now });
   let S = { enabled: {}, health: {}, theme: null };
   let unreadable = false;                                                                             // a state file we cannot read is evidence to keep, never to overwrite: everything stays disabled and nothing is written
+  const memFails = new Map();                                                                       // failure counts kept in memory too: when the state write fails, sub-threshold failures still accumulate toward quarantine
   const memQuarantine = new Set();                                                                  // plugins quarantined in memory whose state write failed: they stay quarantined across re-reads
   /** Re-read the state file (another manager on the same directory may have changed it). A missing file means nothing is enabled. */
   function load() {
@@ -68,6 +69,7 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
       try { const j = JSON.parse(fs.readFileSync(stateFile, "utf8")); if (j === null || typeof j !== "object" || Array.isArray(j) || (j.enabled !== undefined && (typeof j.enabled !== "object" || j.enabled === null || Array.isArray(j.enabled))) || (j.health !== undefined && (typeof j.health !== "object" || j.health === null || Array.isArray(j.health)))) throw new Error("SHAPE"); S = { enabled: {}, health: {}, theme: null, ...j }; for (const k of ["enabled", "health"]) for (const id of Object.keys(S[k])) if (S[k][id] === null || typeof S[k][id] !== "object" || Array.isArray(S[k][id])) { if (k === "health") S.health[id] = { failures: 0 }; else delete S.enabled[id]; } unreadable = false; }
       catch { unreadable = true; S = { enabled: {}, health: {}, theme: null }; }
     }
+    for (const [id, n] of memFails) { const h = own(S.health, id); if (!h || (h.failures ?? 0) < n) S.health[id] = { ...(h ?? {}), failures: n }; }
     for (const id of memQuarantine) { delete S.enabled[id]; if (S.theme === id) S.theme = null; S.health[id] = { ...(own(S.health, id) ?? {}), failures: (own(S.health, id)?.failures ?? 0), quarantined: true }; }
   }
   load();
@@ -114,8 +116,8 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
     let stopped = true; try { stopped = Boolean(isStopped()); } catch { /* fail closed */ } if (stopped && !codeLess) return { ok: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" };
     const hash = codeLess ? null : dirHash(p.dir); if (!codeLess && !hash) return { ok: false, reason: "PLUGIN_FOLDER_UNHASHABLE" };
     if (!codeLess) { const v = approve(ownerApproval, "PLUGIN_ENABLE", id + "#" + hash); if (!v.allowed) return { ok: false, reason: "OWNER_APPROVAL_REQUIRED:" + v.reason, subject: id + "#" + hash }; }   // the owner approves these exact bytes, not just a name
-    const snap = structuredClone(S); S.enabled[id] = { since: now(), version: p.manifest.version, permissions: p.manifest.permissions, ...(hash ? { hash } : {}) }; S.health[id] = { failures: 0 };
-    return commit("PLUGIN_ENABLED", { id, version: p.manifest.version, permissions: p.manifest.permissions }, snap);
+    const snap = structuredClone(S); S.enabled[id] = { since: now(), version: p.manifest.version, permissions: p.manifest.permissions, ...(hash ? { hash } : {}) }; S.health[id] = { failures: 0 }; const mf = memFails.get(id); memFails.delete(id);
+    const er = commit("PLUGIN_ENABLED", { id, version: p.manifest.version, permissions: p.manifest.permissions }, snap); if (!er.ok && mf !== undefined) { memFails.set(id, mf); load(); } return er;
   }
   /** What the owner signs for PLUGIN_ENABLE: the plugin id and the content hash of its folder as it is now (a code-less theme needs no approval). */
   const enableSubject = id => { const p = scan().found.get(id); if (!p || p.manifest.kind === "THEME" || p.manifest.kind === "SKIN") return null; const h = dirHash(p.dir); return h ? id + "#" + h : null; };
@@ -124,7 +126,7 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
     load();
     if (unreadable) return STATE_BAD;
     const v = approve(ownerApproval, "PLUGIN_RESET_QUARANTINE", id); if (!v.allowed) return { ok: false, reason: "OWNER_APPROVAL_REQUIRED:" + v.reason };
-    const snap = structuredClone(S), wasMem = memQuarantine.delete(id); S.health[id] = { failures: 0 }; const rr = commit("PLUGIN_QUARANTINE_RESET", { id }, snap); if (!rr.ok && wasMem) { memQuarantine.add(id); load(); } return rr;
+    const snap = structuredClone(S), wasMem = memQuarantine.delete(id); S.health[id] = { failures: 0 }; const mf = memFails.get(id); memFails.delete(id); const rr = commit("PLUGIN_QUARANTINE_RESET", { id }, snap); if (!rr.ok) { if (wasMem) memQuarantine.add(id); if (mf !== undefined) memFails.set(id, mf); if (wasMem || mf !== undefined) load(); } return rr;
   }
   /** Audit write that cannot throw into timers/child callbacks: a failed audit (corrupt or unwritable log) is reported as false, never as an uncaught exception. */
   const rec = (e, d) => { try { audit.append(e, d); return true; } catch { return false; } };
@@ -132,7 +134,7 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
   const commit = (ev, data, snap) => { let ok = true; try { audit.append(ev, data); } catch { ok = false; } if (ok && !save()) ok = false; if (!ok) { S = snap; rec("PLUGIN_CHANGE_NOT_APPLIED", { event: ev, id: data?.id ?? null }); return { ok: false, reason: "STATE_NOT_WRITTEN_OR_AUDIT_UNAVAILABLE" }; } return { ok: true }; };
   function fail(id, why) {
     load();
-    const h = (Object.hasOwn(S.health, id) ? S.health[id] : (S.health[id] = { failures: 0 })); h.failures++; h.lastError = scrub(String(why)).slice(0, 200);
+    const h = (Object.hasOwn(S.health, id) ? S.health[id] : (S.health[id] = { failures: 0 })); h.failures++; memFails.set(id, h.failures); h.lastError = scrub(String(why)).slice(0, 200);
     if (h.failures >= quarantineAfter) { h.quarantined = true; memQuarantine.add(id); delete S.enabled[id]; if (S.theme === id) S.theme = null; rec("PLUGIN_QUARANTINED", { id, why: h.lastError }); }
     else rec("PLUGIN_FAILURE", { id, why: h.lastError });
     save();
@@ -167,7 +169,7 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
       child.on("close", code => {
         if (done) return;
         if (code !== 0) { fail(id, "EXIT_" + code + ":" + err.split("\n")[0]); return finish({ ok: false, reason: "PLUGIN_CRASHED", exit: code }); }
-        try { const r = JSON.parse(out); load(); if (own(S.health, id) && !unreadable) S.health[id].failures = 0; rec("PLUGIN_HOOK_RUN", { id, hook: String(hook).slice(0, 40) }); save(); finish({ ok: true, result: r }); }
+        try { const r = JSON.parse(out); load(); if (own(S.health, id) && !unreadable) S.health[id].failures = 0; memFails.delete(id); rec("PLUGIN_HOOK_RUN", { id, hook: String(hook).slice(0, 40) }); save(); finish({ ok: true, result: r }); }
         catch { fail(id, "INVALID_JSON_OUTPUT"); finish({ ok: false, reason: "INVALID_OUTPUT" }); }
       });
       child.stdin.on("error", () => {}); child.stdin.end(payload);

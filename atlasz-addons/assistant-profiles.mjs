@@ -42,7 +42,7 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
     return { ok: true, def: { id: inp.id, name: redactSecrets(inp.name.trim()), instructions: redactSecrets(inp.instructions.trim()), tools: uniqSorted(tools), skills: uniqSorted(skills), memoryScopes: uniqSorted(scopes) } };
   }
   // The file may have been damaged since this process loaded it: a write never replaces an unreadable file (the owner must repair or remove it first).
-  const writable = () => { if (!file) return true; try { const j = JSON.parse(fs.readFileSync(file, "utf8")); if (j && typeof j === "object" && j.tenants && typeof j.tenants === "object" && !Array.isArray(j.tenants)) d.tenants = j.tenants; return true; } catch (e) { return e?.code === "ENOENT"; } };      // also adopts what another instance wrote since this one loaded: a stale instance never reverts it
+  const writable = () => { if (!file) return true; try { const j = JSON.parse(fs.readFileSync(file, "utf8")); if (j && typeof j === "object" && j.tenants && typeof j.tenants === "object" && !Array.isArray(j.tenants)) { if (!markerAgrees(file, j.tenants)) return false; d.tenants = j.tenants; } return true; } catch (e) { return e?.code === "ENOENT"; } };      // also adopts what another instance wrote since this one loaded: a stale instance never reverts it
   function save(tenantId, inp, how) {
     if (inp?.actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" };
     if (!writable()) return { ok: false, reason: "PROFILE_STORE_UNREADABLE" };
@@ -116,14 +116,15 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
 /** Broker gate over the shared profiles file. The file is re-read on every call (the Control Center and the runtime are separate processes); an unreadable file denies instead of allowing. */
 /** null = no marker (never used); otherwise the map tenant/agent -> profile id recorded at the last owner change (every one must still point at the same profile). An unreadable or odd marker counts as a huge number: fail closed. */
 function markerKeys(file) { try { const st = fs.lstatSync(file + ".in-use"); if (!st.isFile()) return Infinity; const a = JSON.parse(fs.readFileSync(file + ".in-use", "utf8")); return a && typeof a === "object" && !Array.isArray(a) && Object.values(a).every(x => typeof x === "string") ? a : Infinity; } catch (e) { return e?.code === "ENOENT" ? null : Infinity; } }
+/** True when the in-use marker (if any) agrees with the tenants on disk: every marked assignment still exists with the same profile id and version hash. Used by the gate AND before any write, so a write can never re-stamp the marker over tampered state. */
+function markerAgrees(file, tenants) { const mk = markerKeys(file); if (mk === null) return true; if (mk === Infinity) return false; return !Object.entries(mk).some(([key, pid]) => { const [tn, ...r] = key.split("/"), a = r.join("/"); return !(Object.hasOwn(tenants, tn) && tenants[tn] && typeof tenants[tn] === "object" && tenants[tn].assignments && typeof tenants[tn].assignments === "object" && Object.hasOwn(tenants[tn].assignments, a) && stampOf(tenants[tn], tenants[tn].assignments[a]) === pid); }); }
 export function createAgentProfileGate({ file, tenantId, grantable = defaultGrantable } = {}) {
   return (agentId, tool) => {
     try {
       if (!file) return { allowed: true, profile: null };
       let raw; try { raw = fs.readFileSync(file, "utf8"); } catch (e) { if (e?.code === "ENOENT") { if (markerKeys(file) !== null) return { allowed: false, reason: "PROFILE_STORE_MISSING" }; return { allowed: true, profile: null }; } throw e; }      // no file yet = nothing was ever assigned
       const j = JSON.parse(raw); if (j === null || typeof j !== "object" || Array.isArray(j) || j.tenants === null || typeof j.tenants !== "object" || Array.isArray(j.tenants)) return { allowed: false, reason: "PROFILE_STORE_CORRUPT" };   // a file this module wrote always has a tenants record
-      const mk = markerKeys(file);
-      if (mk === Infinity || (mk !== null && Object.entries(mk).some(([key, pid]) => { const [tn, ...r] = key.split("/"), a = r.join("/"); return !(Object.hasOwn(j.tenants, tn) && j.tenants[tn] && typeof j.tenants[tn] === "object" && j.tenants[tn].assignments && typeof j.tenants[tn].assignments === "object" && Object.hasOwn(j.tenants[tn].assignments, a) && stampOf(j.tenants[tn], j.tenants[tn].assignments[a]) === pid); }))) return { allowed: false, reason: "PROFILE_STORE_ASSIGNMENTS_CHANGED" };    // an assignment was removed or retargeted outside the owner's own assign/unassign
+      if (!markerAgrees(file, j.tenants)) return { allowed: false, reason: "PROFILE_STORE_ASSIGNMENTS_CHANGED" };    // an assignment was removed or retargeted outside the owner's own assign/unassign
       return createProfiles({ file, grantable }).agentGate(tenantId, agentId, tool);
     }
     catch { return { allowed: false, reason: "PROFILE_STORE_UNREADABLE" }; }

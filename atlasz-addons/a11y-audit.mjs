@@ -32,7 +32,7 @@ function blocks(css) {
       if (c === "/" && css[i + 1] === "*") { r += css.slice(last, i); const z = css.indexOf("*/", i + 2); if (z < 0) { last = n; i = n; break; } i = z + 2; last = i; continue; }
       i++; }
     r += css.slice(last); css = r; }   // strip comments in linear time
-  if (/@(?:\\|import\b)/i.test(css)) out.unsupported.push("EXTERNAL_STYLESHEET_NOT_EVALUATED:@import");   // any @import (or a CSS-escaped @\69mport) anywhere, with or without a following rule, in a string or not: the imported sheet is never read
+  if (/@[A-Za-z0-9_-]*\\|@import\b/i.test(css)) out.unsupported.push("EXTERNAL_STYLESHEET_NOT_EVALUATED:@import");   // any @import (or a CSS-escaped @\69mport) anywhere, with or without a following rule, in a string or not: the imported sheet is never read
   const close = (t, from) => { let d = 1, j = from; while (j < t.length) { const c = t[j]; if (c === '"' || c === "'") { const e = t.indexOf(c, j + 1); j = e < 0 ? t.length : e + 1; continue; } if (c === "{") d++; else if (c === "}") { d--; if (!d) return j; } j++; } return -1; };
   const THEME = /\[data-theme\s*=\s*["']?(dark|light)["']?\]/ig, NOT_THEME = /:not\(\s*\[data-theme\s*=\s*["']?(?:dark|light)["']?\]\s*\)/ig;
   const decl = body => { const decls = new Map(); for (const d of body.split(";")) { const k = d.indexOf(":"); if (k > 0) { const name = d.slice(0, k).trim().toLowerCase(), val = d.slice(k + 1).trim(); if (name.includes("\\")) out.unsupported.push("ESCAPED_PROPERTY_NAME_NOT_EVALUATED"); decls.set(name, val); if (name === "background" || name === "background-color") decls.set("__bg", val); } } return decls; };   // __bg: whichever of the two was declared LAST wins, as in a browser
@@ -74,7 +74,8 @@ const bgOf = d => d.get("__bg") ?? "";
 /** Linear tokeniser: [{name, closing, attrs, text, map}] for every tag outside comments and raw-text elements (script/style/textarea/title bodies are not markup; <style> bodies are returned in .styles).
  *  Attributes are parsed as name[=value] tokens, so text inside a quoted value (title="alt=x") is never mistaken for an attribute. */
 function tagEnd(h, from) {                                                                         // the ">" that closes a tag: one inside a quoted attribute value does not. A quote only opens a value right after an "=" that follows an attribute NAME ("=" starting a name, or "b=c=\"" inside an unquoted value, is just text)
-  let st = 0, q = null, inName = false;                                                            // 0 name/space, 1 after "=" (value expected), 2 unquoted value, 3 quoted value
+  let st = 0, q = null, inName = false; let j0 = from; if (h[j0] === "/") j0++; while (j0 < h.length && !/[\s\/>]/.test(h[j0])) j0++;      // the tag NAME runs to whitespace, "/" or ">" (so "<style;=\"x>" is an unknown element, and a quote inside the name opens nothing)
+  from = j0;                                                                                       // 0 name/space, 1 after "=" (value expected), 2 unquoted value, 3 quoted value
   for (let j = from; j < h.length && j < from + 20000; j++) { const c = h[j];
     if (st === 3) { if (c === q) { st = 0; inName = false; } continue; }
     if (st === 2) { if (/\s/.test(c)) { st = 0; inName = false; } else if (c === ">") return j; continue; }
@@ -92,14 +93,14 @@ function htmlTags(html) {
     const a = html.indexOf("<", i); if (a < 0) break;
     if (html.startsWith("<!--", a)) { if (p1 !== -1 && p1 < a + 2) p1 = html.indexOf("-->", a + 2); if (p2 !== -1 && p2 < a + 2) p2 = html.indexOf("--!>", a + 2);   /* each terminator is searched again only after it has been passed: linear overall */
       const z1 = p1, z2 = p2, z = z1 < 0 ? z2 : z2 < 0 ? z1 : Math.min(z1, z2); if (z < 0) break; i = z + (z === z2 ? 4 : 3); continue; }       // "<!-->" is a complete (empty) comment, as in browsers
-    const z = /^<\/?[A-Za-z]/.test(html.slice(a, a + 3)) ? tagEnd(html, a + 1) : html.indexOf(">", a + 1); if (z < 0) break; const m = /^<(\/?)([A-Za-z][A-Za-z0-9-]*)/.exec(html.slice(a, a + 60)); i = z + 1; if (!m) continue;
+    const z = /^<\/?[A-Za-z]/.test(html.slice(a, a + 3)) ? tagEnd(html, a + 1) : html.indexOf(">", a + 1); if (z < 0) break; const m = /^<(\/?)([A-Za-z][^\s\/>]*)/.exec(html.slice(a, a + 60)); i = z + 1; if (!m) continue;
     const nextLt = html.indexOf("<", z + 1), name = m[2].toLowerCase(), attrs = html.slice(a + m[0].length, z), map = new Map();
     for (const am of attrs.matchAll(ATTR)) { const k = am[1].toLowerCase(); if (!map.has(k)) map.set(k, am[2] ?? am[3] ?? am[4] ?? ""); }
     out.push({ name, closing: m[1] === "/", attrs, map, text: m[1] ? "" : html.slice(z + 1, nextLt < 0 ? Math.min(html.length, z + 301) : Math.min(nextLt, z + 301)) });
-    if (foreign > 0 && !m[1] && (name === "title" || name === "textarea" || name === "foreignobject" || name === "desc")) out.ambiguous = true;      // HTML integration points inside svg/math: browsers switch parsing rules here and this tokenizer does not follow them reliably
-    if (name === "svg" || name === "math") { if (m[1]) foreign = Math.max(0, foreign - 1); else if (!/\/\s*$/.test(attrs)) foreign++; }
+    if (foreign > 0 && !m[1] && /^(?:title|textarea|foreignobject|desc|script|style|xmp|iframe|noembed|noframes)$/.test(name)) out.ambiguous = true;      // HTML integration points inside svg/math: browsers switch parsing rules here and this tokenizer does not follow them reliably
+    if (name === "svg" || name === "math") { if (m[1]) foreign = Math.max(0, foreign - 1); else { const ams = [...attrs.matchAll(ATTR)], lastM = ams[ams.length - 1], selfClosed = /\/\s*$/.test(attrs) && !(lastM && lastM[4] !== undefined && /\/\s*$/.test(attrs) && lastM[4].endsWith("/")); if (!selfClosed) foreign++; } }
     if (!m[1] && name === "plaintext") { out.ambiguous = true; i = html.length; }
-    if (!m[1] && /^(?:script|style|textarea|title|xmp|iframe|noembed|noframes)$/.test(name) && !(foreign > 0 && (name === "title" || name === "textarea"))) {       // raw text: skip to the matching close tag
+    if (!m[1] && /^(?:script|style|textarea|title|xmp|iframe|noembed|noframes)$/.test(name) && foreign === 0) {       // raw text: skip to the matching close tag
       const re = new RegExp("</" + name + "\\b", "ig"); re.lastIndex = i; const e = re.exec(html);
       if (name === "style") out.styles.push(html.slice(i, e ? e.index : html.length).slice(0, LIMITS.maxInputChars));
       if (name === "title") { out[out.length - 1].text = html.slice(i, e ? e.index : html.length).slice(0, 300); }
@@ -145,7 +146,7 @@ export function auditAccessibility({ html = "", css = "", js = "", cssSources = 
     }
   }
   // inline style="" attributes: evaluated when they declare both colours, otherwise reported as not evaluated
-  for (const t of tg) { const st = t.closing ? undefined : t.map.get("style"); if (st === undefined || !/(?:^|[;\s])(?:color|background(?:-color)?)\s*:/i.test(st)) continue; const d = new Map(); for (const x of st.split(";")) { const k = x.indexOf(":"); if (k > 0) { const nm = x.slice(0, k).trim().toLowerCase(), v = x.slice(k + 1).trim(); d.set(nm, v); if (nm === "background" || nm === "background-color") d.set("__bg", v); } }
+  for (const t of tg) { const st = t.closing ? undefined : t.map.get("style"); if (st !== undefined && st.includes("\\")) { skipped.push("inline style on <" + t.name + "> (escaped CSS not evaluated)"); continue; } if (st === undefined || !/(?:^|[;\s])(?:color|background(?:-color)?)\s*:/i.test(st)) continue; const d = new Map(); for (const x of st.split(";")) { const k = x.indexOf(":"); if (k > 0) { const nm = x.slice(0, k).trim().toLowerCase(), v = x.slice(k + 1).trim(); d.set(nm, v); if (nm === "background" || nm === "background-color") d.set("__bg", v); } }
     const fg = d.get("color"), bg = d.get("__bg"); if (fg && bg && parseHex(fg) && parseHex(bg)) pairs.push({ theme: "light", sel: "inline style on <" + t.name + ">", fg, bg, large: false }); else skipped.push("inline style on <" + t.name + "> (colours not fully declared)"); }
   const seen = new Set(); let checked = 0, unresolved = 0; const unresolvedList = [];
   for (const p of pairs) {

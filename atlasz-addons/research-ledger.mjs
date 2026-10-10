@@ -37,7 +37,7 @@ export const LIMITS = Object.freeze({ questionChars: 500, claimChars: 1000, note
 import { scrub, containsSecret } from "./secret-patterns.mjs";
 const looksSecret = v => { const t = String(v ?? ""); return containsSecret(t) || scrub(t, "[r]") !== t; };
 const sha = s => crypto.createHash("sha256").update(s).digest("hex");
-const canon = v => Array.isArray(v) ? "[" + v.map(canon).join(",") + "]" : v && typeof v === "object" ? "{" + Object.keys(v).sort().map(k => JSON.stringify(k) + ":" + canon(v[k])).join(",") + "}" : JSON.stringify(v) ?? "null";
+const canon = v => Array.isArray(v) ? "[" + v.map(canon).join(",") + "]" : v && typeof v === "object" ? "{" + Object.keys(v).filter(k => v[k] !== undefined && typeof v[k] !== "function").sort().map(k => JSON.stringify(k) + ":" + canon(v[k])).join(",") + "}" : JSON.stringify(v) ?? "null";
 const norm = s => String(s ?? "").toLowerCase().replace(/\s+/g, " ").trim();
 
 export function createResearchLedger({ file = null, knowledge, security = null, blackBox = null, now = () => new Date().toISOString(), freshnessDays = LIMITS.freshnessDays } = {}) {
@@ -68,6 +68,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
     let prev = "GENESIS";
     for (const e of S.events) { const { hash, ...rest } = e; if (e.prev !== prev || sha(prev + JSON.stringify({ ...rest, hash: undefined })) !== hash) return { ok: false, brokenAt: e.n }; prev = hash; }
     if (!anchorOk()) return { ok: false, brokenAt: S.events.length + 1, reason: readHead() ? "HEAD_ANCHOR_MISMATCH" : "HEAD_ANCHOR_MISSING" };
+    if (!stateOk()) return { ok: false, brokenAt: S.events.length, reason: "STORE_ALTERED_OUTSIDE_LEDGER" };      // questions/findings/contradictions no longer match the newest event's seal
     return { ok: true, events: S.events.length };
   }
   // Owner confirmations live in the hash-chained event log (not in a field of the evidence): a hand-edited store cannot create one without also forging the chain AND its head anchor.
@@ -129,7 +130,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
     if (cov < LIMITS.minCoverage) throw new Error("EVIDENCE_DOES_NOT_COVER_CLAIM");
     if (relation === "SUPPORTS") { const bad = supportMismatch(f.claim, citation.quote); if (bad) throw new Error(bad); }
     const meta = knowledge.summary(q.projectId, w).members.find(m => m.id === citation.memberId);
-    const e = { id: id("re"), relation, citation: { projectId: citation.projectId, memberId: citation.memberId, kind: citation.kind, title: citation.title, version: citation.version, sha256: citation.sha256, url: citation.url ?? null, start: citation.start, end: citation.end, quote: citation.quote },
+    const e = { id: id("re"), relation, citation: { projectId: citation.projectId, memberId: citation.memberId, kind: citation.kind ?? null, title: citation.title ?? null, version: citation.version ?? null, sha256: citation.sha256, url: citation.url ?? null, start: citation.start, end: citation.end, quote: citation.quote },
       retrievedAt: meta?.retrievedAt ?? null, coverage: Number(cov.toFixed(2)), addedBy: b, addedAt: now() };
     f.evidence.push(e); event("EVIDENCE_ATTACHED", b, { findingId: f.id, evidence: e.id, relation, member: citation.memberId }); store.save(); return { id: e.id, relation, coverage: e.coverage };
   }
