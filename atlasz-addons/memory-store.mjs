@@ -100,9 +100,9 @@ const CRED_WORD = /^\d+[_\-.]?pass/i;      // "1Password" is a product
 const baseCred = tok => tok.length >= 8 && tok.length <= 120 && !/\s/.test(tok) && !PLACEHOLDER.test(tok) && !/^\[redacted/i.test(tok) && !looksStructural(tok) && !CRED_WORD.test(tok) && /\p{L}/u.test(tok)
   && !/^[A-Za-z]:[\\/]|^[\\/~.]|[\\/]\p{L}{3,}/u.test(tok) && !/(?:^|-)\p{L}{4,}-|^\p{L}{4,}-\p{L}*\d?$/u.test(tok) && (tok.match(/\d/g) ?? []).length >= 1;
 // STRONG: unmistakably a generated credential (mixed case with >= 2 digits and no long word, or a symbol). WEAK: a word with digits ("Welcome2024", "letmein2024"); only when introduced like a value - directly after the name or after is/was/be/to/now/as/set/use.
-const strongCred = tok => baseCred(tok) && (/[^\p{L}\d\-._]/u.test(tok) || ((tok.match(/\d/g) ?? []).length >= 2 && /\p{Lu}/u.test(tok) && /\p{Ll}/u.test(tok) && /\d\p{L}/u.test(tok) && !/\p{L}{6,}/u.test(tok)));
+const strongCred = tok => baseCred(tok) && (/[^\p{L}\d\-._]/u.test(tok) || ((tok.match(/\d/g) ?? []).length >= 2 && /\p{Lu}/u.test(tok) && /\p{Ll}/u.test(tok) && (tok.match(/(?=\d\p{L}|\p{L}\d)/gu) ?? []).length >= 4 && !/\p{L}{6,}/u.test(tok)));
 const INTRO = /^(?:is|was|be|been|are|to|now|as|set|use|using|becomes?|became|remains?|stays?|=|:)$/i;
-const weakCred = tok => baseCred(tok) && !/^\p{Lu}{2,}[\d-]|\.\p{L}{1,5}$|\d\.\d|^\p{Lu}{2,}\p{Lu}*\d/u.test(tok) && ((/\p{Lu}/u.test(tok) && /\p{Ll}/u.test(tok)) || (tok.match(/\d/g) ?? []).length >= 4);
+const weakCred = tok => baseCred(tok) && !/^\p{Lu}{2,}[\d-]|\.\p{L}{1,5}$|\d\.\d|^\p{Lu}{2,}\p{Lu}*\d/u.test(tok) && /^\p{L}+[\d_]+[^\p{L}\d]*$/u.test(tok) && ((/\p{Lu}/u.test(tok) && /\p{Ll}/u.test(tok)) || (tok.match(/\d/g) ?? []).length >= 4);      // word + trailing digits only
 function* proximityAssignments(t) {
   const re = PROX_NAME; re.lastIndex = 0; let m;
   while ((m = re.exec(t)) !== null) {
