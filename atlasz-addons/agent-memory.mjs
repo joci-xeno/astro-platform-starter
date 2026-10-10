@@ -13,9 +13,8 @@ import { createAuditChain } from "./audit-chain.mjs";
 import { AGENT_ID_RE, roleOf } from "./agent-tool-policy.mjs";
 import { containsSecret, scrub } from "./secret-patterns.mjs";
 import { okName } from "./safe-keys.mjs";
-import { retentionSubject } from "./memory-store.mjs";
 
-export const LIMITS = Object.freeze({ maxBody: 4000, maxTitle: 120, maxUserTags: 5, notesPerAgent: 200, writesPerDay: 50, readsPerMin: 60, contextChars: 3000, contextNotes: 5, maxProjects: 20, forgetRequests: 200, ttlMaxDays: 365, activity: 200 });
+export const LIMITS = Object.freeze({ maxBody: 4000, maxTitle: 120, maxUserTags: 5, notesPerAgent: 200, writesPerDay: 50, readsPerMin: 60, contextChars: 3000, contextNotes: 5, maxProjects: 20, forgetRequests: 200, forgetPerAgent: 20, ttlMaxDays: 365, activity: 200 });
 export const DEFAULT_POLICY = Object.freeze({
   clearance: Object.freeze({ SEARCH: "PERSONAL", EXECUTION: "PERSONAL" }),      // read ceiling per team; CONFIDENTIAL is owner-only unless the owner raises it
   writeCeiling: Object.freeze({ SEARCH: "PERSONAL", EXECUTION: "PERSONAL" }),
@@ -29,8 +28,15 @@ const defang = t => String(t).replace(/<{2,}|>{2,}/g, m => m.split("").join("​
 // Text that reads like an instruction aimed at a later reader is not stored as memory by an agent. (Retrieval is fenced anyway; this is the second line.)
 const INJECTION = [/ignore\s+(?:all\s+|any\s+|the\s+)?(?:previous|prior|above|earlier)\s+(?:instructions?|rules?|prompts?)/i, /disregard\s+(?:the\s+)?(?:system|previous|above)/i, /(?:reveal|print|show|leak)\s+(?:the\s+)?(?:system\s+prompt|credentials?|api[_ -]?keys?|secrets?)/i,
   /\byou\s+are\s+now\b/i, /\bnew\s+instructions?\s*:/i, /\bact\s+as\s+(?:the\s+)?(?:owner|admin|root|coordinator)\b/i, /<<\s*(?:END_)?UNTRUSTED/i, /\bapprov(?:e|al)\s+granted\b/i, /"(?:tool|function)_?call"\s*:/i];
-export const looksLikeInstruction = t => { const n = String(t).normalize("NFKC").replace(/[\p{Cf}­]/gu, ""); return INJECTION.some(re => re.test(n)); };
-export { retentionSubject };
+// Compact form: letters only, look-alike digits/symbols mapped back ("1gn0re  pr3vious" -> "ignorepreviousinstructions"), so spacing and leetspeak tricks do not hide a phrase. Best effort: the real defence is that
+// retrieved text is always fenced and flagged as untrusted data.
+const LEET = { 0: "o", 1: "i", 3: "e", 4: "a", 5: "s", 7: "t", "@": "a", $: "s", "!": "i" };
+const COMPACT = [/(?:ignore|disregard|forget|override|bypass|skip)(?:all|any|the|your|every)?(?:previous|prior|above|earlier|preceding|former|system)(?:instructions?|rules?|prompts?|messages?|guidelines?)/, /ignore(?:everything|anything|all)(?:above|before)/, /(?:system|developer|admin)(?:message|prompt)?(?:you|youmust)/,
+  /youmust(?:obey|comply|follow|now)/, /(?:reveal|print|show|leak|dump)(?:the)?(?:systemprompt|credentials?|apikeys?|secrets?|passwords?)/, /approv(?:e|al)granted/, /actas(?:the)?(?:owner|admin|root|coordinator)/, /untrustedmemory/];
+export const looksLikeInstruction = t => {
+  const n = String(t).normalize("NFKC").replace(/[\p{Cf}­]/gu, ""); if (INJECTION.some(re => re.test(n))) return true;
+  const c = n.toLowerCase().replace(/[01345 7@$!]/g, ch => LEET[ch] ?? ch).replace(/[^\p{L}]/gu, ""); return COMPACT.some(re => re.test(c));
+};
 
 export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = null, isStopped = () => false, nowFn = () => Date.now(), policy = {}, screenText = null, isParticipant = null, rosterOk = id => AGENT_ID_RE.test(String(id)) } = {}) {
   if (!store) throw new Error("MEMORY_STORE_REQUIRED"); if (!dir) throw new Error("MEMORY_DIR_REQUIRED"); if (typeof tenantId !== "string" || !okName(TENANT, tenantId)) throw new Error("TENANT_INVALID");
@@ -46,8 +52,15 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
   const refresh = () => { const m = mtimeOf(); if (!m || m === lastM) return; try { const s = JSON.parse(fs.readFileSync(stateFile, "utf8")); if (s?.v === 1 && s.agents && typeof s.agents === "object" && s.forgets && typeof s.forgets === "object") { S = { ...S, ...s }; lastM = m; } } catch { /* keep the in-memory view */ } };
   let loadedFrom = "FRESH";
   if (fs.existsSync(stateFile)) { lastM = mtimeOf(); try { const s = JSON.parse(fs.readFileSync(stateFile, "utf8")); if (s?.v !== 1 || typeof s.agents !== "object" || typeof s.forgets !== "object") throw new Error("shape"); S = { ...S, ...s }; loadedFrom = "FILE"; } catch { try { fs.renameSync(stateFile, stateFile + ".corrupt-" + Date.now()); } catch { /* ignore */ } loadedFrom = "CORRUPT_STARTED_EMPTY"; } }
+  const auditNow = () => { try { audit.reload(); } catch (e) { return { ok: false, reason: String(e?.message ?? e).slice(0, 80) }; } return audit.verify(); };
   const log = (event, data = {}) => { try { audit.append(event, { tenantId, ...data }); } catch { /* reported by diagnose() */ } };
-  const A = id => (S.agents[id] ??= { notes: 0, days: {}, reads: [], lastAt: null, ops: { remember: 0, recall: 0, context: 0, read: 0, list: 0, refused: 0, forgetRequests: 0 } });
+  const OPS = ["remember", "recall", "context", "read", "list", "refused", "forgetRequests"];
+  const A = id => {
+    let a = Object.hasOwn(S.agents, id) ? S.agents[id] : undefined;
+    const ok = a && typeof a === "object" && Number.isInteger(a.notes) && a.notes >= 0 && a.days && typeof a.days === "object" && !Array.isArray(a.days) && Array.isArray(a.reads) && a.reads.every(x => Number.isFinite(x)) && a.ops && typeof a.ops === "object" && OPS.every(k => Number.isInteger(a.ops[k]) && a.ops[k] >= 0);
+    if (!ok) { a = { notes: 0, days: {}, reads: [], lastAt: null, ops: Object.fromEntries(OPS.map(k => [k, 0])) }; S.agents[id] = a; }      // a damaged per-agent record is replaced, never allowed to throw into an agent call
+    return a;
+  };
   const day = () => new Date(nowFn()).toISOString().slice(0, 10);
   const err = (where, e) => { S.errors.push({ at: new Date(nowFn()).toISOString(), where, error: String(e?.message ?? e).slice(0, 120) }); if (S.errors.length > 50) S.errors.shift(); };
 
@@ -76,6 +89,7 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
   // ------------------------------------------------------------------ agent operations
   function remember(agentId, { title, body, tags = [], scope = "agent", project = null, kind = "long", classification = "PERSONAL", ttlDays = null } = {}) {
     const c = check(agentId, "write"); if (c) return c; const a = fresh(agentId);
+    tags = Array.isArray(tags) ? Array.from(tags) : tags;      // one snapshot: what is validated is what is stored (no getter tricks)
     const refuse = (reason, extra) => { a.ops.refused++; S.refused++; log("MEMORY_WRITE_REFUSED", { agent: agentId, reason }); save(); return fail(reason, extra); };
     if (!Object.hasOwn(RANK, classification) || RANK[classification] > RANK[ceilingOf(agentId)]) return refuse("CLASSIFICATION_ABOVE_WRITE_CEILING");
     if (!["agent", "project", "tenant"].includes(scope)) return refuse("SCOPE_INVALID"); if (kind !== "long" && kind !== "ops") return refuse("KIND_INVALID");
@@ -91,7 +105,7 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
     if (typeof screenText === "function") { let r; try { r = screenText(title + "\n" + body); } catch { r = { allowed: false, reason: "SCREEN_ERROR" }; } if (r && r.allowed === false) return refuse("SCREEN_REFUSED:" + String(r.reason ?? "").slice(0, 40)); }
     const w = store.write({ authorId: agentId, title, body, tags: [...tags, ...sys], classification, source: "agent:" + agentId, clearance: clearanceOf(agentId), allow: r => canSeeNote(agentId, r) });
     if (!w.ok) return refuse(String(w.reason ?? "WRITE_FAILED").replace(/DUPLICATE_OF:.*/, "DUPLICATE"));
-    a.notes++; a.days[day()] = (a.days[day()] ?? 0) + 1; a.ops.remember++; a.lastAt = nowFn(); log("MEMORY_REMEMBERED", { agent: agentId, id: w.id, scope, kind, classification, project: project ?? undefined }); save();
+    a.notes++; a.days[day()] = (a.days[day()] ?? 0) + 1; a.ops.remember++; a.lastAt = nowFn(); log("MEMORY_REMEMBERED", { agent: agentId, id: w.id, scope, kind, classification, project: scope === "project" ? project : undefined }); save();
     return { ok: true, id: w.id, scope, kind, provenance: "UNVERIFIED_AGENT_NOTE" };
   }
   async function recall(agentId, { query, limit = 5, taskId = null } = {}) {
@@ -101,13 +115,13 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
     a.ops.recall++; a.lastAt = nowFn();
     if (!r.ok) { log("MEMORY_RECALL_FAILED", { agent: agentId, reason: r.reason }); save(); return r; }
     const out = r.results.map(x => ({ id: x.id, title: defang(x.title), classification: x.classification, tags: x.tags.map(defang), score: x.score, passage: x.passage }));
-    log("MEMORY_RECALLED", { agent: agentId, task: taskId ?? undefined, queryHash: sha(String(query)).slice(0, 16), queryLen: String(query).length, ids: out.map(x => x.id), backend: r.backend }); save();
+    log("MEMORY_RECALLED", { agent: agentId, task: typeof taskId === "string" && TASK.test(taskId) ? taskId : undefined, queryHash: sha(String(query)).slice(0, 16), queryLen: String(query).length, ids: out.map(x => x.id), backend: r.backend }); save();
     return { ok: true, untrusted: true, backend: r.backend, retrieval: r.retrieval, semantic: r.semantic, results: out };
   }
   /** The memory block a task puts in front of an agent: bounded, fenced, labelled as data. Only for a task the agent takes part in (when a participation check is wired). */
   async function contextFor(agentId, { taskId, query, maxChars = LIMITS.contextChars } = {}) {
     if (typeof taskId !== "string" || !TASK.test(taskId)) return fail("TASK_REQUIRED");
-    if (typeof isParticipant === "function") { let ok = false; try { ok = isParticipant(taskId, agentId) === true; } catch { ok = false; } if (!ok) { log("MEMORY_CONTEXT_REFUSED", { agent: agentId, task: taskId }); save(); return fail("NOT_A_PARTICIPANT_OF_TASK"); } }
+    { let ok = false; try { ok = typeof isParticipant === "function" && isParticipant(taskId, agentId) === true; } catch { ok = false; } if (!ok) { log("MEMORY_CONTEXT_REFUSED", { agent: agentId, task: taskId }); save(); return fail("NOT_A_PARTICIPANT_OF_TASK"); } }
     const r = await recall(agentId, { query, limit: LIMITS.contextNotes, taskId }); if (!r.ok) return r;
     const budget = Math.max(200, Math.min(LIMITS.contextChars, Number.isInteger(maxChars) ? maxChars : LIMITS.contextChars)); let used = 0; const parts = [], ids = [];
     for (const x of r.results) { const piece = "[" + x.id + "] " + x.title + "\n" + x.passage; if (used + piece.length > budget) break; parts.push(piece); ids.push(x.id); used += piece.length; }
@@ -123,7 +137,7 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
   function requestForget(agentId, id, reason = "") {
     const c = check(agentId, "write"); if (c) return c; if (typeof id !== "string" || !ID.test(id)) return fail("NOT_FOUND");
     const g = store.get(id, readerFor(agentId)); if (!g.ok) return fail("NOT_FOUND"); if (g.author !== agentId) return fail("ONLY_THE_AUTHOR_MAY_REQUEST");
-    if (Object.keys(S.forgets).length >= LIMITS.forgetRequests && !S.forgets[id]) return fail("TOO_MANY_REQUESTS");
+    if (!S.forgets[id] && (Object.keys(S.forgets).length >= LIMITS.forgetRequests || Object.values(S.forgets).filter(r => r.agent === agentId).length >= LIMITS.forgetPerAgent)) return fail("TOO_MANY_REQUESTS");
     S.forgets[id] = { agent: agentId, reason: scrub(String(reason)).slice(0, 200), at: new Date(nowFn()).toISOString() }; A(agentId).ops.forgetRequests++; log("MEMORY_FORGET_REQUESTED", { agent: agentId, id }); save(); return { ok: true, id, state: "WAITING_FOR_OWNER" };
   }
   function activity(agentId) { const a = A(agentId); return { ok: true, agent: agentId, notes: a.notes, writesToday: a.days[day()] ?? 0, lastAt: a.lastAt ? new Date(a.lastAt).toISOString() : null, ops: { ...a.ops } }; }
@@ -136,7 +150,7 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
     if (looksLikeInstruction(summary)) return fail("SUMMARY_LOOKS_LIKE_INSTRUCTION");
     const body = "Verified work (" + taskId + "): " + defang(scrub(summary)).replace(/\s+/g, " ").trim(), tags = ["kind-long", "prov-verified"];
     if (project) { if (typeof project !== "string" || !PROJECT.test(project)) return fail("PROJECT_INVALID"); tags.push("scope-project", "proj-" + project); } else tags.push("scope-tenant");
-    const w = store.write({ authorId: "COORDINATOR", title: ("Verified: " + taskId).slice(0, 100), body, tags, classification: "PERSONAL", source: "task:" + taskId + " owner:" + owner + " verified-by:" + verifier, clearance: "CONFIDENTIAL" });
+    const w = store.write({ authorId: "COORDINATOR", title: ("Verified: " + taskId).slice(0, 100), body, tags, classification: "PERSONAL", source: "task:" + taskId + " owner:" + owner + " verified-by:" + verifier, clearance: "CONFIDENTIAL", allow: r => r.tags.includes("prov-verified") });      // a private agent note with the same text must not suppress the record
     if (!w.ok) { if (String(w.reason).startsWith("DUPLICATE_OF:")) return { ok: true, duplicate: true }; err("recordVerifiedWork", w.reason); save(); return fail(w.reason); }
     log("MEMORY_VERIFIED_WORK", { id: w.id, task: taskId, owner, verifier }); save(); return { ok: true, id: w.id, provenance: "VERIFIED_BY_INDEPENDENT_AGENT" };
   }
@@ -148,21 +162,21 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
     get: id => store.get(id, OWNER),
     pendingForgets: () => (refresh(), Object.entries(S.forgets)).map(([id, r]) => ({ id, ...r, subject: undefined })),
     forgetSubject: id => store.forgetSubject(id),
-    approveForget(id, ownerApproval) { refresh(); if (!S.forgets[id]) return fail("NO_SUCH_REQUEST"); const r = store.forget(id, { ownerApproval }); if (r.ok) { const rq = S.forgets[id]; delete S.forgets[id]; log("MEMORY_FORGOTTEN_BY_OWNER", { id, requestedBy: rq.agent }); save(); } return r; },
+    approveForget(id, ownerApproval) { refresh(); if (!S.forgets[id]) return fail("NO_SUCH_REQUEST"); const r = store.forget(id, { ownerApproval }); if (r.ok) { const rq = S.forgets[id]; delete S.forgets[id]; if (rq && S.agents[rq.agent]?.notes > 0) S.agents[rq.agent].notes--; log("MEMORY_FORGOTTEN_BY_OWNER", { id, requestedBy: rq.agent }); save(); } return r; },
     rejectForget(id) { refresh(); if (!S.forgets[id]) return fail("NO_SUCH_REQUEST"); delete S.forgets[id]; log("MEMORY_FORGET_REJECTED", { id }); save(); return { ok: true }; },
     retentionPreview() {
       const t = nowFn(), ids = [], all = []; for (let off = 0; off < 5000; off += 200) { const l = store.list(OWNER, { limit: 200, offset: off }); if (!l.ok) return l; all.push(...l.notes); if (l.notes.length < 200) break; }
       for (const n of all) { const ttl = tagsOf(n).find(x => /^ttl-\d+d$/.test(x)); if (!ttl) continue; const days = Number(ttl.slice(4, -1)); if (Date.parse(n.updated) + days * 86400_000 <= t) ids.push(n.id); }
-      ids.splice(500); return { ok: true, ids, subject: ids.length ? retentionSubject(ids) : null, action: "MEMORY_RETENTION_SWEEP" };
+      ids.splice(500); return { ok: true, ids, subject: ids.length ? store.retentionSubjectFor(ids) : null, action: "MEMORY_RETENTION_SWEEP" };
     },
     retentionApply(ownerApproval) { const p = this.retentionPreview(); if (!p.ok || !p.ids.length) return p.ok ? { ok: true, retired: [] } : p; const r = store.retireBatch(p.ids, { ownerApproval }); if (r.ok) { log("MEMORY_RETENTION_APPLIED", { ids: r.retired }); save(); } return r; },
     activity: () => (refresh(), Object.entries(S.agents)).map(([id, a]) => ({ agent: id, notes: a.notes, lastAt: a.lastAt ? new Date(a.lastAt).toISOString() : null, ops: { ...a.ops } })).sort((x, y) => (x.agent < y.agent ? -1 : 1)),
-    accessLog: (n = 50) => audit.entries().slice(-Math.max(1, Math.min(200, n)))
+    accessLog: (n = 50) => { try { audit.reload(); } catch { /* auditVerify reports it */ } return audit.entries().slice(-Math.max(1, Math.min(200, Number.isInteger(n) ? n : 50))).filter(e => JSON.stringify(e.data ?? {}).length <= 2000); }
   });
   function diagnose() {
     refresh();
     const v = store.verify(), st = store.status();
-    return { ok: true, tenantId, store: { backend: st.backend, notes: st.notes, quarantined: st.quarantined, trashed: st.trashed, consistent: v.consistent, externallyEdited: v.externallyEdited, classificationMismatch: v.classificationMismatch, unreadable: v.unreadable, auditOk: v.auditOk }, accessAuditOk: audit.verify().ok, agentStateLoadedFrom: loadedFrom, refusedWrites: S.refused, recentErrors: S.errors.slice(-10), pendingForgetRequests: Object.keys(S.forgets).length };
+    return { ok: true, tenantId, store: { backend: st.backend, notes: st.notes, quarantined: st.quarantined, trashed: st.trashed, consistent: v.consistent, externallyEdited: v.externallyEdited, classificationMismatch: v.classificationMismatch, unreadable: v.unreadable, auditOk: v.auditOk }, accessAuditOk: auditNow().ok, agentStateLoadedFrom: loadedFrom, refusedWrites: S.refused, recentErrors: S.errors.slice(-10), pendingForgetRequests: Object.keys(S.forgets).length };
   }
   const handles = new Map();
   function forAgent(agentId) {
@@ -170,5 +184,5 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
     const h = Object.freeze({ id: agentId, tenantId, remember: o => remember(agentId, o ?? {}), recall: o => recall(agentId, o ?? {}), contextFor: o => contextFor(agentId, o ?? {}), read: id => read(agentId, id), list: o => list(agentId, o ?? {}), requestForget: (id, why) => requestForget(agentId, id, why), activity: () => activity(agentId) });
     handles.set(agentId, h); return h;
   }
-  return { forAgent, recordVerifiedWork, owner, diagnose, auditVerify: () => audit.verify(), tenantId, policy: P, limits: LIMITS };
+  return { forAgent, recordVerifiedWork, owner, diagnose, auditVerify: () => auditNow(), tenantId, policy: P, limits: LIMITS };
 }

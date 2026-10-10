@@ -15,7 +15,7 @@ import { runStartupSelfCheck } from "../atlasz-addons/startup-self-check.mjs";
 import { createFinancialLedger } from "../atlasz-addons/financial-ledger.mjs";
 import { createSecretVault } from "../atlasz-addons/secret-vault.mjs";
 import { createCoordinator } from "../atlasz-addons/agent-coordination.mjs";
-import { createAgentMemory, looksLikeInstruction } from "../atlasz-addons/agent-memory.mjs";
+import { createAgentMemory } from "../atlasz-addons/agent-memory.mjs";
 import { loadActivatedProvider } from "../atlasz-addons/embedding-provider.mjs";
 import { createMemoryStore } from "../atlasz-addons/memory-store.mjs";
 import { createCodeEditWorkflow } from "../atlasz-addons/code-edit-workflow.mjs";
@@ -103,8 +103,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
   coordination.setOnVerified(({ id, verifier }) => {
     try {
       const k = coordination.ledger.get("JOCI", id), cand = k.ok ? state.candidates.find(c => "screen-" + safeId(c.id) === id) : null; if (!k.ok || !cand) return;
-      const title = looksLikeInstruction(String(cand.title ?? "")) ? "[title withheld]" : String(cand.title ?? "").slice(0, 80);
-      const r = agentMemory.recordVerifiedWork({ taskId: id, owner: k.task.owner, verifier, summary: "Screening of candidate \"" + title + "\" finished with status " + cand.status + "; the result was independently re-checked by " + verifier + "." });
+      const r = agentMemory.recordVerifiedWork({ taskId: id, owner: k.task.owner, verifier, summary: "Screening of candidate " + String(cand.id).replace(/[^A-Za-z0-9._-]/g, "_").slice(0, 60) + " finished with status " + String(cand.status).replace(/[^A-Z_]/g, "").slice(0, 40) + "; the result was independently re-checked by " + verifier + ". (External title and text are deliberately not copied into verified memory.)" });
       if (r.ok && !r.duplicate) cand.memoryRecord = r.id;
     } catch { /* memory is a second line of support: it must never stop the pipeline */ }
   });

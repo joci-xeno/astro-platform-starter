@@ -15,7 +15,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { createAuditChain } from "./audit-chain.mjs";
 import { withFileLock } from "./file-lock.mjs";
-import { containsSecret, scrub } from "./secret-patterns.mjs";
+import { containsSecret, scrub, foldLookalikes } from "./secret-patterns.mjs";
 import { terms } from "./knowledge-projects.mjs";
 import { createSemanticIndex } from "./semantic-index.mjs";
 import { providerFingerprint, isNeural } from "./embedding-provider.mjs";
@@ -27,13 +27,35 @@ const ID_RE = /^[0-9a-f]{16}$/, AGENT_RE = /^[A-Za-z0-9_.:-]{1,40}$/, TENANT_RE 
 const KEYS = ["id", "title", "tags", "classification", "tenant", "author", "source", "createdAt", "updatedAt", "version", "bodySha"];
 const isClass = c => typeof c === "string" && Object.hasOwn(RANK, c);
 const bodyBad = b => typeof b !== "string" || !b.trim() || b.length > LIMITS.maxBody || Buffer.byteLength(b) > 50000 || !b.isWellFormed() || b.includes("\0");
-const NAMES = "(?:[a-z0-9_.-]*(?:pass(?:word|wd|phrase)?|pwd|secret|token|api[_-]?key|apikey|credential)s?|pw)";
-const ASSIGN_RE = new RegExp("\\b" + NAMES + "[\"']?\\s*(?::|=>?|->)\\s*(?:\"([^\"\\n]{6,120})\"|'([^'\\n]{6,120})'|([^\\s\"',;)}\\]]{6,120}))", "gi");
-const hasSymbolOrDigit = v => /[\d@#$%^&*_+=\[\]{}|\\<>\/~`]/.test(v);
-/** NAME=value / "NAME": "value" where the value looks like a credential. Runs on normalised text (NFKC, hidden characters removed), like containsSecret. */
+// NAME = value detection. Names: password/passphrase/pwd/passwort/jelszo/kennwort, secret, token, credential, api key, access/secret/private/signing/encryption/auth/client/master key, short pw; with up to
+// three short prefix segments (db_password, client_secret, AWS_SECRET_ACCESS_KEY). camelCase is split first (secretKey -> secret_Key). The prefix is bounded and needs a separator, so the scan is linear in the text
+// and "bypass" / "compass" are not names.
+const NAME_CORE = "(?:pass(?:word|wd|phrase|wort)?|pwd|secret|token|credential|api[_-]?key|apikey|(?:access|secret|private|signing|encryption|auth|client|master)[_-]key|kennwort|jelsz[o\\u00f3])s?";
+const NAMES = "((?:[a-z0-9]{1,20}[_.-]){0,3}" + NAME_CORE + "(?![a-z])|pw(?![a-z]))";
+const VAL = "(?:\"([^\"\\n]{6,120})\"|'([^'\\n]{6,120})'|([^\\s\"',;)}\\]]{6,120}))";
+const ASSIGN_RE = new RegExp("(?<![A-Za-z0-9])" + NAMES + "[\"']?\\s*(?:(:)|(=>?|->)|\\s+(?:is|was)\\s+)\\s*" + VAL, "gi");
+const hasSymbol = v => /[@#$%^&*_+=\[\]{}|\\<>\/~`]/.test(v);
+/** Does the value after NAME look like a credential? "=" / "->" assignments are stricter than prose-like "name: value" and "name is value". */
+const credLike = (name, assign, v, rest) => {
+  if (hasSymbol(v)) return true;
+  const hasDigit = /\d/.test(v), hasLetter = /\p{L}/u.test(v);
+  if (hasDigit && hasLetter) return true;
+  if (hasDigit) return assign || (/pass|pwd/i.test(name) && v.length >= 6 && /^\d+$/.test(v));
+  if (!/\s/.test(v) && /^[A-Za-z]{10,}$/.test(v)) {
+    if (assign) return true;
+    return /pass|pwd|jelsz|kennwort/i.test(name) && !/^\s*\p{L}{2,}\b/u.test(rest);      // "Password: correcthorsebatterystaple" is a secret; "Password: requirements apply to all staff" is prose
+  }
+  return false;
+};
+/** NAME=value / "NAME": "value" where the value looks like a credential. Runs on normalised text (NFKC, look-alike letters folded, hidden characters removed), like containsSecret. */
 const assignsSecret = raw => {
-  const t = String(raw ?? "").normalize("NFKC").replace(/[\p{Cf}\u00ad]/gu, ""); ASSIGN_RE.lastIndex = 0;
-  for (const m of t.matchAll(ASSIGN_RE)) { const v = m[1] ?? m[2] ?? m[3] ?? ""; if (hasSymbolOrDigit(v) || (!/\s/.test(v) && /^[A-Za-z]{10,}$/.test(v))) return true; }
+  if (typeof raw !== "string" && raw != null) raw = String(raw);
+  const t = foldLookalikes(String(raw ?? "").normalize("NFKC").replace(/[\p{Cf}\u00ad]/gu, "")).replace(/([a-z0-9])([A-Z])/g, "$1_$2"); ASSIGN_RE.lastIndex = 0;
+  for (const m of t.matchAll(ASSIGN_RE)) {
+    const name = m[1] ?? "", bare = name.toLowerCase().replace(/^.*[_.-]/, ""), assign = Boolean(m[3]), v = m[4] ?? m[5] ?? m[6] ?? "";
+    if (!assign && /^pass$/i.test(bare)) continue;      // "Boarding pass: 2024-01-15" is prose; password/pwd/passphrase are not
+    if (credLike(name, assign, v, t.slice(m.index + m[0].length, m.index + m[0].length + 40))) return true;
+  }
   return false;
 };
 const sensitive = t => containsSecret(t) || assignsSecret(t);
@@ -41,7 +63,7 @@ const sha = t => crypto.createHash("sha256").update(t).digest("hex");
 const oneLine = (v, max) => typeof v === "string" && v.length <= max && v.isWellFormed() && !/[\u0000-\u001f\u007f\u2028\u2029\p{Cf}]/u.test(v);
 const memorySubject = (id, bodySha, extra = "") => "memory:" + id + ":" + bodySha.slice(0, 16) + extra;
 /** Subject of the owner approval for a retention sweep: bound to the exact set of notes, so an approval cannot be reused for a different set. */
-export const retentionSubject = ids => "retention:" + sha([...ids].sort().join(",")).slice(0, 24) + ":" + ids.length;
+export const retentionSubject = items => "retention:" + sha([...items].sort().join(",")).slice(0, 24) + ":" + items.length;      // items are "id:bodySha16" strings: an approval covers these exact texts
 export { memorySubject };
 
 // ---- local similarity vector: signed hashed word + character-trigram features, L2-normalised ----
@@ -136,7 +158,12 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
   // Last audited classification per note: a hand edit of the file can raise a class but never lower it (lowering needs the signed approval path).
   const floor = new Map(), flagged = new Map();
   const noteFloor = (id, cls) => { if (isClass(cls)) floor.set(id, cls); };
-  for (const e of audit.entries()) { const d = e.data ?? {}; if ((e.event === "MEMORY_WRITTEN" || e.event === "MEMORY_UPDATED") && ID_RE.test(String(d.id))) noteFloor(d.id, d.classification); }
+  // The floor follows the audit chain, which other processes (runtime / Control Center) also append to: re-read it whenever the index is brought up to date, so a signed declassify done elsewhere
+  // lowers the floor here and a hand edit still cannot.
+  let floorSeen = 0;
+  const refreshFloor = () => { try { audit.reload(); } catch { /* a tampered chain is reported by verify(); keep the floor we have */ } if (audit.length() === floorSeen) return; const es = audit.entries(); for (let i = floorSeen; i < es.length; i++) { const e = es[i], d = e.data ?? {}; if ((e.event === "MEMORY_WRITTEN" || e.event === "MEMORY_UPDATED") && ID_RE.test(String(d.id))) noteFloor(d.id, d.classification); } floorSeen = es.length; };
+  refreshFloor();
+  const auditNow = () => { try { audit.reload(); } catch (e) { return { ok: false, reason: String(e?.message ?? e).slice(0, 80) }; } return audit.verify(); };
   const fail = (reason, extra = {}) => ({ ok: false, reason, ...extra });
   const stopped = () => { try { return Boolean(isStopped()); } catch { return true; } };
   const stats = { searches: 0, hidden: 0 };
@@ -171,6 +198,7 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
   /** Bring the index in line with the files: new/changed files are (re)read, vanished ones removed, broken ones quarantined, hand edits recorded. */
   function sync(force = false) {
     const st = stampOf(); if (!force && st === dirStamp) return;
+    refreshFloor();
     const names = fs.readdirSync(notesDir).filter(n => n.endsWith(".md") && !n.includes(".tmp")), seen = new Set(); let changed = 0, total = recs.size;
     index.batch(() => { for (const n of names) {
       const file = path.join(notesDir, n), id = n.slice(0, -3);
@@ -292,6 +320,8 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
   /** Subject an owner approval for forgetting this note must carry (owner tooling only; the store object is never handed to agents). */
   function forgetSubject(id) { if (typeof id !== "string" || !ID_RE.test(id)) return null; syncRead(); const r = recs.get(id); return r ? { action: "MEMORY_FORGET", subject: memorySubject(id, r.bodySha) } : null; }
 
+  /** Subject for a retention sweep over these notes as they are now (owner tooling). Null if any id is unknown. */
+  function retentionSubjectFor(ids) { if (!Array.isArray(ids) || !ids.length || !ids.every(i => typeof i === "string" && ID_RE.test(i))) return null; syncRead(); const items = []; for (const i of ids) { const r = recs.get(i); if (!r) return null; items.push(i + ":" + r.bodySha.slice(0, 16)); } return retentionSubject(items); }
   /** Subject the owner approval for LOWERING this note's class must carry. */
   function declassifySubject(id, to) { if (typeof id !== "string" || !ID_RE.test(id) || !isClass(to)) return null; syncRead(); const r = recs.get(id); return r && RANK[to] < RANK[r.classification] ? { action: "MEMORY_DECLASSIFY", subject: memorySubject(id, r.bodySha, ":" + r.classification + ">" + to) } : null; }
 
@@ -303,14 +333,15 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
     try {
       return lock(() => {
         sync(); for (const id of ids) if (!recs.has(id)) return fail("NOT_FOUND");
-        const subject = retentionSubject(ids), v = ownerAuth.verifyApproval(ownerApproval, { action: "MEMORY_RETENTION_SWEEP", subject });
+        const subject = retentionSubject(ids.map(i => i + ":" + recs.get(i).bodySha.slice(0, 16))), v = ownerAuth.verifyApproval(ownerApproval, { action: "MEMORY_RETENTION_SWEEP", subject });
         if (!v.allowed) return fail("OWNER_APPROVAL_REQUIRED:" + v.reason, { subject });
-        const stamp = Date.now();
-        for (const id of ids) {
+        const stamp = Date.now(), moved = [];
+        audit.append("MEMORY_RETENTION_STARTED", { count: ids.length, ids, subject, nonce: v.nonce });      // intent first: an interrupted sweep leaves a trace
+        try { for (const id of ids) {
           fs.renameSync(path.join(notesDir, id + ".md"), path.join(trashDir, id + "." + stamp + ".md"));
           for (const n of fs.readdirSync(versionsDir).filter(x => x.startsWith(id + ".v"))) { try { fs.renameSync(path.join(versionsDir, n), path.join(trashDir, n + "." + stamp + ".old")); } catch { /* left */ } }
-          sidx?.remove(id);
-        }
+          sidx?.remove(id); moved.push(id);
+        } } catch (e) { try { audit.append("MEMORY_RETENTION_PARTIAL", { moved, failedAt: ids[moved.length] }); } catch { /* ignore */ } sync(); return fail("RETIRE_PARTIAL", { moved }); }
         audit.append("MEMORY_RETENTION_SWEPT", { count: ids.length, ids, subject, nonce: v.nonce }); try { sidx?.flush(); } catch { /* rebuilt by reindex */ }
         sync(); return { ok: true, retired: ids, note: "moved to the trash folder; the owner can restore a file by moving it back" };
       });
@@ -364,9 +395,10 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
   let sidx = null, lastSemErr = null, lastReindex = null;
   if (semanticProvider) { const fp = providerFingerprint(semanticProvider); sidx = createSemanticIndex({ file: path.join(dir, "semantic", fp + ".json"), fingerprint: fp, nowFn: () => Date.parse(nowFn()) || Date.now() }); }
   const embedText = (title, body) => (title + "\n" + body).slice(0, 4000);
+  const vkey = r => sha(r.title + "\u0000" + r.bodySha);      // a vector is fresh only for this exact title+body (a title-only edit makes it stale)
   function semanticStatus() {
     if (!semanticProvider) return { enabled: false, neural: false, reason: "NO_EMBEDDING_PROVIDER_CONFIGURED (lexical fallback in use)" };
-    syncRead(); const st = sidx.stats(); let fresh = 0; for (const r of recs.values()) if (sidx.has(r.id, r.bodySha)) fresh++;
+    syncRead(); sidx.refresh(); const st = sidx.stats(); let fresh = 0; for (const r of recs.values()) if (sidx.has(r.id, vkey(r))) fresh++;
     return { enabled: true, neural: isNeural(semanticProvider), providerKind: semanticProvider.kind, model: semanticProvider.model, vectors: st.vectors, dim: st.dim, coverage: recs.size ? Number((fresh / recs.size).toFixed(3)) : 1, notesMissingVectors: recs.size - fresh, indexFile: st.loadedFrom, staleModelFileIgnored: st.staleModelFileIgnored, lastError: lastSemErr, lastReindex };
   }
   /** Controlled (re)indexing: only notes without a fresh vector are embedded, in small batches, at most maxNotes per call. Vectors of vanished or changed notes are dropped. */
@@ -374,8 +406,8 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
     if (!semanticProvider) return fail("NO_EMBEDDING_PROVIDER_CONFIGURED");
     if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE");
     syncRead(true); const cap = Math.max(1, Math.min(LIMITS.maxNotes, Number.isInteger(maxNotes) ? maxNotes : 500));
-    const current = new Map([...recs.values()].map(r => [r.id, r.bodySha])); if (full) sidx.clear(); const pruned = sidx.prune(current);
-    const todo = [...recs.values()].filter(r => !sidx.has(r.id, r.bodySha)).slice(0, cap); let done = 0, failed = null;
+    sidx.refresh(); const current = new Map([...recs.values()].map(r => [r.id, vkey(r)])); if (full) sidx.clear(); const pruned = sidx.prune(current);
+    const todo = [...recs.values()].filter(r => !sidx.has(r.id, vkey(r))).slice(0, cap); let done = 0, failed = null;
     for (let i = 0; i < todo.length && !failed; i += 16) {
       if (stopped()) { failed = "OWNER_STOP_OR_SAFE_MODE_ACTIVE"; break; }
       const batch = todo.slice(i, i + 16), texts = [];
@@ -384,7 +416,7 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
       let vs; try { vs = await semanticProvider.embed(texts); } catch (e) { failed = String(e?.message ?? e).slice(0, 80); break; }
       if (!Array.isArray(vs) || vs.length !== batch.length) { failed = "EMBEDDING_COUNT_MISMATCH"; break; }
       syncRead();      // a note changed or forgotten while we were embedding must not get a stale vector
-      batch.forEach((r, j) => { const now = recs.get(r.id); if (now && now.bodySha === r.bodySha) { try { sidx.set(r.id, r.bodySha, vs[j]); done++; } catch (e) { failed = String(e?.message ?? e).slice(0, 80); } } });
+      batch.forEach((r, j) => { const now = recs.get(r.id); if (now && vkey(now) === vkey(r)) { try { sidx.set(r.id, vkey(r), vs[j]); done++; } catch (e) { failed = String(e?.message ?? e).slice(0, 80); } } });
     }
     try { sidx.flush(); } catch { failed ??= "INDEX_WRITE_FAILED"; }
     lastSemErr = failed; lastReindex = { at: nowFn(), embedded: done, pruned, pending: Math.max(0, todo.length - done), error: failed };
@@ -401,8 +433,8 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
     const degrade = reason => { lastSemErr = reason; return searchImpl(args, null, { used: false, reason, neural: false }); };
     let qv; try { [qv] = await semanticProvider.embed([query]); } catch (e) { return degrade("EMBEDDING_UNAVAILABLE:" + String(e?.message ?? e).slice(0, 60)); }
     if (!qv) return degrade("EMBEDDING_EMPTY");
-    syncRead(); const fresh = [];
-    for (const r of recs.values()) if (canSee(r, reader) && sidx.has(r.id, r.bodySha)) fresh.push(r.id);
+    syncRead(); sidx.refresh(); const fresh = [];
+    for (const r of recs.values()) if (canSee(r, reader) && sidx.has(r.id, vkey(r))) fresh.push(r.id);
     if (!fresh.length) return searchImpl(args, null, { used: false, reason: "NO_VECTORS_YET_RUN_REINDEX", neural: false });
     const hits = sidx.search(qv, fresh, 50).filter(h => h.score >= 0.2);
     return searchImpl(args, hits, { used: true, model: semanticProvider.model, neural: isNeural(semanticProvider), vectorsConsidered: fresh.length });
@@ -419,8 +451,8 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
     syncRead(true);
     let edited = 0, bad = 0, files = 0, mismatched = 0;
     for (const n of fs.readdirSync(notesDir).filter(x => x.endsWith(".md"))) { files++; const r = readNote(path.join(notesDir, n)); if (r.bad) bad++; else { if (r.edited) edited++; const kept = recs.get(r.rec.id); if (kept && kept.classification !== r.rec.classification) mismatched++; } }
-    return { ok: true, files, indexed: recs.size, externallyEdited: edited, unreadable: bad, classificationMismatch: mismatched, consistent: files === recs.size && bad === 0 && mismatched === 0, backend: index.backend, auditOk: audit.verify().ok };
+    return { ok: true, files, indexed: recs.size, externallyEdited: edited, unreadable: bad, classificationMismatch: mismatched, consistent: files === recs.size && bad === 0 && mismatched === 0, backend: index.backend, auditOk: auditNow().ok };
   }
   const status = () => { syncRead(); const c = {}; for (const r of recs.values()) c[r.classification] = (c[r.classification] ?? 0) + 1; return { backend: index.backend, notes: recs.size, byClassification: c, searches: stats.searches, hiddenAttempts: stats.hidden, quarantined: fs.readdirSync(quarDir).length, trashed: fs.readdirSync(trashDir).length, auditHead: audit.head(), semantic: semanticStatus() }; };
-  return { write, update, forget, forgetSubject, declassifySubject, retireBatch, get, list, search, searchAsync, reindexSemantic, semanticStatus, rebuildIndex, verify, status, auditVerify: () => audit.verify(), auditEntries: () => audit.entries(), close: () => index.close() };
+  return { write, update, forget, forgetSubject, declassifySubject, retentionSubjectFor, retireBatch, get, list, search, searchAsync, reindexSemantic, semanticStatus, rebuildIndex, verify, status, auditVerify: () => auditNow(), auditEntries: () => { try { audit.reload(); } catch { /* verify() reports it */ } return audit.entries(); }, close: () => index.close() };
 }

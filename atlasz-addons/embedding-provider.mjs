@@ -51,7 +51,7 @@ export function detectEmbeddingRuntime({ env = process.env, os: osImpl = os, exi
 }
 
 // ---------------------------------------------------------------------------- vector helpers
-export function normalise(v) { let s = 0; for (let i = 0; i < v.length; i++) s += v[i] * v[i]; const n = Math.sqrt(s); if (!(n > 0)) throw new Error("EMBEDDING_ZERO_VECTOR"); const o = new Float32Array(v.length); for (let i = 0; i < v.length; i++) o[i] = v[i] / n; return o; }
+export function normalise(v) { let s = 0; for (let i = 0; i < v.length; i++) s += v[i] * v[i]; const n = Math.sqrt(s); if (!(n > 0) || !Number.isFinite(n)) throw new Error("EMBEDDING_ZERO_VECTOR"); const o = new Float32Array(v.length); for (let i = 0; i < v.length; i++) { o[i] = v[i] / n; if (!Number.isFinite(o[i])) throw new Error("EMBEDDING_NOT_FINITE"); } return o; }      // checks the Float32 result too: 1e300 overflows when cast
 export const cosineSim = (a, b) => { let s = 0; const n = Math.min(a.length, b.length); for (let i = 0; i < n; i++) s += a[i] * b[i]; return s; };
 function validateVectors(raw, count, dim) {
   if (!Array.isArray(raw) || raw.length !== count) throw new Error("EMBEDDING_COUNT_MISMATCH");
@@ -106,7 +106,7 @@ export function activateOllama({ configFile, model, baseUrl = "http://127.0.0.1:
   const rec = { v: 1, provider: "ollama", model, baseUrl: u.origin, activatedAt: nowFn(), approvalNonce: v.nonce ?? null }, t = configFile + "." + crypto.randomBytes(4).toString("hex") + ".tmp";
   fs.mkdirSync(path.dirname(configFile), { recursive: true, mode: 0o700 }); fs.writeFileSync(t, JSON.stringify(rec), { mode: 0o600 }); fs.renameSync(t, configFile); return rec;
 }
-export function deactivateEmbedding({ configFile } = {}) { try { fs.unlinkSync(configFile); return { ok: true, removed: true }; } catch (e) { return { ok: true, removed: false }; } }
+export function deactivateEmbedding({ configFile } = {}) { try { fs.unlinkSync(configFile); return { ok: true, removed: true }; } catch (e) { return e?.code === "ENOENT" ? { ok: true, removed: false } : { ok: false, reason: "DEACTIVATE_FAILED:" + String(e?.code ?? "ERROR") }; } }
 export function readActivation(configFile) {
   try {
     const r = JSON.parse(fs.readFileSync(configFile, "utf8")); if (r?.v !== 1 || r.provider !== "ollama") return null;

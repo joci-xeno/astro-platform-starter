@@ -33,7 +33,8 @@ export const SECRET_KEY = /secret|passw|passphrase|api[_-]?key|private|credentia
 const HIDDEN = /[\p{Cf}­]/gu;
 const HOMO_FROM = "\u0430\u0435\u043e\u0440\u0441\u0445\u0456\u0443\u0455\u043a\u04bb\u0458\u0406\u0405\u0408\u0410\u0412\u0415\u041a\u041c\u041d\u041e\u0420\u0421\u0422\u0425\u03bf\u03b1\u03ba\u03c1\u03b9\u03bd\u03c5\u0391\u0392\u0395\u0396\u0397\u0399\u039a\u039c\u039d\u039f\u03a1\u03a4\u03a5\u03a7\u0131\u0475\u0585", HOMO_TO = "aeopcxiyskhjISJABEKMHOPCTXoakpivyABEZHIKMNOPTYXivo";
 const HOMO = Object.fromEntries([...HOMO_FROM].map((c, i) => [c, HOMO_TO[i]]));
-const fold = t => t.replace(new RegExp("[" + HOMO_FROM + "]", "g"), ch => HOMO[ch]);   // Cyrillic/Greek/Armenian look-alikes folded to Latin before matching
+const fold = t => t.replace(new RegExp("[" + HOMO_FROM + "]", "g"), ch => HOMO[ch]);
+export const foldLookalikes = fold;   // Cyrillic/Greek/Armenian look-alikes folded to Latin before matching
 /** Replace credential-shaped substrings with the marker. */
 export function scrub(s, marker = "[redacted]", { assign = true } = {}) {
   const orig = String(s ?? ""); let o = fold(orig.normalize("NFKC").replace(HIDDEN, "")), hit = false;     // hidden characters are removed only when a credential is actually found (otherwise the text is returned untouched)

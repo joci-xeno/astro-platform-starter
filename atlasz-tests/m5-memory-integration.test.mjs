@@ -50,7 +50,7 @@ test("store: retireBatch needs an owner approval bound to the exact set, moves t
   const d = tmp("m5-"), m = createMemoryStore({ dir: d, ownerAuth: auth() });
   try {
     const ids = [1, 2, 3].map(i => m.write({ authorId: E1, title: "n" + i, body: "note body number " + i + " unique", tags: [], classification: "PUBLIC" }).id);
-    const sub = retentionSubject(ids.slice(0, 2));
+    const sub = m.retentionSubjectFor(ids.slice(0, 2));
     assert.match(m.retireBatch(ids.slice(0, 2), {}).reason, /OWNER_APPROVAL_REQUIRED/); assert.equal(m.retireBatch(ids.slice(0, 2), {}).subject, sub);
     assert.match(m.retireBatch(ids, { ownerApproval: ap("MEMORY_RETENTION_SWEEP", sub) }).reason, /OWNER_APPROVAL_REQUIRED/);      // approval for another set
     assert.match(m.retireBatch(ids.slice(0, 2), { ownerApproval: ap("MEMORY_FORGET", sub) }).reason, /OWNER_APPROVAL_REQUIRED/);      // another action
@@ -248,7 +248,7 @@ test("agent memory: operational memory expires only through an owner-approved sw
   try {
     const a = e.am.forAgent(E1), ops = a.remember({ title: "Working note", body: "Temporary scratch about tiles.", kind: "ops", ttlDays: 7 }), lt = a.remember({ title: "Lasting", body: "Long term knowledge about tiles.", kind: "long" });
     assert.deepEqual(e.am.owner.retentionPreview().ids, []); clock += 8 * 86400_000;
-    const p = e.am.owner.retentionPreview(); assert.deepEqual(p.ids, [ops.id]); assert.equal(p.subject, retentionSubject([ops.id]));
+    const p = e.am.owner.retentionPreview(); assert.deepEqual(p.ids, [ops.id]); assert.equal(p.subject, e.store.retentionSubjectFor([ops.id]));
     assert.match(e.am.owner.retentionApply(null).reason, /OWNER_APPROVAL_REQUIRED/); assert.equal((await a.recall({ query: "tiles" })).results.length, 2);
     assert.equal(e.am.owner.retentionApply(ap("MEMORY_RETENTION_SWEEP", p.subject)).ok, true);
     assert.deepEqual((await a.recall({ query: "tiles" })).results.map(r => r.id), [lt.id]);
@@ -328,7 +328,7 @@ test("semantic: retention sweep drops vectors at once; a note edited while embed
   try {
     const ids = ["alpha body one", "beta body two"].map((b, i) => m.write({ authorId: E1, title: "t" + i, body: b, tags: [], classification: "PUBLIC" }).id);
     await m.reindexSemantic(); assert.equal(m.semanticStatus().vectors, 2);
-    assert.equal(m.retireBatch([ids[0]], { ownerApproval: ap("MEMORY_RETENTION_SWEEP", retentionSubject([ids[0]])) }).ok, true);
+    assert.equal(m.retireBatch([ids[0]], { ownerApproval: ap("MEMORY_RETENTION_SWEEP", m.retentionSubjectFor([ids[0]])) }).ok, true);
     assert.equal(m.semanticStatus().vectors, 1);      // before any reindex
     assert.equal(JSON.parse(JSON.parse(fs.readFileSync(path.join(d, "semantic", providerFingerprint(f) + ".json"), "utf8")).body).entries[ids[0]], undefined);      // and on disk
   } finally { m.close(); rm(d); }

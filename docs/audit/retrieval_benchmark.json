@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-10T16:37:12.805Z",
+  "generatedAt": "2026-10-10T17:15:53.498Z",
   "hardware": {
     "node": "22.22.0",
     "platform": "linux",
@@ -45,7 +45,7 @@
         "mrr": 0.909,
         "ndcgAtK": 0.909
       },
-      "medianLatencyMs": 0.85
+      "medianLatencyMs": 0.81
     },
     {
       "label": "TEST_FIXTURE toy embedder (plumbing only, NOT neural)",
@@ -69,7 +69,7 @@
         "mrr": 1,
         "ndcgAtK": 1
       },
-      "medianLatencyMs": 0.67
+      "medianLatencyMs": 0.71
     },
     {
       "label": "BM25 + n-gram (current default, NOT neural)",
@@ -93,7 +93,7 @@
         "mrr": 0.955,
         "ndcgAtK": 0.966
       },
-      "medianLatencyMs": 0.39
+      "medianLatencyMs": 0.44
     },
     {
       "label": "TEST_FIXTURE toy embedder (plumbing only, NOT neural)",
@@ -117,7 +117,7 @@
         "mrr": 1,
         "ndcgAtK": 1
       },
-      "medianLatencyMs": 0.74
+      "medianLatencyMs": 0.66
     },
     {
       "label": "NEURAL local model",
