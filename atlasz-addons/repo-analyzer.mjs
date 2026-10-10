@@ -104,7 +104,7 @@ export async function runRepoTests({ name, root, ownerAuth, ownerApproval = null
     results.push(await new Promise(resolve => {
       let out = "", done = false, timer, poll; const t0 = Date.now();
       const fin = r => { if (done) return; done = true; clearTimeout(timer); clearInterval(poll); fs.rmSync(scratch, { recursive: true, force: true }); resolve({ file: rel, durationMs: Date.now() - t0, ...r }); };
-      let child; try { child = spawn(rc.cmd, rc.args, { cwd: root, env: rc.env, stdio: ["ignore", "pipe", "pipe"], windowsHide: true }); } catch { return fin({ status: "ERROR", exitCode: null, output: "SPAWN_FAILED" }); }
+      let child; try { child = spawn(rc.cmd, rc.args, { cwd: root, env: rc.env, stdio: ["ignore", "pipe", "pipe"], detached: process.platform !== "win32", windowsHide: true }); } catch { return fin({ status: "ERROR", exitCode: null, output: "SPAWN_FAILED" }); }
       timer = setTimeout(() => { try { child.kill("SIGKILL"); } catch { /* gone */ } fin({ status: "TIMEOUT", exitCode: null, output: redactSecrets(out).slice(-LIMITS.outputChars) }); }, timeoutMs);
       poll = setInterval(() => { let st = true; try { st = Boolean(isStopped()); } catch { /* fail closed */ } if (st) { stoppedMid = true; try { child.kill("SIGKILL"); } catch { /* gone */ } fin({ status: "STOPPED", exitCode: null, output: redactSecrets(out).slice(-LIMITS.outputChars) }); } }, 100);
       const take = d => { if (out.length < LIMITS.outputChars * 4) out += d; };

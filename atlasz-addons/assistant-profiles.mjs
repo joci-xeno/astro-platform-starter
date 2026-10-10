@@ -56,7 +56,7 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
     const ver = { version: (cur?.nextVersion ?? 1), hash, definition: v.def, at: new Date(now()).toISOString(), how };
     const p = cur ?? (t.profiles[v.def.id] = { id: v.def.id, versions: [], nextVersion: 1 });
     p.versions.push(ver); p.nextVersion = ver.version + 1; if (p.versions.length > LIMITS.maxVersions) p.versions.splice(0, p.versions.length - LIMITS.maxVersions);
-    store.save(); markIfUsed(); return { ok: true, id: p.id, version: ver.version, hash };
+    store.save(); if (!markIfUsed()) return { ok: false, reason: "PROFILE_MARKER_NOT_WRITTEN" }; return { ok: true, id: p.id, version: ver.version, hash };
   }
   const create = (tenantId, inp) => save(tenantId, inp, "SAVE");
   function rollback(tenantId, id, version, { actor } = {}) {
@@ -66,7 +66,7 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
     if (hashOf(v.definition) !== v.hash) return { ok: false, reason: "STORED_VERSION_TAMPERED" };
     return save(tenantId, { ...clone(v.definition), actor: "OWNER" }, "ROLLBACK_TO_" + version);   // re-validated against today's grants, stored as a NEW version
   }
-  function remove(tenantId, id, { actor } = {}) { if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" }; if (!writable()) return { ok: false, reason: refusal }; const t = peek(tenantId); if (!t || typeof id !== "string" || !Object.hasOwn(t.profiles, id)) return { ok: false, reason: "PROFILE_NOT_FOUND" }; delete t.profiles[id]; store.save(); markIfUsed(); return { ok: true }; }
+  function remove(tenantId, id, { actor } = {}) { if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" }; if (!writable()) return { ok: false, reason: refusal }; const t = peek(tenantId); if (!t || typeof id !== "string" || !Object.hasOwn(t.profiles, id)) return { ok: false, reason: "PROFILE_NOT_FOUND" }; delete t.profiles[id]; store.save(); if (!markIfUsed()) return { ok: false, reason: "PROFILE_MARKER_NOT_WRITTEN" }; return { ok: true }; }
   const summary = p => { const v = p.versions.at(-1); return { id: p.id, name: v.definition.name, version: v.version, hash: v.hash, versions: p.versions.map(x => x.version), tools: v.definition.tools.length, skills: v.definition.skills.length, memoryScopes: v.definition.memoryScopes.length }; };
   const listAll = tenantId => Object.values(peek(tenantId)?.profiles ?? {}).map(summary);
   function get(tenantId, id) { const p = own(peek(tenantId)?.profiles, id); if (!p) return { ok: false, reason: "PROFILE_NOT_FOUND" }; const v = p.versions.at(-1); return { ok: true, profile: { ...summary(p), definition: clone(v.definition), history: p.versions.map(x => ({ version: x.version, hash: x.hash, at: x.at, how: x.how })) } }; }
@@ -91,16 +91,16 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
   /** Agent -> profile assignment (owner only; the 30 ids are the fixed roster, a profile never creates one). A profile can only NARROW what the owner's tool matrix already allows. */
   /** The marker records that a store existed and how many assignments it held, so a deleted OR emptied store can be told from one that never had assignments (the gate fails closed on both). */
   const assignedMap = dd => Object.fromEntries(Object.entries(dd.tenants ?? {}).flatMap(([tn, t]) => Object.entries(t?.assignments ?? {}).filter(([, v]) => v != null).map(([a, v]) => [tn + "/" + a, stampOf(t, v)])).sort());
-  const mark = () => { if (file) { try { const t = file + ".in-use.tmp"; fs.writeFileSync(t, JSON.stringify(assignedMap(d)), { mode: 0o600 }); fs.renameSync(t, file + ".in-use"); } catch { /* the gate then cannot tell a deleted store from a never-used one */ } } };      // atomic: a reader never sees half a marker
-  const markIfUsed = () => { if (file && (Object.keys(assignedMap(d)).length || fs.existsSync(file + ".in-use"))) mark(); };
+  const mark = () => { if (!file) return true; try { const t = file + ".in-use.tmp"; fs.rmSync(t, { recursive: true, force: true }); const fd = fs.openSync(t, "wx", 0o600); try { fs.writeSync(fd, JSON.stringify(assignedMap(d))); } finally { fs.closeSync(fd); } fs.renameSync(t, file + ".in-use"); return true; } catch { return false; } };      // a planted tmp entry is removed first and the new one is created exclusively (never through a symlink); a failure is REPORTED, not swallowed      // atomic: a reader never sees half a marker
+  const markIfUsed = () => (file && (Object.keys(assignedMap(d)).length || fs.existsSync(file + ".in-use"))) ? mark() : true;
   function assign(tenantId, agentId, profileId, { actor } = {}) {
     if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" };
     if (typeof agentId !== "string" || !roleOf(agentId)) return { ok: false, reason: "UNKNOWN_AGENT" };
     if (!writable()) return { ok: false, reason: refusal };
     const t = T(tenantId); t.assignments ??= {};
-    if (profileId === null) { delete t.assignments[agentId]; store.save(); mark(); return { ok: true, agentId, profileId: null }; }
+    if (profileId === null) { delete t.assignments[agentId]; store.save(); if (!mark()) return { ok: false, reason: "PROFILE_MARKER_NOT_WRITTEN" }; return { ok: true, agentId, profileId: null }; }
     if (typeof profileId !== "string" || !own(t.profiles, profileId)) return { ok: false, reason: "PROFILE_NOT_FOUND" };
-    t.assignments[agentId] = profileId; store.save(); mark(); return { ok: true, agentId, profileId };
+    t.assignments[agentId] = profileId; store.save(); if (!mark()) return { ok: false, reason: "PROFILE_MARKER_NOT_WRITTEN" }; return { ok: true, agentId, profileId };
   }
   const assignments = tenantId => { const a = peek(tenantId)?.assignments ?? {}; return Object.keys(a).sort().map(k => ({ agentId: k, profileId: a[k] })); };
   /** The gate used by the tool broker. No assignment -> unchanged behaviour. Assigned -> the tool must be in the profile's CURRENT, still-granted tool list.

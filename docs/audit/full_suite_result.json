@@ -1,9 +1,9 @@
 {
  "command": "npm test --prefix atlasz-runtime",
- "tests": 1077,
- "pass_": 1077,
+ "tests": 1083,
+ "pass_": 1083,
  "fail": 0,
  "cancelled": 0,
  "skipped": 0,
- "recorded": "2026-10-09 stage R6 (twelve independent verification rounds + fixes): 1077/1077 in one process; independent probes 52/52; all new R6 mutants killed (equivalent/defence-in-depth survivors documented)."
+ "recorded": "2026-10-09 stage R6 (thirteen independent verification rounds + fixes): 1083/1083 in one process; independent probes 52/52; all new R6 mutants killed (equivalent/defence-in-depth survivors documented)."
 }

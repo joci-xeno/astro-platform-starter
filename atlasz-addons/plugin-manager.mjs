@@ -125,10 +125,11 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
   const enableSubject = id => { const p = scan().found.get(id); if (!p || p.manifest.kind === "THEME" || p.manifest.kind === "SKIN") return null; const h = dirHash(p.dir); return h ? id + "#" + h : null; };
   function disable(id) { load(); if (unreadable) return STATE_BAD; if (!own(S.enabled, id)) return { ok: true, already: true }; const snap = structuredClone(S); delete S.enabled[id]; if (S.theme === id) S.theme = null; return commit("PLUGIN_DISABLED", { id }, snap); }
   function resetQuarantine(id, opts) {
-    if (typeof id !== "string") return { ok: false, reason: "PLUGIN_ID_INVALID" };
+    if (typeof id !== "string" || !/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(id) || id === "__proto__") return { ok: false, reason: "PLUGIN_ID_INVALID" };
     const { ownerApproval = null } = opts ?? {};
     load();
     if (unreadable) return STATE_BAD;
+    if (!own(S.health, id) && !scan().found.has(id)) return { ok: false, reason: "UNKNOWN_PLUGIN" };      // only a plugin that exists (or has a health record) can be reset
     const v = approve(ownerApproval, "PLUGIN_RESET_QUARANTINE", id); if (!v.allowed) return { ok: false, reason: "OWNER_APPROVAL_REQUIRED:" + v.reason };
     const snap = structuredClone(S), wasMem = memQuarantine.delete(id); S.health[id] = { failures: 0 }; const mf = memFails.get(id); memFails.delete(id); const rr = commit("PLUGIN_QUARANTINE_RESET", { id }, snap); if (!rr.ok) { if (wasMem) memQuarantine.add(id); if (mf !== undefined) memFails.set(id, mf); if (wasMem || mf !== undefined) load(); } return rr;
   }
@@ -171,7 +172,7 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
       const granted = own(S.enabled, id)?.permissions ?? [];
       const rc = restrictedNodeCommand({ nodeBin, script: path.join(p.dir, p.manifest.entry), readDirs: [p.dir], writeDirs: granted.includes("FILESYSTEM_PLUGIN_DIR") ? [p.dir] : [], allowNetwork: granted.includes("NETWORK"), requireNoNetwork: !granted.includes("NETWORK"), env: { ATLASZ_PLUGIN_ID: id, ATLASZ_PLUGIN_HOOK: String(hook) } });
       if (!rc.ok) { rec("PLUGIN_HOOK_NOT_RUN", { id, reason: rc.reason }); return finish({ ok: false, reason: rc.reason }); }
-      try { child = spawn(rc.cmd, rc.args, { cwd: p.dir, env: rc.env, stdio: ["pipe", "pipe", "pipe"], windowsHide: true }); }
+      try { child = spawn(rc.cmd, rc.args, { cwd: p.dir, env: rc.env, stdio: ["pipe", "pipe", "pipe"], detached: process.platform !== "win32", windowsHide: true }); }
       catch (e) { fail(id, "SPAWN_FAILED:" + e.message); return finish({ ok: false, reason: "SPAWN_FAILED" }); }
       timer = setTimeout(() => { child.kill("SIGKILL"); fail(id, "TIMEOUT"); finish({ ok: false, reason: "TIMEOUT" }); }, hookTimeoutMs);
       child.stdout.setEncoding("utf8"); child.stdout.on("data", d => { if (done) return; out += d; if (out.length > MAX_OUT) { child.kill("SIGKILL"); fail(id, "OUTPUT_TOO_LARGE"); finish({ ok: false, reason: "OUTPUT_TOO_LARGE" }); } });

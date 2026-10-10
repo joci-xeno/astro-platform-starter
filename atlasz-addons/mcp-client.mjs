@@ -91,7 +91,7 @@ export function createMcpClient({ stateDir, ownerAuth, nodeBin = process.execPat
     if (!v.allowed) return deny("MCP_START_REFUSED", "OWNER_APPROVAL_REQUIRED:" + v.reason, { id });
     const rc = restrictedNodeCommand({ nodeBin, script: path.join(s.dir, s.entry), readDirs: [s.dir], writeDirs: [], allowNetwork: false, requireNoNetwork: true, caps, env: { ATLASZ_MCP_SERVER_ID: id } });
     if (!rc.ok) return deny("MCP_START_REFUSED", rc.reason, { id });                 // SANDBOX_UNAVAILABLE / NETWORK_ISOLATION_UNAVAILABLE: fail closed, never run unrestricted
-    let child; try { child = spawn(rc.cmd, rc.args, { cwd: s.dir, env: rc.env, stdio: ["pipe", "pipe", "pipe"], windowsHide: true }); } catch { return deny("MCP_START_REFUSED", "SPAWN_FAILED", { id }); }
+    let child; try { child = spawn(rc.cmd, rc.args, { cwd: s.dir, env: rc.env, stdio: ["pipe", "pipe", "pipe"], detached: process.platform !== "win32", windowsHide: true }); } catch { return deny("MCP_START_REFUSED", "SPAWN_FAILED", { id }); }
     const sess = { id, child, seq: 0, pending: new Map(), buf: "", badLines: 0, ignored: 0, dead: false, tools: [], dropped: [], hash: h.hash, startedAt: now() };
     const die = why => { if (sess.dead) return; sess.dead = true; for (const f of [...sess.pending.values()]) f({ ok: false, reason: why }); live.delete(id); try { child.kill("SIGKILL"); } catch { /* gone */ } audit.append("MCP_SERVER_STOPPED", { id, why }); };
     sess.die = die;

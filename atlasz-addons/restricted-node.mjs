@@ -20,8 +20,8 @@ export function detectNodeRestrictions(nodeBin = process.execPath, { fresh = fal
   if (!fresh && cache.has(nodeBin)) return cache.get(nodeBin);
   const env = baseEnv({});
   const permission = probe(nodeBin, ["--permission", "-e", "0"], env);
-  const namespace = permission && !IS_WIN && process.platform === "linux" && probe("unshare", ["--user", "--map-root-user", "--net", "--pid", "--fork", "--kill-child", "true"]);
-  const pidNamespace = permission && !IS_WIN && process.platform === "linux" && probe("unshare", ["--user", "--map-root-user", "--pid", "--fork", "--kill-child", "true"]);      // PID namespace WITHOUT a network namespace: for plugins that were granted NETWORK
+  const namespace = permission && !IS_WIN && process.platform === "linux" && probe("unshare", ["--user", "--map-root-user", "--net", "--pid", "--fork", "--kill-child", "setsid", "--wait", "true"]);
+  const pidNamespace = permission && !IS_WIN && process.platform === "linux" && probe("unshare", ["--user", "--map-root-user", "--pid", "--fork", "--kill-child", "setsid", "--wait", "true"]);      // PID namespace WITHOUT a network namespace: for plugins that were granted NETWORK
   const r = { permission, namespace, pidNamespace, platform: process.platform };
   cache.set(nodeBin, r); return r;
 }
@@ -38,6 +38,7 @@ const norm = d => String(d);
  */
 export function restrictedNodeCommand({ nodeBin = process.execPath, script, scriptArgs = [], readDirs = [], writeDirs = [], env = {}, allowNetwork = false, requireNoNetwork = false, nodeFlags = [], caps = null } = {}) {
   if (!script) return { ok: false, reason: "SCRIPT_REQUIRED" };
+  if (typeof script !== "string" || script.startsWith("-")) return { ok: false, reason: "SCRIPT_INVALID" };      // a script path that starts with "-" would be read as a node option
   const c = caps ?? detectNodeRestrictions(nodeBin);
   if (!c.permission) return { ok: false, reason: "SANDBOX_UNAVAILABLE" };
   const wantNetBlock = !allowNetwork;
@@ -45,6 +46,6 @@ export function restrictedNodeCommand({ nodeBin = process.execPath, script, scri
   const args = ["--permission", ...[...new Set([script, ...readDirs])].map(d => "--allow-fs-read=" + norm(d)), ...[...new Set(writeDirs)].map(d => "--allow-fs-write=" + norm(d)), ...nodeFlags, script, ...scriptArgs];
   const useNs = wantNetBlock && c.namespace;
   const usePid = !useNs && allowNetwork && Boolean(c.pidNamespace);      // network granted: the host stays reachable on the network, but its processes are still invisible (it cannot signal them)
-  const out = useNs ? { cmd: "unshare", args: ["--user", "--map-root-user", "--net", "--pid", "--fork", "--kill-child", nodeBin, ...args] } : usePid ? { cmd: "unshare", args: ["--user", "--map-root-user", "--pid", "--fork", "--kill-child", nodeBin, ...args] } : { cmd: nodeBin, args };
+  const out = useNs ? { cmd: "unshare", args: ["--user", "--map-root-user", "--net", "--pid", "--fork", "--kill-child", "setsid", "--wait", nodeBin, ...args] } : usePid ? { cmd: "unshare", args: ["--user", "--map-root-user", "--pid", "--fork", "--kill-child", "setsid", "--wait", nodeBin, ...args] } : { cmd: nodeBin, args };
   return { ok: true, ...out, env: baseEnv(env), level: useNs ? "PERMISSION+NETWORK_NAMESPACE" : usePid ? "PERMISSION+PID_NAMESPACE" : "PERMISSION", networkBlocked: useNs, filesystemRestricted: true };
 }
