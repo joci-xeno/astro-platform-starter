@@ -205,9 +205,12 @@ export function createCoordinator({ dir, tenantId = "JOCI", ledger = null, isSto
   function withdrawDelegation(who, id, reason = "") { if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const r = led.rescind(tenantId, id, { by: who, reason }); if (r.ok) { bump(id); S.counters.rescinded++; log("DELEGATION_WITHDRAWN", { id, by: who }); save(); } return r; }
   function accept(who, id, received) { if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const r = led.accept(tenantId, id, { agent: who, received }); if (r.ok) { bump(id); heartbeat(who); log("TASK_ACCEPTED", { id, by: who }); save(); } return r; }
   function reject(who, id, reason) { if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const r = led.rejectHandoff(tenantId, id, { agent: who, reason }); if (r.ok) { bump(id); log("HANDOFF_REJECTED", { id, by: who }); save(); } return r; }
+  /** Heartbeat times must be real numbers and never later than "now" (a clock that jumped backwards or a damaged state file must not blind stall detection). */
+  function sanitiseBeats(now) { for (const k of Object.keys(S.beats)) { const v = S.beats[k]; if (!Number.isFinite(v)) delete S.beats[k]; else if (v > now) S.beats[k] = now; } if (S.lastAliveAt !== undefined && S.lastAliveAt !== null && !Number.isFinite(S.lastAliveAt)) S.lastAliveAt = null; else if (S.lastAliveAt > now) S.lastAliveAt = now; }
   function complete(who, id, resultSha256) {
     if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const r = led.complete(tenantId, id, { agent: who, resultSha256 }); if (!r.ok) return r;
-    bump(id); log("TASK_SUBMITTED", { id, by: who, resultSha256 }); assignVerifier(id); heartbeat(who); save(); return r;
+    bump(id); log("TASK_SUBMITTED", { id, by: who, resultSha256 }); assignVerifier(id); heartbeat(who); save();
+    const now = task(id); if (now && now.status === "FAILED") return fail("NO_CHECKER_AVAILABLE", { abandoned: true }); return r;      // the submission stands in the ledger but the maker is told the task could not be checked
   }
   /** The coordinator (not the maker) picks the checker: a roster agent of the right team that never owned the task, never already failed to check it, and carries the least duty (owned tasks + checks assigned). */
   function assignVerifier(id) {
@@ -294,14 +297,14 @@ export function createCoordinator({ dir, tenantId = "JOCI", ledger = null, isSto
   // ------------------------------------------------------------------ recovery and stalled work (coordinator only)
   function recover() {
     let subs = 0; for (const s of Object.values(S.subs)) if (s.status === "ACTIVE") { s.status = "RECOVERED_EXPIRED"; delete S.mail[s.id]; subs++; }
-    const pruned = gc(), rows = led.list(tenantId, {}); { const now = nowFn(), down = Number.isFinite(S.lastAliveAt) ? Math.max(0, now - S.lastAliveAt) : null; for (const k of Object.keys(S.beats)) S.beats[k] = down === null ? now : Math.min(now, S.beats[k] + down); S.lastAliveAt = now; }      // the time nobody could run is credited back (real downtime must not look like a stall); time the process was up and an owner stayed silent still counts, so frequent restarts cannot hide a stall. A state without lastAliveAt (older file) gets a full reset once
+    const pruned = gc(), rows = led.list(tenantId, {}); { const now = nowFn(); sanitiseBeats(now); const down = Number.isFinite(S.lastAliveAt) ? Math.max(0, now - S.lastAliveAt) : null; for (const k of Object.keys(S.beats)) S.beats[k] = down === null ? now : Math.min(now, S.beats[k] + down); S.lastAliveAt = now; }      // the time nobody could run is credited back (real downtime must not look like a stall); time the process was up and an owner stayed silent still counts, so frequent restarts cannot hide a stall. A state without lastAliveAt (older file) gets a full reset once
     const resumable = rows.filter(x => x.status === "IN_PROGRESS" || x.status === "ASSIGNED").map(x => ({ id: x.id, owner: x.owner, checkpoint: (own(S.checkpoints, x.id) ?? []).at(-1)?.n ?? null }));
     S.counters.recovered++; log("COORDINATION_RECOVERED", { subsExpired: subs, resumable: resumable.length, pruned, loadedFrom }); save();
     return { ok: true, loadedFrom, subsExpired: subs, pruned, resumable, pendingVerification: rows.filter(x => x.status === "VERIFYING").map(x => x.id) };
   }
   /** Coordinator sweep: work whose owner went quiet is reassigned; a handoff nobody answers is withdrawn; a check nobody performs moves to another checker. */
   function reclaimStalled({ olderThanMs = 600_000 } = {}) {
-    if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const t = nowFn(), out = { reassigned: [], rescinded: [], reverifier: [], abandoned: [] }; S.lastAliveAt = t;
+    if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const t = nowFn(), out = { reassigned: [], rescinded: [], reverifier: [], abandoned: [] }; sanitiseBeats(t); S.lastAliveAt = t;
     for (const x of led.list(tenantId, {})) {
       const k = task(x.id); if (!k) continue;
       if (x.status === "IN_PROGRESS" || x.status === "ASSIGNED") {

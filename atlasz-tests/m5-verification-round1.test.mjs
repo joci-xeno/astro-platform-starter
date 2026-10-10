@@ -187,7 +187,7 @@ test("M4 round 3 #1: a task whose whole team already owned it is abandoned inste
     S(1).register({ id: "lead1", kind: "search.leads", payload: 1 }); S(1).start("lead1");
     for (const [from, to] of [[1, 2], [2, 3], [3, 4]]) { const r = S(from).delegate("lead1", { to: "SEARCH-" + to, artifacts: art("a" + from) }); assert.equal(r.ok, true, JSON.stringify(r)); assert.equal(S(to).accept("lead1", art("a" + from)).ok, true); }
     clock.t += 700_000; S(1).heartbeat(); const rc = c.reclaimStalled({ olderThanMs: 600_000 }).reassigned; assert.equal(rc.length, 1); assert.equal(rc[0].to, "SEARCH-5");      // every SEARCH agent has now owned it
-    const done = S(5).complete("lead1", H("r")); assert.equal(done.ok, true, JSON.stringify(done));
+    const done = S(5).complete("lead1", H("r")); assert.equal(done.ok, false, "the maker is told the task could not be checked"); assert.equal(done.reason, "NO_CHECKER_AVAILABLE");
     assert.equal(c.verifierOf("lead1"), null); assert.equal(c.ledger.get("JOCI", "lead1").task.status, "FAILED"); assert.equal(c.summary().counters.abandoned, 1);
   } finally { rm(d); }
 });

@@ -96,9 +96,10 @@ test("memory panel: retention preview lists only expired operational notes and t
     await c.key(); const { store, am } = c.open({ ageDays: 40 }); let old, lasting;
     try { const a = am.forAgent(E1); old = a.remember({ title: "Scratch", body: "Scratch note about bay 4.", kind: "ops", ttlDays: 7 }); lasting = a.remember({ title: "Kept", body: "Long term note about bay 5.", kind: "long" }); am.forAgent(E2).remember({ title: "Young", body: "Operational note with a long expiry.", kind: "ops", ttlDays: 365 }); } finally { store.close(); }
     const v = await c.view(); assert.deepEqual(v.retention.ids, [old.id]); assert.equal(v.retention.action, "MEMORY_RETENTION_SWEEP"); assert.match(v.retention.subject, /^retention:[0-9a-f]{24}:1$/);
-    assert.equal((await c.act({ op: "retentionApply", passphrase: "wrong" })).status, 400); assert.equal((await c.view()).store.notes, 3);
-    assert.equal((await c.act({ op: "retentionApply" })).status, 400);
-    const r = await c.act({ op: "retentionApply", passphrase: PW }); assert.deepEqual(r.result.retired, [old.id]);
+    assert.equal((await c.act({ op: "retentionApply", passphrase: "wrong", subject: v.retention.subject })).status, 400); assert.equal((await c.view()).store.notes, 3);
+    assert.equal((await c.act({ op: "retentionApply", subject: v.retention.subject })).status, 400);
+    assert.equal((await c.act({ op: "retentionApply", passphrase: PW })).status, 400, "no reviewed subject: nothing is swept"); assert.equal((await c.act({ op: "retentionApply", passphrase: PW, subject: "retention:" + "0".repeat(24) + ":1" })).status, 400); assert.equal((await c.view()).store.notes, 3);
+    const r = await c.act({ op: "retentionApply", passphrase: PW, subject: v.retention.subject }); assert.deepEqual(r.result.retired, [old.id]);
     const after = await c.view(); assert.equal(after.store.notes, 2); assert.deepEqual(after.retention.ids, []); assert.ok(after.notes.some(n => n.id === lasting.id));
     assert.ok(after.accessLog.some(e => e.event === "MEMORY_RETENTION_APPLIED"));
     assert.deepEqual((await c.act({ op: "retentionApply", passphrase: PW })).result, { ok: true, retired: [] });      // nothing expired: no signature spent, no fake success count

@@ -1,5 +1,5 @@
 milestone,package,requirement_id,relation,status_before,status_after,evidence,remaining
-M3,original85,M02,ADVANCES,PARTIAL,PARTIAL,"memory-store.mjs: Markdown notes + FTS5 + classification; m3-memory-store.test.mjs (46); verifier rounds 1-4","semantic (embedding) retrieval blocked on owner approval; verifier round-5 pending"
+M3,original85,M02,ADVANCES,PARTIAL,PARTIAL,"memory-store.mjs: Markdown notes + FTS5 + classification; m3-memory-store.test.mjs (46); verifier rounds 1-5 (round-5 findings fixed, round 6 pending)","semantic (embedding) retrieval blocked on owner approval; not accepted until round 6 is clean"
 M3,original85,C07,ADVANCES,PARTIAL,PARTIAL,"memory-store.mjs project/tenant-scoped notes; agent-memory.mjs scopes (M5)","project dashboards; cross-session task resumption beyond checkpoints"
 M3,original85,A05,ADVANCES,PARTIAL,PARTIAL,"agent-visible text memory with classification + forget","multimodal memory (observation-memory only metadata)"
 M3,original85,P19,ADVANCES,PARTIAL,PARTIAL,"agent recall through agent-memory handles; fenced untrusted results","object recall from media"

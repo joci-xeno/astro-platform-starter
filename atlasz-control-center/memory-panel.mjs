@@ -52,9 +52,9 @@ export function createMemoryPanel({ stateDir, ownerAuth, sign, fetchImpl = globa
       }
       case "approveForget": { const id = need(a.id, "ID"), sub = store.forgetSubject(id); if (!sub) throw new Error("NOT_FOUND"); return am.owner.approveForget(id, approve(a.passphrase, sub.action, sub.subject)); }
       case "rejectForget": return am.owner.rejectForget(need(a.id, "ID"));
-      case "forget": { const id = need(a.id, "ID"), sub = store.forgetSubject(id); if (!sub) throw new Error("NOT_FOUND"); return store.forget(id, { ownerApproval: approve(a.passphrase, sub.action, sub.subject) }); }
+      case "forget": { const id = need(a.id, "ID"), sub = store.forgetSubject(id); if (!sub) throw new Error("NOT_FOUND"); return am.owner.forgetNow(id, approve(a.passphrase, sub.action, sub.subject)); }
       case "declassify": { const id = need(a.id, "ID"), sub = store.declassifySubject(id, a.to); if (!sub) throw new Error("NOT_A_LOWERING_OR_NOT_FOUND"); return store.update(id, { authorId: "OWNER", clearance: "CONFIDENTIAL", classification: a.to }, { ownerApproval: approve(a.passphrase, sub.action, sub.subject) }); }
-      case "retentionApply": { const p = am.owner.retentionPreview(); if (!p.ok) return p; if (!p.ids.length) return { ok: true, retired: [] }; return am.owner.retentionApply(approve(a.passphrase, p.action, p.subject)); }
+      case "retentionApply": { const p = am.owner.retentionPreview(); if (!p.ok) return p; if (!p.ids.length) return { ok: true, retired: [] }; if (typeof a.subject !== "string" || a.subject !== p.subject) throw new Error("REVIEWED_SET_CHANGED"); return am.owner.retentionApply(approve(a.passphrase, p.action, p.subject), { subject: a.subject }); }
       case "rebuildIndex": return store.rebuildIndex({ reason: "OWNER_CONTROL_CENTER" });
       case "verify": return store.verify();
       case "reindexSemantic": return store.reindexSemantic({ maxNotes: a.maxNotes ?? 200, full: a.full === true });

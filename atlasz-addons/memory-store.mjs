@@ -27,37 +27,73 @@ const ID_RE = /^[0-9a-f]{16}$/, AGENT_RE = /^[A-Za-z0-9_.:-]{1,40}$/, TENANT_RE 
 const KEYS = ["id", "title", "tags", "classification", "tenant", "author", "source", "createdAt", "updatedAt", "version", "bodySha"];
 const isClass = c => typeof c === "string" && Object.hasOwn(RANK, c);
 const bodyBad = b => typeof b !== "string" || !b.trim() || b.length > LIMITS.maxBody || Buffer.byteLength(b) > 50000 || !b.isWellFormed() || b.includes("\0");
-// NAME = value detection. Names: password/passphrase/pwd/passwort/jelszo/kennwort, secret, token, credential, api key, access/secret/private/signing/encryption/auth/client/master key, short pw; with up to
-// three short prefix segments (db_password, client_secret, AWS_SECRET_ACCESS_KEY). camelCase is split first (secretKey -> secret_Key). The prefix is bounded and needs a separator, so the scan is linear in the text
-// and "bypass" / "compass" are not names.
-const NAME_CORE = "(?:pass(?:word|wd|phrase|wort)?|pwd|secret|token|credential|api[_-]?key|apikey|(?:access|secret|private|signing|encryption|auth|client|master)[_-]key|kennwort|jelsz[o\\u00f3])s?";
-const NAMES = "((?:[a-z0-9]{1,20}[_.-]){0,3}" + NAME_CORE + "(?![a-z])|pw(?![a-z]))";
-const VAL = "(?:\"([^\"\\n]{6,120})\"|'([^'\\n]{6,120})'|([^\\s\"',;)}\\]]{6,120}))";
-const ASSIGN_RE = new RegExp("(?<![A-Za-z0-9])" + NAMES + "[\"']?\\s*(?:(:)|(=>?|->)|\\s+(?:is|was)\\s+)\\s*" + VAL, "gi");
-const hasSymbol = v => /[@#$%^&*_+=\[\]{}|\\<>\/~`]/.test(v);
-/** Does the value after NAME look like a credential? "=" / "->" assignments are stricter than prose-like "name: value" and "name is value". */
-const credLike = (name, assign, v, rest) => {
-  if (hasSymbol(v)) return true;
-  const hasDigit = /\d/.test(v), hasLetter = /\p{L}/u.test(v);
-  if (hasDigit && hasLetter) return true;
-  if (hasDigit) return assign || (/pass|pwd/i.test(name) && v.length >= 6 && /^\d+$/.test(v));
-  if (!/\s/.test(v) && /^[A-Za-z]{10,}$/.test(v)) {
-    if (assign) return true;
-    return /pass|pwd|jelsz|kennwort/i.test(name) && !/^\s*\p{L}{2,}\b/u.test(rest);      // "Password: correcthorsebatterystaple" is a secret; "Password: requirements apply to all staff" is prose
+// NAME = value detection. Names: password/passphrase/passcode/pwd/psw/pin/passwort/jelszo/kennwort/contrasena, secret, token, credential(s)/creds, api key (also "api key"), access/secret/private/signing/encryption/auth/client/master/ssh/license key,
+// with up to three short prefix segments (db_password, client_secret, AWS_SECRET_ACCESS_KEY) or a known prefix glued on (DBPASSWORD, AUTHTOKEN), and a suffix (password1, password_prod, SECRET_KEY_BASE, "password for admin").
+// camelCase is split, combining accents and look-alike letters are folded, Markdown decoration is removed (checked both ways). Every part is length-bounded so the scan stays linear ("bypass" / "compass" are not names).
+const NAME_CORE = "(?:pass(?:word|wd|phrase|wort|code)?|pass[ _-]word|pwd|psw|pw|pin(?:code)?|secret|token|credentials?|creds|api[ _-]?key|apikey|(?:access|secret|private|signing|encryption|auth|client|master|ssh|license|licence)[ _-]key|kennwort|jelszo|contrasena|clave|titkos(?:kulcs)?)s?";
+const PREFIX = "(?:(?:[a-z0-9]{1,20}[_.-]){1,3}|(?:db|auth|api|user|admin|root|app|jwt|bearer|session|refresh|access|oauth|mysql|pg|redis|aws|ssh|vpn|wifi|smtp|login|master|service|site|sql)(?=pass|pwd|psw|secret|token|cred|key|pin))";
+const SUFFIX = "(?:\\d{1,4}|(?:[_.-][a-z0-9]{1,15}){1,3}|(?:[ \\t]{1,20}[a-z]{2,12}){1,3})?";
+const NAMES = "(?<pre>" + PREFIX + ")?(?<core>" + NAME_CORE + ")(?<suf>" + SUFFIX + ")";
+const VAL = "(?:\"([^\"\\n]{4,2000})\"|'([^'\\n]{4,2000})'|([^\\s\"')}\\]]{4,300}))";
+const ASSIGN_RE = new RegExp("(?<![A-Za-z0-9])" + NAMES + "[\"'\\])]?[ \\t]{0,20}(?:(?<colon>:|\\|)|(?<eq>=>?|->)|[ \\t]+(?:is|was)[ \\t]+)\\s{0,50}" + VAL, "gi");
+const PASSY = /pass|pwd|psw|pw|pin|jelsz|kennwort|contrasena|titkos/i;
+const PLACEHOLDER = /^(?:true|false|null|none|nil|undefined|empty|unset|todo|tbd|n\/a|yes|no)$/i;
+const STRONG_SYM = /[@#$%^&*+\[\]{}|\\<>~`!]/;
+const hasSymbol = v => /[@#$%^&*_+=\[\]{}|\\<>\/~`!]/.test(v);
+const looksStructural = v => /^v?\d+(?:\.\d+)+/.test(v) || /^\d{4}-\d{2}-\d{2}/.test(v) || /^[a-z][a-z0-9+.-]*:\/\//i.test(v);
+/** Does the value after NAME look like a credential? "=" / "->" assignments are strict; prose-like "name: value" and "name is value" are checked more carefully (letters-only words, versions, dates and URLs are not credentials). */
+const credLike = (name, assign, v, rest, quoted) => {
+  v = v.replace(/[.,;:?]+$/, ""); if (v.length < 4 || PLACEHOLDER.test(v) || /^\[redacted/i.test(v)) return false;      // already redacted
+  const passy = PASSY.test(name), hasDigit = /\d/.test(v), hasLetter = /\p{L}/u.test(v);
+  if (assign) return true;
+  if (quoted && passy && v.length >= 8) return true;      // a quoted passphrase of several words
+  if (v.length < 6) return false;
+  if (passy) {
+    if (hasSymbol(v) || (hasDigit && hasLetter)) return true;
+    if (hasDigit) return /^\d+$/.test(v);
+    return !/\s/.test(v) && /^[A-Za-z]{10,}$/.test(v) && !/^\s*\p{L}{2,}\b/u.test(rest);      // "Password: correcthorsebatterystaple" is a secret; "Password: requirements apply to all staff" is prose
   }
-  return false;
+  if (looksStructural(v)) return false;
+  if (STRONG_SYM.test(v) && !/\s/.test(v)) return true;
+  if (/^[A-Za-z0-9]+$/.test(v)) return hasDigit && hasLetter;
+  const d = (v.match(/\d/g) || []).length, l = (v.match(/\p{L}/gu) || []).length;
+  return v.length >= 16 && d >= 3 && l >= 3 && !/\s/.test(v);
 };
-/** NAME=value / "NAME": "value" where the value looks like a credential. Runs on normalised text (NFKC, look-alike letters folded, hidden characters removed), like containsSecret. */
-const assignsSecret = raw => {
-  if (typeof raw !== "string" && raw != null) raw = String(raw);
-  const t = foldLookalikes(String(raw ?? "").normalize("NFKC").replace(/[\p{Cf}\u00ad]/gu, "")).replace(/([a-z0-9])([A-Z])/g, "$1_$2"); ASSIGN_RE.lastIndex = 0;
+/** Text as the filter sees it: NFKC, hidden characters removed, combining accents and look-alike letters folded, camelCase split. */
+const norm = raw => foldLookalikes(String(raw ?? "").normalize("NFKC").normalize("NFD").replace(/[\p{Cf}\u00ad\p{M}]/gu, ""));
+const camel = t => t.replace(/([a-z0-9])([A-Z])/g, "$1_$2");      // secretKey -> secret_Key (checked in addition to the unsplit text, because it would also cut a value like Ab12cd34Ef56)
+const views = raw => { const t = norm(raw), c = camel(t); return [t, deco(t), c, deco(c)]; };
+const deco = t => t.replace(/[*`~]/g, "").replace(/(?<![A-Za-z0-9])_+(?=[A-Za-z])|(?<=[A-Za-z0-9])_{2,}(?![A-Za-z0-9])/g, "");
+function* credentialAssignments(t) {
   for (const m of t.matchAll(ASSIGN_RE)) {
-    const name = m[1] ?? "", bare = name.toLowerCase().replace(/^.*[_.-]/, ""), assign = Boolean(m[3]), v = m[4] ?? m[5] ?? m[6] ?? "";
-    if (!assign && /^pass$/i.test(bare)) continue;      // "Boarding pass: 2024-01-15" is prose; password/pwd/passphrase are not
-    if (credLike(name, assign, v, t.slice(m.index + m[0].length, m.index + m[0].length + 40))) return true;
+    const g = m.groups, name = ((g.pre ?? "") + g.core + (g.suf ?? "")).toLowerCase(), assign = Boolean(g.eq), q = m[m.length - 3] !== undefined || m[m.length - 2] !== undefined;
+    const v = m[m.length - 3] ?? m[m.length - 2] ?? m[m.length - 1] ?? "";
+    if (!assign && /^pass$/i.test(g.core) && !g.suf) continue;      // "Boarding pass: 2024-01-15" is prose; password/pwd/passphrase are not
+    if (!assign && /^pins?$/i.test(g.core) && !/^\d{4,8}$/.test(v.replace(/[.,;:!?]+$/, ""))) continue;
+    if (credLike(name, assign, v, t.slice(m.index + m[0].length, m.index + m[0].length + 40), q)) yield { index: m.index, value: v };
   }
+}
+/** NAME=value / "NAME": "value" where the value looks like a credential. Runs on normalised text like containsSecret. */
+const assignsSecret = raw => {
+  if (String(raw ?? "").length > 400000) return true;
+  for (const x of views(raw)) for (const _ of credentialAssignments(x)) return true;
   return false;
 };
+/** The text with credential-looking assignment values replaced (after scrub). For places that redact instead of refusing. */
+export const redactAssignments = (raw, marker = "[redacted]") => {
+  let out = scrub(String(raw ?? ""), marker);
+  for (let round = 0; round < 6; round++) {      // each view can reveal assignments the others do not (decoration, camelCase); repeat until nothing more is found
+    let changed = false;
+    for (const x of views(out)) {
+      const hits = [...credentialAssignments(x)]; if (!hits.length) continue; let r = "", pos = 0;
+      for (const h of hits) { if (h.index < pos) continue; const at = x.indexOf(h.value, h.index); if (at < 0) continue; r += x.slice(pos, at) + marker; pos = at + h.value.length; }
+      out = r + x.slice(pos); changed = true; break;
+    }
+    if (!changed) break;
+  }
+  return out;
+};
+export { assignsSecret };
 const sensitive = t => containsSecret(t) || assignsSecret(t);
 const sha = t => crypto.createHash("sha256").update(t).digest("hex");
 const oneLine = (v, max) => typeof v === "string" && v.length <= max && v.isWellFormed() && !/[\u0000-\u001f\u007f\u2028\u2029\p{Cf}]/u.test(v);
@@ -341,7 +377,7 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
           fs.renameSync(path.join(notesDir, id + ".md"), path.join(trashDir, id + "." + stamp + ".md"));
           for (const n of fs.readdirSync(versionsDir).filter(x => x.startsWith(id + ".v"))) { try { fs.renameSync(path.join(versionsDir, n), path.join(trashDir, n + "." + stamp + ".old")); } catch { /* left */ } }
           sidx?.remove(id); moved.push(id);
-        } } catch (e) { try { audit.append("MEMORY_RETENTION_PARTIAL", { moved, failedAt: ids[moved.length] }); } catch { /* ignore */ } sync(); return fail("RETIRE_PARTIAL", { moved }); }
+        } } catch (e) { try { audit.append("MEMORY_RETENTION_PARTIAL", { moved, failedAt: ids[moved.length] }); } catch { /* ignore */ } try { sidx?.flush(); } catch { /* rebuilt by reindex */ } sync(); return fail("RETIRE_PARTIAL", { moved }); }
         audit.append("MEMORY_RETENTION_SWEPT", { count: ids.length, ids, subject, nonce: v.nonce }); try { sidx?.flush(); } catch { /* rebuilt by reindex */ }
         sync(); return { ok: true, retired: ids, note: "moved to the trash folder; the owner can restore a file by moving it back" };
       });
@@ -418,7 +454,7 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
       syncRead();      // a note changed or forgotten while we were embedding must not get a stale vector
       batch.forEach((r, j) => { const now = recs.get(r.id); if (now && vkey(now) === vkey(r)) { try { sidx.set(r.id, vkey(r), vs[j]); done++; } catch (e) { failed = String(e?.message ?? e).slice(0, 80); } } });
     }
-    try { sidx.flush(); } catch { failed ??= "INDEX_WRITE_FAILED"; }
+    try { syncRead(true); sidx.refresh(); sidx.prune(new Map([...recs.values()].map(r => [r.id, vkey(r)]))); sidx.flush(); } catch { failed ??= "INDEX_WRITE_FAILED"; }      // a note forgotten by another process meanwhile must not be put back by our pending batch
     lastSemErr = failed; lastReindex = { at: nowFn(), embedded: done, pruned, pending: Math.max(0, todo.length - done), error: failed };
     try { audit.append("MEMORY_SEMANTIC_REINDEX", { model: semanticProvider.model, kind: semanticProvider.kind, embedded: done, pruned, error: failed }); } catch { /* ignore */ }
     return failed ? { ok: false, reason: failed, embedded: done, pruned } : { ok: true, embedded: done, pruned, pending: Math.max(0, recs.size - sidx.stats().vectors) };
