@@ -25,7 +25,8 @@ const ID_RE = /^[0-9a-f]{16}$/, AGENT_RE = /^[A-Za-z0-9_.:-]{1,40}$/, TENANT_RE 
 const KEYS = ["id", "title", "tags", "classification", "tenant", "author", "source", "createdAt", "updatedAt", "version", "bodySha"];
 const isClass = c => typeof c === "string" && Object.hasOwn(RANK, c);
 const bodyBad = b => typeof b !== "string" || !b.trim() || b.length > LIMITS.maxBody || Buffer.byteLength(b) > 50000 || !b.isWellFormed() || b.includes("\0");
-const sensitive = t => containsSecret(t) || scrub(t) !== t;
+const ASSIGN = /\b(?:pass(?:word|wd)?|pwd|secret|api[_-]?key|token)\s*[=:]\s*(?=\S{6,})\S*[\d@#$%^&*_+=\[\]{}|\\<>\/~`]/i;      // NAME=value where the value looks like a credential (>=6 chars with a digit or symbol)
+const sensitive = t => containsSecret(t) || ASSIGN.test(t);
 const sha = t => crypto.createHash("sha256").update(t).digest("hex");
 const oneLine = (v, max) => typeof v === "string" && v.length <= max && v.isWellFormed() && !/[\u0000-\u001f\u007f\u2028\u2029\p{Cf}]/u.test(v);
 const memorySubject = (id, bodySha, extra = "") => "memory:" + id + ":" + bodySha.slice(0, 16) + extra;
@@ -75,7 +76,8 @@ function openSqlite(file) {
   const check = d => { const r = d.prepare("PRAGMA quick_check").all(); return r.length === 1 && Object.values(r[0])[0] === "ok"; };
   let rebuiltFromDamage = false;
   try { if (!check(db)) throw new Error("damaged"); }
-  catch { try { db.close(); } catch { /* closed */ } for (const x of ["", "-wal", "-shm", "-journal"]) { try { fs.unlinkSync(file + x); } catch { /* none */ } } db = open(); rebuiltFromDamage = true; }
+  catch (e) { if (/locked|busy/i.test(String(e?.message))) { try { db.close(); } catch { /* closed */ } throw e; }      // another process holds the index: that is not damage, never delete a live database
+    try { db.close(); } catch { /* closed */ } for (const x of ["", "-wal", "-shm", "-journal"]) { try { fs.unlinkSync(file + x); } catch { /* none */ } } db = open(); rebuiltFromDamage = true; }
   db.exec("CREATE TABLE IF NOT EXISTS notes(id TEXT PRIMARY KEY, title TEXT, tags TEXT, classification TEXT, author TEXT, updated TEXT, body_sha TEXT, mtime REAL, size INTEGER, vec BLOB)");
   db.exec("CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(id UNINDEXED, title, tags, body, tokenize='unicode61 remove_diacritics 2')");
   const q = {
@@ -120,7 +122,7 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
   // Last audited classification per note: a hand edit of the file can raise a class but never lower it (lowering needs the signed approval path).
   const floor = new Map();
   const noteFloor = (id, cls) => { if (isClass(cls)) floor.set(id, cls); };
-  for (const e of audit.entries()) { const d = e.data ?? {}; if ((e.event === "MEMORY_WRITTEN" || e.event === "MEMORY_UPDATED") && ID_RE.test(String(d.id))) noteFloor(d.id, d.classification); else if (e.event === "MEMORY_FORGOTTEN") floor.delete(d.id); }
+  for (const e of audit.entries()) { const d = e.data ?? {}; if ((e.event === "MEMORY_WRITTEN" || e.event === "MEMORY_UPDATED") && ID_RE.test(String(d.id))) noteFloor(d.id, d.classification); }
   const fail = (reason, extra = {}) => ({ ok: false, reason, ...extra });
   const stopped = () => { try { return Boolean(isStopped()); } catch { return true; } };
   const stats = { searches: 0, hidden: 0 };
@@ -179,7 +181,7 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
   const syncRead = (force = false) => { if (!force && stampOf() === dirStamp) return; try { lock(() => sync(force)); } catch { /* another process holds the index: keep serving the last consistent view */ } };
   const canSee = (rec, reader) => RANK[rec.classification] <= RANK[reader.clearance];
   const lock = fn => withFileLock(path.join(dir, "memory"), fn);
-  lock(() => sync(true));
+  try { lock(() => sync(true)); } catch { sync(true); }      // a busy store lock must not stop start-up
 
   // ---------------------------------------------------------------- write
   function write({ authorId, title, body, tags = [], classification = "PERSONAL", source = "", clearance = "PUBLIC" } = {}) {
@@ -260,7 +262,6 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
         if (!v.allowed) return fail("OWNER_APPROVAL_REQUIRED:" + v.reason, { subject: memorySubject(id, cur.bodySha) });
         fs.renameSync(path.join(notesDir, id + ".md"), path.join(trashDir, id + "." + Date.now() + ".md"));
         for (const n of fs.readdirSync(versionsDir).filter(x => x.startsWith(id + ".v"))) { try { fs.renameSync(path.join(versionsDir, n), path.join(trashDir, n + "." + Date.now() + ".old")); } catch { /* left */ } }
-        floor.delete(id);
         audit.append("MEMORY_FORGOTTEN", { id, bodySha: cur.bodySha, nonce: v.nonce });
         sync(); return { ok: true, id, note: "the note and its old versions were moved to the trash folder (still on disk until the owner deletes them); the owner can restore the note by moving the file back" };
       });
@@ -268,19 +269,20 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
   }
 
   // ---------------------------------------------------------------- read / list / search
-  const fence = (rec, text) => "<<UNTRUSTED_MEMORY id=" + rec.id + " classification=" + rec.classification + " author=" + rec.author + ">>\n" + String(text).replace(/<</g, "<\u200b<") + "\n<<END_UNTRUSTED_MEMORY>>";
+  const defang = t => String(t).replace(/<{2,}|>{2,}/g, m => m.split("").join("\u200b"));      // no run of < or > survives, so no marker can be written inside data
+  const fence = (rec, text) => "<<UNTRUSTED_MEMORY id=" + rec.id + " classification=" + rec.classification + " author=" + rec.author + ">>\n" + defang(text) + "\n<<END_UNTRUSTED_MEMORY>>";
   function get(id, reader) {
     if (!readerOk(reader)) return fail("READER_INVALID");
     if (typeof id !== "string" || !ID_RE.test(id)) return fail("NOT_FOUND");
     syncRead(); const rec = recs.get(id);
     if (!rec || !canSee(rec, reader)) { if (rec) stats.hidden++; return fail("NOT_FOUND"); }      // hidden and missing look identical
     const p = readNote(path.join(notesDir, id + ".md")); if (p.bad) return fail("NOT_FOUND");
-    return { ok: true, untrusted: true, id, title: rec.title, tags: rec.tags, classification: rec.classification, author: rec.author, source: p.rec.source, version: p.rec.version, updated: rec.updated, text: fence(rec, scrub(p.rec.body)) };
+    return { ok: true, untrusted: true, id, title: defang(rec.title), tags: rec.tags.map(defang), classification: rec.classification, author: rec.author, source: defang(p.rec.source), version: p.rec.version, updated: rec.updated, text: fence(rec, scrub(p.rec.body)) };
   }
   function list(reader, { limit = 50 } = {}) {
     if (!readerOk(reader)) return fail("READER_INVALID");
     syncRead(); const n = Math.max(1, Math.min(200, Number.isInteger(limit) ? limit : 50));
-    return { ok: true, notes: [...recs.values()].filter(r => canSee(r, reader)).sort((a, b) => (a.updated < b.updated ? 1 : -1)).slice(0, n).map(r => ({ id: r.id, title: r.title, tags: r.tags, classification: r.classification, updated: r.updated })) };
+    return { ok: true, notes: [...recs.values()].filter(r => canSee(r, reader)).sort((a, b) => (a.updated < b.updated ? 1 : -1)).slice(0, n).map(r => ({ id: r.id, title: defang(r.title), tags: r.tags.map(defang), classification: r.classification, updated: r.updated })) };
   }
   function search({ query, reader, limit = 5 } = {}) {
     if (!readerOk(reader)) return fail("READER_INVALID");
@@ -301,7 +303,7 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
       const rec = recs.get(h.id), p = readNote(path.join(notesDir, h.id + ".md")); if (p.bad) return null;
       const body = scrub(p.rec.body), low = body.toLowerCase(); let at = -1; for (const t of qterms) { const i = low.indexOf(t); if (i >= 0 && (at < 0 || i < at)) at = i; }
       const start = Math.max(0, (at < 0 ? 0 : at) - 80), passage = body.slice(start, start + LIMITS.passageChars);
-      return { id: rec.id, title: rec.title, classification: rec.classification, tags: rec.tags, score: Number(h.rrf.toFixed(5)), lexical: h.lexical, similarity: h.similarity === null ? null : Number(h.similarity.toFixed(3)), passage: fence(rec, passage), externallyEdited: p.edited === true };
+      return { id: rec.id, title: defang(rec.title), classification: rec.classification, tags: rec.tags.map(defang), score: Number(h.rrf.toFixed(5)), lexical: h.lexical, similarity: h.similarity === null ? null : Number(h.similarity.toFixed(3)), passage: fence(rec, passage), externallyEdited: p.edited === true };
     }).filter(Boolean);
     return { ok: true, untrusted: true, backend: index.backend, retrieval: "HYBRID_BM25_PLUS_LEXICAL_NGRAM_SIMILARITY (not neural embeddings)", results };
   }
