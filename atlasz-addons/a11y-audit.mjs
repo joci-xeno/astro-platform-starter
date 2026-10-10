@@ -28,18 +28,19 @@ function blocks(css) {
   const out = []; out.unsupported = [];
   { let r = "", i = 0, n = css.length, last = 0; while (i < n) { const c = css[i];                                   // string-aware comment stripper (linear): "/*" inside a quoted string is not a comment
       if (c === '"' || c === "'") { let j = i + 1; while (j < n && css[j] !== c) { if (css[j] === "\\") j++; j++; } i = Math.min(n, j + 1); continue; }
+      if ((c === "u" || c === "U") && /^url\(/i.test(css.slice(i, i + 4))) { let j = i + 4; while (j < n && /\s/.test(css[j])) j++; if (css[j] !== '"' && css[j] !== "'") { while (j < n && css[j] !== ")") { if (css[j] === "\\") j++; j++; } i = Math.min(n, j + 1); continue; } }      // an unquoted url( ... ) token: "/*" inside it is not a comment
       if (c === "/" && css[i + 1] === "*") { r += css.slice(last, i); const z = css.indexOf("*/", i + 2); if (z < 0) { last = n; i = n; break; } i = z + 2; last = i; continue; }
       i++; }
     r += css.slice(last); css = r; }   // strip comments in linear time
   if (/@(?:\\|import\b)/i.test(css)) out.unsupported.push("EXTERNAL_STYLESHEET_NOT_EVALUATED:@import");   // any @import (or a CSS-escaped @\69mport) anywhere, with or without a following rule, in a string or not: the imported sheet is never read
   const close = (t, from) => { let d = 1, j = from; while (j < t.length) { const c = t[j]; if (c === '"' || c === "'") { const e = t.indexOf(c, j + 1); j = e < 0 ? t.length : e + 1; continue; } if (c === "{") d++; else if (c === "}") { d--; if (!d) return j; } j++; } return -1; };
   const THEME = /\[data-theme\s*=\s*["']?(dark|light)["']?\]/ig, NOT_THEME = /:not\(\s*\[data-theme\s*=\s*["']?(?:dark|light)["']?\]\s*\)/ig;
-  const decl = body => { const decls = new Map(); for (const d of body.split(";")) { const k = d.indexOf(":"); if (k > 0) { const name = d.slice(0, k).trim().toLowerCase(), val = d.slice(k + 1).trim(); decls.set(name, val); if (name === "background" || name === "background-color") decls.set("__bg", val); } } return decls; };   // __bg: whichever of the two was declared LAST wins, as in a browser
+  const decl = body => { const decls = new Map(); for (const d of body.split(";")) { const k = d.indexOf(":"); if (k > 0) { const name = d.slice(0, k).trim().toLowerCase(), val = d.slice(k + 1).trim(); if (name.includes("\\")) out.unsupported.push("ESCAPED_PROPERTY_NAME_NOT_EVALUATED"); decls.set(name, val); if (name === "background" || name === "background-color") decls.set("__bg", val); } } return decls; };   // __bg: whichever of the two was declared LAST wins, as in a browser
   const walk = (t, ctx, depth) => {
-    let i = 0, semi = -2;                                                                          // the next ";" is searched again only after it has been passed (linear overall)
+    let i = 0, semi = -2, open = -2;                                                               // the next ";" and "{" are searched again only after they have been passed (linear overall)
     while (i < t.length) {
       if (semi !== -1 && semi < i) semi = t.indexOf(";", i);
-      const open = t.indexOf("{", i);
+      if (open !== -1 && open < i) open = t.indexOf("{", i);
       if (open < 0) break;
       if (semi >= 0 && semi < open) { i = semi + 1; continue; }                                    // statement at-rule such as @import / @charset
       const prelude = t.slice(i, open).trim(), end = close(t, open + 1); if (end < 0) { out.unsupported.push("UNBALANCED_BRACES"); break; }
@@ -79,7 +80,7 @@ function tagEnd(h, from) {                                                      
     if (st === 2) { if (/\s/.test(c)) { st = 0; inName = false; } else if (c === ">") return j; continue; }
     if (c === ">") return j;
     if (st === 1) { if (/\s/.test(c)) continue; if (c === '"' || c === "'") { q = c; st = 3; } else st = 2; continue; }
-    if (/\s/.test(c)) { inName = false; continue; }
+    if (/\s/.test(c) || c === "/") { inName = false; continue; }
     if (c === "=" && inName) { st = 1; continue; }
     inName = true; }
   return h.indexOf(">", from);                                                                     // an unterminated quote: fall back to the plain scan
@@ -95,14 +96,17 @@ function htmlTags(html) {
     const nextLt = html.indexOf("<", z + 1), name = m[2].toLowerCase(), attrs = html.slice(a + m[0].length, z), map = new Map();
     for (const am of attrs.matchAll(ATTR)) { const k = am[1].toLowerCase(); if (!map.has(k)) map.set(k, am[2] ?? am[3] ?? am[4] ?? ""); }
     out.push({ name, closing: m[1] === "/", attrs, map, text: m[1] ? "" : html.slice(z + 1, nextLt < 0 ? Math.min(html.length, z + 301) : Math.min(nextLt, z + 301)) });
+    if (foreign > 0 && !m[1] && (name === "title" || name === "textarea" || name === "foreignobject" || name === "desc")) out.ambiguous = true;      // HTML integration points inside svg/math: browsers switch parsing rules here and this tokenizer does not follow them reliably
     if (name === "svg" || name === "math") { if (m[1]) foreign = Math.max(0, foreign - 1); else if (!/\/\s*$/.test(attrs)) foreign++; }
-    if (!m[1] && /^(?:script|style|textarea|title)$/.test(name) && !(foreign > 0 && (name === "title" || name === "textarea"))) {       // raw text: skip to the matching close tag
+    if (!m[1] && name === "plaintext") { out.ambiguous = true; i = html.length; }
+    if (!m[1] && /^(?:script|style|textarea|title|xmp|iframe|noembed|noframes)$/.test(name) && !(foreign > 0 && (name === "title" || name === "textarea"))) {       // raw text: skip to the matching close tag
       const re = new RegExp("</" + name + "\\b", "ig"); re.lastIndex = i; const e = re.exec(html);
       if (name === "style") out.styles.push(html.slice(i, e ? e.index : html.length).slice(0, LIMITS.maxInputChars));
       if (name === "title") { out[out.length - 1].text = html.slice(i, e ? e.index : html.length).slice(0, 300); }
       i = e ? e.index : html.length;
     }
   }
+  if (i < html.length && out.length >= LIMITS.maxTags) out.truncated = true;
   return out;
 }
 /** Linear scan for calls like h("input", { ...}: returns [{args, end}] where args is the text up to the first "}" after the opening brace. */
@@ -188,7 +192,7 @@ export function auditAccessibility({ html = "", css = "", js = "", cssSources = 
   if (!/h\(\s*["'`]label["'`]/.test(js) && inputs.length && !namesFromPlaceholder) add("WARN", "NO_LABEL_ELEMENTS", "The script never builds <label> elements for its form controls.");
   for (const m of callArgs(js, /h\(\s*["'`]button["'`]\s*,\s*\{/g)) if (/^\s*,\s*(?:""|''|``)\s*\)/.test(js.slice(m.end + 1, m.end + 40))) add("FAIL", "BUTTON_NAME", "A script-built button has an empty name.");
   const sev = total;   // true totals, not only the findings that fit in the list
-  const incomplete = []; if (truncated) incomplete.push("FINDINGS_TRUNCATED"); if (unresolved) incomplete.push("CONTRAST_PAIRS_UNRESOLVED:" + unresolved); if (!checked) incomplete.push("NO_CONTRAST_PAIRS_CHECKED"); for (const u of bl.unsupported.slice(0, 10)) incomplete.push(u); if (tg.some(t => t.name === "link" && !t.closing && (/(^|\s)stylesheet(\s|$)/i.test(attr(t, "rel") ?? "") || /&/.test(attr(t, "rel") ?? "")) && !covered.has(attr(t, "href") ?? ""))) incomplete.push("EXTERNAL_STYLESHEET_NOT_EVALUATED:<link>"); if (skipped.length) incomplete.push("COLOUR_RULES_NOT_EVALUATED:" + skipped.length); if (!html.trim()) incomplete.push("NO_HTML_SUPPLIED"); if (!css.trim()) incomplete.push("NO_CSS_SUPPLIED");
+  const incomplete = []; if (truncated) incomplete.push("FINDINGS_TRUNCATED"); if (unresolved) incomplete.push("CONTRAST_PAIRS_UNRESOLVED:" + unresolved); if (!checked) incomplete.push("NO_CONTRAST_PAIRS_CHECKED"); for (const u of bl.unsupported.slice(0, 10)) incomplete.push(u); if (tg.some(t => t.name === "link" && !t.closing && (/(^|\s)stylesheet(\s|$)/i.test(attr(t, "rel") ?? "") || /&/.test(attr(t, "rel") ?? "")) && !covered.has(attr(t, "href") ?? ""))) incomplete.push("EXTERNAL_STYLESHEET_NOT_EVALUATED:<link>"); if (tg.ambiguous) incomplete.push("HTML_PARSING_AMBIGUOUS:svg_math_integration_point_or_plaintext"); if (tg.truncated) incomplete.push("TAG_LIMIT_REACHED:markup_after_the_limit_not_read"); if (skipped.length) incomplete.push("COLOUR_RULES_NOT_EVALUATED:" + skipped.length); if (!html.trim()) incomplete.push("NO_HTML_SUPPLIED"); if (!css.trim()) incomplete.push("NO_CSS_SUPPLIED");
   const enriched = findings.map(f => ({ ...f, location: f.selector ? "css: " + f.selector : "rule " + f.rule, remediation: REMEDIATION[f.rule] ?? "Review this item manually." }));
   // A clean-looking result is only ever reported for a COMPLETE audit; otherwise it is INCOMPLETE_AUDIT (failures that were found are still reported as FAIL_FOUND).
   return { ok: true, verdict: sev.FAIL ? "FAIL_FOUND" : incomplete.length ? "INCOMPLETE_AUDIT" : sev.WARN ? "WARNINGS_ONLY" : "NO_FAILS_BY_THESE_CHECKS", complete: incomplete.length === 0, incomplete, counts: sev, findings: enriched, truncated, contrast: { pairsChecked: checked, unresolved, unresolvedPairs: unresolvedList, notEvaluated: skipped.slice(0, 20) },

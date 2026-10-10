@@ -210,3 +210,15 @@ test("R6 round 6: '=' starting an attribute name, <title>/<textarea> inside <svg
   const t0 = Date.now(); auditAccessibility({ html: H("<button>".repeat(60000) + "</button>"), css: C }); auditAccessibility({ html: H("<p>x"), css: C + "a{b:c}".repeat(300000) }); auditAccessibility({ html: H('<a ="'.repeat(60000)), css: C });
   assert.ok(Date.now() - t0 < 2500, "linear on large inputs: " + (Date.now() - t0) + " ms");
 });
+
+test("R6 round 7: raw-text elements, svg integration points, '/=' in tags, tag cap, unquoted url() with comment markers, escaped property names, quadratic CSS statements", () => {
+  const C = ":root{--bg:#fff;--ink:#000}body{color:var(--ink);background:var(--bg)}", H = b => "<html lang=en><head><title>t</title><meta name=viewport content='width=device-width'></head><body><main>" + b + "</main></body></html>";
+  const L = "<link rel=stylesheet href=x>";
+  for (const b of ["<xmp><!--</xmp>" + L, "<iframe><!--</iframe>" + L, "<noembed><!--</noembed>" + L, "<noframes><!--</noframes>" + L, "<svg><foreignObject><title><!--</title></foreignObject></svg>" + L, "<svg><div><textarea><!--</textarea>" + L,
+    '<a b/="x>' + L + '<p title="z">', "<b>".repeat(200001) + L]) assert.equal(auditAccessibility({ html: H(b), css: C }).complete, false, b.slice(0, 60));
+  assert.equal(auditAccessibility({ html: H("<plaintext>just text <b>"), css: C }).complete, false, "plaintext");
+  const fail = css => auditAccessibility({ html: H("<p>x"), css: C + css });
+  assert.ok(fail("a{background:url(/*)} p{color:#fff;background:#fff} b{background:url(*/)}").findings.some(f => f.rule === "CONTRAST"), "unquoted url() with /*");
+  assert.equal(fail("p{background:#fff;\\63olor:#fff}").complete, false, "escaped property name");
+  const t0 = Date.now(); fail(";".repeat(1_900_000) + "{"); fail("a;".repeat(900_000) + "{}"); assert.ok(Date.now() - t0 < 3000, "linear: " + (Date.now() - t0));
+});

@@ -236,13 +236,14 @@ test("a quotation match alone is QUOTE_MATCHED, never VERIFIED: only an owner-on
     assert.throws(() => w.rl.confirmEvidence(fi.id, ev.id, { note: "again" }, OWNER), /ALREADY_CONFIRMED/);
     r = w.rl.report(q.id, OWNER); assert.equal(r.verifiedFacts.length, 1); assert.equal(r.quoteMatched.length, 0); assert.equal(r.state, "ANSWERED"); assert.equal(r.verifiedFacts[0].evidence[0].confirmed, true);
     // the authority is the hash-chained event log, not a field of the evidence: editing fields neither creates nor removes a confirmation
-    const file = path.join(w.d, "rl.json"), j0 = JSON.parse(fs.readFileSync(file, "utf8")); Object.values(j0.findings)[0].evidence[0].confirmedQuoteSha = "0".repeat(64); fs.writeFileSync(file, JSON.stringify(j0));
-    assert.equal(w.mk().report(q.id, OWNER).verifiedFacts.length, 1, "still confirmed: the event log says so");
+    const file = path.join(w.d, "rl.json"), j0 = JSON.parse(fs.readFileSync(file, "utf8")); Object.values(j0.findings)[0].evidence[0].confirmedQuoteSha = "0".repeat(64); const orig0 = fs.readFileSync(file, "utf8"); fs.writeFileSync(file, JSON.stringify(j0));
+    { const rr = w.mk().report(q.id, OWNER); assert.equal(rr.verifiedFacts.length, 0, "any store edit voids the whole-store seal"); assert.ok(JSON.stringify(rr.conflicted).includes("STORE_ALTERED_OUTSIDE_LEDGER")); assert.throws(() => w.mk().openQuestion({ projectId: w.p.id, text: "No re-sealing" }, OWNER), /CHAIN_BROKEN/); }
+    fs.writeFileSync(file, orig0); assert.equal(w.mk().report(q.id, OWNER).verifiedFacts.length, 1, "restoring the files restores trust");
     // forging: an unconfirmed item with hand-written confirmation fields stays QUOTE_MATCHED
     const q3 = w.rl.openQuestion({ projectId: w.p.id, text: "Rent 3?" }, OWNER); const f3 = w.rl.addFinding(q3.id, { claim: "The monthly rent for the Maple Street warehouse is 4200 dollars" }, AGENT);
     const e3 = w.rl.attachEvidence(f3.id, { citation: w.kp.search(w.p.id, { query: "monthly rent", ...OWNER }).results[0].citation }, AGENT);
     const j1 = JSON.parse(fs.readFileSync(file, "utf8")), E3 = j1.findings[f3.id].evidence.find(x => x.id === e3.id); E3.confirmedBy = "OWNER"; E3.confirmedAt = w.now(); E3.confirmedQuoteSha = crypto.createHash("sha256").update(E3.citation.quote).digest("hex"); fs.writeFileSync(file, JSON.stringify(j1));
-    let r3 = w.mk().report(q3.id, OWNER); assert.equal(r3.verifiedFacts.length, 0, "a forged confirmation field is not a confirmation"); assert.equal(r3.quoteMatched.length, 1);
+    let r3 = w.mk().report(q3.id, OWNER); assert.equal(r3.verifiedFacts.length, 0, "a forged confirmation field is not a confirmation"); assert.equal(r3.quoteMatched.length, 0, "an edited store is not trusted at all"); assert.ok(JSON.stringify(r3.conflicted).includes("STORE_ALTERED_OUTSIDE_LEDGER"));
     // a forged confirmation EVENT breaks the chain and then no confirmation counts at all
     const j2 = JSON.parse(fs.readFileSync(file, "utf8")); j2.events.push({ n: j2.events.length + 1, at: w.now(), type: "EVIDENCE_CONFIRMED", by: "OWNER", findingId: f3.id, evidence: e3.id, quoteSha: E3.confirmedQuoteSha, prev: "x", hash: "y" }); fs.writeFileSync(file, JSON.stringify(j2));
     const broken = w.mk(); r3 = broken.report(q3.id, OWNER); assert.equal(r3.verifiedFacts.length, 0); assert.equal(broken.verifyChain().ok, false); assert.equal(broken.report(q.id, OWNER).verifiedFacts.length, 0, "with a broken chain no confirmation is trusted");
@@ -332,8 +333,8 @@ test("R6 round 2: a confirmed REFUTES cannot be flipped to SUPPORTS by editing t
     const no = w.kp.search(w.p.id, { query: "parking included monthly rent warehouse", ...OWNER }).results[0].citation;
     const fi = w.rl.addFinding(q.id, { claim: "Parking is included in the monthly rent for the warehouse" }, OWNER);
     w.att(fi.id, { citation: no, relation: "REFUTES" }, OWNER);
-    const file = path.join(w.d, "rl.json"), j = JSON.parse(fs.readFileSync(file, "utf8")); Object.values(j.findings)[0].evidence[0].relation = "SUPPORTS"; fs.writeFileSync(file, JSON.stringify(j));
-    assert.equal(w.mk().report(q.id, OWNER).verifiedFacts.length, 0, "the owner confirmed a refutation, not support");
+    const file = path.join(w.d, "rl.json"), origR = fs.readFileSync(file, "utf8"), j = JSON.parse(origR); Object.values(j.findings)[0].evidence[0].relation = "SUPPORTS"; fs.writeFileSync(file, JSON.stringify(j));
+    assert.equal(w.mk().report(q.id, OWNER).verifiedFacts.length, 0, "the owner confirmed a refutation, not support"); fs.writeFileSync(file, origR);
     const q2 = w.rl.openQuestion({ projectId: w.p.id, text: "Is the rent 4200?" }, OWNER);
     w.web("Fresh", RENT, "https://example.org/fresh"); w.web("Old", "The monthly rent for the Maple Street warehouse is not 4200 dollars, it was raised.", "https://example.org/old", "2026-05-01T00:00:00.000Z");
     const hits = w.kp.search(w.p.id, { query: "monthly rent Maple Street warehouse", ...OWNER }).results, fresh = hits.find(h => h.text.includes("payable")).citation, old = hits.find(h => h.text.includes("raised")).citation;
@@ -359,7 +360,7 @@ test("R6 round 3: removing a refuting source or editing the store (dropping evid
     let r = w.mk().report(q.id, OWNER); assert.equal(r.verifiedFacts.length, 0, "a refuter that can no longer be read keeps the finding conflicted"); assert.equal(r.conflicted.length, 1);
     // 2) the evidence item is deleted from the store file only
     fs.writeFileSync(file, orig); const j = JSON.parse(orig); const F = Object.values(j.findings)[0]; F.evidence = F.evidence.filter(e => e.relation !== "REFUTES"); fs.writeFileSync(file, JSON.stringify(j));
-    r = w.mk().report(q.id, OWNER); assert.equal(r.verifiedFacts.length, 0); assert.ok(JSON.stringify(r.conflicted).includes("EVIDENCE_REMOVED_OUTSIDE_LEDGER"));
+    r = w.mk().report(q.id, OWNER); assert.equal(r.verifiedFacts.length, 0); assert.ok(/STORE_ALTERED_OUTSIDE_LEDGER|OUTSIDE_LEDGER|NOT_IN_CHAIN/.test(JSON.stringify(r.conflicted)));
   } finally { w.done(); }
 });
 
@@ -376,7 +377,7 @@ test("R6 round 3: a contradiction marked RESOLVED (or deleted) in the store with
     const j = JSON.parse(orig); j.contradictions[k.id].state = "RESOLVED"; j.contradictions[k.id].resolution = { winner: fa.id, by: "OWNER", at: w.now() }; fs.writeFileSync(file, JSON.stringify(j));
     let r = w.mk().report(q.id, OWNER); assert.equal(r.verifiedFacts.length, 0, JSON.stringify(r.verifiedFacts.map(x => x.claim)));
     const j2 = JSON.parse(orig); delete j2.contradictions[k.id]; fs.writeFileSync(file, JSON.stringify(j2));
-    r = w.mk().report(q.id, OWNER); assert.equal(r.verifiedFacts.length, 0); assert.ok(JSON.stringify(r.conflicted).includes("CONTRADICTION_REMOVED_OR_ALTERED_OUTSIDE_LEDGER"));
+    r = w.mk().report(q.id, OWNER); assert.equal(r.verifiedFacts.length, 0); assert.ok(/STORE_ALTERED_OUTSIDE_LEDGER|OUTSIDE_LEDGER|NOT_IN_CHAIN/.test(JSON.stringify(r.conflicted)));
     fs.writeFileSync(file, orig); w.mk().resolveContradiction(k.id, { winner: fa.id, note: "owner decided" }, OWNER);
     r = w.mk().report(q.id, OWNER); assert.equal(r.verifiedFacts.length, 1, "a real owner resolution still works");
   } finally { w.done(); }
@@ -439,7 +440,7 @@ test("R6 round 5: an emptied chain with a surviving head, and evidence inserted 
     const j = JSON.parse(orig); j.events = []; fs.writeFileSync(file, JSON.stringify(j));
     const m = w.mk(); assert.equal(m.verifyChain().ok, false, "head says n>0 but the chain is empty"); assert.equal(m.report(q.id, OWNER).verifiedFacts.length, 0);
     fs.writeFileSync(file, orig); const j2 = JSON.parse(orig); const ev = JSON.parse(JSON.stringify(j2.findings[fa.id].evidence[0])); ev.id = "re-injected"; j2.findings[f2.id].evidence.push(ev); fs.writeFileSync(file, JSON.stringify(j2));
-    const r = w.mk().report(q.id, OWNER); const x = [...r.verifiedFacts, ...r.quoteMatched].filter(f => f.id === f2.id); assert.equal(x.length, 0, "injected evidence is not accepted"); assert.ok(JSON.stringify(r.conflicted).includes("EVIDENCE_NOT_IN_CHAIN"));
+    const r = w.mk().report(q.id, OWNER); const x = [...r.verifiedFacts, ...r.quoteMatched].filter(f => f.id === f2.id); assert.equal(x.length, 0, "injected evidence is not accepted"); assert.ok(/STORE_ALTERED_OUTSIDE_LEDGER|OUTSIDE_LEDGER|NOT_IN_CHAIN/.test(JSON.stringify(r.conflicted)));
   } finally { w.done(); }
 });
 
@@ -457,11 +458,27 @@ test("R6 round 6: an edited question (text/project/tenant) voids the report; one
     // transient head loss: the instance that saw a bad head must not cache "no chain facts" past the repair
     fs.writeFileSync(file, orig); const m = w.mk(); fs.rmSync(file + ".head"); m.report(q.id, OWNER); fs.writeFileSync(file + ".head", head);
     const j2 = JSON.parse(orig); const fx = Object.values(j2.findings)[0]; fx.evidence = []; fs.writeFileSync(file, JSON.stringify(j2));
-    assert.equal(m.report(q.id, OWNER).verifiedFacts.length, 0); assert.ok(JSON.stringify(m.report(q.id, OWNER)).includes("EVIDENCE_REMOVED_OUTSIDE_LEDGER"), "the chain check is live again once the head is back");
+    assert.equal(m.report(q.id, OWNER).verifiedFacts.length, 0); assert.ok(/STORE_ALTERED_OUTSIDE_LEDGER|OUTSIDE_LEDGER|NOT_IN_CHAIN/.test(JSON.stringify(m.report(q.id, OWNER))), "the chain check is live again once the head is back");
     // NUL boundary shift in the finding signature
     fs.writeFileSync(file, orig);
     const f1 = w.mk().addFinding(q.id, { claim: "x\u0000y", topic: "uptime", value: "50" }, OWNER); const f2 = w.mk().addFinding(q.id, { claim: "another claim here about uptime", topic: "uptime", value: "60" }, OWNER);
     const j3 = JSON.parse(fs.readFileSync(file, "utf8")); Object.assign(j3.findings[f1.id], { topic: "uptime\u000050", value: "x", claim: "y" }); fs.writeFileSync(file, JSON.stringify(j3));
-    assert.ok(JSON.stringify(w.mk().report(q.id, OWNER)).includes("FINDING_REMOVED_OR_ALTERED_OUTSIDE_LEDGER:" + f1.id), "the boundary shift is detected"); void f2;
+    assert.ok(/STORE_ALTERED_OUTSIDE_LEDGER|OUTSIDE_LEDGER|NOT_IN_CHAIN/.test(JSON.stringify(w.mk().report(q.id, OWNER))), "the boundary shift is detected"); void f2;
+  } finally { w.done(); }
+});
+
+test("R6 round 7: the whole-store seal catches inner-id renames, borrowed contradiction ids, kind/retrievedAt edits and a broken chain; a tampered store cannot be re-sealed by a new write", async () => {
+  const w = await world();
+  try {
+    const q = w.rl.openQuestion({ projectId: w.p.id, text: "Rent?" }, OWNER);
+    w.web("A", RENT, "https://example.org/a"); w.web("B", RENT2, "https://example.org/b");
+    const hits = w.kp.search(w.p.id, { query: "monthly rent Maple Street warehouse", ...OWNER }).results, ca = hits.find(h => h.text.includes("4200")).citation, cb = hits.find(h => h.text.includes("4800")).citation;
+    const fa = w.rl.addFinding(q.id, { claim: "The monthly rent for the Maple Street warehouse is 4200 dollars" }, OWNER), fb = w.rl.addFinding(q.id, { claim: "The monthly rent for the Maple Street warehouse is 4800 dollars" }, OWNER);
+    w.att(fa.id, { citation: ca }, OWNER); w.att(fb.id, { citation: cb }, OWNER); const k = w.rl.declareContradiction(fa.id, fb.id, { note: "differ" }, OWNER);
+    const file = path.join(w.d, "rl.json"), orig = fs.readFileSync(file, "utf8");
+    const cases = [j => { j.findings[fa.id].id = "zz" + fa.id; j.findings[fa.id].evidence = []; }, j => { j.contradictions[k.id].state = "RESOLVED"; j.contradictions[k.id].resolution = { winner: null, by: "OWNER", at: w.now() }; },
+      j => { j.findings[fa.id].kind = "ASSUMPTION"; }, j => { j.findings[fa.id].evidence[0].retrievedAt = "2020-01-01T00:00:00.000Z"; }, j => { j.events[0].at = "2000-01-01T00:00:00.000Z"; delete j.contradictions[k.id]; }, j => { j.findings[fa.id].evidence[0].coverage = 0.99; }];
+    for (const [i, fn] of cases.entries()) { const j = JSON.parse(orig); fn(j); fs.writeFileSync(file, JSON.stringify(j)); const r = w.mk().report(q.id, OWNER); assert.equal(r.verifiedFacts.length, 0, "case " + i); assert.equal(r.state === "ANSWERED", false, "case " + i); assert.ok(/STORE_ALTERED|CHAIN_BROKEN|OUTSIDE_LEDGER/.test(JSON.stringify(r)), "case " + i + " is flagged: " + JSON.stringify(r.conflicted?.[0]?.reasons)); }
+    fs.writeFileSync(file, orig); assert.equal(w.mk().report(q.id, OWNER).conflicted.length, 2, "untouched store behaves as before");
   } finally { w.done(); }
 });

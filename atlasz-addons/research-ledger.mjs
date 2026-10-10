@@ -37,13 +37,15 @@ export const LIMITS = Object.freeze({ questionChars: 500, claimChars: 1000, note
 import { scrub, containsSecret } from "./secret-patterns.mjs";
 const looksSecret = v => { const t = String(v ?? ""); return containsSecret(t) || scrub(t, "[r]") !== t; };
 const sha = s => crypto.createHash("sha256").update(s).digest("hex");
+const canon = v => Array.isArray(v) ? "[" + v.map(canon).join(",") + "]" : v && typeof v === "object" ? "{" + Object.keys(v).sort().map(k => JSON.stringify(k) + ":" + canon(v[k])).join(",") + "}" : JSON.stringify(v) ?? "null";
 const norm = s => String(s ?? "").toLowerCase().replace(/\s+/g, " ").trim();
 
 export function createResearchLedger({ file = null, knowledge, security = null, blackBox = null, now = () => new Date().toISOString(), freshnessDays = LIMITS.freshnessDays } = {}) {
   if (!knowledge || typeof knowledge.verifyCitation !== "function") throw new Error("KNOWLEDGE_PROJECTS_REQUIRED");
   const store = createStore({ file, init: () => ({ questions: {}, findings: {}, contradictions: {}, events: [], seq: 0 }) }), S = store.data;   // unreadable file => STORE_UNREADABLE, never replaced
+  let loadTamper = false;      // the file as read does not match its newest seal: no new event may re-seal it
   const reload = () => { if (!file) return; let d; try { d = JSON.parse(fs.readFileSync(file, "utf8")); } catch (e) { if (e.code === "ENOENT") return; throw new Error("STORE_UNREADABLE:" + file.split(/[\\/]/).pop()); } if (!d || typeof d !== "object" || Array.isArray(d) || ["questions", "findings", "contradictions"].some(k => d[k] !== undefined && (typeof d[k] !== "object" || d[k] === null || Array.isArray(d[k]))) || (d.events !== undefined && !Array.isArray(d.events))) throw new Error("STORE_UNREADABLE:" + file.split(/[\\/]/).pop());   // a wrong-shaped file is refused, never overwritten
-    for (const k of ["questions", "findings", "contradictions"]) S[k] = d[k] ?? {}; S.events = d.events ?? []; S.seq = d.seq ?? 0; };
+    for (const k of ["questions", "findings", "contradictions"]) S[k] = d[k] ?? {}; S.events = d.events ?? []; S.seq = d.seq ?? 0; stMemo = null; loadTamper = !stateOk(); };
   const log = (kind, d) => { try { blackBox?.record({ kind, ...d }); } catch { /* audit must not change behaviour */ } };
   const id = p => p + "-" + (++S.seq) + "-" + crypto.randomBytes(3).toString("hex");
   /** Append-only, hash-chained event log: every write is recorded with who/what/when; verifyChain() detects edits, deletions and reordering. */
@@ -53,9 +55,13 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   store.save = () => { baseSave(); if (headFile && S.events.length) { try { fs.writeFileSync(headFile, JSON.stringify({ n: S.events.length, hash: S.events.at(-1).hash }), { mode: 0o600 }); } catch { /* the store itself is saved */ } } };
   if (headFile && S.events.length && !fs.existsSync(headFile)) store.save();            // a store written before anchors existed adopts one when opened
   const anchorOk = () => { if (!headFile) return true; if (!S.events.length) { const h0 = readHead(); return !(h0 && h0.n > 0); } const h = readHead(); return Boolean(h) && h.n === S.events.length && S.events.at(-1).hash === h.hash; };
+  /** Whole-store seal: every event records a hash of questions + findings + contradictions as they were after that change. A store edited outside the ledger no longer matches the newest event. */
+  let stMemo = null; const stNow = () => (stMemo ??= sha(canon([S.questions, S.findings, S.contradictions])));
+  const stateOk = () => { const last = S.events.at(-1); return !last || typeof last.st !== "string" || last.st === stNow(); };
   function event(type, by, d) {
-    if (!anchorOk()) throw new Error("CHAIN_BROKEN");
-    const prev = S.events.length ? S.events[S.events.length - 1].hash : "GENESIS", e = { n: S.events.length + 1, at: now(), type, by, ...d, prev };
+    if (!anchorOk() || loadTamper) throw new Error("CHAIN_BROKEN");
+    stMemo = null;
+    const prev = S.events.length ? S.events[S.events.length - 1].hash : "GENESIS", e = { n: S.events.length + 1, at: now(), type, by, ...d, st: stNow(), prev };
     e.hash = sha(prev + JSON.stringify({ ...e, hash: undefined })); S.events.push(e); log("RESEARCH_" + type, { by, ...d }); return e;
   }
   function verifyChain() {
@@ -72,11 +78,11 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   const questionSig = q => sha(JSON.stringify([q.tenantId, q.projectId, q.text]));
   /** What the verified chain says happened (null when the chain is broken): evidence that was attached, contradictions declared and how each was resolved. The store must agree with it. */
   let factMemo = { key: "", v: null };
-  const chainFacts = () => { const key = S.events.length + ":" + (S.events.at(-1)?.hash ?? "") + ":" + anchorOk(); if (factMemo.key === key) return factMemo.v;
-    let v = null; if (verifyChain().ok) { v = { attached: new Map(), declared: [], resolved: new Map(), findings: new Map(), questions: new Map() };
+  const chainFacts = () => { const key = S.events.length + ":" + (S.events.at(-1)?.hash ?? "") + ":" + anchorOk() + stateOk(); if (factMemo.key === key) return factMemo.v;
+    let v = null; if (verifyChain().ok && stateOk()) { v = { attached: new Map(), declared: [], resolved: new Map(), findings: new Map(), questions: new Map() };
       for (const e of S.events) { if (e.type === "EVIDENCE_ATTACHED" && typeof e.findingId === "string") { if (!v.attached.has(e.findingId)) v.attached.set(e.findingId, new Set()); v.attached.get(e.findingId).add(e.evidence); } else if (e.type === "QUESTION_OPENED" && typeof e.qsig === "string") v.questions.set(e.id, e.qsig); else if (e.type === "FINDING_ADDED" && typeof e.fsig === "string") v.findings.set(e.id, { fsig: e.fsig, questionId: e.questionId }); else if (e.type === "CONTRADICTION_DECLARED") v.declared.push({ id: e.id, a: e.a, b: e.b }); else if (e.type === "CONTRADICTION_RESOLVED") v.resolved.set(e.id, String(e.winner ?? null)); } }
     factMemo = { key, v }; return v; };
-  const confirmedSet = () => { const key = S.events.length + ":" + (S.events.at(-1)?.hash ?? "") + ":" + anchorOk(); if (confMemo.key === key) return confMemo.set; const ok = verifyChain().ok; confMemo = { key, set: new Set(ok ? S.events.filter(e => e.type === "EVIDENCE_CONFIRMED" && e.by === "OWNER" && typeof e.bind === "string").map(e => e.findingId + "|" + e.evidence + "|" + e.bind) : []) }; return confMemo.set; };
+  const confirmedSet = () => { const key = S.events.length + ":" + (S.events.at(-1)?.hash ?? "") + ":" + anchorOk() + stateOk(); if (confMemo.key === key) return confMemo.set; const ok = verifyChain().ok && stateOk(); confMemo = { key, set: new Set(ok ? S.events.filter(e => e.type === "EVIDENCE_CONFIRMED" && e.by === "OWNER" && typeof e.bind === "string").map(e => e.findingId + "|" + e.evidence + "|" + e.bind) : []) }; return confMemo.set; };
   const who = w => ({ tenantId: w?.tenantId, role: w?.role ?? "OWNER", forAgent: Boolean(w?.forAgent) });
   const byOf = (w, by) => (who(w).forAgent ? "AGENT" : (typeof by === "string" && by ? by : "OWNER"));   // an agent can never name itself OWNER (or anyone else)
   function access(projectId, w) {                                   // the caller must be allowed to use the project (tenant + role), else it does not exist for them
@@ -157,6 +163,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   /** Re-verify a finding's evidence NOW through the caller's permissions and compute its status. */
   function evaluate(f, w) {
     const q = S.questions[f.questionId], base = { id: f.id, questionId: f.questionId, claim: f.claim, kind: f.kind, topic: f.topic, value: f.value, createdBy: f.createdBy, createdAt: f.createdAt };
+    { const vc = verifyChain(), so = stateOk(); if (!vc.ok || !so) return { ...base, status: "CONFLICTED", confidence: "NONE", independentSources: 0, reasons: [!vc.ok ? "CHAIN_BROKEN:" + (vc.reason ?? "ENTRY_HASH_OR_LINK") : "STORE_ALTERED_OUTSIDE_LEDGER"], evidence: [], note: "The ledger's tamper seal does not match: nothing in it is trusted until the owner restores the files." }; }
     if (f.kind === "ASSUMPTION") return { ...base, status: "ASSUMPTION", confidence: "NONE", reasons: ["AUTHOR_MARKED_ASSUMPTION"], evidence: [] };
     const ev = f.evidence.map(e => { const v = knowledge.verifyCitation(e.citation, w), age = ageDays(e.retrievedAt), aged = age != null && (age > freshnessDays || age < -1);   // a retrieval date in the future cannot be trusted as fresh
       return { id: e.id, relation: e.relation, title: e.citation.title, kind: e.citation.kind, url: e.citation.url, version: e.citation.version, quote: v.status === "SOURCE_UNAVAILABLE" && who(w).role !== "OWNER" ? "[withheld: source not readable by this role]" : e.citation.quote, retrievedAt: e.retrievedAt, verification: v.status, aged, ok: v.status === "OK" && !aged, memberId: e.citation.memberId, addedBy: e.addedBy, confirmed: confirmedSet().has(f.id + "|" + e.id + "|" + bindOf(f, e)) }; });

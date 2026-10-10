@@ -65,8 +65,8 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
   function load() {
     if (!fs.existsSync(stateFile)) { S = { enabled: {}, health: {}, theme: null }; unreadable = false; }
     else {
-      try { const j = JSON.parse(fs.readFileSync(stateFile, "utf8")); if (j === null || typeof j !== "object" || Array.isArray(j) || (j.enabled !== undefined && (typeof j.enabled !== "object" || j.enabled === null || Array.isArray(j.enabled))) || (j.health !== undefined && (typeof j.health !== "object" || j.health === null || Array.isArray(j.health)))) throw new Error("SHAPE"); S = { enabled: {}, health: {}, theme: null, ...j }; unreadable = false; }
-      catch { unreadable = true; }
+      try { const j = JSON.parse(fs.readFileSync(stateFile, "utf8")); if (j === null || typeof j !== "object" || Array.isArray(j) || (j.enabled !== undefined && (typeof j.enabled !== "object" || j.enabled === null || Array.isArray(j.enabled))) || (j.health !== undefined && (typeof j.health !== "object" || j.health === null || Array.isArray(j.health)))) throw new Error("SHAPE"); S = { enabled: {}, health: {}, theme: null, ...j }; for (const k of ["enabled", "health"]) for (const id of Object.keys(S[k])) if (S[k][id] === null || typeof S[k][id] !== "object" || Array.isArray(S[k][id])) { if (k === "health") S.health[id] = { failures: 0 }; else delete S.enabled[id]; } unreadable = false; }
+      catch { unreadable = true; S = { enabled: {}, health: {}, theme: null }; }
     }
     for (const id of memQuarantine) { delete S.enabled[id]; if (S.theme === id) S.theme = null; S.health[id] = { ...(own(S.health, id) ?? {}), failures: (own(S.health, id)?.failures ?? 0), quarantined: true }; }
   }
@@ -119,12 +119,12 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
   }
   /** What the owner signs for PLUGIN_ENABLE: the plugin id and the content hash of its folder as it is now (a code-less theme needs no approval). */
   const enableSubject = id => { const p = scan().found.get(id); if (!p || p.manifest.kind === "THEME" || p.manifest.kind === "SKIN") return null; const h = dirHash(p.dir); return h ? id + "#" + h : null; };
-  function disable(id) { load(); if (!own(S.enabled, id)) return { ok: true, already: true }; const snap = structuredClone(S); delete S.enabled[id]; if (S.theme === id) S.theme = null; return commit("PLUGIN_DISABLED", { id }, snap); }
+  function disable(id) { load(); if (unreadable) return STATE_BAD; if (!own(S.enabled, id)) return { ok: true, already: true }; const snap = structuredClone(S); delete S.enabled[id]; if (S.theme === id) S.theme = null; return commit("PLUGIN_DISABLED", { id }, snap); }
   function resetQuarantine(id, { ownerApproval = null } = {}) {
-    load(); memQuarantine.delete(id);
+    load();
     if (unreadable) return STATE_BAD;
     const v = approve(ownerApproval, "PLUGIN_RESET_QUARANTINE", id); if (!v.allowed) return { ok: false, reason: "OWNER_APPROVAL_REQUIRED:" + v.reason };
-    const snap = structuredClone(S); S.health[id] = { failures: 0 }; return commit("PLUGIN_QUARANTINE_RESET", { id }, snap);
+    const snap = structuredClone(S), wasMem = memQuarantine.delete(id); S.health[id] = { failures: 0 }; const rr = commit("PLUGIN_QUARANTINE_RESET", { id }, snap); if (!rr.ok && wasMem) { memQuarantine.add(id); load(); } return rr;
   }
   /** Audit write that cannot throw into timers/child callbacks: a failed audit (corrupt or unwritable log) is reported as false, never as an uncaught exception. */
   const rec = (e, d) => { try { audit.append(e, d); return true; } catch { return false; } };
@@ -167,7 +167,7 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
       child.on("close", code => {
         if (done) return;
         if (code !== 0) { fail(id, "EXIT_" + code + ":" + err.split("\n")[0]); return finish({ ok: false, reason: "PLUGIN_CRASHED", exit: code }); }
-        try { const r = JSON.parse(out); if (own(S.health, id)) S.health[id].failures = 0; rec("PLUGIN_HOOK_RUN", { id, hook: String(hook).slice(0, 40) }); save(); finish({ ok: true, result: r }); }
+        try { const r = JSON.parse(out); load(); if (own(S.health, id) && !unreadable) S.health[id].failures = 0; rec("PLUGIN_HOOK_RUN", { id, hook: String(hook).slice(0, 40) }); save(); finish({ ok: true, result: r }); }
         catch { fail(id, "INVALID_JSON_OUTPUT"); finish({ ok: false, reason: "INVALID_OUTPUT" }); }
       });
       child.stdin.on("error", () => {}); child.stdin.end(payload);

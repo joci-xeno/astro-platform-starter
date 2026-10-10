@@ -140,3 +140,14 @@ test("M12 round 6: reordering, truncating or editing the stored versions of an a
     assert.equal(gate("SEARCH-1", "kp.answer").allowed, true); assert.equal(P2.rollback("JOCI", "p1", 2, { actor: "OWNER" }).ok, true); assert.equal(gate("SEARCH-1", "kp.answer").allowed, false);
   } finally { rm(d); }
 });
+
+test("M12 round 7: a stale second instance does not revert another instance's assignment", async () => {
+  const { createProfiles, createAgentProfileGate } = await import("../atlasz-addons/assistant-profiles.mjs");
+  const d = tmp("pg7-"); try {
+    const file = path.join(d, "p.json"), A = createProfiles({ file }), B = createProfiles({ file }), gate = createAgentProfileGate({ file, tenantId: "JOCI" });
+    const def = { actor: "OWNER", id: "p1", name: "prof", instructions: "guide", tools: [] };
+    assert.equal(A.create("JOCI", def).ok, true); assert.equal(A.assign("JOCI", "SEARCH-1", "p1", { actor: "OWNER" }).ok, true);
+    assert.equal(B.assign("JOCI", "SEARCH-2", "p1", { actor: "OWNER" }).ok, true, "B was stale but adopts A's store first");
+    assert.equal(gate("SEARCH-1", "kp.list").allowed, false); assert.equal(gate("SEARCH-2", "kp.list").allowed, false);
+  } finally { rm(d); }
+});

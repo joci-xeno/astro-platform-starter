@@ -42,7 +42,7 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
     return { ok: true, def: { id: inp.id, name: redactSecrets(inp.name.trim()), instructions: redactSecrets(inp.instructions.trim()), tools: uniqSorted(tools), skills: uniqSorted(skills), memoryScopes: uniqSorted(scopes) } };
   }
   // The file may have been damaged since this process loaded it: a write never replaces an unreadable file (the owner must repair or remove it first).
-  const writable = () => { if (!file) return true; try { JSON.parse(fs.readFileSync(file, "utf8")); return true; } catch (e) { return e?.code === "ENOENT"; } };
+  const writable = () => { if (!file) return true; try { const j = JSON.parse(fs.readFileSync(file, "utf8")); if (j && typeof j === "object" && j.tenants && typeof j.tenants === "object" && !Array.isArray(j.tenants)) d.tenants = j.tenants; return true; } catch (e) { return e?.code === "ENOENT"; } };      // also adopts what another instance wrote since this one loaded: a stale instance never reverts it
   function save(tenantId, inp, how) {
     if (inp?.actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" };
     if (!writable()) return { ok: false, reason: "PROFILE_STORE_UNREADABLE" };

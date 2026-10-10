@@ -73,3 +73,34 @@ test("R6 round 6: quarantine survives an unwritable state file (re-read keeps it
     assert.equal((await pm.invoke("echo", "h", {})).ok, false);
   } finally { r.done(); }
 });
+
+test("R6 round 7: a finishing hook never overwrites another manager's change; an unauthenticated reset cannot undo an in-memory quarantine; an unreadable state mid-run disables everything; malformed health entries cannot crash callbacks", async () => {
+  const r = rig(); try {
+    const slow = path.join(r.root, "plugins", "slow"); fs.mkdirSync(slow);
+    fs.writeFileSync(path.join(slow, "plugin.json"), JSON.stringify({ ...base, id: "slow", name: "Slow", kind: "PLUGIN", entry: "main.mjs" })); fs.writeFileSync(path.join(slow, "main.mjs"), "setTimeout(()=>console.log('{}'),400);process.stdin.resume();");
+    const mkpm = () => createPluginManager({ roots: [path.join(r.root, "plugins")], stateDir: r.state, ownerAuth: createOwnerAuth({ publicKeyB64: key.publicKeyB64 }), hookTimeoutMs: 3000, quarantineAfter: 1 }), A = mkpm(), B = mkpm();
+    assert.equal(r.enable(A).ok, true); assert.equal(A.enable("slow", { ownerApproval: ap("PLUGIN_ENABLE", A.enableSubject("slow")) }).ok, true);
+    const run = A.invoke("slow", "h", {}); await new Promise(res => setTimeout(res, 100));
+    assert.equal(B.disable("echo").ok, true); const res = await run; assert.equal(res.ok, true);
+    assert.equal(mkpm().list().plugins.find(x => x.id === "echo").status, "DISABLED", "the finishing hook did not resurrect the plugin B disabled");
+    // unreadable state mid-run
+    const sf = path.join(r.state, "plugins-state.json"); fs.rmSync(sf); fs.mkdirSync(sf);
+    assert.equal((await A.invoke("slow", "h", {})).ok, false); assert.equal(A.disable("slow").ok, false); assert.ok(A.list().plugins.every(x => x.status === "DISABLED"));
+    fs.rmSync(sf, { recursive: true });
+    // malformed health entry
+    fs.writeFileSync(sf, JSON.stringify({ enabled: {}, health: { echo: 5 }, theme: null })); assert.doesNotThrow(() => mkpm().list());
+  } finally { r.done(); }
+});
+
+test("R6 round 7: an unapproved resetQuarantine leaves an in-memory-only quarantine in place", async () => {
+  const r = rig(); try {
+    fs.writeFileSync(path.join(r.root, "plugins", "echo", "main.mjs"), "process.exit(3)");
+    const pm = createPluginManager({ roots: [path.join(r.root, "plugins")], stateDir: r.state, ownerAuth: createOwnerAuth({ publicKeyB64: key.publicKeyB64 }), hookTimeoutMs: 1500, quarantineAfter: 1 });
+    assert.equal(pm.enable("echo", { ownerApproval: ap("PLUGIN_ENABLE", pm.enableSubject("echo")) }).ok, true);
+    fs.mkdirSync(path.join(r.state, "plugins-state.json.tmp"), { recursive: true });
+    await pm.invoke("echo", "h", {}); assert.equal(pm.list().plugins[0].status, "QUARANTINED");
+    assert.match(pm.resetQuarantine("echo", {}).reason, /OWNER_APPROVAL_REQUIRED/); assert.equal(pm.list().plugins[0].status, "QUARANTINED");
+    const rs = pm.resetQuarantine("echo", { ownerApproval: ap("PLUGIN_RESET_QUARANTINE", "echo") }); assert.equal(rs.ok, false, "a reset whose state write fails does not lift the quarantine"); assert.equal(pm.list().plugins[0].status, "QUARANTINED");
+    assert.equal((await pm.invoke("echo", "h", {})).ok, false);
+  } finally { r.done(); }
+});
