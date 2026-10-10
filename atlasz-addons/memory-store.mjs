@@ -97,17 +97,20 @@ function* credentialAssignments(t) {
 // (>= 8 characters, letters AND digits, or letters/digits with a symbol; not a date, version or URL). "password must be Xk9mQ2v8", "The password has been changed to Xk9mQ2v8", "password: now Xk9mQ2v8".
 const PROX_NAME = new RegExp("(?<![A-Za-z0-9])(?:pass(?:word|wd|phrase|wort|code)|pwd|psw|pw|psk|secret|credentials?|creds|api[ _-]?key|apikey|kennwort|jelsz[a-z]{0,6}|contrasena|" + FOREIGN + ")s?(?![A-Za-z0-9])", "giu");
 const CRED_WORD = /^\d+[_\-.]?pass/i;      // "1Password" is a product
-const proxCred = tok => tok.length >= 8 && tok.length <= 120 && !/\s/.test(tok) && !PLACEHOLDER.test(tok) && !/^\[redacted/i.test(tok) && !looksStructural(tok) && !CRED_WORD.test(tok) && /\p{L}/u.test(tok)
-  && !/^[A-Za-z]:[\\/]|^[\\/~.]|[\\/]\p{L}{3,}/u.test(tok) && !/(?:^|-)\p{L}{4,}-|^\p{L}{4,}-\p{L}*\d?$/u.test(tok)
-  && ((tok.match(/\d/g) ?? []).length >= 1 && (/[^\p{L}\d\-.]/u.test(tok) || (/\p{Lu}/u.test(tok) && /\p{Ll}/u.test(tok)) || (tok.match(/\d/g) ?? []).length >= 4));
+const baseCred = tok => tok.length >= 8 && tok.length <= 120 && !/\s/.test(tok) && !PLACEHOLDER.test(tok) && !/^\[redacted/i.test(tok) && !looksStructural(tok) && !CRED_WORD.test(tok) && /\p{L}/u.test(tok)
+  && !/^[A-Za-z]:[\\/]|^[\\/~.]|[\\/]\p{L}{3,}/u.test(tok) && !/(?:^|-)\p{L}{4,}-|^\p{L}{4,}-\p{L}*\d?$/u.test(tok) && (tok.match(/\d/g) ?? []).length >= 1;
+// STRONG: unmistakably a generated credential (mixed case with >= 2 digits and no long word, or a symbol). WEAK: a word with digits ("Welcome2024", "letmein2024"); only when introduced like a value - directly after the name or after is/was/be/to/now/as/set/use.
+const strongCred = tok => baseCred(tok) && (/[^\p{L}\d\-._]/u.test(tok) || ((tok.match(/\d/g) ?? []).length >= 2 && /\p{Lu}/u.test(tok) && /\p{Ll}/u.test(tok) && /\d\p{L}/u.test(tok) && !/\p{L}{6,}/u.test(tok)));
+const INTRO = /^(?:is|was|be|been|are|to|now|as|set|use|using|becomes?|became|remains?|stays?|=|:)$/i;
+const weakCred = tok => baseCred(tok) && !/^\p{Lu}{2,}[\d-]|\.\p{L}{1,5}$|\d\.\d|^\p{Lu}{2,}\p{Lu}*\d/u.test(tok) && ((/\p{Lu}/u.test(tok) && /\p{Ll}/u.test(tok)) || (tok.match(/\d/g) ?? []).length >= 4);
 function* proximityAssignments(t) {
   const re = PROX_NAME; re.lastIndex = 0; let m;
   while ((m = re.exec(t)) !== null) {
-    const from = m.index + m[0].length, seg = t.slice(from, from + 200).split(/[\r\n\u2028\u2029]/, 1)[0]; let n = 0, ended = false;
+    const from = m.index + m[0].length, seg = t.slice(from, from + 200).split(/[\r\n\u2028\u2029]/, 1)[0]; let n = 0, ended = false, prev = ":";
     for (const w of seg.matchAll(/\S+/g)) {
       if (ended || ++n > 8) break; const raw = w[0], tok = raw.replace(/^[\s"'`(<\[{:=,;|]+/, "").replace(/[.,;:?!)\]}>"'`]+$/, ""), off = raw.indexOf(tok);
-      if (tok && proxCred(tok)) { yield { index: from + w.index + Math.max(0, off), value: tok }; break; }
-      if (/[.!?]$/.test(raw) && !/\d/.test(raw)) ended = true;      // a sentence ended: the next words are not about this name
+      if (tok && (strongCred(tok) || (INTRO.test(prev) && weakCred(tok)))) { yield { index: from + w.index + Math.max(0, off), value: tok }; break; }
+      prev = tok.toLowerCase() || prev; if (/[.!?]$/.test(raw) && !/\d/.test(raw)) ended = true;      // a sentence ended: the next words are not about this name
     }
   }
 }
