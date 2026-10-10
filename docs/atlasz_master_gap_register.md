@@ -1,6 +1,6 @@
 # ATLASZ V7.3 — Unified Master Gap Register
 
-Total gaps: **815** (registry 738, 85-capability 67, scans 10).
+Total gaps: **814** (registry 738, 85-capability 67, scans 9).
 
 LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence exists in this workspace.
 
@@ -10,7 +10,7 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - EXTERNAL: 58
 - STRUCTURE_ONLY: 56
 - MODULE_NOT_CONNECTED: 27
-- UNTESTED: 11
+- UNTESTED: 10
 - OWNER_DECISION: 4
 
 ## By workstream
@@ -27,7 +27,7 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - SCHEDULER_PCC: 23
 - OBSERVABILITY_DOCTOR: 23
 - SECTION_S31: 17
-- UNASSIGNED: 16
+- UNASSIGNED: 15
 - SECTION_S52: 11
 - SECTION_S18: 10
 - SECTION_S44: 10
@@ -58,7 +58,6 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 
 ## Modules without a test reference
 - atlasz-addons/a11y-worker.mjs
-- atlasz-addons/file-lock.mjs
 
 ## Unconnected provider slots (declared PLACEHOLDER_UNCONNECTED)
 - atlasz-addons/approval-command-gateway.mjs

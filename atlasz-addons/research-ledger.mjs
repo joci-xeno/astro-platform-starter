@@ -87,7 +87,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
     factMemo = { key, v }; return v; };
   const confirmedSet = () => { const key = S.events.length + ":" + (S.events.at(-1)?.hash ?? "") + ":" + anchorOk() + stateOk(); if (confMemo.key === key) return confMemo.set; const ok = verifyChain().ok && stateOk(); confMemo = { key, set: new Set(ok ? S.events.filter(e => e.type === "EVIDENCE_CONFIRMED" && e.by === "OWNER" && typeof e.bind === "string").map(e => e.findingId + "|" + e.evidence + "|" + e.bind) : []) }; return confMemo.set; };
   const who = w => ({ tenantId: w?.tenantId, role: w?.role ?? "OWNER", forAgent: Boolean(w?.forAgent) });
-  const byOf = (w, by) => (who(w).forAgent ? "AGENT" : (typeof by === "string" && by ? by.slice(0, 80) : "OWNER"));   // an agent can never name itself OWNER (or anyone else)
+  const byOf = (w, by) => (who(w).forAgent || (w?.role != null && w.role !== "OWNER") ? "AGENT" : (typeof by === "string" && by ? by.slice(0, 80) : "OWNER"));   // an agent can never name itself OWNER (or anyone else)
   function access(projectId, w) {                                   // the caller must be allowed to use the project (tenant + role), else it does not exist for them
     if (!w?.tenantId) throw new Error("TENANT_REQUIRED");
     if (!knowledge.list({ tenantId: w.tenantId, role: who(w).role }).some(p => p.id === projectId)) throw new Error("PROJECT_NOT_PERMITTED");
@@ -217,7 +217,10 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
     reload(); if (who(w).forAgent || w?.role !== "OWNER") throw new Error("OWNER_ONLY"); if (!headFile) return { ok: true, events: S.events.length };
     let prev = "GENESIS"; for (const e of S.events) { const { hash, ...rest } = e; if (e.prev !== prev || sha(prev + JSON.stringify({ ...rest, hash: undefined })) !== hash) return { ok: false, reason: "CHAIN_BROKEN", brokenAt: e.n }; prev = hash; }
     if (!stateOk()) return { ok: false, reason: "STORE_ALTERED_OUTSIDE_LEDGER" };
-    const before = readHead(); store.save(); loadTamper = false; log("RESEARCH_REANCHORED", { by: "OWNER", events: S.events.length, previousHead: before ? before.n : null }); return { ok: true, events: S.events.length, previousHead: before ? before.n : null };
+    const before = readHead();
+    if (!S.events.length) return { ok: false, reason: before && before.n > 0 ? "STORE_EMPTY_BUT_HEAD_REMAINS" : "NOTHING_TO_ANCHOR", previousHead: before ? before.n : null };      // nothing to re-anchor to: the owner must remove the stale anchor deliberately
+    store.save(); if (!anchorOk()) return { ok: false, reason: "HEAD_NOT_WRITTEN", previousHead: before ? before.n : null };      // never report success unless the anchor now matches
+    loadTamper = false; log("RESEARCH_REANCHORED", { by: "OWNER", events: S.events.length, previousHead: before ? before.n : null }); return { ok: true, events: S.events.length, previousHead: before ? before.n : null };
   }
   return lockMethods({ openQuestion, addSource, addFinding, attachEvidence, declareContradiction, resolveContradiction, confirmEvidence, report, unresolved, list, summary, events, reanchor, verifyChain: () => (reload(), verifyChain()) }, file, ["openQuestion", "addSource", "addFinding", "attachEvidence", "declareContradiction", "resolveContradiction", "confirmEvidence", "reanchor"]);
 }

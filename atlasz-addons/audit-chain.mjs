@@ -35,7 +35,7 @@ export function readAuditFile(file) {
     try { out.push(JSON.parse(line)); }
     catch {
       // A torn final line (crash mid-append) is tolerated; a corrupt middle line is tampering.
-      if (i === lines.length - 1) break;
+      if (i === lines.length - 1 && !raw.endsWith("\n")) break;                                    // only a line WITHOUT its newline can be a torn write; a damaged complete line is tampering
       throw new Error("AUDIT_FILE_CORRUPT_AT_LINE_" + (i + 1));
     }
   }
@@ -54,6 +54,7 @@ export function createAuditChain({ filePath = null, now = () => new Date().toISO
     if (!raw) return;
     const body = raw.replace(/\n+$/, ""), nl = body.lastIndexOf("\n"), frag = body.slice(nl + 1);
     let whole = false; try { JSON.parse(frag); whole = true; } catch { /* torn or garbage */ }
+    if (!whole && raw.endsWith("\n")) throw new Error("AUDIT_FILE_CORRUPT_TAIL");               // a damaged line that was fully written is evidence, not a crash artefact: never cut it away
     if (!whole) { fs.truncateSync(filePath, Buffer.byteLength(body.slice(0, nl + 1))); return; }       // the reader already ignores an unparseable LAST line; it is cut off so the next entry cannot bury it mid-file
     if (!raw.endsWith("\n")) fs.appendFileSync(filePath, "\n");
   }

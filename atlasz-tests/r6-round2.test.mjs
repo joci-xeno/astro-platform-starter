@@ -112,7 +112,7 @@ test("audit chain: a torn final line (crash mid-append) is cut off before the ne
 test("round 4: audit chain heals a trailing garbage line and refuses non-object entries; markdown report neutralises pipes, URLs, mentions and scrubs before stripping; LICENSE files do not make a review incomplete", async () => {
   const d = tmp("ac3-"); try {
     const f = path.join(d, "a.jsonl"), A = createAuditChain({ filePath: f }); A.append("ONE");
-    fs.appendFileSync(f, "garbage\n"); const B = createAuditChain({ filePath: f }); B.append("TWO"); assert.equal(createAuditChain({ filePath: f }).entries().length, 2);
+    fs.appendFileSync(f, "garbage"); const B = createAuditChain({ filePath: f }); B.append("TWO"); assert.equal(createAuditChain({ filePath: f }).entries().length, 2);
     fs.writeFileSync(f, fs.readFileSync(f, "utf8") + "null\nnull\n"); assert.throws(() => createAuditChain({ filePath: f }), /AUDIT_CHAIN_TAMPERED|AUDIT_FILE_CORRUPT/);
   } finally { rm(d); }
   const { analyze, reportToMarkdown } = await import("../atlasz-addons/analyst.mjs");

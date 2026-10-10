@@ -43,7 +43,7 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
     return { ok: true, def: { id: inp.id, name: redactSecrets(inp.name.trim()), instructions: redactSecrets(inp.instructions.trim()), tools: uniqSorted(tools), skills: uniqSorted(skills), memoryScopes: uniqSorted(scopes) } };
   }
   // The file may have been damaged since this process loaded it: a write never replaces an unreadable file (the owner must repair or remove it first).
-  const writable = () => { if (!file) return true; try { const j = JSON.parse(fs.readFileSync(file, "utf8")); if (j && typeof j === "object" && j.tenants && typeof j.tenants === "object" && !Array.isArray(j.tenants)) { if (!markerAgrees(file, j.tenants)) return false; d.tenants = j.tenants; } return true; } catch (e) { return e?.code === "ENOENT"; } };      // also adopts what another instance wrote since this one loaded: a stale instance never reverts it
+  const writable = () => { if (!file) return true; try { const j = JSON.parse(fs.readFileSync(file, "utf8")); if (j && typeof j === "object" && j.tenants && typeof j.tenants === "object" && !Array.isArray(j.tenants)) { if (!markerAgrees(file, j.tenants)) return false; d.tenants = j.tenants; } return true; } catch (e) { return e?.code === "ENOENT" && markerKeys(file) === null; } };      // a missing store is only writable when it never existed: if a marker is left, deleting the store must not be undone by an unrelated write      // also adopts what another instance wrote since this one loaded: a stale instance never reverts it
   function save(tenantId, inp, how) {
     if (inp?.actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" };
     if (!writable()) return { ok: false, reason: "PROFILE_STORE_UNREADABLE" };
@@ -114,12 +114,14 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
   /** Owner-only recovery after the store and the in-use marker disagree (an out-of-band edit): re-stamps the marker from what is on disk and RETURNS what had changed, so the owner decides knowingly. Never runs implicitly. */
   function reconcileMarker({ actor } = {}) {
     if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" }; if (!file) return { ok: true, changed: [] };
-    let j; try { j = JSON.parse(fs.readFileSync(file, "utf8")); } catch { return { ok: false, reason: "PROFILE_STORE_UNREADABLE" }; }
+    let j; try { j = JSON.parse(fs.readFileSync(file, "utf8")); } catch (e) {
+      if (e?.code === "ENOENT") { const mk0 = markerKeys(file), was0 = mk0 && mk0 !== Infinity ? Object.keys(mk0).sort() : []; d.tenants = {}; try { fs.rmSync(file + ".in-use", { recursive: true, force: true }); } catch { /* ignore */ } return { ok: true, changed: was0, storeMissing: true }; }      // the owner acknowledges that the store is gone: the marker is cleared and the report lists every assignment that is lost
+      return { ok: false, reason: "PROFILE_STORE_UNREADABLE" }; }
     if (!j || typeof j !== "object" || !j.tenants || typeof j.tenants !== "object" || Array.isArray(j.tenants)) return { ok: false, reason: "PROFILE_STORE_CORRUPT" };
     const mk = markerKeys(file), now = assignedMap({ tenants: j.tenants }), was = mk && mk !== Infinity ? mk : {}, changed = [...new Set([...Object.keys(was), ...Object.keys(now)])].filter(k => was[k] !== now[k]).sort();
     d.tenants = j.tenants; try { fs.rmSync(file + ".in-use", { recursive: true, force: true }); } catch { /* ignore */ } mark(); return { ok: true, changed };
   }
-  return lockMethods({ create, rollback, remove, assign, reconcileMarker, assignments, agentGate, list: listAll, get, resolve, check, grantable: role => { try { return [...grantable(role)]; } catch { return []; } }, limits: LIMITS }, file, ["create", "rollback", "remove", "assign", "reconcileMarker"]);
+  return lockMethods({ create, rollback, remove, assign, reconcileMarker, assignments, agentGate, list: listAll, get, resolve, check, grantable: role => { try { return [...grantable(role)]; } catch { return []; } }, limits: LIMITS }, file, ["create", "rollback", "remove", "assign", "reconcileMarker"], { onBusy: () => ({ ok: false, reason: "PROFILE_STORE_BUSY" }) });
 }
 
 /** Broker gate over the shared profiles file. The file is re-read on every call (the Control Center and the runtime are separate processes); an unreadable file denies instead of allowing. */
@@ -131,7 +133,7 @@ export function createAgentProfileGate({ file, tenantId, grantable = defaultGran
   return (agentId, tool) => {
     try {
       if (!file) return { allowed: true, profile: null };
-      if (typeof tenantId !== "string" || !tenantId) return { allowed: false, reason: "PROFILE_TENANT_INVALID" };      // a missing tenant id never means 'no restrictions'
+      if (typeof tenantId !== "string" || !okName(TENANT, tenantId)) return { allowed: false, reason: "PROFILE_TENANT_INVALID" };      // a missing tenant id never means 'no restrictions'
       let raw; try { raw = fs.readFileSync(file, "utf8"); } catch (e) { if (e?.code === "ENOENT") { if (markerKeys(file) !== null) return { allowed: false, reason: "PROFILE_STORE_MISSING" }; return { allowed: true, profile: null }; } throw e; }      // no file yet = nothing was ever assigned
       const j = JSON.parse(raw); if (j === null || typeof j !== "object" || Array.isArray(j) || j.tenants === null || typeof j.tenants !== "object" || Array.isArray(j.tenants)) return { allowed: false, reason: "PROFILE_STORE_CORRUPT" };   // a file this module wrote always has a tenants record
       if (!markerAgrees(file, j.tenants)) return { allowed: false, reason: "PROFILE_STORE_ASSIGNMENTS_CHANGED" };    // an assignment was removed or retargeted outside the owner's own assign/unassign

@@ -178,8 +178,9 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
       child.on("close", code => {
         if (done) return;
         if (code !== 0) { fail(id, "EXIT_" + code + ":" + err.split("\n")[0]); return finish({ ok: false, reason: "PLUGIN_CRASHED", exit: code }); }
-        try { const r = JSON.parse(out); withFileLock(stateFile, () => { load(); if (own(S.health, id) && !unreadable) S.health[id].failures = 0; memFails.delete(id); rec("PLUGIN_HOOK_RUN", { id, hook: String(hook).slice(0, 40) }); save(); }); finish({ ok: true, result: r }); }
-        catch { fail(id, "INVALID_JSON_OUTPUT"); finish({ ok: false, reason: "INVALID_OUTPUT" }); }
+        let r; try { r = JSON.parse(out); } catch { fail(id, "INVALID_JSON_OUTPUT"); return finish({ ok: false, reason: "INVALID_OUTPUT" }); }
+        try { withFileLock(stateFile, () => { load(); if (own(S.health, id) && !unreadable) S.health[id].failures = 0; memFails.delete(id); rec("PLUGIN_HOOK_RUN", { id, hook: String(hook).slice(0, 40) }); save(); }); } catch { /* the bookkeeping could not be written (lock busy): the run itself succeeded and is not counted as a failure */ }
+        finish({ ok: true, result: r });
       });
       child.stdin.on("error", () => {}); child.stdin.end(payload);
     }
@@ -193,5 +194,5 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
   }
   function activeTheme() { load(); if (!S.theme) return { id: null, variables: {} }; const p = scan().found.get(S.theme); return p ? { id: S.theme, name: p.manifest.name, variables: p.manifest.variables } : { id: null, variables: {} }; }
   const api = { scan: () => { const s = scan(); return { found: [...s.found.keys()], rejected: s.rejected }; }, list, enable, enableSubject, disable, resetQuarantine, invoke, setTheme, activeTheme, auditVerify: () => audit.verify(), validateManifest };
-  return lockMethods(api, stateFile, ["enable", "disable", "resetQuarantine", "setTheme"]);
+  return lockMethods(api, stateFile, ["enable", "disable", "resetQuarantine", "setTheme"], { onBusy: () => ({ ok: false, reason: "STATE_LOCKED" }) });
 }
