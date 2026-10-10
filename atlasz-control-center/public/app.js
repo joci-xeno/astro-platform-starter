@@ -542,7 +542,127 @@ views.observations = async () => {
     h("div", { class: "row" }, h("button", { class: "btn", onclick: async () => { await act("Purge expired", "/api/observations/action", { op: "purge" }); render(); } }, "Purge expired now"), h("button", { class: "btn", onclick: async () => { const c = prompt("Type the tenant id (JOCI) to delete ALL memory"); if (c) { await act("Forget all", "/api/observations/action", { op: "forgetAll", confirm: c }); render(); } } }, "Forget everything")),
     h("h3", {}, "Recent audit events (content-free)"), table(["#", "At", "Type", "By"], x.events.map(e => [e.n, e.at, e.type, e.by]))];
 };
-const NAMES = { home: "Home", a11y: "Accessibility audit", pcc: "Tasks / Reminders", observations: "Observation Memory", media: "Multimodal", sandbox: "Code Sandbox", workbench: "Workbench", projects: "Projects & Workflows", research: "Research Ledger", knowledge: "Knowledge Projects", memory: "Memory", owner_safety: "OWNER SAFETY / CONTROL", overview: "Overview", plugins: "Plugins / Themes", finance: "Revenue / Costs / Profit", evidence: "Evidence / Audit", agents: "Agents (5+25)", jobs: "Jobs / Opportunities", money: "Money Engine", crm_inbox: "CRM / Graph / Inbox", approvals: "Approvals", providers: "Model / Tool health", errors: "Errors & Blockers", owner: "Owner Controls", backup: "Backup / Restore / LKG", doctor: "System Doctor", updates: "Update Center", voice: "Voice", documents: "Documents", inbox: "Inbox", connectors: "Connectors", techwatch: "Tech Watch", brain_status: "Brain · Status", brain_orchestrator: "Brain · Orchestrator", brain_planning: "Brain · Planning", brain_capabilities: "Brain · Capability Graph", brain_knowledge: "Brain · Knowledge", brain_simulation: "Brain · Simulation", brain_verification: "Brain · Verification", brain_security: "Brain · Security", brain_opportunities: "Brain · Opportunities", brain_factory: "Brain · Business Factory", brain_blackbox: "Brain · Black Box", brain_recovery: "Brain · Recovery", brain_behavior: "Brain · Behavior Anomalies", brain_health: "Brain · Health", brain_command: "Owner Command" };
+const NAMES = { ops: "Operations Dashboard", activity: "Live Agent Activity", trading: "Trading & Crypto (simulated)", business: "Revenue & Business", home: "Home", a11y: "Accessibility audit", pcc: "Tasks / Reminders", observations: "Observation Memory", media: "Multimodal", sandbox: "Code Sandbox", workbench: "Workbench", projects: "Projects & Workflows", research: "Research Ledger", knowledge: "Knowledge Projects", memory: "Memory", owner_safety: "OWNER SAFETY / CONTROL", overview: "Overview", plugins: "Plugins / Themes", finance: "Revenue / Costs / Profit", evidence: "Evidence / Audit", agents: "Agents (5+25)", jobs: "Jobs / Opportunities", money: "Money Engine", crm_inbox: "CRM / Graph / Inbox", approvals: "Approvals", providers: "Model / Tool health", errors: "Errors & Blockers", owner: "Owner Controls", backup: "Backup / Restore / LKG", doctor: "System Doctor", updates: "Update Center", voice: "Voice", documents: "Documents", inbox: "Inbox", connectors: "Connectors", techwatch: "Tech Watch", brain_status: "Brain · Status", brain_orchestrator: "Brain · Orchestrator", brain_planning: "Brain · Planning", brain_capabilities: "Brain · Capability Graph", brain_knowledge: "Brain · Knowledge", brain_simulation: "Brain · Simulation", brain_verification: "Brain · Verification", brain_security: "Brain · Security", brain_opportunities: "Brain · Opportunities", brain_factory: "Brain · Business Factory", brain_blackbox: "Brain · Black Box", brain_recovery: "Brain · Recovery", brain_behavior: "Brain · Behavior Anomalies", brain_health: "Brain · Health", brain_command: "Owner Command" };
+// ---- M6: Operations Center views (operations, live agent activity, trading & crypto, revenue & business). Live state arrives over /api/live (SSE with reconnect); every figure comes from the server, labelled with its data kind. ----
+const setKids = (el, ...nodes) => el.replaceChildren(...nodes.flat(Infinity).filter(x => x !== null && x !== undefined && x !== false));
+let stateAbort = null;
+function stopState() { try { stateAbort?.abort(); } catch {} stateAbort = null; }
+/** Subscribe to the digest stream. onChange() is called when the server reports changed state; the connection label shows Live / Reconnecting with the last-update time. */
+function watchState(label, onChange) {
+  stopState(); const ctl = new AbortController(); stateAbort = ctl; let failures = 0, boot = null, last = null;
+  const wait = ms => new Promise(r => { const t = setTimeout(r, ms); ctl.signal.addEventListener("abort", () => { clearTimeout(t); r(); }, { once: true }); });
+  (async () => {
+    while (!ctl.signal.aborted) {
+      try {
+        const res = await fetch("/api/live", { headers: { "x-atlasz-token": TOKEN }, signal: ctl.signal });
+        if (!res.ok) label.textContent = "Live updates unavailable (" + res.status + "). Retrying...";
+        else {
+          failures = 0; const rd = res.body.getReader(), dec = new TextDecoder(); let buf = "";
+          for (;;) {
+            const { value, done } = await rd.read(); if (done) break; buf += dec.decode(value, { stream: true }); let i;
+            while ((i = buf.indexOf("\n\n")) >= 0) {
+              const f = buf.slice(0, i); buf = buf.slice(i + 2); const ev = /^event: (.*)$/m.exec(f)?.[1], dat = /^data: (.*)$/m.exec(f)?.[1]; if (!dat) continue; let o = {}; try { o = JSON.parse(dat); } catch { continue; }
+              if (ev === "state") { const restarted = boot !== null && o.boot !== boot; boot = o.boot; label.textContent = "LIVE - server state synchronised " + new Date(o.at).toLocaleTimeString() + (restarted ? " (server restarted: state restored from disk)" : ""); if (o.digest !== last || restarted) { last = o.digest; await onChange(); } }
+            }
+          }
+          label.textContent = "Connection lost. Reconnecting... (the data below is the last known state, not live)";
+        }
+      } catch (e) { if (e.name === "AbortError" || ctl.signal.aborted) return; label.textContent = "Connection interrupted. Reconnecting... (the data below is the last known state, not live)"; }
+      failures++; await wait(Math.min(15000, 1000 * 2 ** Math.min(failures, 4)));
+    }
+  })();
+}
+const liveShell = (title, intro, paint, path) => {
+  const status = h("div", { class: "note" }, "Connecting..."), body = h("div", {}); let busy = false;
+  const refresh = async () => { if (busy) return; busy = true; try { paint(body, await api(path)); } catch (e) { setKids(body, note("Could not read: " + e.message, "bad")); } finally { busy = false; } };
+  const first = refresh(); watchState(status, refresh); return first.then(() => [h("h2", {}, title), note(intro), status, body]);
+};
+const kindPill = k => h("span", { class: "pill " + (k === "LIVE" ? "ok" : k === "SIMULATED" ? "warn" : k === "UNAVAILABLE" ? "bad" : ""), title: "data kind" }, k);
+const pct = n => (n === null || n === undefined || !Number.isFinite(n)) ? "—" : n.toFixed(2) + "%";
+const num2 = n => (n === null || n === undefined || !Number.isFinite(n)) ? "—" : Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+views.ops = () => liveShell("Operations Dashboard", "Every figure is read from the running system. Where a source is not connected it says so; it is never shown as zero or healthy.", (body, x) => {
+  setKids(body, 
+    h("div", { class: "grid" }, card("Runtime", pill(x.system.runtime), x.system.reachable ? "version " + (x.system.version ?? "?") : (x.system.reason ?? "not reachable")), card("Kill switch", pill(x.system.killSwitch)), card("Safe mode", pill(x.system.safeMode)), card("Owner key", pill(x.system.ownerKey)),
+      card("Permanent agents", String(x.agents.permanent), `topology ${x.topology.actualSearch}/5 SEARCH + ${x.topology.actualExecution}/25 EXECUTION`), card("Pending approvals", String(x.approvals.pending)),
+      card("Revenue (verified receipts)", x.revenue.state === "VERIFIED_RECEIPTS_RECORDED" ? usd(x.revenue.verifiedReceivedUsd) : h("span", {}, "no evidence recorded"), x.revenue.note),
+      card("Memory", x.memory?.state === "CONNECTED" ? pill("CONNECTED") : pill(x.memory?.state ?? "UNKNOWN"), x.memory?.state === "CONNECTED" ? `${x.memory.notes} notes · audit ${x.memory.auditOk ? "ok" : "FAILED"} · ${x.memory.neural}` : (x.memory?.error ?? "")),
+      card("Trading research", h("span", {}, `${x.trading.strategies ?? 0} paper strategies`), `${x.trading.label ?? ""} · live data ${x.trading.liveData ?? "UNAVAILABLE"}`)),
+    h("h2", {}, "Agents"), x.agents.available ? h("div", { class: "grid" }, ...Object.entries(x.agents.counts).map(([k, v]) => card(k.replaceAll("_", " "), String(v)))) : note("Agent states are UNKNOWN: " + (x.agents.reason ?? "no coordination state") + ". Start the runtime to see real activity.", "bad"),
+    x.agents.available ? h("div", { class: "grid" }, ...Object.entries(x.agents.tasks).map(([k, v]) => card("tasks " + k, String(v)))) : null,
+    h("h2", {}, "Security alerts"), x.securityAlerts.length ? table(["Kind", "Detail"], x.securityAlerts.map(a => [a.kind, a.text])) : note("No alert is currently reported by the sources the Control Center can read.", "ok"),
+    h("h2", {}, "Pending approvals"), table(["Id", "Request", "Action"], x.approvals.items.map(a => [a.id, a.what, a.action])),
+    h("h2", {}, "Recent coordination events"), table(["Time", "Event", "Task", "Agent"], x.events.map(e => [e.at ?? "", e.type, e.task ?? "", e.by ?? ""])));
+}, "/api/operations");
+
+views.activity = () => liveShell("Live Agent Activity", "States are derived only from tasks and heartbeats recorded by the coordinator. 'IDLE' means no open task is recorded; 'UNKNOWN' means no coordination state exists. Select an agent to inspect it.", (body, x) => {
+  const detail = h("div", {}), show = a => detail.replaceChildren(h("h2", {}, a.id + " · " + a.state), note(a.why ?? ""), h("div", { class: "grid" }, card("Current task", a.task ?? "none"), card("Open tasks", String(a.openTasks ?? 0)), card("Last heartbeat", a.lastHeartbeat ?? "none recorded"), card("Sub-agents active", String(a.activeSubAgents ?? 0)),
+    card("Last completed", a.lastCompleted ? `${a.lastCompleted.task} @ ${a.lastCompleted.at}` : "none recorded"), card("Last failed/rejected", a.lastFailed ? `${a.lastFailed.task} (${a.lastFailed.type}) @ ${a.lastFailed.at}` : "none recorded")), table(["Time", "Event", "Task"], (a.recentActions ?? []).map(e => [e.at ?? "", e.type, e.task ?? ""])));
+  const rows = x.agents.map(a => { const tr = h("tr", { tabindex: "0", style: "cursor:pointer", onclick: () => show(a), onkeydown: e => { if (e.key === "Enter") show(a); } }, h("td", {}, a.id), h("td", {}, pill(a.state)), h("td", {}, a.task ?? ""), h("td", { class: "wrap" }, a.why ?? ""), h("td", {}, a.lastHeartbeat ?? "")); return tr; });
+  setKids(body, x.available ? null : note("UNKNOWN: " + x.reason + ". " + x.note, "bad"), h("div", { class: "grid" }, ...Object.entries(x.counts).map(([k, v]) => card(k.replaceAll("_", " "), String(v)))),
+    h("table", {}, h("thead", {}, h("tr", {}, ["Agent", "State", "Task", "Why this state", "Last heartbeat"].map(c => h("th", {}, c)))), h("tbody", {}, rows)), detail);
+}, "/api/agents/activity");
+
+views.business = () => liveShell("Revenue & Business", "Real business revenue and simulated paper trading are separate and are never added together.", (body, x) => {
+  const r = x.realBusiness, p = x.simulatedPaperTrading;
+  setKids(body, 
+    h("h2", {}, "Real business (ledger-verified)"), note(r.source), r.state !== "VERIFIED" ? note(r.state === "LEDGER_UNREADABLE" ? "The financial ledger could not be read: revenue is UNKNOWN, not zero." : "No payment evidence has been recorded: verified revenue is unknown/none - NOT a measured zero.", r.state === "LEDGER_UNREADABLE" ? "bad" : "") : null,
+    h("div", { class: "grid" }, card("Verified received", r.verifiedReceivedUsd === null ? "UNKNOWN" : usd(r.verifiedReceivedUsd), r.paymentRecords + " payment record(s) with evidence"), card("Unconfirmed pipeline", r.unconfirmedPipelineUsd === null ? "UNKNOWN" : usd(r.unconfirmedPipelineUsd), r.outstandingNote), card("Documented costs", r.costsUsd === null ? "UNKNOWN" : usd(r.costsUsd)), card("Verified net", r.verifiedNetUsd === null ? "UNKNOWN" : usd(r.verifiedNetUsd)),
+      card("Opportunities found", String(r.funnel.opportunitiesFound ?? "not reported")), card("Outreach sent", String(r.funnel.outreachSent)), card("Won (claimed)", String(r.funnel.won)), card("Ledger chain", r.ledgerChainOk === null ? "UNKNOWN" : r.ledgerChainOk ? "verified" : "FAILED")),
+    table(["Ledger stage", "Entries"], Object.entries(r.funnel.stages).map(([k, v]) => [k, String(v)])),
+    h("h2", {}, "Simulated paper trading (separate)"), note(p.label ?? "SIMULATED", "warn"),
+    p.state === "UNAVAILABLE" ? note("Paper trading state unavailable.", "bad") : h("div", { class: "grid" }, card("Simulated realised P&L", num2(p.realisedPnl) + " SIM-USD", "not money, not revenue"), card("Mark-to-market equity", num2(p.equityMarkedToMarket) + " SIM-USD"), card("Drawdown", pct(p.drawdownPct)), card("Simulated trades", String(p.trades)), card("Strategies", String(p.strategies))),
+    note(x.separationNote));
+}, "/api/revenue-dashboard");
+
+// ---- candlestick chart (canvas). The data-kind banner is drawn INTO the picture so a screenshot can never lose it. ----
+function drawChart(cv, d) {
+  const cs = getComputedStyle(document.documentElement), col = n => cs.getPropertyValue(n).trim() || "#888", W = cv.width = cv.clientWidth * (window.devicePixelRatio || 1) || 900, H = cv.height = 420 * (window.devicePixelRatio || 1), ctx = cv.getContext("2d"), dpr = window.devicePixelRatio || 1;
+  ctx.clearRect(0, 0, W, H); ctx.font = `${11 * dpr}px sans-serif`; const c = d.candles, padL = 8 * dpr, padR = 60 * dpr, padT = 26 * dpr, volH = 70 * dpr, plotH = H - padT - volH - 20 * dpr, plotW = W - padL - padR;
+  const hi = Math.max(...c.map(x => x.h), ...d.levels.map(l => l.high)), lo = Math.min(...c.map(x => x.l), ...d.levels.map(l => l.low)), span = (hi - lo) || 1, y = v => padT + (hi - v) / span * plotH, bw = plotW / c.length, x = i => padL + (i + 0.5) * bw, vmax = Math.max(...c.map(k => k.v), 1);
+  ctx.strokeStyle = col("--line"); ctx.fillStyle = col("--mute"); for (let i = 0; i <= 4; i++) { const v = lo + span * i / 4, yy = y(v); ctx.beginPath(); ctx.moveTo(padL, yy); ctx.lineTo(W - padR, yy); ctx.stroke(); ctx.fillText(v.toFixed(2), W - padR + 4 * dpr, yy + 3 * dpr); }
+  const idx = new Map(c.map((k, i) => [k.t, i])), tOf = t => { let i = idx.get(t); if (i !== undefined) return i; return t <= c[0].t ? 0 : c.length - 1; };
+  ctx.lineWidth = 1.2 * dpr; ctx.setLineDash([5 * dpr, 4 * dpr]);
+  for (const l of d.levels) { const a = Math.max(0, Math.floor((l.open - c[0].t) / (c[1].t - c[0].t))), b = Math.min(c.length - 1, Math.floor((l.close - c[0].t) / (c[1].t - c[0].t))); if (b < 0 || a > c.length - 1) continue; ctx.strokeStyle = col("--accent"); for (const v of [l.high, l.low]) { ctx.beginPath(); ctx.moveTo(x(a), y(v)); ctx.lineTo(x(b), y(v)); ctx.stroke(); } }
+  ctx.setLineDash([]);
+  c.forEach((k, i) => { const up = k.c >= k.o, colr = up ? col("--ok") : col("--bad"); ctx.strokeStyle = colr; ctx.fillStyle = colr; ctx.lineWidth = 1 * dpr; ctx.beginPath(); ctx.moveTo(x(i), y(k.h)); ctx.lineTo(x(i), y(k.l)); ctx.stroke(); const top = y(Math.max(k.o, k.c)), bh = Math.max(1 * dpr, Math.abs(y(k.o) - y(k.c))); ctx.fillRect(x(i) - Math.max(1, bw * 0.35), top, Math.max(2, bw * 0.7), bh); ctx.globalAlpha = 0.45; ctx.fillRect(x(i) - Math.max(1, bw * 0.35), H - 20 * dpr - k.v / vmax * volH, Math.max(2, bw * 0.7), k.v / vmax * volH); ctx.globalAlpha = 1; });
+  for (const m of d.markers) { for (const [t, p, kind] of [[m.entryT, m.entry, "in"], [m.exitT, m.exit, "out"]]) { if (t < c[0].t) continue; const i = tOf(t), yy = y(p); ctx.fillStyle = kind === "in" ? col("--accent") : (m.pnl >= 0 ? col("--ok") : col("--bad")); ctx.beginPath(); if (kind === "in") { const dir = m.side === "LONG" ? 1 : -1; ctx.moveTo(x(i), yy); ctx.lineTo(x(i) - 5 * dpr, yy + dir * 10 * dpr); ctx.lineTo(x(i) + 5 * dpr, yy + dir * 10 * dpr); ctx.closePath(); ctx.fill(); } else { ctx.arc(x(i), yy, 4 * dpr, 0, 7); ctx.fill(); } } }
+  ctx.fillStyle = col("--warn"); ctx.font = `bold ${12 * dpr}px sans-serif`; ctx.fillText(`${d.dataset.instrument} ${d.dataset.interval} · ${d.banner} · ${d.dataset.source}`.slice(0, 150), padL, 16 * dpr);
+}
+views.trading = async () => {
+  const sel = h("select", { "aria-label": "Dataset" }), box = h("div", {}), status = h("div", { class: "note" }, "Connecting..."); let cur = null, busy = false;
+  const call = async body => (await api("/api/trading/action", body)).result;
+  const run = async (label, body, after) => { try { const r = await call(body); if (r && r.ok === false) { toast(label + " refused: " + (r.reason ?? "unknown"), "bad"); return null; } toast(label + ": done", "ok"); if (after) after(r); await refresh(); return r; } catch (e) { toast(label + " failed: " + e.message, "bad"); return null; } };
+  const refresh = async () => {
+    if (busy) return; busy = true;
+    try {
+      const v = await api("/api/trading"); const keep = sel.value; sel.replaceChildren(...v.datasets.filter(d => !d.error).map(d => h("option", { value: d.id }, `${d.id} · ${d.instrument} ${d.interval} · ${d.kind}`))); if (keep && [...sel.options].some(o => o.value === keep)) sel.value = keep; cur = sel.value || null;
+      const chartWrap = h("div", {}), cv = h("canvas", { style: "width:100%;height:420px;border:1px solid var(--line);border-radius:8px;background:var(--panel)", role: "img", "aria-label": "Candlestick chart" });
+      let cd = null; if (cur) { const ds = v.datasets.find(d => d.id === cur), cfg = encodeURIComponent(JSON.stringify(ds?.kind === "SIMULATED" ? { anchor: "UTC_ASIA" } : { anchor: "NEW_YORK" })); cd = await api(`/api/trading/candles?dataset=${encodeURIComponent(cur)}&limit=576&config=${cfg}&markers=${v.paper.strategies.some(s => s.instrument === ds.instrument) ? "paper" : "backtest"}`); }
+      const p = v.paper, a = p.account;
+      setKids(box, 
+        note(`Live market data: ${v.liveData.state}. ${v.liveData.note}`, "bad"), note(p.label + " · " + v.realMoneyTrading.note, "warn"),
+        h("div", { class: "row" }, sel, h("button", { class: "btn", onclick: () => refresh() }, "Show"),
+          h("button", { class: "btn", onclick: async () => { const r = await ask({ title: "Generate SIMULATED data", text: "Creates a locally generated random series (labelled SIMULATED, not market data).", fields: [{ name: "id", label: "Dataset id" }, { name: "seed", label: "Seed (integer)" }, { name: "days", label: "Days (1-60)" }], ok: "Generate" }); if (r) run("Generate", { op: "generate", id: r.id, seed: Number(r.seed || 1), days: Number(r.days || 30) }); } }, "Generate simulated data"),
+          h("button", { class: "btn", disabled: !cur, onclick: async () => { const r = await run("Backtest", { op: "backtest", dataset: cur, config: { anchor: cd?.config?.anchor } }); if (r) out.replaceChildren(h("h2", {}, "Backtest · " + r.label), note("Result hash " + r.resultSha256), h("div", { class: "grid" }, card("Trades", String(r.metrics.trades)), card("Win rate", pct(r.metrics.winRate === null ? null : r.metrics.winRate * 100)), card("Expectancy", num2(r.metrics.expectancyR) + " R"), card("Profit factor", r.metrics.profitFactor === null ? "n/a" : num2(r.metrics.profitFactor)), card("Max drawdown", num2(r.metrics.maxDrawdownR) + " R")), note(r.assumptions.join(" · "))); } }, "Run ORB backtest"),
+          h("button", { class: "btn", disabled: !cur, onclick: async () => { const r = await run("Evaluate", { op: "evaluate", dataset: cur, config: { anchor: cd?.config?.anchor } }); if (r) out.replaceChildren(h("h2", {}, "Research verdict: " + r.status), note(r.statement + " " + r.note, r.status === "REJECTED" ? "bad" : "warn"), r.reasons.length ? table(["Why"], r.reasons.map(x => [x])) : null); } }, "Evaluate (OOS, baseline, look-ahead)"),
+          h("button", { class: "btn", disabled: !cur, onclick: async () => { const r = await ask({ title: "Add paper strategy", text: "Allowed only with a stored research verdict for this exact dataset and configuration. Without one, an owner-signed override is needed (leave the passphrase empty to try the verdict).", fields: [{ name: "id", label: "Strategy id" }, { name: "pass", label: "Owner passphrase (override only)", secret: true }], ok: "Add" }); if (r) run("Add strategy", { op: "paperAdd", id: r.id, dataset: cur, config: { anchor: cd?.config?.anchor }, passphrase: r.pass || undefined }); } }, "Add to paper trading")),
+        cd ? chartWrap : note("No dataset yet. Generate simulated data or import historical data you are licensed to use.", "warn"),
+        cd ? h("div", { class: "grid" }, card("Data kind", kindPill(cd.dataset.kind), cd.dataset.source), card("Freshness", cd.freshness.label, cd.freshness.ageMs === null ? "" : "age " + Math.round(cd.freshness.ageMs / 60000) + " min"), card("Candles shown", String(cd.candles.length)), card("Markers", String(cd.markers.length), cd.markersSource), card("Volatility ATR14", cd.analytics ? pct(cd.analytics.volatility.atr14Pct) : "—"), card("Spread estimate", cd.analytics?.spread.estimatePct == null ? "—" : pct(cd.analytics.spread.estimatePct), "estimate, not a quote"), card("Liquidity score", cd.analytics?.liquidity.score == null ? "—" : String(cd.analytics.liquidity.score), "relative, from candles"), card("Anomalies (recent)", String(cd.anomalies.length))) : null,
+        h("h2", {}, "Paper account (SIM-USD, simulated)"), p.warnings.map(w => note("Risk warning: " + w, "bad")),
+        h("div", { class: "grid" }, card("Realised equity", num2(a.realisedEquity), "start " + num2(a.starting)), card("Mark-to-market", num2(a.equityMarkedToMarket)), card("Unrealised", num2(a.unrealised)), card("Drawdown", pct(a.drawdownPct)), card("Audit chain", v.paperAuditOk ? "verified" : "FAILED", "length " + p.auditLength), card("Owner stop", v.stopped ? "ACTIVE - paper trading frozen" : "not active")),
+        table(["Strategy", "Instrument", "Status", "Basis", "Data", "Feed", ""], p.strategies.map(s => [s.id, s.instrument + " " + s.interval, h("span", {}, pill(s.status), s.suspendedReason ? " " + s.suspendedReason : ""), s.basis + " / " + s.verdict, s.dataKind, p.feeds[s.id] ? `${p.feeds[s.id].cursor} (${p.feeds[s.id].remaining} left)` : "none",
+          h("span", { class: "row" }, h("button", { class: "btn", onclick: () => run("Step", { op: "paperTick", candles: 12 }) }, "Step 12 candles"), s.status === "SUSPENDED" ? h("button", { class: "btn primary", onclick: async () => { const r = await ask({ title: "Resume " + s.id, text: "Signed single-use owner approval for this suspension.", fields: [PASS], ok: "Resume" }); if (r) run("Resume", { op: "paperResume", id: s.id, passphrase: r.passphrase }); } }, "Resume (signed)") : null, s.status === "ACTIVE" ? h("button", { class: "btn", onclick: () => run("Stop", { op: "paperStop", id: s.id }) }, "Stop") : null)])),
+        h("h2", {}, "Simulated trades"), table(["Strategy", "Side", "Entry", "Exit", "R", "P&L (SIM)", "Reason", "Data"], p.trades.slice(-30).reverse().map(t => [t.strategy, t.side, num2(t.entry), num2(t.exit), num2(t.r), num2(t.pnl), t.exitReason, t.dataKind + " · simulated"])),
+        h("h2", {}, "Research verdicts"), table(["Dataset", "Kind", "Verdict", "Evidence hash", "When"], v.verdicts.map(x => [x.dataset, x.kind, x.status, (x.evidenceSha256 ?? "").slice(0, 16), x.at])),
+        h("h2", {}, "Datasets"), table(["Id", "Instrument", "Kind", "Source / licence", "Candles", "Freshness"], v.datasets.map(d => [d.id, d.instrument ? d.instrument + " " + d.interval : "", d.kind ?? "", d.error ?? `${d.source} · ${d.licence}`, String(d.count ?? ""), d.freshness?.label ?? ""])));
+      if (cd) { const slot = chartWrap; slot.replaceChildren(cv); requestAnimationFrame(() => drawChart(cv, cd)); }
+    } catch (e) { setKids(box, note("Could not read trading state: " + e.message, "bad")); } finally { busy = false; }
+  };
+  const out = h("div", {}); sel.addEventListener("change", () => refresh());
+  await refresh(); watchState(status, refresh); return [h("h2", {}, "Trading & Crypto (research and SIMULATED paper trading)"), status, box, out];
+};
+
 // G12 live feed: fetch-based SSE reader (EventSource cannot send the token header). Read-only; stops when the view changes.
 let liveAbort = null;
 function stopLive() { try { liveAbort?.abort(); } catch {} liveAbort = null; }
@@ -576,6 +696,7 @@ function startLive(list, status) {
 let current = "home";
 async function render() {
   if (current !== "evidence") stopLive();
+  stopState();
   $("#nav").replaceChildren(h("h1", {}, "ATLASZ"), h("button", { class: "btn danger big", style: "margin:6px 10px;width:calc(100% - 20px)", onclick: async () => { const r = await ask({ title: "EMERGENCY STOP", text: "Stops all new dispatch and external actions at once. Nothing is deleted.", fields: [PASS], danger: true, ok: "EMERGENCY STOP" }); if (r) act("Emergency stop", "/api/owner-safety/action", { action: "EMERGENCY_STOP", passphrase: r.passphrase }); } }, "EMERGENCY STOP"), ...Object.entries(NAMES).map(([k, n]) => h("button", { "aria-current": k === current ? "page" : null, onclick: () => { current = k; render(); } }, n)));
   const main = $("#main");
   try {

@@ -3,7 +3,7 @@
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
-import { randomBytes, timingSafeEqual } from "node:crypto";
+import { randomBytes, timingSafeEqual, createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { createControlCenterCore } from "./core.mjs";
@@ -18,14 +18,15 @@ export function createControlCenterServer(opts = {}) {
   const token = opts.token ?? randomBytes(24).toString("hex");
   let port = 0;
   const get = { "/api/status": () => core.status(), "/api/opportunities": () => core.opportunities(), "/api/approvals": () => core.approvals(), "/api/backups": () => core.backups(),
-    "/api/repos": () => core.repos(), "/api/prototypes": () => core.prototypes(), "/api/finance": () => core.finance(), "/api/documents": () => core.documents(), "/api/knowledge": () => core.knowledge(), "/api/memory": () => core.memory(), "/api/research": () => core.research(), "/api/sandbox": () => core.sandbox(), "/api/workbench": () => core.workbench(), "/api/media": () => core.media(), "/api/observations": () => core.observations(), "/api/brain": () => core.brain(), "/api/money-engine": () => core.moneyEngine(), "/api/money-jobs": () => core.moneyJobs(), "/api/money-agents": () => core.moneyAgents(), "/api/money-recurring": () => core.moneyRecurring(), "/api/crm-inbox": () => core.crmInbox(), "/api/owner-safety": () => core.ownerSafety(), "/api/inbox": () => core.inbox(), "/api/voice": () => core.voice(), "/api/connectors": () => core.connectors(), "/api/techwatch": () => core.techWatch(), "/api/evidence": () => core.evidence(), "/api/brief": () => core.brief({ markShown: true }), "/api/pcc": () => core.pcc(), "/api/prefs": () => core.prefs(), "/api/plugins": () => core.plugins(), "/api/mcp": () => core.mcp(), "/api/theme": () => core.theme(), "/api/doctor": () => core.doctor(), "/api/updates": () => core.updates() };
+    "/api/repos": () => core.repos(), "/api/prototypes": () => core.prototypes(), "/api/finance": () => core.finance(), "/api/documents": () => core.documents(), "/api/knowledge": () => core.knowledge(), "/api/memory": () => core.memory(), "/api/trading": () => core.trading(), "/api/operations": () => core.operations(), "/api/agents/activity": () => core.agentsActivity(), "/api/revenue-dashboard": () => core.revenueDashboard(),
+    "/api/trading/candles": q => { let cfg = {}; try { cfg = JSON.parse(q.get("config") || "{}"); } catch { throw new Error("CONFIG_INVALID_JSON"); } const r = core.tradingCandles({ dataset: q.get("dataset"), limit: Number(q.get("limit") || 300), config: cfg, markers: q.get("markers") || "backtest", strategy: q.get("strategy") }); if (!r.ok) throw new Error(r.reason); return r; }, "/api/research": () => core.research(), "/api/sandbox": () => core.sandbox(), "/api/workbench": () => core.workbench(), "/api/media": () => core.media(), "/api/observations": () => core.observations(), "/api/brain": () => core.brain(), "/api/money-engine": () => core.moneyEngine(), "/api/money-jobs": () => core.moneyJobs(), "/api/money-agents": () => core.moneyAgents(), "/api/money-recurring": () => core.moneyRecurring(), "/api/crm-inbox": () => core.crmInbox(), "/api/owner-safety": () => core.ownerSafety(), "/api/inbox": () => core.inbox(), "/api/voice": () => core.voice(), "/api/connectors": () => core.connectors(), "/api/techwatch": () => core.techWatch(), "/api/evidence": () => core.evidence(), "/api/brief": () => core.brief({ markShown: true }), "/api/pcc": () => core.pcc(), "/api/prefs": () => core.prefs(), "/api/plugins": () => core.plugins(), "/api/mcp": () => core.mcp(), "/api/theme": () => core.theme(), "/api/doctor": () => core.doctor(), "/api/updates": () => core.updates() };
   const post = {
     "/api/owner-key": b => core.provisionOwnerKey(b), "/api/approvals/decide": b => core.decideApproval(b), "/api/emergency": b => core.setEmergency(b), "/api/safe-mode/exit": b => core.exitSafeMode(b),
     "/api/brain/command": b => core.brainCommand(b), "/api/owner-safety/action": b => core.ownerSafetyAction(b), "/api/runtime/start": () => core.startRuntime(), "/api/runtime/stop": () => core.stopRuntime(),
     "/api/backup": b => core.backupNow(b), "/api/backup/drill": () => core.drill(), "/api/backup/mark-lkg": b => core.markLastKnownGood(b),
     "/api/restore/lkg": b => core.restoreLastKnownGood(b), "/api/restore/backup": b => core.restoreFromBackup(b),
     "/api/updates/check": () => core.updateActions.check(), "/api/updates/test": b => core.updateActions.test(b), "/api/updates/install": b => core.updateActions.install(b),
-    "/api/chat": b => core.chat(b), "/api/pcc/action": b => core.pccAction(b), "/api/knowledge/action": b => core.knowledgeAction(b), "/api/memory/action": b => core.memoryAction(b), "/api/research/action": b => core.researchAction(b), "/api/sandbox/run": b => core.sandboxRun(b), "/api/workbench/action": b => core.workbenchAction(b), "/api/a11y/audit": b => core.a11yAudit(b), "/api/voice/action": b => core.voiceAction(b), "/api/observations/action": b => core.observationsAction(b), "/api/prefs": b => core.setPrefs(b), "/api/plugins/enable": b => core.pluginActions.enable(b), "/api/repos/analyze": b => core.repoActions.analyze(b), "/api/repos/test": b => core.repoActions.test(b),
+    "/api/chat": b => core.chat(b), "/api/pcc/action": b => core.pccAction(b), "/api/knowledge/action": b => core.knowledgeAction(b), "/api/memory/action": b => core.memoryAction(b), "/api/trading/action": b => core.tradingAction(b), "/api/research/action": b => core.researchAction(b), "/api/sandbox/run": b => core.sandboxRun(b), "/api/workbench/action": b => core.workbenchAction(b), "/api/a11y/audit": b => core.a11yAudit(b), "/api/voice/action": b => core.voiceAction(b), "/api/observations/action": b => core.observationsAction(b), "/api/prefs": b => core.setPrefs(b), "/api/plugins/enable": b => core.pluginActions.enable(b), "/api/repos/analyze": b => core.repoActions.analyze(b), "/api/repos/test": b => core.repoActions.test(b),
     "/api/prototypes/action": b => (b && typeof b.op === "string" && Object.hasOwn(core.prototypeActions, b.op) ? core.prototypeActions[b.op](b.args ?? {}) : Promise.reject(new Error("PROTOTYPE_OP_UNKNOWN"))), "/api/mcp/start": b => core.mcpActions.start(b), "/api/mcp/call": b => core.mcpActions.call(b), "/api/mcp/stop": b => core.mcpActions.stop(b), "/api/plugins/invoke": b => core.pluginActions.invoke(b), "/api/plugins/install": b => core.pluginActions.install(b), "/api/plugins/rollback": b => core.pluginActions.rollback(b), "/api/plugins/uninstall": b => core.pluginActions.uninstall(b), "/api/plugins/disable": b => core.pluginActions.disable(b), "/api/plugins/theme": b => core.pluginActions.setTheme(b), "/api/plugins/reset": b => core.pluginActions.resetQuarantine(b),
     "/api/updates/rollback": b => core.updateActions.rollback(b), "/api/updates/auto": b => core.updateActions.setAuto(b), "/api/updates/unfreeze": b => core.updateActions.unfreeze(b)
   };
@@ -40,6 +41,9 @@ export function createControlCenterServer(opts = {}) {
     req.on("error", reject);
   });
 
+  const live = { clients: new Set(), boot: randomBytes(6).toString("hex") };
+  const liveDigest = async () => { try { const ag = core.agentsActivity(), tv = core.trading(), fin = core.finance(), ap = core.approvals(); return JSON.stringify([ag.available, ag.agents.map(a => a.state + ":" + (a.task ?? "")), ag.tasks, (ag.recentEvents?.length ?? 0), tv.paper.account, tv.paper.strategies.map(s => s.id + s.status), tv.paper.trades.length, tv.paper.feeds, tv.datasets.length, tv.stopped, fin.revenue, ap.pending.length]); } catch (e) { return "ERR:" + String(e.message).slice(0, 60); } };
+  const liveTick = async only => { const dg = await liveDigest(), frame = "event: state\ndata: " + JSON.stringify({ at: new Date().toISOString(), boot: live.boot, digest: dg.length + ":" + createHash("sha256").update(dg).digest("hex").slice(0, 24) }) + "\n\n"; for (const r of only ? [only] : live.clients) { try { r.write(frame); } catch { live.clients.delete(r); } } };
   const BB = path.join(opts.stateDir ?? ".", "brain", "blackbox.jsonl"), stream = createEventStream({ read: createChainTail(BB).read });
   const server = http.createServer(async (req, res) => {
     try {
@@ -59,7 +63,11 @@ export function createControlCenterServer(opts = {}) {
       if (req.method === "GET" && route === "/api/stream") {            // G12: read-only SSE over the Black Box chain; token header required (checked above), client-capped
         const r = stream.attach(req, res); if (!r.ok) return send(res, 503, { error: r.reason }); return;
       }
-      if (req.method === "GET" && get[route]) return send(res, 200, await get[route]());
+      if (req.method === "GET" && route === "/api/live") {            // M6: state-change stream (digest every 2 s); read-only, token header required, client-capped. The client re-reads the REST views when the digest changes.
+        if (live.clients.size >= 8) return send(res, 503, { error: "TOO_MANY_LIVE_CLIENTS" });
+        res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", Connection: "keep-alive" }); live.clients.add(res); req.on("close", () => live.clients.delete(res)); res.on("error", () => live.clients.delete(res)); liveTick(res); return;
+      }
+      if (req.method === "GET" && get[route]) return send(res, 200, await get[route](url.searchParams));
       if (req.method === "POST" && post[route]) {
         const origin = req.headers.origin;
         if (origin && origin !== "http://127.0.0.1:" + port && origin !== "http://localhost:" + port) return send(res, 403, { error: "ORIGIN_NOT_ALLOWED" });
@@ -75,14 +83,17 @@ export function createControlCenterServer(opts = {}) {
   // Optional scheduler (off by default): runs due scheduled workflows. Same gates as a manual tick (kill switch/safe mode are checked inside the engine); overlapping ticks are skipped.
   let schedBusy = false, schedTimer = null; const schedMs = Number(opts.schedulerMs ?? 0);
   if (schedMs >= 1000) { schedTimer = setInterval(async () => { if (schedBusy) return; schedBusy = true; try { await core.workbenchAction({ op: "workflow.tick", args: {} }); } catch { /* next interval retries */ } finally { schedBusy = false; } }, schedMs); schedTimer.unref?.(); }
-  const close = async () => { if (schedTimer) clearInterval(schedTimer); stream.closeAll(); await core.stopRuntime(); await new Promise(r => server.close(r)); };
+  const liveTimer = setInterval(() => { if (live.clients.size) liveTick(); }, 2000); liveTimer.unref?.();
+  let tradeBusy = false, tradeTimer = null; const tradeMs = Number(opts.tradingTickMs ?? 0);      // autonomous SIMULATED paper trading: strategies receive their next stored candle without a manual start (frozen by kill switch / safe mode inside the panel)
+  if (tradeMs >= 1000) { tradeTimer = setInterval(async () => { if (tradeBusy) return; tradeBusy = true; try { await core.tradingTick(); } catch { /* next interval retries */ } finally { tradeBusy = false; } }, tradeMs); tradeTimer.unref?.(); }
+  const close = async () => { if (schedTimer) clearInterval(schedTimer); clearInterval(liveTimer); if (tradeTimer) clearInterval(tradeTimer); for (const r of live.clients) { try { r.end(); } catch { /* closed */ } } live.clients.clear(); stream.closeAll(); await core.stopRuntime(); await new Promise(r => server.close(r)); };
   return { core, server, listen, close, token };
 }
 
 // Direct launch (used by the Electron shell and by `npm run control-center` for development in a normal browser).
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const base = process.env.ATLASZ_HOME || path.join(process.env.APPDATA || path.join(process.env.HOME || ".", ".config"), "ATLASZ");
-  const cc = createControlCenterServer({ stateDir: path.join(base, "state"), configDir: path.join(base, "config"), port: Number(process.env.ATLASZ_RUNTIME_PORT || 8080), schedulerMs: Number(process.env.ATLASZ_SCHEDULER_MS || 0) });
+  const cc = createControlCenterServer({ stateDir: path.join(base, "state"), configDir: path.join(base, "config"), port: Number(process.env.ATLASZ_RUNTIME_PORT || 8080), schedulerMs: Number(process.env.ATLASZ_SCHEDULER_MS || 0), tradingTickMs: Number(process.env.ATLASZ_TRADING_TICK_MS || 5000) });
   cc.listen(Number(process.env.ATLASZ_CC_PORT || 0)).then(i => {
     console.log("ATLASZ Control Center: " + i.url);
     // Interim launcher (no Electron): open the default browser on the token URL. Set ATLASZ_OPEN_BROWSER=0 to disable.

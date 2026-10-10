@@ -1,0 +1,222 @@
+{
+ "generatedAt": "2026-10-10T21:29:17.108Z",
+ "host": "linux x64 node v22.22.0",
+ "items": {
+  "1_launch": {
+   "serverProcess": "node atlasz-control-center/server.mjs started and answering on 127.0.0.1 with a per-launch token",
+   "status200": true,
+   "electronShellPresent": true,
+   "electronScripts": [],
+   "windows": "NOT VERIFIED HERE: this session runs on Linux. The Windows installer build is manual-only and was not run; the same server entry the Electron shell wraps was launched."
+  },
+  "2_agent_status": {
+   "before": {
+    "available": false,
+    "counts": {
+     "UNKNOWN": 30
+    }
+   },
+   "duringWorkflow": {
+    "counts": {
+     "IDLE": 29,
+     "CODING": 1
+    },
+    "nonIdle": {
+     "EXECUTION-3": "CODING"
+    }
+   },
+   "after": {
+    "counts": {
+     "IDLE": 30
+    },
+    "recentEvents": [
+     {
+      "at": "2026-10-10T21:29:17.508Z",
+      "type": "REGISTERED",
+      "task": "wf-orb-1",
+      "by": "EXECUTION-3"
+     },
+     {
+      "at": "2026-10-10T21:29:17.513Z",
+      "type": "STARTED",
+      "task": "wf-orb-1",
+      "by": "EXECUTION-3"
+     },
+     {
+      "at": "2026-10-10T21:29:17.869Z",
+      "type": "SUBMITTED_FOR_VERIFICATION",
+      "task": "wf-orb-1",
+      "by": "EXECUTION-3"
+     },
+     {
+      "at": "2026-10-10T21:29:17.931Z",
+      "type": "VERIFIED_DONE",
+      "task": "wf-orb-1",
+      "by": "EXECUTION-1"
+     }
+    ]
+   }
+  },
+  "3_authorised_workflow": {
+   "task": "wf-orb-1 (build.orb-backtest)",
+   "maker": "EXECUTION-3",
+   "checker": "EXECUTION-1",
+   "completed": true,
+   "checkerDecision": {
+    "ok": true,
+    "id": "wf-orb-1",
+    "status": "DONE"
+   },
+   "resultSha256": "8bd0ec4abbd80175dcfe9d600c4e9364f9688ff8891f9f91f8e59c67b517ab4b",
+   "trades": 60,
+   "note": "Real coordinator hand-offs and a real independent re-computation; no language model was involved in this demo."
+  },
+  "4_charts": {
+   "banner": "SIMULATED - generated locally, NOT market data",
+   "source": "ATLASZ_SYNTHETIC_GENERATOR seed=42 drift=0.0001 vol=0.12% (NOT market data)",
+   "kind": "SIMULATED",
+   "datasetSha256": "101604b42cc3847c25c720087017a0d1f0d3cfa128b56bf5eaa14db76a712abc",
+   "freshness": "SIMULATED",
+   "candles": 288,
+   "orbLevels": 1,
+   "markers": 1,
+   "liveData": {
+    "state": "UNAVAILABLE",
+    "note": "No live market-data provider is configured. A provider, its licence and a source allowlist need separate owner approval; until then every chart is HISTORICAL or SIMULATED and says so."
+   }
+  },
+  "5_backtest": {
+   "resultSha256": "8bd0ec4abbd80175dcfe9d600c4e9364f9688ff8891f9f91f8e59c67b517ab4b",
+   "repeatedRunIdentical": true,
+   "matchesWorkflowHash": true,
+   "metrics": {
+    "trades": 60,
+    "wins": 33,
+    "losses": 27,
+    "winRate": 0.55,
+    "expectancyR": 0.2735178376451539,
+    "avgWinR": 1.6207533732420727,
+    "avgLossR": -1.3731033725288584,
+    "profitFactor": 1.5008908767628628,
+    "profitFactorNote": "",
+    "netPnl": 6337.738778709137,
+    "totalReturnPct": 6.337738778709129,
+    "maxDrawdownPct": 3.6676370571944124,
+    "maxDrawdownMoney": 3704.392537094667,
+    "maxDrawdownR": 8.755417783971414,
+    "totalR": 16.411070258709234,
+    "costsPaid": 6033.689751494112,
+    "longs": 41,
+    "shorts": 19,
+    "endingEquity": 106337.73877870913
+   },
+   "assumptions": [
+    "entry at the open after the breakout candle closes",
+    "half the spread plus slippage against every market fill",
+    "commission per side",
+    "stop assumed first when stop and target are touched in one candle",
+    "targets are limit fills at the target price",
+    "no leverage",
+    "session end closes the position at the last close"
+   ],
+   "label": "SIMULATED DATA - NOT A STATEMENT ABOUT REAL MARKETS"
+  },
+  "6_autonomous_paper_session": {
+   "verdict": "SIMULATED_ONLY_NO_EDGE_CLAIM",
+   "reasons": [],
+   "admittedBy": "STORED_VERDICT SIMULATED_ONLY_NO_EDGE_CLAIM",
+   "cursorBefore": 0,
+   "cursorAfter6s": 6,
+   "advancedWithoutManualStart": true,
+   "label": "SIMULATED PAPER TRADING - NOT REAL MONEY, NOT REAL REVENUE"
+  },
+  "7_pnl_and_risk": {
+   "account": {
+    "starting": 100000,
+    "realisedEquity": 100928.86180155305,
+    "equityMarkedToMarket": 100928.86180155305,
+    "unrealised": 0,
+    "peak": 100928.86180155305,
+    "drawdownPct": 0,
+    "totalReturnPct": 0.9288618015530492,
+    "today": {
+     "day": "2026-10-10",
+     "pnl": 0,
+     "trades": 0
+    }
+   },
+   "trades": 2,
+   "last3": [
+    {
+     "side": "LONG",
+     "r": 1.62,
+     "pnl": 424.23,
+     "reason": "TARGET",
+     "dataKind": "SIMULATED"
+    },
+    {
+     "side": "LONG",
+     "r": 1.67,
+     "pnl": 504.63,
+     "reason": "TARGET",
+     "dataKind": "SIMULATED"
+    }
+   ],
+   "warnings": [],
+   "auditChainOk": true
+  },
+  "7b_risk_limit_and_signed_resume": {
+   "statusAfterLoss": "SUSPENDED",
+   "reason": "DAILY_LOSS 1.01% >= 0.4%",
+   "resumeWithoutApproval": "OWNER_APPROVAL_REQUIRED:APPROVAL_OBJECT_REQUIRED",
+   "resumeWithSignedApproval": true,
+   "secondResume": "NOT_SUSPENDED",
+   "liveTradingRequest": "LIVE_TRADING_NOT_AUTHORIZED"
+  },
+  "8_memory_retrieval": {
+   "noteWritten": true,
+   "hits": [
+    {
+     "title": "ORB research finding",
+     "classification": "PERSONAL",
+     "lexical": 0.0000049999999999999996
+    }
+   ],
+   "retrieval": "HYBRID_BM25_PLUS_LEXICAL_NGRAM_SIMILARITY (not neural embeddings)",
+   "backend": "SQLITE_FTS5",
+   "semantic": {
+    "used": false,
+    "reason": "NO_SEMANTIC_PROVIDER_OR_SYNC_CALL",
+    "neural": false
+   },
+   "neuralStatus": "NO_EMBEDDING_PROVIDER_CONFIGURED (lexical fallback in use)",
+   "note": "Neural embeddings are NOT active (owner approval EMBEDDING_ACTIVATE + a local model are required). The n-gram similarity is labelled non-neural."
+  },
+  "9_owner_controls": {
+   "liveTrading": "LIVE_TRADING_NOT_AUTHORIZED",
+   "resumeWithoutPassphrase": "[redacted]",
+   "emergencyStop": true,
+   "paperTradingAfterStop": "OWNER_STOP_OR_SAFE_MODE_ACTIVE",
+   "approvals": [
+    "pending",
+    "decided",
+    "history",
+    "note"
+   ],
+   "note": "Kill switch recovery is owner-only; this demo state directory is discarded."
+  },
+  "10_revenue_reporting": {
+   "realBusiness": {
+    "state": "NO_PAYMENT_EVIDENCE_RECORDED",
+    "verifiedReceivedUsd": 0,
+    "unconfirmedPipelineUsd": 0
+   },
+   "simulatedPaperTrading": {
+    "label": "SIMULATED PAPER TRADING - NOT REAL MONEY, NOT REAL REVENUE",
+    "realisedPnlSimUsd": 928.86
+   },
+   "combinedTotal": null,
+   "separation": "Simulated trading results and real business revenue are reported separately and are never summed."
+  }
+ }
+}
