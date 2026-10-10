@@ -96,7 +96,10 @@ function* credentialAssignments(t) {
 // Proximity rule (second net, independent of the separator grammar): a password-like NAME followed, on the same line and within a few words, by a token that is unmistakably a credential
 // (>= 8 characters, letters AND digits, or letters/digits with a symbol; not a date, version or URL). "password must be Xk9mQ2v8", "The password has been changed to Xk9mQ2v8", "password: now Xk9mQ2v8".
 const PROX_NAME = new RegExp("(?<![A-Za-z0-9])(?:pass(?:word|wd|phrase|wort|code)|pwd|psw|pw|psk|secret|credentials?|creds|api[ _-]?key|apikey|kennwort|jelsz[a-z]{0,6}|contrasena|" + FOREIGN + ")s?(?![A-Za-z0-9])", "giu");
-const proxCred = tok => tok.length >= 8 && tok.length <= 120 && !/\s/.test(tok) && !PLACEHOLDER.test(tok) && !/^\[redacted/i.test(tok) && !looksStructural(tok) && /\p{L}/u.test(tok) && (/\d/.test(tok) || STRONG_SYM.test(tok)) && (/[^\p{L}\d\-_.]/u.test(tok) || ((tok.match(/\d/g) ?? []).length >= 2 && /\p{Lu}/u.test(tok) && /\p{Ll}/u.test(tok))) && !/\p{L}{6,}/u.test(tok) && !/^[A-Za-z]:[\\/]|^[\\/~.]|[\\/]{1}\p{L}{3,}/u.test(tok) && !/^[A-Za-z]+-[A-Za-z-]+$/.test(tok);
+const CRED_WORD = /^\d+[_\-.]?pass/i;      // "1Password" is a product
+const proxCred = tok => tok.length >= 8 && tok.length <= 120 && !/\s/.test(tok) && !PLACEHOLDER.test(tok) && !/^\[redacted/i.test(tok) && !looksStructural(tok) && !CRED_WORD.test(tok) && /\p{L}/u.test(tok)
+  && !/^[A-Za-z]:[\\/]|^[\\/~.]|[\\/]\p{L}{3,}/u.test(tok) && !/(?:^|-)\p{L}{4,}-|^\p{L}{4,}-\p{L}*\d?$/u.test(tok)
+  && ((tok.match(/\d/g) ?? []).length >= 1 && (/[^\p{L}\d\-.]/u.test(tok) || (/\p{Lu}/u.test(tok) && /\p{Ll}/u.test(tok)) || (tok.match(/\d/g) ?? []).length >= 4));
 function* proximityAssignments(t) {
   const re = PROX_NAME; re.lastIndex = 0; let m;
   while ((m = re.exec(t)) !== null) {
@@ -117,7 +120,8 @@ const assignsSecret = raw => {
 };
 /** The text with credential-looking assignment values replaced (after scrub). For places that redact instead of refusing. */
 export const redactAssignments = (raw, marker = "[redacted]") => {
-  let out = scrub(String(raw ?? ""), marker);
+  const pass = start => {
+  let out = start;
   for (let round = 0; round < 6; round++) {      // each view can reveal assignments the others do not (decoration, camelCase); repeat until nothing more is found
     let changed = false;
     for (const x of views(out)) {
@@ -128,6 +132,8 @@ export const redactAssignments = (raw, marker = "[redacted]") => {
     if (!changed) break;
   }
   return out;
+  };
+  return pass(scrub(pass(String(raw ?? "")), marker));      // detect on the original first: scrub() would otherwise take a filler word ("currently") for the value and leave the real one
 };
 export { assignsSecret };
 const sensitive = t => containsSecret(t) || assignsSecret(t);
