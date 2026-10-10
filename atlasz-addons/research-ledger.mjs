@@ -68,14 +68,15 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   let confMemo = { key: "", set: new Set() };
   /** What the owner actually confirmed: the claim text, the relation, the retrieval date and the quote. Any later edit of one of them (outside the hash chain) voids the confirmation. */
   const bindOf = (f, e) => sha([f.claim, e.relation, e.retrievedAt ?? "", e.citation.quote, e.citation.memberId, e.citation.start, e.citation.end, e.citation.sha256].join("\u0000"));
-  const findingSig = f => sha([f.tenantId, f.questionId, f.kind, f.topic ?? "", f.value ?? "", f.claim].join("\u0000"));
+  const findingSig = f => sha(JSON.stringify([f.tenantId, f.questionId, f.kind, f.topic ?? "", f.value ?? "", f.claim]));      // a structured encoding: no field can shift into its neighbour
+  const questionSig = q => sha(JSON.stringify([q.tenantId, q.projectId, q.text]));
   /** What the verified chain says happened (null when the chain is broken): evidence that was attached, contradictions declared and how each was resolved. The store must agree with it. */
   let factMemo = { key: "", v: null };
-  const chainFacts = () => { const key = S.events.length + ":" + (S.events.at(-1)?.hash ?? ""); if (factMemo.key === key) return factMemo.v;
-    let v = null; if (verifyChain().ok) { v = { attached: new Map(), declared: [], resolved: new Map(), findings: new Map() };
-      for (const e of S.events) { if (e.type === "EVIDENCE_ATTACHED" && typeof e.findingId === "string") { if (!v.attached.has(e.findingId)) v.attached.set(e.findingId, new Set()); v.attached.get(e.findingId).add(e.evidence); } else if (e.type === "FINDING_ADDED" && typeof e.fsig === "string") v.findings.set(e.id, { fsig: e.fsig, questionId: e.questionId }); else if (e.type === "CONTRADICTION_DECLARED") v.declared.push({ id: e.id, a: e.a, b: e.b }); else if (e.type === "CONTRADICTION_RESOLVED") v.resolved.set(e.id, String(e.winner ?? null)); } }
+  const chainFacts = () => { const key = S.events.length + ":" + (S.events.at(-1)?.hash ?? "") + ":" + anchorOk(); if (factMemo.key === key) return factMemo.v;
+    let v = null; if (verifyChain().ok) { v = { attached: new Map(), declared: [], resolved: new Map(), findings: new Map(), questions: new Map() };
+      for (const e of S.events) { if (e.type === "EVIDENCE_ATTACHED" && typeof e.findingId === "string") { if (!v.attached.has(e.findingId)) v.attached.set(e.findingId, new Set()); v.attached.get(e.findingId).add(e.evidence); } else if (e.type === "QUESTION_OPENED" && typeof e.qsig === "string") v.questions.set(e.id, e.qsig); else if (e.type === "FINDING_ADDED" && typeof e.fsig === "string") v.findings.set(e.id, { fsig: e.fsig, questionId: e.questionId }); else if (e.type === "CONTRADICTION_DECLARED") v.declared.push({ id: e.id, a: e.a, b: e.b }); else if (e.type === "CONTRADICTION_RESOLVED") v.resolved.set(e.id, String(e.winner ?? null)); } }
     factMemo = { key, v }; return v; };
-  const confirmedSet = () => { const key = S.events.length + ":" + (S.events.at(-1)?.hash ?? ""); if (confMemo.key === key) return confMemo.set; const ok = verifyChain().ok; confMemo = { key, set: new Set(ok ? S.events.filter(e => e.type === "EVIDENCE_CONFIRMED" && e.by === "OWNER" && typeof e.bind === "string").map(e => e.findingId + "|" + e.evidence + "|" + e.bind) : []) }; return confMemo.set; };
+  const confirmedSet = () => { const key = S.events.length + ":" + (S.events.at(-1)?.hash ?? "") + ":" + anchorOk(); if (confMemo.key === key) return confMemo.set; const ok = verifyChain().ok; confMemo = { key, set: new Set(ok ? S.events.filter(e => e.type === "EVIDENCE_CONFIRMED" && e.by === "OWNER" && typeof e.bind === "string").map(e => e.findingId + "|" + e.evidence + "|" + e.bind) : []) }; return confMemo.set; };
   const who = w => ({ tenantId: w?.tenantId, role: w?.role ?? "OWNER", forAgent: Boolean(w?.forAgent) });
   const byOf = (w, by) => (who(w).forAgent ? "AGENT" : (typeof by === "string" && by ? by : "OWNER"));   // an agent can never name itself OWNER (or anyone else)
   function access(projectId, w) {                                   // the caller must be allowed to use the project (tenant + role), else it does not exist for them
@@ -94,7 +95,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   function openQuestion({ projectId, text, by } = {}, w) {
     reload(); access(projectId, w); const b = byOf(w, by), v = vet(text, LIMITS.questionChars, "QUESTION", b);
     const q = { id: id("rq"), tenantId: w.tenantId, projectId, text: v.text, screening: v.screening, createdBy: b, createdAt: now() }; S.questions[q.id] = q;
-    event("QUESTION_OPENED", b, { id: q.id, projectId }); store.save(); return structuredClone(q);
+    event("QUESTION_OPENED", b, { id: q.id, projectId, qsig: questionSig(q) }); store.save(); return structuredClone(q);
   }
   /** Add a source to a question's project through Knowledge Projects (web snapshot needs URL + retrievedAt; screened as untrusted input). */
   function addSource(projectId, { kind = "webpage", url, retrievedAt, title, text, by } = {}, w) {
@@ -161,6 +162,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
       return { id: e.id, relation: e.relation, title: e.citation.title, kind: e.citation.kind, url: e.citation.url, version: e.citation.version, quote: v.status === "SOURCE_UNAVAILABLE" && who(w).role !== "OWNER" ? "[withheld: source not readable by this role]" : e.citation.quote, retrievedAt: e.retrievedAt, verification: v.status, aged, ok: v.status === "OK" && !aged, memberId: e.citation.memberId, addedBy: e.addedBy, confirmed: confirmedSet().has(f.id + "|" + e.id + "|" + bindOf(f, e)) }; });
     const sup = ev.filter(e => e.relation === "SUPPORTS" && e.ok), ref = ev.filter(e => e.relation === "REFUTES" && e.ok), supC = sup.filter(e => e.confirmed), refC = ref.filter(e => e.confirmed), reasons = [];
     const cf = chainFacts(), tamper = [];
+    if (cf) { const qm = cf.questions.get(f.questionId); if (qm !== undefined && (!S.questions[f.questionId] || questionSig(S.questions[f.questionId]) !== qm)) tamper.push("QUESTION_ALTERED_OUTSIDE_LEDGER:" + f.questionId); }
     if (cf) { const extra = f.evidence.filter(e => !cf.attached.get(f.id)?.has(e.id)).map(e => e.id); if (extra.length) tamper.push("EVIDENCE_NOT_IN_CHAIN:" + extra.join(",")); }
     if (cf) { const miss = [...(cf.attached.get(f.id) ?? [])].filter(x => !f.evidence.some(e => e.id === x)); if (miss.length) tamper.push("EVIDENCE_REMOVED_OUTSIDE_LEDGER:" + miss.join(",")); }
     const pairs = Object.values(S.contradictions).filter(k => k.tenantId === f.tenantId && (k.a === f.id || k.b === f.id)).map(k => { if (cf && k.state === "RESOLVED" && cf.resolved.get(k.id) !== String(k.resolution?.winner ?? null)) { tamper.push("RESOLUTION_NOT_IN_CHAIN:" + k.id); return { ...k, state: "OPEN" }; } return k; });

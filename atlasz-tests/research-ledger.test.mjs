@@ -442,3 +442,26 @@ test("R6 round 5: an emptied chain with a surviving head, and evidence inserted 
     const r = w.mk().report(q.id, OWNER); const x = [...r.verifiedFacts, ...r.quoteMatched].filter(f => f.id === f2.id); assert.equal(x.length, 0, "injected evidence is not accepted"); assert.ok(JSON.stringify(r.conflicted).includes("EVIDENCE_NOT_IN_CHAIN"));
   } finally { w.done(); }
 });
+
+test("R6 round 6: an edited question (text/project/tenant) voids the report; one transient bad head does not disable the tamper checks; a NUL cannot shift finding fields", async () => {
+  const w = await world();
+  try {
+    const q = w.rl.openQuestion({ projectId: w.p.id, text: "What is the monthly rent?" }, OWNER);
+    w.web("A", RENT, "https://example.org/a");
+    const c = w.kp.search(w.p.id, { query: "monthly rent Maple Street warehouse", ...OWNER }).results[0].citation;
+    const fa = w.rl.addFinding(q.id, { claim: "The monthly rent for the Maple Street warehouse is 4200 dollars" }, OWNER);
+    w.att(fa.id, { citation: c }, OWNER);
+    const file = path.join(w.d, "rl.json"), orig = fs.readFileSync(file, "utf8"), head = fs.readFileSync(file + ".head", "utf8");
+    assert.equal(w.mk().report(q.id, OWNER).verifiedFacts.length, 1);
+    for (const fn of [j => { j.questions[q.id].text = "Is the product safe to ship?"; }, j => { j.questions[q.id].projectId = "other-project"; }, j => { j.questions[q.id].tenantId = "other"; }]) { const j = JSON.parse(orig); fn(j); fs.writeFileSync(file, JSON.stringify(j)); let r; try { r = w.mk().report(q.id, OWNER); } catch { r = { verifiedFacts: [] }; } assert.equal(r.verifiedFacts.length, 0, fn.toString()); }
+    // transient head loss: the instance that saw a bad head must not cache "no chain facts" past the repair
+    fs.writeFileSync(file, orig); const m = w.mk(); fs.rmSync(file + ".head"); m.report(q.id, OWNER); fs.writeFileSync(file + ".head", head);
+    const j2 = JSON.parse(orig); const fx = Object.values(j2.findings)[0]; fx.evidence = []; fs.writeFileSync(file, JSON.stringify(j2));
+    assert.equal(m.report(q.id, OWNER).verifiedFacts.length, 0); assert.ok(JSON.stringify(m.report(q.id, OWNER)).includes("EVIDENCE_REMOVED_OUTSIDE_LEDGER"), "the chain check is live again once the head is back");
+    // NUL boundary shift in the finding signature
+    fs.writeFileSync(file, orig);
+    const f1 = w.mk().addFinding(q.id, { claim: "x\u0000y", topic: "uptime", value: "50" }, OWNER); const f2 = w.mk().addFinding(q.id, { claim: "another claim here about uptime", topic: "uptime", value: "60" }, OWNER);
+    const j3 = JSON.parse(fs.readFileSync(file, "utf8")); Object.assign(j3.findings[f1.id], { topic: "uptime\u000050", value: "x", claim: "y" }); fs.writeFileSync(file, JSON.stringify(j3));
+    assert.ok(JSON.stringify(w.mk().report(q.id, OWNER)).includes("FINDING_REMOVED_OR_ALTERED_OUTSIDE_LEDGER:" + f1.id), "the boundary shift is detected"); void f2;
+  } finally { w.done(); }
+});

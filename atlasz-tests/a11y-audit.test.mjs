@@ -199,3 +199,14 @@ test("R6 round 5: <style/> still hides nothing; '=' inside an unquoted value doe
   for (const b of ['<style/>@import url(x.css);</style><p>x', '<style a=b/>@import "x.css";</style><p>x', '<a b=c=" ><link rel=stylesheet href=x.css><a d=">x</a>', "<a b=c=' ><link rel=stylesheet href=x.css><a d='>x</a>"]) { const r = auditAccessibility({ html: H(b), css: C }); assert.equal(r.complete, false, b); }
   assert.equal(auditAccessibility({ html: H('<a title="x>y" href=#>ok</a>'), css: C }).complete, true, "a quoted > after a real value start is still handled");
 });
+
+test("R6 round 6: '=' starting an attribute name, <title>/<textarea> inside <svg>, '/*' inside CSS strings, and large inputs", () => {
+  const C = ":root{--bg:#fff;--ink:#000}body{color:var(--ink);background:var(--bg)}", H = b => "<html lang=en><head><title>t</title><meta name=viewport content='width=device-width'></head><body><main>" + b + "</main></body></html>";
+  for (const b of ['<a =">' + "<style>@import url(x.css);</style>" + '<b a=">', '<a =">' + "<link rel=stylesheet href=//x/y.css>" + '<b a=">', `<a b="c"='>` + "<link rel=stylesheet href=x.css>" + `<b a='>`,
+    "<svg><title><style>@import url(x);</style></title></svg>", "<svg><title><link rel=stylesheet href=//x/y.css></title></svg>", "<svg><textarea><style>@import url(x);</style></textarea></svg>"]) assert.equal(auditAccessibility({ html: H(b), css: C }).complete, false, b);
+  assert.equal(auditAccessibility({ html: H("<title>a<link rel=stylesheet href=x.css></title><p>x"), css: C }).complete, true, "outside svg <title> is raw text, as in a browser");
+  const r = auditAccessibility({ html: H("<p>x"), css: C + 'a{content:"/*"}p{color:#fff;background:#fff}b{content:"*/"}' });
+  assert.ok(r.findings.some(f => f.rule === "CONTRAST"), "a /* inside a string is not a comment: " + JSON.stringify(r.findings.map(f => f.rule)));
+  const t0 = Date.now(); auditAccessibility({ html: H("<button>".repeat(60000) + "</button>"), css: C }); auditAccessibility({ html: H("<p>x"), css: C + "a{b:c}".repeat(300000) }); auditAccessibility({ html: H('<a ="'.repeat(60000)), css: C });
+  assert.ok(Date.now() - t0 < 2500, "linear on large inputs: " + (Date.now() - t0) + " ms");
+});

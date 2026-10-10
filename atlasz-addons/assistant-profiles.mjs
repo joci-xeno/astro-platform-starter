@@ -20,6 +20,8 @@ const uniqSorted = a => [...new Set(a)].sort();
 /** Tools the owner's matrix lets this role use without approval and that are not disabled. */
 export const defaultGrantable = (role, policy = TOOL_POLICY) => Object.keys(policy).filter(t => permissionFor(role, t, policy) === "ALLOW" && !policy[t].disabled).sort();   // permissionFor() is DENY for any role that is not SEARCH/EXECUTION
 
+/** What an assignment is pinned to: the profile id and the hash of its CURRENT (last) version, so editing, reordering or truncating the stored versions changes the stamp. */
+const stampOf = (tenantRec, pid) => { let h = "none"; try { const vs = own(tenantRec?.profiles ?? {}, pid)?.versions; if (Array.isArray(vs) && vs.length) h = String(vs.at(-1)?.hash); } catch { /* none */ } return String(pid) + ":" + h; };
 export function createProfiles({ file = null, grantable = defaultGrantable, skillExists = () => true, now = () => Date.now() } = {}) {
   const store = createStore({ file, init: () => ({ tenants: {} }), mode: 0o600 }), d = store.data;
   const T = tenantId => { if (typeof tenantId !== "string" || !okName(TENANT, tenantId)) throw new Error("TENANT_INVALID"); return (d.tenants[tenantId] ??= { profiles: {}, assignments: {} }); };
@@ -50,7 +52,7 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
     const ver = { version: (cur?.nextVersion ?? 1), hash, definition: v.def, at: new Date(now()).toISOString(), how };
     const p = cur ?? (t.profiles[v.def.id] = { id: v.def.id, versions: [], nextVersion: 1 });
     p.versions.push(ver); p.nextVersion = ver.version + 1; if (p.versions.length > LIMITS.maxVersions) p.versions.splice(0, p.versions.length - LIMITS.maxVersions);
-    store.save(); return { ok: true, id: p.id, version: ver.version, hash };
+    store.save(); markIfUsed(); return { ok: true, id: p.id, version: ver.version, hash };
   }
   const create = (tenantId, inp) => save(tenantId, inp, "SAVE");
   function rollback(tenantId, id, version, { actor } = {}) {
@@ -59,7 +61,7 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
     if (hashOf(v.definition) !== v.hash) return { ok: false, reason: "STORED_VERSION_TAMPERED" };
     return save(tenantId, { ...clone(v.definition), actor: "OWNER" }, "ROLLBACK_TO_" + version);   // re-validated against today's grants, stored as a NEW version
   }
-  function remove(tenantId, id, { actor } = {}) { if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" }; if (!writable()) return { ok: false, reason: "PROFILE_STORE_UNREADABLE" }; const t = peek(tenantId); if (!t || typeof id !== "string" || !Object.hasOwn(t.profiles, id)) return { ok: false, reason: "PROFILE_NOT_FOUND" }; delete t.profiles[id]; store.save(); return { ok: true }; }
+  function remove(tenantId, id, { actor } = {}) { if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" }; if (!writable()) return { ok: false, reason: "PROFILE_STORE_UNREADABLE" }; const t = peek(tenantId); if (!t || typeof id !== "string" || !Object.hasOwn(t.profiles, id)) return { ok: false, reason: "PROFILE_NOT_FOUND" }; delete t.profiles[id]; store.save(); markIfUsed(); return { ok: true }; }
   const summary = p => { const v = p.versions.at(-1); return { id: p.id, name: v.definition.name, version: v.version, hash: v.hash, versions: p.versions.map(x => x.version), tools: v.definition.tools.length, skills: v.definition.skills.length, memoryScopes: v.definition.memoryScopes.length }; };
   const listAll = tenantId => Object.values(peek(tenantId)?.profiles ?? {}).map(summary);
   function get(tenantId, id) { const p = own(peek(tenantId)?.profiles, id); if (!p) return { ok: false, reason: "PROFILE_NOT_FOUND" }; const v = p.versions.at(-1); return { ok: true, profile: { ...summary(p), definition: clone(v.definition), history: p.versions.map(x => ({ version: x.version, hash: x.hash, at: x.at, how: x.how })) } }; }
@@ -83,8 +85,9 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
   }
   /** Agent -> profile assignment (owner only; the 30 ids are the fixed roster, a profile never creates one). A profile can only NARROW what the owner's tool matrix already allows. */
   /** The marker records that a store existed and how many assignments it held, so a deleted OR emptied store can be told from one that never had assignments (the gate fails closed on both). */
-  const assignedMap = dd => Object.fromEntries(Object.entries(dd.tenants ?? {}).flatMap(([tn, t]) => Object.entries(t?.assignments ?? {}).filter(([, v]) => v != null).map(([a, v]) => [tn + "/" + a, String(v)])).sort());
+  const assignedMap = dd => Object.fromEntries(Object.entries(dd.tenants ?? {}).flatMap(([tn, t]) => Object.entries(t?.assignments ?? {}).filter(([, v]) => v != null).map(([a, v]) => [tn + "/" + a, stampOf(t, v)])).sort());
   const mark = () => { if (file) { try { fs.writeFileSync(file + ".in-use", JSON.stringify(assignedMap(d)), { mode: 0o600 }); } catch { /* the gate then cannot tell a deleted store from a never-used one */ } } };
+  const markIfUsed = () => { if (file && (Object.keys(assignedMap(d)).length || fs.existsSync(file + ".in-use"))) mark(); };
   function assign(tenantId, agentId, profileId, { actor } = {}) {
     if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" };
     if (typeof agentId !== "string" || !roleOf(agentId)) return { ok: false, reason: "UNKNOWN_AGENT" };
@@ -120,7 +123,7 @@ export function createAgentProfileGate({ file, tenantId, grantable = defaultGran
       let raw; try { raw = fs.readFileSync(file, "utf8"); } catch (e) { if (e?.code === "ENOENT") { if (markerKeys(file) !== null) return { allowed: false, reason: "PROFILE_STORE_MISSING" }; return { allowed: true, profile: null }; } throw e; }      // no file yet = nothing was ever assigned
       const j = JSON.parse(raw); if (j === null || typeof j !== "object" || Array.isArray(j) || j.tenants === null || typeof j.tenants !== "object" || Array.isArray(j.tenants)) return { allowed: false, reason: "PROFILE_STORE_CORRUPT" };   // a file this module wrote always has a tenants record
       const mk = markerKeys(file);
-      if (mk === Infinity || (mk !== null && Object.entries(mk).some(([key, pid]) => { const [tn, ...r] = key.split("/"), a = r.join("/"); return !(Object.hasOwn(j.tenants, tn) && j.tenants[tn] && typeof j.tenants[tn] === "object" && j.tenants[tn].assignments && typeof j.tenants[tn].assignments === "object" && Object.hasOwn(j.tenants[tn].assignments, a) && String(j.tenants[tn].assignments[a]) === pid); }))) return { allowed: false, reason: "PROFILE_STORE_ASSIGNMENTS_CHANGED" };    // an assignment was removed or retargeted outside the owner's own assign/unassign
+      if (mk === Infinity || (mk !== null && Object.entries(mk).some(([key, pid]) => { const [tn, ...r] = key.split("/"), a = r.join("/"); return !(Object.hasOwn(j.tenants, tn) && j.tenants[tn] && typeof j.tenants[tn] === "object" && j.tenants[tn].assignments && typeof j.tenants[tn].assignments === "object" && Object.hasOwn(j.tenants[tn].assignments, a) && stampOf(j.tenants[tn], j.tenants[tn].assignments[a]) === pid); }))) return { allowed: false, reason: "PROFILE_STORE_ASSIGNMENTS_CHANGED" };    // an assignment was removed or retargeted outside the owner's own assign/unassign
       return createProfiles({ file, grantable }).agentGate(tenantId, agentId, tool);
     }
     catch { return { allowed: false, reason: "PROFILE_STORE_UNREADABLE" }; }

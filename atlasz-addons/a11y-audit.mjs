@@ -26,15 +26,20 @@ const DARK_ONLY = /^@media\s*\(\s*prefers-color-scheme\s*:\s*dark\s*\)\s*$/i, LA
  *  Each rule carries its context: dark (prefers-color-scheme: dark or [data-theme=dark]) and cond (the text of any other @media/@supports/@container condition it sits in: those rules are evaluated as separate variants, never merged into the base). */
 function blocks(css) {
   const out = []; out.unsupported = [];
-  { let r = "", i = 0; for (;;) { const a = css.indexOf("/*", i); if (a < 0) { r += css.slice(i); break; } r += css.slice(i, a); const z = css.indexOf("*/", a + 2); if (z < 0) break; i = z + 2; } css = r; }   // strip comments in linear time; an unterminated comment swallows the rest
+  { let r = "", i = 0, n = css.length, last = 0; while (i < n) { const c = css[i];                                   // string-aware comment stripper (linear): "/*" inside a quoted string is not a comment
+      if (c === '"' || c === "'") { let j = i + 1; while (j < n && css[j] !== c) { if (css[j] === "\\") j++; j++; } i = Math.min(n, j + 1); continue; }
+      if (c === "/" && css[i + 1] === "*") { r += css.slice(last, i); const z = css.indexOf("*/", i + 2); if (z < 0) { last = n; i = n; break; } i = z + 2; last = i; continue; }
+      i++; }
+    r += css.slice(last); css = r; }   // strip comments in linear time
   if (/@(?:\\|import\b)/i.test(css)) out.unsupported.push("EXTERNAL_STYLESHEET_NOT_EVALUATED:@import");   // any @import (or a CSS-escaped @\69mport) anywhere, with or without a following rule, in a string or not: the imported sheet is never read
   const close = (t, from) => { let d = 1, j = from; while (j < t.length) { const c = t[j]; if (c === '"' || c === "'") { const e = t.indexOf(c, j + 1); j = e < 0 ? t.length : e + 1; continue; } if (c === "{") d++; else if (c === "}") { d--; if (!d) return j; } j++; } return -1; };
   const THEME = /\[data-theme\s*=\s*["']?(dark|light)["']?\]/ig, NOT_THEME = /:not\(\s*\[data-theme\s*=\s*["']?(?:dark|light)["']?\]\s*\)/ig;
   const decl = body => { const decls = new Map(); for (const d of body.split(";")) { const k = d.indexOf(":"); if (k > 0) { const name = d.slice(0, k).trim().toLowerCase(), val = d.slice(k + 1).trim(); decls.set(name, val); if (name === "background" || name === "background-color") decls.set("__bg", val); } } return decls; };   // __bg: whichever of the two was declared LAST wins, as in a browser
   const walk = (t, ctx, depth) => {
-    let i = 0;
+    let i = 0, semi = -2;                                                                          // the next ";" is searched again only after it has been passed (linear overall)
     while (i < t.length) {
-      const semi = t.indexOf(";", i), open = t.indexOf("{", i);
+      if (semi !== -1 && semi < i) semi = t.indexOf(";", i);
+      const open = t.indexOf("{", i);
       if (open < 0) break;
       if (semi >= 0 && semi < open) { i = semi + 1; continue; }                                    // statement at-rule such as @import / @charset
       const prelude = t.slice(i, open).trim(), end = close(t, open + 1); if (end < 0) { out.unsupported.push("UNBALANCED_BRACES"); break; }
@@ -67,18 +72,20 @@ const bgOf = d => d.get("__bg") ?? "";
 
 /** Linear tokeniser: [{name, closing, attrs, text, map}] for every tag outside comments and raw-text elements (script/style/textarea/title bodies are not markup; <style> bodies are returned in .styles).
  *  Attributes are parsed as name[=value] tokens, so text inside a quoted value (title="alt=x") is never mistaken for an attribute. */
-function tagEnd(h, from) {                                                                         // the ">" that closes a tag: one inside a quoted attribute value does not; a quote only opens a value right after "=" that starts the value ("b=c=\"" is an unquoted value)
-  let st = 0, q = null;                                                                            // 0 name/space, 1 after "=" (value expected), 2 unquoted value, 3 quoted value
+function tagEnd(h, from) {                                                                         // the ">" that closes a tag: one inside a quoted attribute value does not. A quote only opens a value right after an "=" that follows an attribute NAME ("=" starting a name, or "b=c=\"" inside an unquoted value, is just text)
+  let st = 0, q = null, inName = false;                                                            // 0 name/space, 1 after "=" (value expected), 2 unquoted value, 3 quoted value
   for (let j = from; j < h.length && j < from + 20000; j++) { const c = h[j];
-    if (st === 3) { if (c === q) st = 0; continue; }
-    if (st === 2) { if (/\s/.test(c)) st = 0; else if (c === ">") return j; continue; }
+    if (st === 3) { if (c === q) { st = 0; inName = false; } continue; }
+    if (st === 2) { if (/\s/.test(c)) { st = 0; inName = false; } else if (c === ">") return j; continue; }
     if (c === ">") return j;
     if (st === 1) { if (/\s/.test(c)) continue; if (c === '"' || c === "'") { q = c; st = 3; } else st = 2; continue; }
-    if (c === "=") st = 1; }
+    if (/\s/.test(c)) { inName = false; continue; }
+    if (c === "=" && inName) { st = 1; continue; }
+    inName = true; }
   return h.indexOf(">", from);                                                                     // an unterminated quote: fall back to the plain scan
 }
 function htmlTags(html) {
-  const out = []; out.styles = []; let i = 0, p1 = -2, p2 = -2;
+  const out = []; out.styles = []; let i = 0, p1 = -2, p2 = -2, foreign = 0;      // foreign: depth inside <svg>/<math>, where <title> and <textarea> are ordinary elements, not raw text
   const ATTR = /([^\s"'<>\/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
   while (i < html.length && out.length < LIMITS.maxTags) {
     const a = html.indexOf("<", i); if (a < 0) break;
@@ -88,7 +95,8 @@ function htmlTags(html) {
     const nextLt = html.indexOf("<", z + 1), name = m[2].toLowerCase(), attrs = html.slice(a + m[0].length, z), map = new Map();
     for (const am of attrs.matchAll(ATTR)) { const k = am[1].toLowerCase(); if (!map.has(k)) map.set(k, am[2] ?? am[3] ?? am[4] ?? ""); }
     out.push({ name, closing: m[1] === "/", attrs, map, text: m[1] ? "" : html.slice(z + 1, nextLt < 0 ? Math.min(html.length, z + 301) : Math.min(nextLt, z + 301)) });
-    if (!m[1] && /^(?:script|style|textarea|title)$/.test(name) && true) {       // raw text: skip to the matching close tag
+    if (name === "svg" || name === "math") { if (m[1]) foreign = Math.max(0, foreign - 1); else if (!/\/\s*$/.test(attrs)) foreign++; }
+    if (!m[1] && /^(?:script|style|textarea|title)$/.test(name) && !(foreign > 0 && (name === "title" || name === "textarea"))) {       // raw text: skip to the matching close tag
       const re = new RegExp("</" + name + "\\b", "ig"); re.lastIndex = i; const e = re.exec(html);
       if (name === "style") out.styles.push(html.slice(i, e ? e.index : html.length).slice(0, LIMITS.maxInputChars));
       if (name === "title") { out[out.length - 1].text = html.slice(i, e ? e.index : html.length).slice(0, 300); }
@@ -160,7 +168,7 @@ export function auditAccessibility({ html = "", css = "", js = "", cssSources = 
       if (t.closing) continue; const id = attr(t, "id"); if (id !== undefined && id !== "") { if (ids.has(id)) dup.add(id); ids.set(id, 1); }
       if (["input", "textarea", "select"].includes(t.name)) { const type = (attr(t, "type") ?? "text").toLowerCase(); if (["hidden", "submit", "button", "reset", "image"].includes(type)) continue;
         if (!inLabel && !attr(t, "aria-label")?.trim() && attr(t, "aria-labelledby") === undefined && !(id && labelFor.has(id))) unlabeled++; }
-      if (t.name === "button" && !attr(t, "aria-label")?.trim() && attr(t, "aria-labelledby") === undefined && !attr(t, "title")?.trim()) { const nextClose = tg.findIndex((x, j) => j > k && x.name === "button" && x.closing), inner = tg.slice(k + 1, nextClose < 0 ? k + 1 : nextClose); if (!t.text.trim() && !inner.some(x => (x.name === "img" && attr(x, "alt")?.trim()) || attr(x, "aria-label")?.trim())) emptyButtons++; }
+      if (t.name === "button" && !attr(t, "aria-label")?.trim() && attr(t, "aria-labelledby") === undefined && !attr(t, "title")?.trim()) { let nextClose = -1; for (let j2 = k + 1; j2 < tg.length && j2 < k + 60; j2++) if (tg[j2].name === "button" && tg[j2].closing) { nextClose = j2; break; } const inner = tg.slice(k + 1, nextClose < 0 ? k + 1 : nextClose); if (!t.text.trim() && !inner.some(x => (x.name === "img" && attr(x, "alt")?.trim()) || attr(x, "aria-label")?.trim())) emptyButtons++; }
       if (hiddenSelf && !VOID.has(t.name)) hid.push({ name: t.name, d: 0 });
       if ((hiddenSelf || hid.length) && (["a", "button", "input", "select", "textarea"].includes(t.name) || (attr(t, "tabindex") !== undefined && Number(attr(t, "tabindex")) >= 0))) add("FAIL", "ARIA_HIDDEN_FOCUSABLE", "A focusable <" + t.name + "> is hidden from assistive technology with aria-hidden=\"true\".");
     }

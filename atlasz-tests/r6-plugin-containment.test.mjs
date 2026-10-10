@@ -43,3 +43,33 @@ test("R6: a readable but unwritable audit log means the hook does not run (start
     assert.equal((await r.pm.invoke("echo", "h", { a: 1 })).ok, true, "works again once the log is writable");
   } finally { r.done(); }
 });
+
+test("R6 round 6: two managers on one state dir share enabled state; a quarantine whose state write failed stays quarantined; a failed change leaves a compensating audit record; a bad root is a result, not a throw", async () => {
+  const r = rig(); try {
+    const pm2 = createPluginManager({ roots: [path.join(r.root, "plugins")], stateDir: r.state, ownerAuth: createOwnerAuth({ publicKeyB64: key.publicKeyB64 }), hookTimeoutMs: 1500, quarantineAfter: 1 });
+    assert.equal(r.enable(r.pm).ok, true); assert.equal(pm2.list().plugins[0].status, "ENABLED", "B sees A's enable");
+    assert.equal(r.pm.disable("echo").ok, true); assert.equal((await pm2.invoke("echo", "h", {})).ok, false, "B does not run a plugin A disabled");
+    assert.equal(pm2.list().plugins[0].status, "DISABLED");
+    // a failing hook + unwritable state => quarantine still holds in memory and across re-reads
+    assert.equal(r.enable(pm2).ok, true);
+    fs.writeFileSync(path.join(r.root, "plugins", "echo", "main.mjs"), "process.exit(3)");   // code changed -> must not run at all
+    assert.equal((await pm2.invoke("echo", "h", {})).reason, "CODE_CHANGED_SINCE_ENABLE");
+    fs.writeFileSync(path.join(r.root, "plugins", "echo", "main.mjs"), ok); assert.equal((await pm2.invoke("echo", "h", {})).ok, true);
+    // failed enable leaves a compensating record
+    const r2 = rig(); try { fs.mkdirSync(path.join(r2.state, "plugins-state.json.tmp"), { recursive: true }); assert.equal(r2.enable(r2.pm).ok, false); const log = fs.readFileSync(path.join(r2.state, "plugins-audit.jsonl"), "utf8"); assert.ok(log.includes("PLUGIN_CHANGE_NOT_APPLIED"), log); } finally { r2.done(); }
+    const bad = createPluginManager({ roots: ["/etc/hostname"], stateDir: path.join(r.root, "s3"), ownerAuth: createOwnerAuth({ publicKeyB64: key.publicKeyB64 }) });
+    assert.doesNotThrow(() => bad.list()); assert.ok(bad.list().rejected.some(x => x.problems.includes("ROOT_UNREADABLE")));
+  } finally { r.done(); }
+});
+
+test("R6 round 6: quarantine survives an unwritable state file (re-read keeps it quarantined)", async () => {
+  const r = rig(); try {
+    const dir = path.join(r.root, "plugins", "echo"); fs.writeFileSync(path.join(dir, "main.mjs"), "process.exit(3)");
+    const pm = createPluginManager({ roots: [path.join(r.root, "plugins")], stateDir: r.state, ownerAuth: createOwnerAuth({ publicKeyB64: key.publicKeyB64 }), hookTimeoutMs: 1500, quarantineAfter: 1 });
+    assert.equal(pm.enable("echo", { ownerApproval: ap("PLUGIN_ENABLE", pm.enableSubject("echo")) }).ok, true);
+    fs.mkdirSync(path.join(r.state, "plugins-state.json.tmp"), { recursive: true });
+    assert.equal((await pm.invoke("echo", "h", {})).reason, "PLUGIN_CRASHED");
+    assert.equal(pm.list().plugins[0].status, "QUARANTINED", "still quarantined although the state file could not be written");
+    assert.equal((await pm.invoke("echo", "h", {})).ok, false);
+  } finally { r.done(); }
+});

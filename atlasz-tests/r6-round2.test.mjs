@@ -124,3 +124,19 @@ test("round 4: audit chain heals a trailing garbage line and refuses non-object 
   const lic = reviewCode({ files: [{ path: "LICENSE", content: "MIT" }, { path: "a.js", content: "const x = 1;" }] }); assert.notEqual(lic.verdict, "INCOMPLETE_REVIEW");
   void analyzeRepo;
 });
+
+test("M12 round 6: reordering, truncating or editing the stored versions of an assigned profile denies; an owner edit/rollback keeps the agent working", async () => {
+  const { createProfiles, createAgentProfileGate } = await import("../atlasz-addons/assistant-profiles.mjs");
+  const d = tmp("pg6-"); try {
+    const file = path.join(d, "p.json"), gate = createAgentProfileGate({ file, tenantId: "JOCI" }), P = createProfiles({ file });
+    const def = (tools, extra = "") => ({ actor: "OWNER", id: "p1", name: "prof", instructions: "guide" + extra, tools });
+    assert.equal(P.create("JOCI", def(["kp.list", "kp.answer"])).ok, true); assert.equal(P.create("JOCI", def(["kp.list"], " v2")).ok, true);
+    assert.equal(P.assign("JOCI", "SEARCH-1", "p1", { actor: "OWNER" }).ok, true);
+    const before = gate("SEARCH-1", "kp.answer"); assert.equal(before.allowed, false, JSON.stringify(before));
+    const orig = fs.readFileSync(file, "utf8");
+    for (const fn of [p => p.versions.reverse(), p => p.versions.pop()]) { const j = JSON.parse(orig); fn(j.tenants.JOCI.profiles.p1); fs.writeFileSync(file, JSON.stringify(j)); assert.equal(gate("SEARCH-1", "kp.answer").allowed, false); assert.equal(gate("SEARCH-1", "kp.list").allowed, false, "fail closed, not just narrower"); }
+    fs.writeFileSync(file, orig);
+    const P2 = createProfiles({ file }); assert.equal(P2.create("JOCI", def(["kp.list", "kp.answer"], " v3")).ok, true);          // an owner edit re-stamps the marker
+    assert.equal(gate("SEARCH-1", "kp.answer").allowed, true); assert.equal(P2.rollback("JOCI", "p1", 2, { actor: "OWNER" }).ok, true); assert.equal(gate("SEARCH-1", "kp.answer").allowed, false);
+  } finally { rm(d); }
+});
