@@ -29,7 +29,7 @@ const defang = t => String(t).replace(/<{2,}|>{2,}/g, m => m.split("").join("​
 // Text that reads like an instruction aimed at a later reader is not stored as memory by an agent. (Retrieval is fenced anyway; this is the second line.)
 const INJECTION = [/ignore\s+(?:all\s+|any\s+|the\s+)?(?:previous|prior|above|earlier)\s+(?:instructions?|rules?|prompts?)/i, /disregard\s+(?:the\s+)?(?:system|previous|above)/i, /(?:reveal|print|show|leak)\s+(?:the\s+)?(?:system\s+prompt|credentials?|api[_ -]?keys?|secrets?)/i,
   /\byou\s+are\s+now\b/i, /\bnew\s+instructions?\s*:/i, /\bact\s+as\s+(?:the\s+)?(?:owner|admin|root|coordinator)\b/i, /<<\s*(?:END_)?UNTRUSTED/i, /\bapprov(?:e|al)\s+granted\s+by\s+(?:the\s+)?(?:owner|admin\w*|root|coordinator)\b/i, /"(?:tool|function)_?call"\s*:/i,
-  /\b(?:forget|override)\s+(?:all\s+|any\s+|the\s+|your\s+)?(?:previous|prior)\s+(?:instructions?|prompts?)\b/i, /\bignore\s+the\s+(?:rules|instructions)\s+(?:above|before)\b/i, /\bdisregard\s+all\s+(?:prior|previous)\s+context\b(?!\s*:)/i, /\bprint\s+your\s+system\s+prompt\s*(?:$|[.!?;]|\s+(?:and|now|please|verbatim)\b)/i, /\bfrom\s+now\s+on,?\s+you\s+(?:must|will|shall)\s+(?:obey|comply|follow|ignore|only|always|never)\b/i, /\[\/?INST\]|<\|im_(?:start|end)\|>/i];
+  /\b(?:forget|override)\s+(?:all\s+|any\s+|the\s+|your\s+)?(?:previous|prior)\s+(?:instructions?|prompts?)\b/i, /\b(?:forget|override)\s+(?:all|any|your)\s+(?:previous|prior)\s+rules\b/i, /\bignore\s+the\s+(?:rules|instructions)\s+(?:above|before)\b/i, /\bdisregard\s+all\s+(?:prior|previous)\s+context\b(?!\s*:)/i, /\bprint\s+your\s+system\s+prompt\s*(?:$|[.!?;]|\s+(?:and|now|please|verbatim)\b)/i, /\bfrom\s+now\s+on,?\s+you\s+(?:must|will|shall)\s+(?:obey|comply|follow|ignore|only|always|never)\b/i, /\[\/?INST\]|<\|im_(?:start|end)\|>/i];
 // Compact form: letters only, look-alike digits/symbols mapped back ("1gn0re  pr3vious" -> "ignorepreviousinstructions"), so spacing and leetspeak tricks do not hide a phrase. Best effort: the real defence is that
 // retrieved text is always fenced and flagged as untrusted data.
 const LEET = { 0: "o", 1: "i", 3: "e", 4: "a", 5: "s", 7: "t", "@": "a", $: "s", "!": "i" };
@@ -72,11 +72,14 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
   const auditHealthy = () => { if (!auditBad) return true; const t = nowFn(); if (t - auditCheckedAt > 5000) { auditCheckedAt = t; if (auditNow().ok) auditBad = false; } return !auditBad; };
   // Refusals and failures are logged at most once a minute per agent and event (with a count of those suppressed), so a refusal flood cannot make the log grow or every call slow.
   const IMPORTANT = /^(?:LOOKS_LIKE_INSTRUCTION|SECRET|SCREEN_REFUSED|CLASSIFICATION_ABOVE|PROJECT_NOT_GRANTED|SCOPE_NOT|ACCESS_AUDIT)/;      // rare and security-relevant: always logged (bounded by the daily attempt cap)
-  const lastLogged = new Map(), readAgg = new Map();
+  const lastLogged = new Map(), readAgg = new Map(), seenIds = new Map(); let lastFlush = 0;
   /** Reads are logged one by one up to a daily number per agent; beyond it they are summed up once a minute (count + a hash of what was read), so a busy or hostile reader cannot make the shared log grow or every other append slower without bound. */
   function logRead(agentId, event, data) {
     const a = A(agentId), d = day(); if (!a.rl || a.rl.day !== d) a.rl = { day: d, n: 0 };
-    if (a.rl.n < LIMITS.loggedReadsPerDay) { a.rl.n++; return log(event, data); }
+    const seenToday = (seenIds.get(agentId) ?? (seenIds.set(agentId, { day: d, ids: new Set() }), seenIds.get(agentId))); if (seenToday.day !== d) { seenToday.day = d; seenToday.ids.clear(); }
+    const ids = Array.isArray(data.ids) ? data.ids : data.id ? [data.id] : [], firstSeen = ids.filter(i => !seenToday.ids.has(i));      // the first read of each note per day is always individually traceable, even past the cap
+    if (a.rl.n < LIMITS.loggedReadsPerDay) { a.rl.n++; for (const i of ids) if (seenToday.ids.size < 5000) seenToday.ids.add(i); return log(event, data); }
+    if (firstSeen.length) { for (const i of firstSeen) if (seenToday.ids.size < 5000) seenToday.ids.add(i); return log(event, { ...data, ids: Array.isArray(data.ids) ? firstSeen : undefined, id: data.id, pastDailyCap: true }); }
     const t = nowFn(), g = readAgg.get(agentId) ?? { at: t, n: 0, h: "" }; g.n++; g.h = sha(g.h + event + JSON.stringify(data.ids ?? data.id ?? "")).slice(0, 16); readAgg.set(agentId, g);
     if (t - g.at >= 60_000) { readAgg.delete(agentId); return log("MEMORY_READS_AGGREGATED", { agent: agentId, count: g.n, sinceMs: t - g.at, digest: g.h, lastEvent: event }); }
     return true;
@@ -107,7 +110,7 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
 
   function check(agentId, op) {
     if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE");
-    if (!rosterOk(agentId)) return fail("AGENT_NOT_IN_ROSTER"); if (!auditHealthy()) return fail("ACCESS_AUDIT_UNAVAILABLE"); refresh();
+    if (!rosterOk(agentId)) return fail("AGENT_NOT_IN_ROSTER"); { const tt = nowFn(); if (tt - lastFlush >= 60_000) { lastFlush = tt; flushSuppressed(); } } if (!auditHealthy()) return fail("ACCESS_AUDIT_UNAVAILABLE"); refresh();
     const a = A(agentId), t = nowFn(); a.reads = a.reads.filter(x => t - x < 60_000);
     if (op !== "write") { if (a.reads.length >= LIMITS.readsPerMin) { a.ops.refused++; return fail("READ_RATE_LIMITED"); } a.reads.push(t); }
     return null;
@@ -235,5 +238,5 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
     const h = Object.freeze({ id: agentId, tenantId, remember: o => remember(agentId, o ?? {}), recall: o => recall(agentId, o ?? {}), contextFor: o => contextFor(agentId, o ?? {}), read: id => read(agentId, id), list: o => list(agentId, o ?? {}), requestForget: (id, why) => requestForget(agentId, id, why), activity: () => activity(agentId) });
     handles.set(agentId, h); return h;
   }
-  return { forAgent, recordVerifiedWork, owner, diagnose, auditVerify: () => auditNow(), tenantId, policy: P, limits: LIMITS };
+  return { forAgent, recordVerifiedWork, owner, diagnose, flush: flushSuppressed, auditVerify: () => auditNow(), tenantId, policy: P, limits: LIMITS };
 }

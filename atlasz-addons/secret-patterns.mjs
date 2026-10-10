@@ -4,7 +4,7 @@
 const B = "(?<![A-Za-z0-9])";
 const ALL = [
   /-----BEGIN [A-Z ]*PRIVATE KEY(?: BLOCK)?-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY(?: BLOCK)?-----|$)/g,
-  new RegExp(B + "sk-(?=[A-Za-z0-9_-]*[A-Za-z0-9_]{12})[A-Za-z0-9_-]{16,}", "g"), new RegExp(B + "[sr]k_(?:live|test)_[A-Za-z0-9]{10,}", "g"),
+  new RegExp(B + "sk-(?=[A-Za-z0-9_-]{0,200}[A-Za-z0-9_]{12})[A-Za-z0-9_-]{16,}", "g"), new RegExp(B + "[sr]k_(?:live|test)_[A-Za-z0-9]{10,}", "g"),
   new RegExp("gh[pousr]_[A-Za-z0-9]{20,}", "g"), new RegExp("github_pat_[A-Za-z0-9_]{20,}", "g"),
   new RegExp("(?:AKIA|ASIA|AGPA|AIDA|AROA)[0-9A-Z]{16}(?![A-Za-z0-9])", "g"), new RegExp("AIza[0-9A-Za-z_-]{30,}", "g"),
   new RegExp("xox[baprs]-[A-Za-z0-9-]{10,}", "g"), new RegExp("xapp-[A-Za-z0-9-]{10,}", "g"), /https:\/\/hooks\.slack\.com\/services\/[A-Za-z0-9\/]{10,}/g,

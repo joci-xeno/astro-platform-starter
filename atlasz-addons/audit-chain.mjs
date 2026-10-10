@@ -79,10 +79,11 @@ export function createAuditChain({ filePath = null, now = () => new Date().toISO
   // Re-read the file (another process, e.g. the owner CLI, may have appended). Tampering still throws.
   function reload() {
     if (!filePath) return;
+    const before = fastAppend ? statKey() : null;      // the file as it was BEFORE we read it: if another process appends while we read and verify, the next append sees a different state and takes the full path
     const fresh = readAuditFile(filePath);
     const v = verifyChain(fresh);
     if (!v.ok) throw new Error("AUDIT_CHAIN_TAMPERED:" + v.reason + "@" + v.brokenAt);
-    entries = fresh; if (fastAppend) seen = statKey();
+    entries = fresh; if (fastAppend) seen = before;
   }
   return {
     reload,

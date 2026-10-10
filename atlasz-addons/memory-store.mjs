@@ -34,10 +34,10 @@ const plain = n => n.normalize("NFD").replace(/\p{M}/gu, "");      // names are 
 const FOREIGN = ["пароль", "密码", "密碼", "パスワード", "비밀번호", "heslo", "hasło", "şifre", "lösenord", "wachtwoord", "mot de passe", "passwörter", "geheimnis", "senha"].map(plain).join("|");
 const NAME_CORE = "(?:pass(?:word|wd|phrase|wort|code)?|pass[ _-]word|pwd|psw|pw|psk|otp|pin(?:code)?|secret|token|credentials?|creds|api[ _-]?key|apikey|(?:access|secret|private|signing|encryption|auth|client|master|ssh|license|licence|recovery|unlock|backup|wifi|wpa|wep)[ _-](?:key|code)|kennwort|kenwort|passwrd|pasword|pswd|pword|paßword|secrete|jelsz[a-z]{0,6}|contrasena|clave|titkos(?:kulcs)?|auth|key|" + FOREIGN + ")s?";
 const PREFIX = "(?:(?:[a-z0-9]{1,20}[_.-]){1,3}|(?:db|auth|api|user|admin|root|app|jwt|bearer|session|refresh|access|oauth|mysql|pg|redis|aws|ssh|vpn|wifi|smtp|login|master|service|site|sql)(?=pass|pwd|psw|secret|token|cred|key|pin))";
-const SUFFIX = "(?:(?:[ \\t]{0,3}\\([^)\\n]{1,20}\\))|\\d{1,4}|(?:[_.-][a-z0-9]{1,15}){1,3}|(?:[ \\t]{1,20}(?!(?:is|was|are|ist|war|est|equals?|will|should|set|reset|changed|updated)\\b)[a-z]{2,20}){1,6})?";
+const SUFFIX = "(?:(?:[ \\t]{0,3}\\([^)\\n]{1,20}\\))|\\d{1,4}|(?:[_.-][a-z0-9]{1,15}){1,3}|(?:[ \\t]{1,20}(?!(?:is|was|are|ist|war|est|equals?|will|should|set|reset|changed|updated|now|becomes?|became|has|remains?)\\b)[a-z]{2,20}){1,6})?";
 const NAMES = "(?<pre>" + PREFIX + ")?(?<core>" + NAME_CORE + ")(?<suf>" + SUFFIX + ")";
 const VAL = "(?:\"([^\"\\n]{4,2000})\"|'([^'\\n]{4,2000})'|[\"']?([^\\s\"')}\\]]{4,300}))";
-const ASSIGN_RE = new RegExp("(?<![A-Za-z0-9])" + NAMES + "[\"'\\])]?[ \\t]{0,20}(?:(?<colon>:(?!=)|\u2236|\\||>|[-\u2013\u2014\u2192](?=[ \\t]))|(?<eq>:=|\\?=|={1,3}>?|->|<-|\u21d2|~)|[ \\t]+(?:(?:is|was|are|ist|war|est)(?:[ \\t]+(?:now|set|changed|reset|updated|rotated))*(?:[ \\t]+to)?|equals?|will[ \\t]+be|should[ \\t]+be|(?:set|reset|changed|updated)[ \\t]+to)[ \\t]+|(?<sp>[ \\t]+(?=\\S)))\\s{0,50}" + VAL, "gi");
+const ASSIGN_RE = new RegExp("(?<![A-Za-z0-9])" + NAMES + "[\"'\\])]?[ \\t]{0,20}(?:(?<colon>:(?!=)|\u2236|\\||>|[-\u2013\u2014\u2192](?=[ \\t]))|(?<eq>:=|\\?=|={1,3}>?|->|<-|\u21d2|~)|[ \\t]+(?:(?:is|was|are|ist|war|est)(?:[ \\t]+(?:now|still|just|also|only|simply|finally|always|never|set|changed|reset|updated|rotated|[a-z]{3,12}ly))*(?:[ \\t]+to)?|equals?|will[ \\t]+be|should[ \\t]+be|becomes?|became|has[ \\t]+become|remains?|now|(?:set|reset|changed|updated)[ \\t]+to)(?::[ \\t]*|[ \\t]+)|(?<sp>[ \\t]+(?=\\S)))\\s{0,50}" + VAL, "gi");
 const PASSY = /pass|pwd|psw|pw|pin|jelsz|kennwort|contrasena|titkos/i;
 const PLACEHOLDER = /^(?:true|false|null|none|nil|undefined|empty|unset|todo|tbd|n\/a|yes|no)$/i;
 const STRONG_SYM = /[@#$%^&*\[\]{}|\\<>~`!]/;
@@ -384,6 +384,7 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
   // ---------------------------------------------------------------- retention sweep (owner approval bound to the exact set of notes)
   function retireBatch(ids, { ownerApproval = null } = {}) {
     if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE");
+    if (!auditNow().ok) return fail("AUDIT_UNAVAILABLE");      // before the single-use approval is spent
     if (!Array.isArray(ids) || !ids.length || ids.length > 500 || !ids.every(i => typeof i === "string" && ID_RE.test(i)) || new Set(ids).size !== ids.length) return fail("IDS_INVALID");
     if (!ownerAuth) return fail("OWNER_AUTH_REQUIRED");
     try {
