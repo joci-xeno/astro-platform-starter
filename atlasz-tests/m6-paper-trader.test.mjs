@@ -161,3 +161,27 @@ test("verification: the halt flag itself blocks trading even if the audit file i
   const { pt } = make({ limits: { dailyLossPct: 0.3, maxDrawdownPct: 50, maxConsecutiveLosses: 99 } }); add(pt); for (const c of day(0, [...RANGE, [100, 103.5, 100, 103], [103.2, 104, 103, 103.8], [103.8, 103.9, 100.5, 100.6]])) pt.onCandle("s1", c);
   assert.match(pt.report().strategies[0].suspendedReason, /DAILY_LOSS_MARKED_TO_MARKET/);
 });
+
+test("verification round 2: the owner can still stop (flatten) and the live-trading refusal still answers while trading is halted - persisted and marked unaudited; a deleted audit log is detected", () => {
+  const dir = tmp("pt-"), a = make({ dir }); add(a.pt); for (const c of day(0, WIN).slice(0, 5)) a.pt.onCandle("s1", c);        // a position is open
+  const f = path.join(dir, "paper-audit.jsonl"); fs.writeFileSync(f, fs.readFileSync(f, "utf8").replace("STRATEGY_ADDED", "STRATEGY_ADDEd"));
+  assert.equal(a.pt.requestLiveTrading("x").reason, "LIVE_TRADING_NOT_AUTHORIZED"); const r = a.pt.stopStrategy("s1"); assert.equal(r.ok, true);
+  const b = make({ dir }).pt.report(); assert.equal(b.strategies[0].status, "STOPPED", "the stop survived a restart"); assert.ok(b.trades.some(t => t.exitReason === "STOPPED_BY_OWNER")); assert.ok(b.recentEvents.some(e => e.unaudited === true), "events written while the log is broken are marked unaudited"); assert.ok(b.halted);
+  const d2 = tmp("pt-"), c = make({ dir: d2 }); add(c.pt); feed(c.pt, "s1", 0, WIN); assert.equal(c.pt.report().halted, null); fs.unlinkSync(path.join(d2, "paper-audit.jsonl"));
+  assert.equal(feed(c.pt, "s1", 1, LOSS).reason, "TRADING_HALTED_AUDIT_FAILURE", "a deleted log no longer reaches the length/head recorded in the state"); assert.equal(c.pt.report().trades.length, 1);
+  const d3 = tmp("pt-"), e = make({ dir: d3 }); add(e.pt); feed(e.pt, "s1", 0, WIN); fs.writeFileSync(path.join(d3, "paper-audit.jsonl"), ""); assert.ok(make({ dir: d3 }).pt.report().halted, "an emptied log is detected at restart");
+});
+
+test("verification round 2: the per-candle audit check stays cheap as the log grows (no full re-read per candle), and plain candles are not written one by one", () => {
+  const { pt, dir } = make({ limits: { dailyLossPct: 99, maxDrawdownPct: 99, maxConsecutiveLosses: 99999 } }); add(pt); for (let d = 0; d < 400; d++) for (const c of day(d, d % 2 ? WIN : LOSS)) pt.onCandle("s1", c);
+  const len = pt.report().auditLength; assert.ok(len > 1000, "a long audit log first: " + len); const QUIET = [...RANGE, ...Array.from({ length: 12 }, () => [100, 101, 99, 100])]; const t0 = Date.now(); let n = 0;
+  const f = path.join(dir, "paper-state.json"); let writes = 0; const m0 = fs.statSync(f).mtimeMs;
+  for (let d = 500; d < 800; d++) for (const c of day(d, QUIET)) { pt.onCandle("s1", c); n++; }
+  const ms = Date.now() - t0; assert.ok(ms < 4000, `${n} quiet candles on a ${len}-entry log took ${ms} ms`); assert.equal(pt.auditVerify().ok, true); void writes; void m0;
+  const restart = make({ dir }).pt.report(); assert.deepEqual(restart.account, pt.report().account);
+});
+
+test("verification round 2: the audit baseline also exists right after an owner reset", () => {
+  const dir = tmp("pt-"), { pt } = make({ dir }); add(pt); feed(pt, "s1", 0, WIN); assert.equal(pt.reset(ap("PAPER_ACCOUNT_RESET", "paper:account")).ok, true); add(pt, "s2"); fs.unlinkSync(path.join(dir, "paper-audit.jsonl"));
+  const r = pt.onCandle("s2", day(3, WIN)[0]); assert.equal(r.reason, "TRADING_HALTED_AUDIT_FAILURE");
+});

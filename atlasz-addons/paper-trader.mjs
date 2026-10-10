@@ -22,7 +22,7 @@ const dayOf = ms => new Date(ms).toISOString().slice(0, 10);
 export function createPaperTrader({ dir, nowFn = () => Date.now(), ownerAuth = null, isStopped = () => false, limits = {}, startingBalance = 100_000 } = {}) {
   if (!dir) throw new Error("PAPER_DIR_REQUIRED"); if (!Number.isFinite(startingBalance) || startingBalance <= 0 || startingBalance > 1e9) throw new Error("STARTING_BALANCE_INVALID");
   const L = { ...DEFAULT_LIMITS, ...limits }; fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-  const stateFile = path.join(dir, "paper-state.json"), auditFile = path.join(dir, "paper-audit.jsonl"); let audit = null, auditBootError = null; try { audit = createAuditChain({ filePath: auditFile }); } catch (e) { auditBootError = String(e?.message ?? e).slice(0, 80); }      // a damaged chain must not stop the process from starting: trading is simply halted (fail closed)
+  const stateFile = path.join(dir, "paper-state.json"), auditFile = path.join(dir, "paper-audit.jsonl"); let audit = null, auditBootError = null; try { audit = createAuditChain({ filePath: auditFile, fastAppend: true }); } catch (e) { auditBootError = String(e?.message ?? e).slice(0, 80); }      // a damaged chain must not stop the process from starting: trading is simply halted (fail closed)
   const fail = (reason, extra = {}) => ({ ok: false, reason, ...extra });
   const stopped = () => { try { return Boolean(isStopped()); } catch { return true; } };
   const fresh = () => ({ v: 1, currency: CURRENCY, realMoney: false, createdAt: new Date(nowFn()).toISOString(), account: { starting: startingBalance, equity: startingBalance, peak: startingBalance }, daily: {}, strategies: {}, trades: [], events: [], suspendAll: null });
@@ -32,11 +32,16 @@ export function createPaperTrader({ dir, nowFn = () => Date.now(), ownerAuth = n
     try { const w = JSON.parse(fs.readFileSync(stateFile, "utf8")); if (!w || typeof w.body !== "string" || w.sha !== sha(w.body)) throw new Error("hash"); const b = JSON.parse(w.body); if (b?.v !== 1 || b.realMoney !== false || b.currency !== CURRENCY || typeof b.strategies !== "object" || !Array.isArray(b.trades)) throw new Error("shape"); S = b; loadedFrom = "FILE"; }
     catch { try { fs.renameSync(stateFile, stateFile + ".corrupt-" + Date.now()); } catch { /* ignore */ } S = fresh(); loadedFrom = "CORRUPT_STARTED_EMPTY"; }
   }
-  const save = () => { const t = stateFile + "." + crypto.randomBytes(4).toString("hex") + ".tmp"; fs.writeFileSync(t, wrap(JSON.stringify(S)), { mode: 0o600 }); fs.renameSync(t, stateFile); };
-  const auditOk = () => { try { if (!audit) return false; audit.reload(); return audit.verify().ok === true; } catch { return false; } };
+  let dirty = 0, logged = false; const SAVE_EVERY = 25;      // plain candle bookkeeping is written every 25 candles; anything that changes positions, trades, equity, status or the audit log is written at once
+  const save = () => { dirty = 0; const t = stateFile + "." + crypto.randomBytes(4).toString("hex") + ".tmp"; fs.writeFileSync(t, wrap(JSON.stringify(S)), { mode: 0o600 }); fs.renameSync(t, stateFile); };
+  let seenAudit = null, soft = false;      // seenAudit: file stat as this instance left it (a cheap per-candle check); soft: the owner's stop/refusal paths must work (and say "unaudited") even when the audit log is broken
+  const auditStat = () => { try { const st = fs.statSync(auditFile); return st.size + ":" + st.mtimeMs + ":" + st.ino; } catch { return "none"; } };
+  const baselineOk = () => !S.audit || audit.length() > S.audit.length || (audit.length() === S.audit.length && audit.head() === S.audit.head);      // a deleted, truncated or replaced log no longer reaches the length/head recorded in the state
+  const auditOk = () => { try { if (!audit) return false; if (seenAudit !== null && auditStat() === seenAudit) return true; audit.reload(); if (audit.verify().ok !== true || !baselineOk()) return false; seenAudit = auditStat(); return true; } catch { return false; } };
   const halt = why => { if (!S.halted) { S.halted = { reason: why, at: new Date(nowFn()).toISOString() }; try { save(); } catch { /* reported by the next call */ } } };
   if (auditBootError && !S.halted) halt("AUDIT_CHAIN_FAILED_AT_START: " + auditBootError);
-  const log = (event, data = {}) => { try { if (!audit) throw new Error("AUDIT_UNAVAILABLE"); audit.append(event, data); } catch (e) { halt("AUDIT_APPEND_FAILED"); throw e; } S.events.push({ at: new Date(nowFn()).toISOString(), event, ...data }); if (S.events.length > 500) S.events.shift(); };
+  if (audit && !S.halted && !baselineOk()) halt("AUDIT_LOG_MISSING_OR_REPLACED");
+  const log = (event, data = {}) => { try { if (!audit) throw new Error("AUDIT_UNAVAILABLE"); audit.append(event, data); logged = true; S.audit = { length: audit.length(), head: audit.head() }; seenAudit = auditStat(); } catch (e) { halt("AUDIT_APPEND_FAILED"); if (!soft) throw e; S.events.push({ at: new Date(nowFn()).toISOString(), event, ...data, unaudited: true }); return; } S.events.push({ at: new Date(nowFn()).toISOString(), event, ...data }); if (S.events.length > 500) S.events.shift(); };
   const engines = new Map();
   const engineOf = st => { let e = engines.get(st.id); if (!e) { e = createOrbEngine({ config: st.config, interval: st.interval }); if (st.engine) e.restore(st.engine); engines.set(st.id, e); } return e; };
   const equityNow = () => S.account.equity + unrealised();
@@ -77,11 +82,11 @@ export function createPaperTrader({ dir, nowFn = () => Date.now(), ownerAuth = n
   function onCandle(id, candle, { kind = null } = {}) {
     if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const st = S.strategies[id]; if (!st) return fail("NO_SUCH_STRATEGY");
     if (S.halted) return fail("TRADING_HALTED_AUDIT_FAILURE", { since: S.halted.at }); if (!auditOk()) { halt("AUDIT_CHAIN_FAILED"); return fail("TRADING_HALTED_AUDIT_FAILURE"); }      // fail closed: no simulated P&L is booked that cannot be audited
-    const dk = kind ?? st.dataKind; if (!KINDS.includes(dk) || dk === "UNAVAILABLE") { log("CANDLE_REFUSED_DATA_UNAVAILABLE", { id }); save(); return fail("DATA_UNAVAILABLE"); }
+    logged = false; const dk = kind ?? st.dataKind; if (!KINDS.includes(dk) || dk === "UNAVAILABLE") { log("CANDLE_REFUSED_DATA_UNAVAILABLE", { id }); save(); return fail("DATA_UNAVAILABLE"); }
     if (!candle || ![candle.t, candle.o, candle.h, candle.l, candle.c, candle.v].every(Number.isFinite) || candle.t % INTERVALS[st.interval] !== 0 || candle.o <= 0 || candle.h <= 0 || candle.l <= 0 || candle.c <= 0 || candle.v < 0 || ((dk === "LIVE" || dk === "DELAYED") && candle.t > nowFn() + 86_400_000) || candle.h < Math.max(candle.o, candle.c, candle.l) || candle.l > Math.min(candle.o, candle.c, candle.h)) return fail("CANDLE_INVALID");
     if (st.lastT !== null && candle.t <= st.lastT) return { ok: true, ignored: "ALREADY_PROCESSED" };
     st.lastT = candle.t; st.lastClose = candle.c; st.lastDataKind = dk; st.lastCandleAt = candle.t; st.stats.candles++;
-    if (st.status !== "ACTIVE") { save(); return { ok: true, status: st.status }; }
+    if (st.status !== "ACTIVE") { if (++dirty >= SAVE_EVERY) save(); return { ok: true, status: st.status }; }
     const stale = (dk === "LIVE" || dk === "DELAYED") && nowFn() - (candle.t + INTERVALS[st.interval]) > L.maxStaleMs;
     const blocked = stale || Boolean(S.suspendAll) || openCount() >= L.maxOpenPositions && !st.position; const eng = engineOf(st), out = [];
     for (const ev of eng.push(candle, { equity: S.account.equity, allowEntry: !blocked })) {
@@ -92,7 +97,7 @@ export function createPaperTrader({ dir, nowFn = () => Date.now(), ownerAuth = n
     }
     if (!S.suspendAll) { const eq = equityNow(), ddm = (S.account.peak - eq) / S.account.peak * 100, d2 = S.daily[dayOf(candle.t)] ?? { pnl: 0, startEquity: S.account.equity }, dl = -(d2.pnl + unrealised()) / d2.startEquity * 100;      // limits also see open-position losses
       if (ddm >= L.maxDrawdownPct) suspendAll(`MAX_DRAWDOWN_MARKED_TO_MARKET ${ddm.toFixed(2)}% >= ${L.maxDrawdownPct}%`, candle.t); else if (dl >= L.dailyLossPct) suspendAll(`DAILY_LOSS_MARKED_TO_MARKET ${dl.toFixed(2)}% >= ${L.dailyLossPct}%`, candle.t); }
-    if (st.status === "ACTIVE") st.engine = eng.snapshot(); save(); return { ok: true, events: out.map(e => e.type), equity: equityNow() };
+    if (st.status === "ACTIVE") st.engine = eng.snapshot(); if (logged || ++dirty >= SAVE_EVERY) save(); return { ok: true, events: out.map(e => e.type), equity: equityNow() };
   }
 
   function resume(id, ownerApproval) {
@@ -102,11 +107,14 @@ export function createPaperTrader({ dir, nowFn = () => Date.now(), ownerAuth = n
     S.suspendAll = null; st.status = "ACTIVE"; st.suspendedReason = null; st.stats.consecutiveLosses = 0; log("STRATEGY_RESUMED", { id, nonce: v.nonce }); save(); return { ok: true };
   }
   const resumeSubject = id => (S.strategies[id] ? { action: "PAPER_STRATEGY_RESUME", subject: `paper:${id}:${S.strategies[id].suspensions}` } : null);
-  function stopStrategy(id) { const st = S.strategies[id]; if (!st) return fail("NO_SUCH_STRATEGY"); if (st.status === "STOPPED") return { ok: true }; const eng = engineOf(st); if (st.lastClose) { const ev = eng.flatten(st.lastClose, st.lastT + INTERVALS[st.interval], "STOPPED_BY_OWNER"); if (ev) applyExit(st, ev.trade, st.lastT, true); } st.status = "STOPPED"; st.engine = eng.snapshot(); log("STRATEGY_STOPPED", { id }); save(); return { ok: true }; }
+  function stopStrategy(id) { const st = S.strategies[id]; if (!st) return fail("NO_SUCH_STRATEGY"); if (st.status === "STOPPED") return { ok: true }; soft = true; try { return stopStrategy0(st, id); } finally { soft = false; } }
+  function stopStrategy0(st, id) { const eng = engineOf(st); if (st.lastClose) { const ev = eng.flatten(st.lastClose, st.lastT + INTERVALS[st.interval], "STOPPED_BY_OWNER"); if (ev) applyExit(st, ev.trade, st.lastT, true); } st.status = "STOPPED"; st.engine = eng.snapshot(); log("STRATEGY_STOPPED", { id }); save(); return { ok: true }; }
   /** Real-money trading is not available in this system. The request is refused and recorded. */
-  function requestLiveTrading(why = "") { log("LIVE_TRADING_REFUSED", { why: String(why).slice(0, 120) }); save(); return fail("LIVE_TRADING_NOT_AUTHORIZED", { detail: "No broker, exchange or wallet integration exists; real-money trading needs a separate explicit owner authorization and a separate, reviewed implementation." }); }
+  function requestLiveTrading(why = "") { soft = true; try { log("LIVE_TRADING_REFUSED", { why: String(why).slice(0, 120) }); } finally { soft = false; } try { save(); } catch { /* the refusal does not depend on it */ } return fail("LIVE_TRADING_NOT_AUTHORIZED", { detail: "No broker, exchange or wallet integration exists; real-money trading needs a separate explicit owner authorization and a separate, reviewed implementation." }); }
 
+  const flush = () => { if (dirty > 0) save(); };
   function report() {
+    flush();
     const t = nowFn(), eq = equityNow(), dd = (S.account.peak - eq) / S.account.peak * 100, today = dayOf(t), d = S.daily[today] ?? { pnl: 0, trades: 0 }, warnings = [];
     const dayLoss = d.startEquity ? -d.pnl / d.startEquity * 100 : 0; if (dd >= 0.7 * L.maxDrawdownPct) warnings.push(`drawdown ${dd.toFixed(2)}% is near the ${L.maxDrawdownPct}% limit`); if (dayLoss >= 0.7 * L.dailyLossPct) warnings.push(`today's loss ${dayLoss.toFixed(2)}% is near the ${L.dailyLossPct}% limit`);
     if (S.suspendAll) warnings.push("all strategies suspended: " + S.suspendAll.reason); if (S.halted) warnings.push("TRADING HALTED: audit log failed verification (" + S.halted.reason + "); an owner-signed account reset archives it and restarts");
@@ -114,7 +122,7 @@ export function createPaperTrader({ dir, nowFn = () => Date.now(), ownerAuth = n
       strategies: Object.values(S.strategies).map(st => ({ id: st.id, instrument: st.instrument, interval: st.interval, status: st.status, suspendedReason: st.suspendedReason ?? null, suspensions: st.suspensions, basis: st.basis, verdict: st.verdict, evidenceSha256: st.evidenceSha256, dataKind: st.dataKind, lastDataKind: st.lastDataKind, lastCandleAt: st.lastCandleAt ? new Date(st.lastCandleAt).toISOString() : null, position: st.position, performance: metrics(S.trades.filter(x => x.strategy === st.id), S.account.starting), candles: st.stats.candles })),
       trades: S.trades.slice(-100), recentEvents: S.events.slice(-60), warnings, auditHead: audit ? audit.head() : null, auditLength: audit ? audit.length() : null };
   }
-  function reset(ownerApproval) { if (!ownerAuth) return fail("OWNER_AUTH_REQUIRED"); const v = ownerAuth.verifyApproval(ownerApproval, { action: "PAPER_ACCOUNT_RESET", subject: "paper:account" }); if (!v.allowed) return fail("OWNER_APPROVAL_REQUIRED:" + v.reason); if (S.halted || !auditOk()) { try { fs.renameSync(auditFile, auditFile + ".tampered-" + nowFn()); } catch { /* nothing to archive */ } audit = createAuditChain({ filePath: auditFile }); auditBootError = null; }      // a broken audit chain is archived, never overwritten, and a new one starts with the reset
-    log("PAPER_ACCOUNT_RESET", { nonce: v.nonce, previousEquity: S.account.equity }); const ev = S.events; S = fresh(); S.events = ev; engines.clear(); save(); return { ok: true }; }
-  return { addStrategy, onCandle, resume, resumeSubject, stopStrategy, requestLiveTrading, report, reset, auditVerify: () => { if (!audit) return { ok: false, reason: auditBootError ?? "AUDIT_UNAVAILABLE" }; try { audit.reload(); } catch (e) { return { ok: false, reason: String(e.message).slice(0, 80) }; } return audit.verify(); }, auditEntries: (n = 50) => (audit ? audit.entries().slice(-n) : []), limits: L, loadedFrom: () => loadedFrom, trades: () => S.trades.map(t => ({ ...t })) };
+  function reset(ownerApproval) { if (!ownerAuth) return fail("OWNER_AUTH_REQUIRED"); const v = ownerAuth.verifyApproval(ownerApproval, { action: "PAPER_ACCOUNT_RESET", subject: "paper:account" }); if (!v.allowed) return fail("OWNER_APPROVAL_REQUIRED:" + v.reason); if (S.halted || !auditOk()) { try { fs.renameSync(auditFile, auditFile + ".tampered-" + nowFn()); } catch { /* nothing to archive */ } audit = createAuditChain({ filePath: auditFile, fastAppend: true }); auditBootError = null; seenAudit = null; }      // a broken audit chain is archived, never overwritten, and a new one starts with the reset
+    log("PAPER_ACCOUNT_RESET", { nonce: v.nonce, previousEquity: S.account.equity }); const ev = S.events; S = fresh(); S.events = ev; S.audit = { length: audit.length(), head: audit.head() }; engines.clear(); save(); return { ok: true }; }
+  return { flush, addStrategy, onCandle, resume, resumeSubject, stopStrategy, requestLiveTrading, report, reset, auditVerify: () => { if (!audit) return { ok: false, reason: auditBootError ?? "AUDIT_UNAVAILABLE" }; try { audit.reload(); } catch (e) { return { ok: false, reason: String(e.message).slice(0, 80) }; } return audit.verify(); }, auditEntries: (n = 50) => (audit ? audit.entries().slice(-n) : []), limits: L, loadedFrom: () => loadedFrom, trades: () => S.trades.map(t => ({ ...t })) };
 }

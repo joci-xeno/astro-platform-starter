@@ -121,7 +121,7 @@ export function createTradingPanel({ stateDir, ownerAuth, sign, isStopped = () =
       for (let i = 0; i < n && fd.cursor < ds.count; i++) { let r; try { r = t.onCandle(s.id, ds.candles[fd.cursor], { kind: ds.kind }); } catch (e) { r = { ok: false, reason: "STRATEGY_ERROR:" + String(e?.message ?? e).slice(0, 60) }; } if (!r.ok) { out[s.id] = { error: r.reason }; break; } fd.cursor++; fed++; changed = true; if (t.report().strategies.find(x => x.id === s.id)?.status !== "ACTIVE") break; }
       out[s.id] = { ...(out[s.id] ?? {}), fed, cursor: fd.cursor, ended: fd.cursor >= ds.count };
     }
-    if (changed) writeJson(feedsFile, f); return { ok: true, strategies: out };
+    t.flush(); if (changed) writeJson(feedsFile, f); return { ok: true, strategies: out };      // the trader's state is durable BEFORE the feed cursor moves: a crash can only replay candles (idempotent), never skip them
   }
   return { view, candles, action, tick, close: () => { pt = null; cache.clear(); }, KINDS };
 }
