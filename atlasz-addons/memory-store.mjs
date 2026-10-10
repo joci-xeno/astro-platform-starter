@@ -17,6 +17,8 @@ import { createAuditChain } from "./audit-chain.mjs";
 import { withFileLock } from "./file-lock.mjs";
 import { containsSecret, scrub } from "./secret-patterns.mjs";
 import { terms } from "./knowledge-projects.mjs";
+import { createSemanticIndex } from "./semantic-index.mjs";
+import { providerFingerprint, isNeural } from "./embedding-provider.mjs";
 
 export const CLASSES = Object.freeze(["PUBLIC", "PERSONAL", "CONFIDENTIAL"]);      // SECRET exists as a name only so it can be refused
 const RANK = Object.freeze({ PUBLIC: 0, PERSONAL: 1, CONFIDENTIAL: 2 });
@@ -38,6 +40,8 @@ const sensitive = t => containsSecret(t) || assignsSecret(t);
 const sha = t => crypto.createHash("sha256").update(t).digest("hex");
 const oneLine = (v, max) => typeof v === "string" && v.length <= max && v.isWellFormed() && !/[\u0000-\u001f\u007f\u2028\u2029\p{Cf}]/u.test(v);
 const memorySubject = (id, bodySha, extra = "") => "memory:" + id + ":" + bodySha.slice(0, 16) + extra;
+/** Subject of the owner approval for a retention sweep: bound to the exact set of notes, so an approval cannot be reused for a different set. */
+export const retentionSubject = ids => "retention:" + sha([...ids].sort().join(",")).slice(0, 24) + ":" + ids.length;
 export { memorySubject };
 
 // ---- local similarity vector: signed hashed word + character-trigram features, L2-normalised ----
@@ -123,7 +127,7 @@ function openMemoryIndex() {
   };
 }
 
-export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, forceBackend = null, maxNotes = LIMITS.maxNotes, isStopped = () => false, nowFn = () => new Date().toISOString() } = {}) {
+export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, forceBackend = null, semanticProvider = null, maxNotes = LIMITS.maxNotes, isStopped = () => false, nowFn = () => new Date().toISOString() } = {}) {
   if (!dir) throw new Error("MEMORY_DIR_REQUIRED");
   if (!TENANT_RE.test(tenantId)) throw new Error("MEMORY_TENANT_INVALID");
   const notesDir = path.join(dir, "notes"), versionsDir = path.join(dir, "versions"), trashDir = path.join(dir, "trash"), quarDir = path.join(dir, "quarantine");
@@ -187,14 +191,19 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
   }
   if (index.rebuiltFromDamage) { index.clear(); try { audit.append("MEMORY_INDEX_REBUILT", { reason: "DATABASE_DAMAGED" }); } catch { /* ignore */ } }
 
-  const readerOk = r => r && typeof r === "object" && typeof r.id === "string" && AGENT_RE.test(r.id) && typeof r.clearance === "string" && isClass(r.clearance);
+  const readerOk = r => r && typeof r === "object" && typeof r.id === "string" && AGENT_RE.test(r.id) && typeof r.clearance === "string" && isClass(r.clearance) && (r.allow === undefined || typeof r.allow === "function");
   const syncRead = (force = false) => { if (!force && stampOf() === dirStamp) return; try { lock(() => sync(force)); } catch { /* another process holds the index: keep serving the last consistent view */ } };
-  const canSee = (rec, reader) => RANK[rec.classification] <= RANK[reader.clearance];
+  // Beyond the classification ceiling a reader may carry an `allow` predicate (agent-private / project scopes). It sees a frozen minimal view and can only NARROW access; an exception denies.
+  const canSee = (rec, reader) => {
+    if (!(RANK[rec.classification] <= RANK[reader.clearance])) return false;
+    if (typeof reader.allow !== "function") return true;
+    try { return reader.allow(Object.freeze({ id: rec.id, tags: Object.freeze([...rec.tags]), author: rec.author, classification: rec.classification })) === true; } catch { return false; }
+  };
   const lock = fn => withFileLock(path.join(dir, "memory"), fn);
   try { lock(() => sync(true)); } catch { sync(true); }      // a busy store lock must not stop start-up
 
   // ---------------------------------------------------------------- write
-  function write({ authorId, title, body, tags = [], classification = "PERSONAL", source = "", clearance = "PUBLIC" } = {}) {
+  function write({ authorId, title, body, tags = [], classification = "PERSONAL", source = "", clearance = "PUBLIC", allow = undefined } = {}) {
     if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE");
     if (typeof authorId !== "string" || !AGENT_RE.test(authorId)) return fail("AUTHOR_INVALID");
     if (classification === "SECRET") return fail("SECRET_NOT_STORABLE_USE_THE_VAULT");
@@ -209,7 +218,7 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
         sync();
         if (recs.size >= maxNotes) return fail("MEMORY_FULL");
         const bodySha = sha(body);
-        const wr = { id: authorId, clearance: isClass(clearance) ? clearance : "PUBLIC" };
+        const wr = { id: authorId, clearance: isClass(clearance) ? clearance : "PUBLIC", allow: typeof allow === "function" ? allow : undefined };
         for (const r of recs.values()) if (r.bodySha === bodySha && canSee(r, wr)) return fail("DUPLICATE_OF:" + r.id);      // a hidden note is never revealed by a duplicate answer
         const id = crypto.randomBytes(8).toString("hex"), t = nowFn();
         const meta = { id, title: title.trim(), tags: [...new Set(tags)].join(", "), classification, tenant: tenantId, author: authorId, source, createdAt: t, updatedAt: t, version: "1", bodySha };
@@ -228,7 +237,7 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
     try {
       return lock(() => {
         sync(); const cur = recs.get(id); if (!cur) return fail("NOT_FOUND");
-        const reader = { id: patch.authorId, clearance: patch.clearance };
+        const reader = { id: patch.authorId, clearance: patch.clearance, allow: patch.allow };
         if (!readerOk(reader) || !canSee(cur, reader)) return fail("NOT_FOUND");      // an agent that cannot read a note cannot change it, and cannot tell it exists
         const parsed = readNote(path.join(notesDir, id + ".md")); if (parsed.bad) return fail("NOTE_UNREADABLE");
         const cls = patch.classification ?? cur.classification;
@@ -274,9 +283,38 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
         fs.renameSync(path.join(notesDir, id + ".md"), path.join(trashDir, id + "." + Date.now() + ".md"));
         for (const n of fs.readdirSync(versionsDir).filter(x => x.startsWith(id + ".v"))) { try { fs.renameSync(path.join(versionsDir, n), path.join(trashDir, n + "." + Date.now() + ".old")); } catch { /* left */ } }
         audit.append("MEMORY_FORGOTTEN", { id, bodySha: cur.bodySha, nonce: v.nonce });
+        sidx?.remove(id); try { sidx?.flush(); } catch { /* rebuilt by reindex */ }
         sync(); return { ok: true, id, note: "the note and its old versions were moved to the trash folder (still on disk until the owner deletes them); the owner can restore the note by moving the file back" };
       });
     } catch (e) { return fail(e?.message === "LOCK_TIMEOUT" ? "MEMORY_BUSY" : "FORGET_ERROR"); }
+  }
+
+  /** Subject an owner approval for forgetting this note must carry (owner tooling only; the store object is never handed to agents). */
+  function forgetSubject(id) { if (typeof id !== "string" || !ID_RE.test(id)) return null; syncRead(); const r = recs.get(id); return r ? { action: "MEMORY_FORGET", subject: memorySubject(id, r.bodySha) } : null; }
+
+  /** Subject the owner approval for LOWERING this note's class must carry. */
+  function declassifySubject(id, to) { if (typeof id !== "string" || !ID_RE.test(id) || !isClass(to)) return null; syncRead(); const r = recs.get(id); return r && RANK[to] < RANK[r.classification] ? { action: "MEMORY_DECLASSIFY", subject: memorySubject(id, r.bodySha, ":" + r.classification + ">" + to) } : null; }
+
+  // ---------------------------------------------------------------- retention sweep (owner approval bound to the exact set of notes)
+  function retireBatch(ids, { ownerApproval = null } = {}) {
+    if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE");
+    if (!Array.isArray(ids) || !ids.length || ids.length > 500 || !ids.every(i => typeof i === "string" && ID_RE.test(i)) || new Set(ids).size !== ids.length) return fail("IDS_INVALID");
+    if (!ownerAuth) return fail("OWNER_AUTH_REQUIRED");
+    try {
+      return lock(() => {
+        sync(); for (const id of ids) if (!recs.has(id)) return fail("NOT_FOUND");
+        const subject = retentionSubject(ids), v = ownerAuth.verifyApproval(ownerApproval, { action: "MEMORY_RETENTION_SWEEP", subject });
+        if (!v.allowed) return fail("OWNER_APPROVAL_REQUIRED:" + v.reason, { subject });
+        const stamp = Date.now();
+        for (const id of ids) {
+          fs.renameSync(path.join(notesDir, id + ".md"), path.join(trashDir, id + "." + stamp + ".md"));
+          for (const n of fs.readdirSync(versionsDir).filter(x => x.startsWith(id + ".v"))) { try { fs.renameSync(path.join(versionsDir, n), path.join(trashDir, n + "." + stamp + ".old")); } catch { /* left */ } }
+          sidx?.remove(id);
+        }
+        audit.append("MEMORY_RETENTION_SWEPT", { count: ids.length, ids, subject, nonce: v.nonce }); try { sidx?.flush(); } catch { /* rebuilt by reindex */ }
+        sync(); return { ok: true, retired: ids, note: "moved to the trash folder; the owner can restore a file by moving it back" };
+      });
+    } catch (e) { return fail(e?.message === "LOCK_TIMEOUT" ? "MEMORY_BUSY" : "RETIRE_ERROR"); }
   }
 
   // ---------------------------------------------------------------- read / list / search
@@ -290,12 +328,13 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
     const p = readNote(path.join(notesDir, id + ".md")); if (p.bad) return fail("NOT_FOUND");
     return { ok: true, untrusted: true, id, title: defang(rec.title), tags: rec.tags.map(defang), classification: rec.classification, author: rec.author, source: defang(p.rec.source), version: p.rec.version, updated: rec.updated, text: fence(rec, scrub(p.rec.body)) };
   }
-  function list(reader, { limit = 50 } = {}) {
+  function list(reader, { limit = 50, offset = 0 } = {}) {
     if (!readerOk(reader)) return fail("READER_INVALID");
     syncRead(); const n = Math.max(1, Math.min(200, Number.isInteger(limit) ? limit : 50));
-    return { ok: true, notes: [...recs.values()].filter(r => canSee(r, reader)).sort((a, b) => (a.updated < b.updated ? 1 : -1)).slice(0, n).map(r => ({ id: r.id, title: defang(r.title), tags: r.tags.map(defang), classification: r.classification, updated: r.updated })) };
+    return { ok: true, notes: [...recs.values()].filter(r => canSee(r, reader)).sort((a, b) => (a.updated < b.updated ? 1 : a.updated > b.updated ? -1 : a.id < b.id ? -1 : 1)).slice(Number.isInteger(offset) && offset > 0 ? offset : 0, (Number.isInteger(offset) && offset > 0 ? offset : 0) + n).map(r => ({ id: r.id, title: defang(r.title), tags: r.tags.map(defang), classification: r.classification, updated: r.updated })) };
   }
-  function search({ query, reader, limit = 5 } = {}) {
+  const search = args => searchImpl(args ?? {}, null, null);
+  function searchImpl({ query, reader, limit = 5 } = {}, neuralList = null, semMeta = null) {
     if (!readerOk(reader)) return fail("READER_INVALID");
     if (typeof query !== "string" || !query.trim() || query.length > LIMITS.maxQuery || !query.isWellFormed()) return fail("QUERY_INVALID");
     const qterms = [...new Set(terms(query))].slice(0, 12); if (!qterms.length) return fail("QUERY_HAS_NO_SEARCHABLE_TERMS");
@@ -307,16 +346,66 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
     for (const id of visible) { const c = cosine(qv, vecs.get(id)); if (c > 0.2) sem.push({ id, score: c }); }
     sem.sort((a, b) => b.score - a.score); sem.length = Math.min(sem.length, 50);
     const fused = new Map();
-    const add = (list, key) => list.forEach((x, i) => { const e = fused.get(x.id) ?? { id: x.id, rrf: 0, lexical: null, similarity: null }; e.rrf += 1 / (60 + i + 1); e[key] = x.score; fused.set(x.id, e); });
-    add(lex, "lexical"); add(sem, "similarity");
+    const add = (list, key) => list.forEach((x, i) => { const e = fused.get(x.id) ?? { id: x.id, rrf: 0, lexical: null, similarity: null, neural: null }; e.rrf += 1 / (60 + i + 1); e[key] = x.score; fused.set(x.id, e); });
+    add(lex, "lexical"); add(sem, "similarity"); if (neuralList) add(neuralList, "neural");
     const top = [...fused.values()].sort((a, b) => b.rrf - a.rrf).slice(0, n);
     const results = top.map(h => {
       const rec = recs.get(h.id), p = readNote(path.join(notesDir, h.id + ".md")); if (p.bad) return null;
       const body = scrub(p.rec.body), low = body.toLowerCase(); let at = -1; for (const t of qterms) { const i = low.indexOf(t); if (i >= 0 && (at < 0 || i < at)) at = i; }
       const start = Math.max(0, (at < 0 ? 0 : at) - 80), passage = body.slice(start, start + LIMITS.passageChars);
-      return { id: rec.id, title: defang(rec.title), classification: rec.classification, tags: rec.tags.map(defang), score: Number(h.rrf.toFixed(5)), lexical: h.lexical, similarity: h.similarity === null ? null : Number(h.similarity.toFixed(3)), passage: fence(rec, passage), externallyEdited: p.edited === true };
+      return { id: rec.id, title: defang(rec.title), classification: rec.classification, tags: rec.tags.map(defang), score: Number(h.rrf.toFixed(5)), lexical: h.lexical, similarity: h.similarity === null ? null : Number(h.similarity.toFixed(3)), neural: h.neural === null ? null : Number(h.neural.toFixed(3)), passage: fence(rec, passage), externallyEdited: p.edited === true };
     }).filter(Boolean);
-    return { ok: true, untrusted: true, backend: index.backend, retrieval: "HYBRID_BM25_PLUS_LEXICAL_NGRAM_SIMILARITY (not neural embeddings)", results };
+    const label = !neuralList ? "HYBRID_BM25_PLUS_LEXICAL_NGRAM_SIMILARITY (not neural embeddings)" : semMeta?.neural ? "HYBRID_BM25_PLUS_NGRAM_PLUS_NEURAL_EMBEDDINGS(" + semMeta.model + ")" : "HYBRID_BM25_PLUS_NGRAM_PLUS_TEST_FIXTURE_EMBEDDINGS (NOT neural; plumbing test only)";
+    return { ok: true, untrusted: true, backend: index.backend, retrieval: label, semantic: semMeta ?? { used: false, reason: "NO_SEMANTIC_PROVIDER_OR_SYNC_CALL", neural: false }, results };
+  }
+
+  // ---------------------------------------------------------------- semantic (embedding) retrieval: optional, provider-injected, never a hard dependency
+  // Without a provider (the default) nothing here runs and search() is the lexical hybrid. A provider of kind NEURAL is labelled neural; the toy test fixture is labelled as such.
+  let sidx = null, lastSemErr = null, lastReindex = null;
+  if (semanticProvider) { const fp = providerFingerprint(semanticProvider); sidx = createSemanticIndex({ file: path.join(dir, "semantic", fp + ".json"), fingerprint: fp, nowFn: () => Date.parse(nowFn()) || Date.now() }); }
+  const embedText = (title, body) => (title + "\n" + body).slice(0, 4000);
+  function semanticStatus() {
+    if (!semanticProvider) return { enabled: false, neural: false, reason: "NO_EMBEDDING_PROVIDER_CONFIGURED (lexical fallback in use)" };
+    syncRead(); const st = sidx.stats(); let fresh = 0; for (const r of recs.values()) if (sidx.has(r.id, r.bodySha)) fresh++;
+    return { enabled: true, neural: isNeural(semanticProvider), providerKind: semanticProvider.kind, model: semanticProvider.model, vectors: st.vectors, dim: st.dim, coverage: recs.size ? Number((fresh / recs.size).toFixed(3)) : 1, notesMissingVectors: recs.size - fresh, indexFile: st.loadedFrom, staleModelFileIgnored: st.staleModelFileIgnored, lastError: lastSemErr, lastReindex };
+  }
+  /** Controlled (re)indexing: only notes without a fresh vector are embedded, in small batches, at most maxNotes per call. Vectors of vanished or changed notes are dropped. */
+  async function reindexSemantic({ maxNotes = 500, full = false } = {}) {
+    if (!semanticProvider) return fail("NO_EMBEDDING_PROVIDER_CONFIGURED");
+    if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE");
+    syncRead(true); const cap = Math.max(1, Math.min(LIMITS.maxNotes, Number.isInteger(maxNotes) ? maxNotes : 500));
+    const current = new Map([...recs.values()].map(r => [r.id, r.bodySha])); if (full) sidx.clear(); const pruned = sidx.prune(current);
+    const todo = [...recs.values()].filter(r => !sidx.has(r.id, r.bodySha)).slice(0, cap); let done = 0, failed = null;
+    for (let i = 0; i < todo.length && !failed; i += 16) {
+      if (stopped()) { failed = "OWNER_STOP_OR_SAFE_MODE_ACTIVE"; break; }
+      const batch = todo.slice(i, i + 16), texts = [];
+      for (const r of batch) { const p = readNote(path.join(notesDir, r.id + ".md")); texts.push(p.bad ? "" : embedText(r.title, scrub(p.rec.body))); }
+      if (texts.some(t => !t.trim())) { failed = "NOTE_UNREADABLE"; break; }
+      let vs; try { vs = await semanticProvider.embed(texts); } catch (e) { failed = String(e?.message ?? e).slice(0, 80); break; }
+      if (!Array.isArray(vs) || vs.length !== batch.length) { failed = "EMBEDDING_COUNT_MISMATCH"; break; }
+      syncRead();      // a note changed or forgotten while we were embedding must not get a stale vector
+      batch.forEach((r, j) => { const now = recs.get(r.id); if (now && now.bodySha === r.bodySha) { try { sidx.set(r.id, r.bodySha, vs[j]); done++; } catch (e) { failed = String(e?.message ?? e).slice(0, 80); } } });
+    }
+    try { sidx.flush(); } catch { failed ??= "INDEX_WRITE_FAILED"; }
+    lastSemErr = failed; lastReindex = { at: nowFn(), embedded: done, pruned, pending: Math.max(0, todo.length - done), error: failed };
+    try { audit.append("MEMORY_SEMANTIC_REINDEX", { model: semanticProvider.model, kind: semanticProvider.kind, embedded: done, pruned, error: failed }); } catch { /* ignore */ }
+    return failed ? { ok: false, reason: failed, embedded: done, pruned } : { ok: true, embedded: done, pruned, pending: Math.max(0, recs.size - sidx.stats().vectors) };
+  }
+  /** Hybrid search with the embedding provider. Access control first (visible set), then scoring. Any provider problem degrades to the lexical hybrid and says so. */
+  async function searchAsync(args = {}) {
+    const { query, reader } = args;
+    if (!semanticProvider) return search(args);
+    if (!readerOk(reader)) return fail("READER_INVALID");
+    if (typeof query !== "string" || !query.trim() || query.length > LIMITS.maxQuery || !query.isWellFormed()) return fail("QUERY_INVALID");
+    if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE");
+    const degrade = reason => { lastSemErr = reason; return searchImpl(args, null, { used: false, reason, neural: false }); };
+    let qv; try { [qv] = await semanticProvider.embed([query]); } catch (e) { return degrade("EMBEDDING_UNAVAILABLE:" + String(e?.message ?? e).slice(0, 60)); }
+    if (!qv) return degrade("EMBEDDING_EMPTY");
+    syncRead(); const fresh = [];
+    for (const r of recs.values()) if (canSee(r, reader) && sidx.has(r.id, r.bodySha)) fresh.push(r.id);
+    if (!fresh.length) return searchImpl(args, null, { used: false, reason: "NO_VECTORS_YET_RUN_REINDEX", neural: false });
+    const hits = sidx.search(qv, fresh, 50).filter(h => h.score >= 0.2);
+    return searchImpl(args, hits, { used: true, model: semanticProvider.model, neural: isNeural(semanticProvider), vectorsConsidered: fresh.length });
   }
 
   // ---------------------------------------------------------------- maintenance
@@ -332,6 +421,6 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
     for (const n of fs.readdirSync(notesDir).filter(x => x.endsWith(".md"))) { files++; const r = readNote(path.join(notesDir, n)); if (r.bad) bad++; else { if (r.edited) edited++; const kept = recs.get(r.rec.id); if (kept && kept.classification !== r.rec.classification) mismatched++; } }
     return { ok: true, files, indexed: recs.size, externallyEdited: edited, unreadable: bad, classificationMismatch: mismatched, consistent: files === recs.size && bad === 0 && mismatched === 0, backend: index.backend, auditOk: audit.verify().ok };
   }
-  const status = () => { syncRead(); const c = {}; for (const r of recs.values()) c[r.classification] = (c[r.classification] ?? 0) + 1; return { backend: index.backend, notes: recs.size, byClassification: c, searches: stats.searches, hiddenAttempts: stats.hidden, quarantined: fs.readdirSync(quarDir).length, trashed: fs.readdirSync(trashDir).length, auditHead: audit.head() }; };
-  return { write, update, forget, get, list, search, rebuildIndex, verify, status, auditVerify: () => audit.verify(), auditEntries: () => audit.entries(), close: () => index.close() };
+  const status = () => { syncRead(); const c = {}; for (const r of recs.values()) c[r.classification] = (c[r.classification] ?? 0) + 1; return { backend: index.backend, notes: recs.size, byClassification: c, searches: stats.searches, hiddenAttempts: stats.hidden, quarantined: fs.readdirSync(quarDir).length, trashed: fs.readdirSync(trashDir).length, auditHead: audit.head(), semantic: semanticStatus() }; };
+  return { write, update, forget, forgetSubject, declassifySubject, retireBatch, get, list, search, searchAsync, reindexSemantic, semanticStatus, rebuildIndex, verify, status, auditVerify: () => audit.verify(), auditEntries: () => audit.entries(), close: () => index.close() };
 }

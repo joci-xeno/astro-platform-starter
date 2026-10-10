@@ -29,6 +29,7 @@ import { assessImpact } from "../atlasz-addons/human-core.mjs";
 import { createMobileApi } from "../atlasz-addons/mobile-api.mjs";
 import { createApprovalRequests } from "../atlasz-addons/approval-requests.mjs";
 import { createObservationMemory } from "../atlasz-addons/observation-memory.mjs";
+import { createMemoryPanel } from "./memory-panel.mjs";
 import { createModalityFabric } from "../atlasz-addons/modality-fabric.mjs";
 import { createCodeSandbox } from "../atlasz-addons/code-sandbox.mjs";
 import { createResearchLedger } from "../atlasz-addons/research-ledger.mjs";
@@ -610,6 +611,9 @@ export function createControlCenterCore({ a11yWorkerUrl = null, a11yTimeoutMs = 
   };
 
   const moneyViews = createMoneyViews({ stateDir });
-  return { prototypes, prototypeActions, pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, workbench, workbenchAction, a11yAudit, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => pluginView(), mcp, mcpActions, repos, repoActions, theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  const memoryPanel = createMemoryPanel({ stateDir, ownerAuth: () => ownerAuth(), sign: (p, a, s) => sign(p, a, s), fetchImpl });
+  const memory = () => { try { return memoryPanel.view(); } catch (e) { return { state: "ERROR", error: String(e?.message ?? e).slice(0, 200) }; } };
+  const memoryAction = b => memoryPanel.action(b ?? {});
+  return { memory, memoryAction, prototypes, prototypeActions, pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, workbench, workbenchAction, a11yAudit, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => pluginView(), mcp, mcpActions, repos, repoActions, theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }

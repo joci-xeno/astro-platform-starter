@@ -1,0 +1,133 @@
+{
+  "generatedAt": "2026-10-10T16:37:12.805Z",
+  "hardware": {
+    "node": "22.22.0",
+    "platform": "linux",
+    "arch": "x64",
+    "cpus": 2,
+    "ramMB": 8030,
+    "accel": "CPU_ONLY"
+  },
+  "runtime": {
+    "ollamaBinary": null,
+    "onnxruntimeNode": false,
+    "neuralReady": false,
+    "blockers": [
+      "No local inference runtime is installed (no Ollama binary, no onnxruntime-node). Installing one is an owner decision.",
+      "No embedding model is present locally; downloading one needs the owner's approval (name, size, licence and hash are listed in `candidates`)."
+    ],
+    "recommendation": {
+      "model": "bge-m3",
+      "why": "multilingual (Hungarian + English), fits this machine's RAM",
+      "runtime": "ollama"
+    }
+  },
+  "results": [
+    {
+      "label": "BM25 + n-gram (current default, NOT neural)",
+      "status": "RAN",
+      "retrieval": "HYBRID_BM25_PLUS_LEXICAL_NGRAM_SIMILARITY (not neural embeddings)",
+      "k": 1,
+      "exactWordQuestions": {
+        "n": 5,
+        "recallAtK": 1,
+        "mrr": 1,
+        "ndcgAtK": 1
+      },
+      "paraphraseQuestions": {
+        "n": 6,
+        "recallAtK": 0.75,
+        "mrr": 0.833,
+        "ndcgAtK": 0.833
+      },
+      "overall": {
+        "recallAtK": 0.864,
+        "mrr": 0.909,
+        "ndcgAtK": 0.909
+      },
+      "medianLatencyMs": 0.85
+    },
+    {
+      "label": "TEST_FIXTURE toy embedder (plumbing only, NOT neural)",
+      "status": "RAN",
+      "retrieval": "HYBRID_BM25_PLUS_NGRAM_PLUS_TEST_FIXTURE_EMBEDDINGS (NOT neural; plumbing test only)",
+      "k": 1,
+      "exactWordQuestions": {
+        "n": 5,
+        "recallAtK": 1,
+        "mrr": 1,
+        "ndcgAtK": 1
+      },
+      "paraphraseQuestions": {
+        "n": 6,
+        "recallAtK": 0.917,
+        "mrr": 1,
+        "ndcgAtK": 1
+      },
+      "overall": {
+        "recallAtK": 0.955,
+        "mrr": 1,
+        "ndcgAtK": 1
+      },
+      "medianLatencyMs": 0.67
+    },
+    {
+      "label": "BM25 + n-gram (current default, NOT neural)",
+      "status": "RAN",
+      "retrieval": "HYBRID_BM25_PLUS_LEXICAL_NGRAM_SIMILARITY (not neural embeddings)",
+      "k": 3,
+      "exactWordQuestions": {
+        "n": 5,
+        "recallAtK": 1,
+        "mrr": 1,
+        "ndcgAtK": 1
+      },
+      "paraphraseQuestions": {
+        "n": 6,
+        "recallAtK": 1,
+        "mrr": 0.917,
+        "ndcgAtK": 0.938
+      },
+      "overall": {
+        "recallAtK": 1,
+        "mrr": 0.955,
+        "ndcgAtK": 0.966
+      },
+      "medianLatencyMs": 0.39
+    },
+    {
+      "label": "TEST_FIXTURE toy embedder (plumbing only, NOT neural)",
+      "status": "RAN",
+      "retrieval": "HYBRID_BM25_PLUS_NGRAM_PLUS_TEST_FIXTURE_EMBEDDINGS (NOT neural; plumbing test only)",
+      "k": 3,
+      "exactWordQuestions": {
+        "n": 5,
+        "recallAtK": 1,
+        "mrr": 1,
+        "ndcgAtK": 1
+      },
+      "paraphraseQuestions": {
+        "n": 6,
+        "recallAtK": 1,
+        "mrr": 1,
+        "ndcgAtK": 1
+      },
+      "overall": {
+        "recallAtK": 1,
+        "mrr": 1,
+        "ndcgAtK": 1
+      },
+      "medianLatencyMs": 0.74
+    },
+    {
+      "label": "NEURAL local model",
+      "status": "NOT_RUN",
+      "reason": "no embedding runtime/model is installed or approved on this machine",
+      "approvalNeeded": [
+        "Install a local runtime: Ollama (https://ollama.com) or onnxruntime-node",
+        "Pull one model, e.g. `ollama pull bge-m3` (see CANDIDATE_MODELS for size and licence; verify the hash)",
+        "Sign EMBEDDING_ACTIVATE for that model in the Control Center (Memory > Activate)"
+      ]
+    }
+  ]
+}

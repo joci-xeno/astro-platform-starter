@@ -15,6 +15,8 @@ import { runStartupSelfCheck } from "../atlasz-addons/startup-self-check.mjs";
 import { createFinancialLedger } from "../atlasz-addons/financial-ledger.mjs";
 import { createSecretVault } from "../atlasz-addons/secret-vault.mjs";
 import { createCoordinator } from "../atlasz-addons/agent-coordination.mjs";
+import { createAgentMemory, looksLikeInstruction } from "../atlasz-addons/agent-memory.mjs";
+import { loadActivatedProvider } from "../atlasz-addons/embedding-provider.mjs";
 import { createMemoryStore } from "../atlasz-addons/memory-store.mjs";
 import { createCodeEditWorkflow } from "../atlasz-addons/code-edit-workflow.mjs";
 import { createCredentialBroker } from "../atlasz-addons/credential-broker.mjs";
@@ -90,10 +92,22 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
   // Credential broker (M1): agents never get raw credentials. No grants exist until the owner signs them, and no agent tool is wired to it yet (agent-tool-policy denies unlisted tools).
   const credentialBroker = createCredentialBroker({ vault, ownerAuth, stateDir: path.join(dataDir, "vault", "broker"), roleOf: agentRoleOf, isKnownAgent: id => (state?.agents ?? []).some(a => a.id === id) });
   const codeEdit = createCodeEditWorkflow({ projectsRoot: path.join(dataDir, "projects"), stateDir: path.join(dataDir, "code-edit"), ownerAuth, isKnownAgent: id => (state?.agents ?? []).some(a => a.id === id), isStopped: () => emergencyStatus().mode !== "RUNNING" || safeMode.status().mode !== "NORMAL" });      // M2/C01: controlled code edits; no agent tool is wired (agent-tool-policy denies unlisted tools)
-  const memoryStore = createMemoryStore({ dir: path.join(dataDir, "memory", "knowledge-store"), ownerAuth, isStopped: () => emergencyStatus().mode !== "RUNNING" || safeMode.status().mode !== "NORMAL" });      // M3: Markdown memory + SQLite FTS5 (or in-memory fallback); no agent tool is wired
+  // Neural retrieval is OFF unless the owner activated a local embedding model (record written by the Control Center after a signed approval); otherwise the store stays lexical and says so.
+  const embeddingConfigFile = path.join(dataDir, "memory", "embedding-activation.json"), semanticProvider = loadActivatedProvider({ configFile: embeddingConfigFile, fetchImpl });
+  const memoryStore = createMemoryStore({ dir: path.join(dataDir, "memory", "knowledge-store"), ownerAuth, semanticProvider, isStopped: () => emergencyStatus().mode !== "RUNNING" || safeMode.status().mode !== "NORMAL" });      // M3: Markdown memory + SQLite FTS5 (or in-memory fallback); no agent tool is wired
   // M4 coordination of the 30 permanent agents (messaging, delegation rules, loop limits, bounded sub-agents, checkpoints, maker-checker). Orchestration logic only: it creates no agent.
   const coordination = createCoordinator({ dir: path.join(dataDir, "coordination"), isStopped: () => emergencyStatus().mode !== "RUNNING" || safeMode.status().mode !== "NORMAL", toolsOf: () => ["hn-search", "screening"], ledgerLimits: { maxTasks: 400 } });
   let coordRecovery; try { coordRecovery = coordination.recover(); } catch (e) { coordRecovery = { ok: false, error: String(e?.message ?? e).slice(0, 80) }; }      // coordination is a second line of control: a damaged state must never stop the boot
+  // M5 agent memory: the only door between the 30 agents and the memory store (identity-bound handles, tenant/project/agent/classification isolation, access log). Memory is written after INDEPENDENTLY VERIFIED work only (hook below).
+  const agentMemory = createAgentMemory({ store: memoryStore, tenantId: "JOCI", dir: path.join(dataDir, "memory", "agent-access"), ownerAuth, isStopped: () => emergencyStatus().mode !== "RUNNING" || safeMode.status().mode !== "NORMAL", isParticipant: (t, a) => coordination.isParticipant(t, a), rosterOk: id => (state?.agents ?? []).some(a => a.id === id) });
+  coordination.setOnVerified(({ id, verifier }) => {
+    try {
+      const k = coordination.ledger.get("JOCI", id), cand = k.ok ? state.candidates.find(c => "screen-" + safeId(c.id) === id) : null; if (!k.ok || !cand) return;
+      const title = looksLikeInstruction(String(cand.title ?? "")) ? "[title withheld]" : String(cand.title ?? "").slice(0, 80);
+      const r = agentMemory.recordVerifiedWork({ taskId: id, owner: k.task.owner, verifier, summary: "Screening of candidate \"" + title + "\" finished with status " + cand.status + "; the result was independently re-checked by " + verifier + "." });
+      if (r.ok && !r.duplicate) cand.memoryRecord = r.id;
+    } catch { /* memory is a second line of support: it must never stop the pipeline */ }
+  });
   const safeMode = createSafeMode({ statePath: path.join(dataDir, "safe-mode.json"), auditPath: path.join(dataDir, "safe-mode-audit.jsonl"), ownerAuth });
   const ledger = createFinancialLedger({ dir: path.join(dataDir, "ledger") });
   const bootedAt = new Date().toISOString();
@@ -370,10 +384,11 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
       let r = h.register({ id: tid, kind: "screen.candidate", payload: { candidateId: cand.id } });
       if (!r.ok && r.reason === "AGENT_AT_CONCURRENCY_LIMIT") { coordinationTick(who, 5); r = h.register({ id: tid, kind: "screen.candidate", payload: { candidateId: cand.id } }); }      // free this agent's own slots first: checks done, then retry once
       if (!r.ok) { coordination.noteUncoordinated(who.id, r.reason); mark(cand, "UNCOORDINATED:" + String(r.reason).slice(0, 40)); return; }
-      h.start(tid); h.checkpoint(tid, { candidateId: cand.id, status: cand.status }); const c = h.complete(tid, screenDigest(cand)); mark(cand, c.ok ? "AWAITING_INDEPENDENT_CHECK" : "UNCOORDINATED:" + String(c.reason).slice(0, 40));
+      h.start(tid); h.checkpoint(tid, { candidateId: cand.id, status: cand.status });
+      try { agentMemory.forAgent(who.id).contextFor({ taskId: tid, query: (String(cand.title ?? "") + " " + String(cand.description ?? "")).trim().slice(0, 250) || String(cand.id) }).then(m => { if (m?.ok && m.ids.length) cand.relatedMemory = m.ids.slice(0, 5); }).catch(() => {}); } catch { /* retrieval is optional */ } const c = h.complete(tid, screenDigest(cand)); mark(cand, c.ok ? "AWAITING_INDEPENDENT_CHECK" : "UNCOORDINATED:" + String(c.reason).slice(0, 40));
     } catch { /* coordination is a second line of control: it must never stop screening */ }
   }
-  let coordTicks = 0;
+  let coordTicks = 0, reindexing = false;
   function coordinationTick(agent, maxChecks = 3) {
     try {
       if (agent.role !== "EXECUTION") return;
@@ -385,6 +400,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
         if (r.ok) { mark(cand, ok ? "INDEPENDENTLY_CHECKED" : "CHECK_REJECTED"); if (!ok) coordination.abandon(vt.id, "VERIFICATION_REJECTED"); } else break;
       }
       if (++coordTicks % 100 === 0) coordination.reclaimStalled({ olderThanMs: 900_000 });
+      if (coordTicks % 25 === 0 && !reindexing && memoryStore.semanticStatus().enabled) { reindexing = true; memoryStore.reindexSemantic({ maxNotes: 50 }).catch(() => {}).finally(() => { reindexing = false; }); }      // controlled, bounded background indexing
     } catch { /* never stops the scheduler */ }
   }
   async function execute(index) {
@@ -458,7 +474,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
       agents: state.agents, blockers, sourceErrors: state.sourceErrors, emergency: emergencyStatus(), safeMode: safeMode.status(), pendingApprovals: approvalRequests.pending().length, queue: queue.stats(), watchdog: watchdog.status(),
       selfCheck: { level: selfCheck.level, problems: selfCheck.checks.filter(c => c.status !== "OK").map(c => ({ id: c.id, status: c.status, detail: c.detail })) },
       agentTools: { ...agentTools.stats(), status: "SANDBOX_ENFORCED_NOT_LIVE", signals: agentToolSignals.length, note: "Agents may call only tools allowed by the owner-approved table (deny by default); limits and approvals enforced in code." },
-      coordination: coordination.summary(), vault: vault.status(), credentialBroker: credentialBroker.summary(), codeEdit: codeEdit.summary(), memoryStore: memoryStore.status(), internalAddons: addonSnapshot(),
+      coordination: coordination.summary(), vault: vault.status(), credentialBroker: credentialBroker.summary(), codeEdit: codeEdit.summary(), memoryStore: memoryStore.status(), agentMemory: agentMemory.diagnose(), internalAddons: addonSnapshot(),
       brain: brainSafe(() => brain.summary()) ?? { state: "ERROR" }, models: brainSafe(() => modelGateway.summary()) ?? { state: "ERROR" }, voice: brainSafe(() => { const x = voice.summary({}); return { conversations: x.conversations, open: x.open, live: x.voice.live, providerMode: x.providerMode, blocker: x.voice.blocker, canApprove: false }; }) ?? { state: "ERROR" }, observations: brainSafe(() => { const x = observations.summary({ tenantId: KP_TENANT, role: "OWNER" }); return { total: x.total, expired: x.expired, deleted: x.deleted, rawMediaStored: false, chain: x.chain, method: x.method }; }) ?? { state: "ERROR" }, modality: brainSafe(() => { const m = modality.summary(); return { builtIn: m.builtIn.length, externalSlotsNotLive: m.external, note: m.note }; }) ?? { state: "ERROR" }, sandbox: brainSafe(() => { const x = sandbox.summary(); return { level: x.level, languages: x.languages, runs: x.runs, audit: x.audit, label: x.label }; }) ?? { state: "ERROR" }, research: brainSafe(() => research.summary({ tenantId: KP_TENANT, role: "OWNER" })) ?? { state: "ERROR" }, knowledge: brainSafe(() => ({ projects: knowledge.list({ tenantId: KP_TENANT }).length, documents: documents.summary().total, method: "KEYWORD_BM25_NOT_SEMANTIC" })) ?? { state: "ERROR" }, scheduler: brainSafe(() => scheduler.summary()) ?? { state: "ERROR" }, pcc: brainSafe(() => pcc.summary()) ?? { state: "ERROR" }, moneyEngine: brainSafe(() => moneyEngine.panel()) ?? { state: "ERROR" }, behavior: brainSafe(() => brain.behavior.summary()) ?? { state: "ERROR" }, inbox: brainSafe(() => ({ ...inbox.counts(), pipeline: inboxPipeline.summary() })) ?? { state: "ERROR" }, ownerControl: brainSafe(() => ownerControl.status()) ?? { state: "ERROR" }, ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
     };
   }
@@ -488,7 +504,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
     schedule(() => brainSafe(() => brain.behavior.scan()), 60000);          // behaviour anomaly scan over the tamper-evident Black Box (detect + recommend only)
   }
   function stop() { stopping = true; try { memoryStore.close(); } catch { /* closed */ } watchdog.stop(); for (const t of timers) clearTimeout(t); save(); }
-  return { credentialBroker, codeEdit, memoryStore, coordination, tools, agentTools, agentToolSignals, modelGateway, knowledge, research, sandbox, modality, observations, voice, documents, pcc, scheduler, inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
+  return { credentialBroker, codeEdit, memoryStore, agentMemory, coordination, tools, agentTools, agentToolSignals, modelGateway, knowledge, research, sandbox, modality, observations, voice, documents, pcc, scheduler, inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
 }
 
 if (process.env.ATLASZ_TEST_MODE !== "1") {
