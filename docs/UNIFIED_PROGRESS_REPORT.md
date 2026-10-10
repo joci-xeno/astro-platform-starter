@@ -26,6 +26,12 @@ Branch `atlasz-v73-integration`. Maintained per owner directive §10. **No count
 - **Requirement movement:** C01 (85 registry) gains the missing edit workflow but stays PARTIAL (no model-driven authoring, no git/PR integration by design, no agent tool wiring, no Control Center panel). PKG150 SN02/S506/OP02/OP04/S502 advance partially. 23-point item on controlled code change advances partially. No classification changes.
 - **Known limits:** identities (author/reviewer) are asserted by the caller and must be bound to the authenticated agent when a tool is wired; audit chain is tamper-evident not tamper-proof (tail truncation by someone with write access to the state folder is not detected here); non-UTF-8 files are refused; rotating author ids can fill the global open-change cap until expiry; a local attacker racing the project folder between a path check and a rename is not defended beyond lstat checks.
 
+### M3 — Markdown memory + FTS5 + hybrid retrieval (memory and knowledge, priority D)
+- **Implemented:** `atlasz-addons/memory-store.mjs`: Markdown notes are the truth (front matter, body hash, atomic writes); a rebuildable index uses `node:sqlite` FTS5 (BM25) with an in-memory lexical fallback; local hashed n-gram similarity fused with BM25 by RRF. Classification PUBLIC/PERSONAL/CONFIDENTIAL with reader clearance (hidden notes look like missing ones); SECRET content refused/scrubbed; retrieved text fenced as UNTRUSTED_MEMORY; bad files quarantined; declassify and forget need single-use owner approvals bound to note+body hash; hash-chained audit; note cap. Wired into `createRuntime` (status + `rt.memoryStore`); no agent tool exposes it.
+- **Tests:** `atlasz-tests/m3-memory-store.test.mjs` (22 tests, both backends); mutation checks on scrub/cap guards. Independent fresh-worktree verification: pending.
+- **Requirement movement:** Markdown memory / FTS5 / hybrid-search items advance PARTIAL only. No classification changes.
+- **Known limits:** similarity is lexical n-gram, NOT neural embeddings; `node:sqlite` is experimental and may be absent in Electron (fallback exists); single tenant per directory; no agent tool or Control Center panel; audit chain unkeyed.
+
 ## 3. Cross-package dependencies
 Vault + broker are prerequisites for: Global Business source adapters needing API keys (GB), provider connectivity diagnostics (E), chat integrations (G), PKG150 GR/MR web-research items, payment-adjacent workflows (still gated by Financial Firewall + owner approval).
 
@@ -36,8 +42,7 @@ Python sandbox `.so` escape (unresolved); Windows plugin isolation is permission
 Provider selection and credentials for any live integration; source allowlist for external discovery; SQLite FTS5 / local embedding / Ollama activation; malware-scanner choice; any spend, deployment, or Railway change (none performed). VERIFIED_WORKING promotion for any item.
 
 ## 6. Next milestones (dependency order)
-1. Memory: Markdown memory, `node:sqlite` FTS5 evaluation, local retrieval.
-2. Coordination: agent-to-agent messaging with loop limits, bounded temporary sub-agents inside the 30-agent cap, checkpointing.
-3. Model routing / evolution (offline, owner-approved policy).
-4. Malware/file-quarantine design.
-5. Control Center panels for vault/broker/approvals.
+1. Coordination: agent-to-agent messaging with loop limits, bounded temporary sub-agents inside the 30-agent cap, checkpointing.
+2. Model routing / evolution (offline, owner-approved policy).
+3. Malware/file-quarantine design.
+4. Control Center panels for vault/broker/approvals/code-edit/memory.
