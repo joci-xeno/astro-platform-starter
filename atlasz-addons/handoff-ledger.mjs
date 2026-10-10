@@ -105,9 +105,15 @@ export function createHandoffLedger({ file = null, isStopped = () => false, now 
     const t = peek(tenantId); if (openOf(t, to) >= L.perAgentOpen) return { ok: false, reason: "RECEIVER_AT_CONCURRENCY_LIMIT" };
     const from = k.owner; k.owner = to; k.owners.push(to); ev(t, id, "REASSIGNED", "COORDINATOR", { from, to, reason: scrub(String(reason)).slice(0, 100) }); store.save(); return { ok: true, id, owner: to };
   }
+  /** Withdraw a pending handoff and keep working (the owner, or the coordinator for a handoff nobody answers). */
+  function rescind(tenantId, id, { by, reason = "" } = {}) {
+    const g = guard(); if (g) return g; const k = find(tenantId, id); if (!k) return { ok: false, reason: "TASK_NOT_FOUND" }; const h = pending(k); if (!h) return { ok: false, reason: "NO_PENDING_HANDOFF" };
+    if (by !== k.owner && by !== "COORDINATOR") return { ok: false, reason: "NOT_THE_OWNER" };
+    h.status = "WITHDRAWN"; k.status = "IN_PROGRESS"; k.handoff = null; ev(peek(tenantId), id, "HANDOFF_RESCINDED", by, { to: h.to, reason: scrub(String(reason)).slice(0, 100) }); store.save(); return { ok: true, id };
+  }
   const get = (tenantId, id) => { const k = find(tenantId, id); return k ? { ok: true, task: clone(k) } : { ok: false, reason: "TASK_NOT_FOUND" }; };
   const list = (tenantId, { status = null } = {}) => Object.values(peek(tenantId)?.tasks ?? {}).filter(k => !status || k.status === status).map(k => ({ id: k.id, kind: k.kind, owner: k.owner, status: k.status, dependsOn: [...k.dependsOn], handoffs: k.handoffs.length, rejections: k.rejections }));
   const events = (tenantId, limit = 100) => clone((peek(tenantId)?.events ?? []).slice(-Math.max(1, Math.min(500, Number.isInteger(limit) ? limit : 100))));
   const load = tenantId => { const t = peek(tenantId), perAgent = {}; for (const k of Object.values(t?.tasks ?? {})) if (OPEN.has(k.status)) perAgent[k.owner] = (perAgent[k.owner] ?? 0) + 1; return { ok: true, open: Object.values(perAgent).reduce((a, b) => a + b, 0), perAgent, limits: { perAgentOpen: L.perAgentOpen, maxOpen: L.maxOpen } }; };
-  return { register, start, handoff, accept, rejectHandoff, complete, verify, close, reassign, get, list, events, load, limits: L };
+  return { register, start, handoff, accept, rejectHandoff, complete, verify, close, reassign, rescind, get, list, events, load, limits: L };
 }

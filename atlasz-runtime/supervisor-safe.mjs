@@ -358,25 +358,31 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
     }
     return { status: "VERIFIED", reason: "RECORD_REPRODUCED_INDEPENDENTLY" };
   }
-  // ---- M4 maker-checker for screening: the agent that screened a candidate submits a digest of the outcome; a DIFFERENT execution agent (chosen by the coordinator) recomputes it from the stored candidate before the task counts as done.
-  const safeId = id => String(id).replace(/[^A-Za-z0-9._-]/g, "_").slice(0, 52);
-  const screenDigest = c => crypto.createHash("sha256").update(JSON.stringify({ id: c.id, status: c.status })).digest("hex");
+  // ---- M4 maker-checker for screening: the agent that screened a candidate submits a digest of the outcome; a DIFFERENT execution agent (chosen by the coordinator) recomputes it from the stored candidate AND the Brain's own independent verification record before the task counts as done.
+  // Honest limit: this is advisory evidence (it flags a changed or unverified result); it does not gate the candidate pipeline, and the checker reads the same persisted record as the maker.
+  const safeId = id => { const raw = String(id); return raw.replace(/[^A-Za-z0-9._-]/g, "_").slice(0, 40) + "-" + crypto.createHash("sha256").update(raw).digest("hex").slice(0, 8); };
+  const screenDigest = c => { let job = null; try { job = brain.dispatch?.get(c.id) ?? null; } catch { job = null; } return crypto.createHash("sha256").update(JSON.stringify({ id: c.id, status: c.status, job: job?.state ?? null, verdict: job?.verification?.verdict ?? null })).digest("hex"); };
+  const mark = (cand, st) => { if (cand) cand.coordination = { ...(cand.coordination ?? {}), state: st, at: now() }; };
   function coordinateScreened(who, cand) {
     try {
       if (who?.role !== "EXECUTION") return;
       const h = coordination.connect(who.id), tid = "screen-" + safeId(cand.id);
-      if (!h.register({ id: tid, kind: "screen.candidate", payload: { candidateId: cand.id } }).ok) return;
-      h.start(tid); h.checkpoint(tid, { candidateId: cand.id, status: cand.status }); h.complete(tid, screenDigest(cand));
+      let r = h.register({ id: tid, kind: "screen.candidate", payload: { candidateId: cand.id } });
+      if (!r.ok && r.reason === "AGENT_AT_CONCURRENCY_LIMIT") { coordinationTick(who, 5); r = h.register({ id: tid, kind: "screen.candidate", payload: { candidateId: cand.id } }); }      // free this agent's own slots first: checks done, then retry once
+      if (!r.ok) { coordination.noteUncoordinated(who.id, r.reason); mark(cand, "UNCOORDINATED:" + String(r.reason).slice(0, 40)); return; }
+      h.start(tid); h.checkpoint(tid, { candidateId: cand.id, status: cand.status }); const c = h.complete(tid, screenDigest(cand)); mark(cand, c.ok ? "AWAITING_INDEPENDENT_CHECK" : "UNCOORDINATED:" + String(c.reason).slice(0, 40));
     } catch { /* coordination is a second line of control: it must never stop screening */ }
   }
   let coordTicks = 0;
-  function coordinationTick(agent) {
+  function coordinationTick(agent, maxChecks = 3) {
     try {
       if (agent.role !== "EXECUTION") return;
-      const h = coordination.connect(agent.id), vt = h.nextToVerify();
-      if (vt && vt.id.startsWith("screen-")) {
-        const cand = state.candidates.find(c => "screen-" + safeId(c.id) === vt.id);
-        h.verify(vt.id, { decision: cand && screenDigest(cand) === vt.resultSha256 ? "ACCEPT" : "REJECT", resultSha256: vt.resultSha256 });
+      const h = coordination.connect(agent.id);
+      for (let i = 0; i < maxChecks; i++) {
+        const vt = h.nextToVerify({ prefix: "screen" }); if (!vt) break;
+        const cand = state.candidates.find(c => "screen-" + safeId(c.id) === vt.id), ok = Boolean(cand) && screenDigest(cand) === vt.resultSha256;
+        const r = h.verify(vt.id, { decision: ok ? "ACCEPT" : "REJECT", resultSha256: vt.resultSha256 });
+        if (r.ok) { mark(cand, ok ? "INDEPENDENTLY_CHECKED" : "CHECK_REJECTED"); if (!ok) coordination.abandon(vt.id, "VERIFICATION_REJECTED"); } else break;
       }
       if (++coordTicks % 100 === 0) coordination.reclaimStalled({ olderThanMs: 900_000 });
     } catch { /* never stops the scheduler */ }

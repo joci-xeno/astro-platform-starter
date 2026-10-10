@@ -92,15 +92,17 @@ test("loop and runaway prevention: hop depth, repeats, ping-pong, budgets, rate,
     // reply chain deeper than maxHop
     let prev = send(e1, "EXECUTION-2", "q0"); assert.equal(prev.ok, true); let who = [e2, e1], tos = ["EXECUTION-1", "EXECUTION-2"], last;
     for (let i = 1; i <= LIMITS.maxHop; i++) { last = send(who[(i - 1) % 2], tos[(i - 1) % 2], "step " + i + " unique " + i, prev.id); if (!last.ok) break; prev = last; }
-    assert.ok(["LOOP_HOP_LIMIT", "LOOP_PING_PONG"].includes(last.reason), last.reason); assert.equal(send(e1, "EXECUTION-2", "again", prev.id).reason, "THREAD_FROZEN");
+    assert.ok(["LOOP_HOP_LIMIT", "LOOP_PING_PONG"].includes(last.reason), last.reason); assert.ok(["THREAD_FROZEN", "LOOP_PAIR_BLOCKED"].includes(send(e1, "EXECUTION-2", "again", prev.id).reason));
+    clock.t += LIMITS.pairBlockMs + 1;
     // identical message repeated
     const r1 = send(e1, "EXECUTION-2", "same text"), r2 = send(e1, "EXECUTION-2", "same text", r1.id), r3 = send(e1, "EXECUTION-2", "Same  text", r1.id);
     assert.equal(r1.ok && r2.ok, true); assert.equal(r3.reason, "LOOP_REPEATED_MESSAGE");
+    clock.t += LIMITS.pairBlockMs + 1;
     // ping-pong with different texts and no task progress
     const p0 = send(e1, "EXECUTION-2", "pp 0"); let pp = p0, from = e2, to = "EXECUTION-1", res;
     for (let i = 1; i < 12; i++) { res = send(from, to, "pp " + i, pp.id); if (!res.ok) break; pp = res; [from, to] = from === e2 ? [e1, "EXECUTION-2"] : [e2, "EXECUTION-1"]; }
     assert.ok(["LOOP_PING_PONG", "LOOP_HOP_LIMIT"].includes(res.reason), res.reason);
-    assert.ok(c.summary().frozenThreads >= 3 && c.summary().counters.loops >= 3);
+    assert.ok(c.summary().counters.loops >= 3);
     // delegation cycle and depth
     assert.equal(e2.accept("t1", art("a")).ok, true);
     assert.equal(e2.delegate("t1", { to: "EXECUTION-1", artifacts: art("b") }).reason, "DELEGATION_CYCLE");
@@ -169,8 +171,10 @@ test("checkpoints and recovery: owner-only, bounded, secret-free; restart keeps 
     const cyc = {}; cyc.self = cyc; assert.equal(e1.checkpoint("t1", cyc).reason, "STATE_NOT_SERIALISABLE");
     for (let i = 1; i <= 7; i++) assert.equal(e1.checkpoint("t1", { step: i }).n, i);
     assert.deepEqual(e1.resume("t1").state, { step: 7 }); assert.equal(e2.resume("t1").reason, "NOT_THE_OWNER");
-    assert.equal(e1.spawnSub({ task: "t1", tools: ["notes"] }).ok, true);
+    e1.register({ id: "t2", kind: "execute.job", payload: 2 }); e1.start("t2"); assert.equal(e1.spawnSub({ task: "t2", tools: ["notes"] }).ok, true);
+    const orphan = e1.spawnSub({ task: "t1" }); assert.equal(orphan.ok, true);
     e1.delegate("t1", { to: "EXECUTION-2", artifacts: art("a") }); e1.send({ to: "EXECUTION-2", task: "t1", type: "STATUS", body: "pending mail" });
+    assert.equal(e1.subHandle(orphan.sub).step("late").reason, "SUB_NOT_ACTIVE");      // the parent handed the task away: its sub-agent died with it
     // restart
     const c2 = createCoordinator({ dir: d, nowFn: () => clock.t, toolsOf: () => ["notes"] });
     const rec = c2.recover(); assert.equal(rec.loadedFrom, "FILE"); assert.equal(rec.subsExpired, 1);
@@ -275,7 +279,8 @@ test("runtime hosting: a governed screening becomes a coordinated task that a DI
     const t = rt2.coordination.ledger.list("JOCI", {})[0], checker = rt2.coordination.verifierOf(t.id);
     rt2.state.candidates[0].status = "SOMETHING_ELSE";
     await rt2.execute(rt2.state.agents.findIndex(a => a.id === checker));
-    assert.equal(rt2.coordination.ledger.get("JOCI", t.id).task.status, "IN_PROGRESS");
+    assert.equal(rt2.coordination.ledger.get("JOCI", t.id).task.status, "FAILED");      // rejected by the checker: never DONE; the coordinator frees the maker's slot
+    assert.equal(rt2.coordination.summary().counters.abandoned, 1); assert.equal(rt2.state.candidates[0].coordination.state, "CHECK_REJECTED");
   } finally { rt2.stop(); rm(d2); }
 });
 
@@ -300,4 +305,149 @@ test("routing details: SEARCH peers go through the coordinator, no self-mail, re
     assert.equal(sh.send({ to: "EXECUTION-1", task: "t1", type: "STATUS", body: "one" }).ok, true);
     assert.equal(sh.send({ to: "EXECUTION-1", task: "t1", type: "STATUS", body: "two" }).reason, "SUB_MESSAGE_BUDGET_EXHAUSTED");
   } finally { rm(t2.d); }
+});
+
+// ---- independent-verification round 1 regressions (each failed before the fix)
+test("one agent cannot exhaust the thread table for everyone; refused sends leave no thread behind; the per-task budget has a per-sender share and a time window", () => {
+  const { d, c, E, clock } = mk({ limits: { ratePerMin: 100000, mailbox: 100000, threadsPerTask: 3, maxThreads: 50 } });
+  try {
+    const e1 = E(1), e2 = E(2), e3 = E(3); e1.register({ id: "t1", kind: "execute.job", payload: 1 }); e1.start("t1"); e1.delegate("t1", { to: "EXECUTION-2", artifacts: art("a") });
+    e3.register({ id: "t3", kind: "execute.job", payload: 3 }); e3.start("t3"); e3.delegate("t3", { to: "EXECUTION-4", artifacts: art("c") });
+    const out = []; for (let i = 0; i < 30; i++) out.push(e1.send({ to: "EXECUTION-2", task: "t1", type: "STATUS", body: "flood " + i }).reason ?? "ok");
+    assert.ok(out.includes("TOO_MANY_THREADS_ON_TASK") || out.includes("MESSAGE_BUDGET_EXHAUSTED") || out.includes("LOOP_PAIR_BLOCKED"), out.join(","));
+    assert.equal(e3.send({ to: "EXECUTION-4", task: "t3", type: "STATUS", body: "other task still works" }).ok, true);
+    const n = JSON.parse(JSON.parse(fs.readFileSync(path.join(d, "coordinator.json"), "utf8")).body).threads; assert.ok(Object.keys(n).length <= 8, "thread table stays small: " + Object.keys(n).length);
+  } finally { rm(d); }
+  const t2 = mk({ limits: { ratePerMin: 100000, mailbox: 100000, perTask: 10, perTaskPerSender: 4, threadsPerTask: 100, repeatWindow: 100, taskWindowMs: 1000 } });
+  try {
+    const e1 = t2.E(1), e2 = t2.E(2); e1.register({ id: "t1", kind: "execute.job", payload: 1 }); e1.start("t1"); e1.delegate("t1", { to: "EXECUTION-2", artifacts: art("a") });
+    const r = []; for (let i = 0; i < 6; i++) r.push(e2.send({ to: "EXECUTION-1", task: "t1", type: "STATUS", body: "unique " + i }).reason ?? "ok");
+    assert.deepEqual(r.slice(0, 4), ["ok", "ok", "ok", "ok"]); assert.equal(r[4], "MESSAGE_BUDGET_EXHAUSTED");
+    assert.equal(e1.send({ to: "EXECUTION-2", task: "t1", type: "STATUS", body: "owner can still talk" }).ok, true);      // one participant cannot use up the whole task budget
+    t2.clock.t += 1500; assert.equal(e2.send({ to: "EXECUTION-1", task: "t1", type: "STATUS", body: "window reset" }).ok, true);
+  } finally { rm(t2.d); }
+});
+
+test("reserved and prototype-chain task ids are refused; state maps have no prototype", () => {
+  const { d, c, E } = mk();
+  try {
+    const e1 = E(1);
+    for (const id of ["constructor", "__proto__", "toString", "valueOf", "hasOwnProperty", "prototype"]) assert.equal(e1.register({ id, kind: "execute.job", payload: id }).reason, "TASK_ID_INVALID", id);
+    assert.equal(e1.checkpoint("constructor", {}).reason, "TASK_NOT_FOUND"); assert.equal(e1.send({ to: "COORDINATOR", task: "constructor", type: "STATUS", body: "x" }).reason, "TASK_NOT_FOUND");
+    assert.equal(c.verifierOf("constructor"), null); assert.equal(e1.ack("m0000000000000000").reason, "MESSAGE_UNKNOWN");
+  } finally { rm(d); }
+});
+
+test("loop detection works across threads on one task; the pair is blocked until the task progresses or time passes", () => {
+  const { d, c, E, clock } = mk({ limits: { ratePerMin: 100000 } });
+  try {
+    const e1 = E(1), e2 = E(2); e1.register({ id: "t1", kind: "execute.job", payload: 1 }); e1.start("t1"); e1.delegate("t1", { to: "EXECUTION-2", artifacts: art("a") });
+    const m = (a, to, b) => a.send({ to, task: "t1", type: "STATUS", body: b });
+    assert.equal(m(e1, "EXECUTION-2", "same words").ok, true); assert.equal(m(e1, "EXECUTION-2", "same words").ok, true); assert.equal(m(e1, "EXECUTION-2", "SAME words").reason, "LOOP_REPEATED_MESSAGE");
+    assert.equal(m(e2, "EXECUTION-1", "anything new").reason, "LOOP_PAIR_BLOCKED");
+    assert.equal(e1.withdrawDelegation("t1", "start over").ok, true); assert.equal(e1.delegate("t1", { to: "EXECUTION-2", artifacts: art("a") }).ok, true);      // real progress on the task lifts the block
+    assert.equal(m(e2, "EXECUTION-1", "after progress").ok, true);
+    e2.accept("t1", art("a"));                                                                     // the task moved: the block lifts
+    assert.equal(m(e1, "EXECUTION-2", "post-progress").reason, "SENDER_NOT_A_PARTICIPANT");      // e1 handed the task away: no longer a participant
+    assert.equal(m(e2, "EXECUTION-1", "new owner speaking").reason, "RECIPIENT_NOT_A_PARTICIPANT");
+  } finally { rm(d); }
+  const t2 = mk({ limits: { ratePerMin: 100000, mailbox: 1000 } });
+  try {
+    const e1 = t2.E(1), e2 = t2.E(2); e1.register({ id: "t1", kind: "execute.job", payload: 1 }); e1.start("t1"); e1.delegate("t1", { to: "EXECUTION-2", artifacts: art("a") });
+    const seq = []; for (let i = 0; i < 12; i++) seq.push((i % 2 ? e2 : e1).send({ to: i % 2 ? "EXECUTION-1" : "EXECUTION-2", task: "t1", type: "QUESTION", body: "ping " + i }).reason ?? "ok");
+    assert.ok(seq.includes("LOOP_PING_PONG"), seq.join(",")); assert.equal(e1.send({ to: "EXECUTION-2", task: "t1", type: "QUESTION", body: "once more" }).reason, "LOOP_PAIR_BLOCKED");
+    t2.clock.t += t2.c.limits.pairBlockMs + 1; assert.equal(e1.send({ to: "EXECUTION-2", task: "t1", type: "QUESTION", body: "after the block" }).ok, true);
+  } finally { rm(t2.d); }
+});
+
+test("stranded work is recoverable: unanswered handoffs are withdrawn, unattended checks move to another checker, rejected work is abandoned, owners can withdraw", () => {
+  const { d, c, E, clock } = mk();
+  try {
+    const e1 = E(1); for (const n of [1, 2, 3]) { e1.register({ id: "h" + n, kind: "execute.job", payload: n }); e1.start("h" + n); }
+    for (const n of [1, 2, 3]) assert.equal(e1.delegate("h" + n, { to: "EXECUTION-" + (n + 1), artifacts: art("x" + n) }).ok, true);
+    assert.equal(e1.register({ id: "h4", kind: "execute.job", payload: 4 }).reason, "AGENT_AT_CONCURRENCY_LIMIT");
+    assert.equal(e1.withdrawDelegation("h3", "changed my mind").ok, true); assert.equal(E(9).withdrawDelegation("h1").reason, "NOT_THE_OWNER");
+    assert.equal(c.ledger.get("JOCI", "h3").task.status, "IN_PROGRESS");      // back with its owner, not lost
+    clock.t += 700_000; const r = c.reclaimStalled({ olderThanMs: 600_000 }); assert.deepEqual(r.rescinded.map(x => x.id).sort(), ["h1", "h2"]);
+    assert.equal(c.ledger.get("JOCI", "h1").task.status, "IN_PROGRESS");
+    assert.deepEqual(r.reassigned.map(x => x.id), ["h3"]);      // h3 was in progress with a silent owner: moved to another agent in the same sweep
+    assert.equal(e1.register({ id: "h4", kind: "execute.job", payload: 4 }).ok, true);
+    // unattended check
+    const e5 = E(5); e5.register({ id: "v1", kind: "execute.job", payload: "v" }); e5.start("v1"); e5.complete("v1", H("res")); const first = c.verifierOf("v1"); assert.ok(first);
+    clock.t += 1_000_000; const r2 = c.reclaimStalled({ olderThanMs: 600_000 }); assert.equal(r2.reverifier.length, 1); const second = c.verifierOf("v1"); assert.ok(second && second !== first && second !== "EXECUTION-5");
+    assert.equal(c.connect(first).verify("v1", { decision: "ACCEPT", resultSha256: H("res") }).reason, "NOT_THE_ASSIGNED_VERIFIER");
+    // rejected work is abandoned, which frees the maker's slot
+    assert.equal(c.connect(second).verify("v1", { decision: "REJECT", resultSha256: H("res") }).ok, true); assert.equal(c.ledger.get("JOCI", "v1").task.status, "IN_PROGRESS");
+    assert.equal(c.abandon("v1", "cannot be redone").ok, true); assert.equal(c.ledger.get("JOCI", "v1").task.status, "FAILED"); assert.equal(c.summary().counters.abandoned, 1);
+  } finally { rm(d); }
+});
+
+test("checks are spread by duty, restricted by kind prefix, and a maker is never asked to check its own work", () => {
+  const { d, c, E } = mk();
+  try {
+    for (let n = 1; n <= 25; n++) { E(n).register({ id: "w" + n, kind: "screen.candidate", payload: n }); E(n).start("w" + n); E(n).complete("w" + n, H("r" + n)); }
+    const load = {}; for (let n = 1; n <= 25; n++) { const v = c.verifierOf("w" + n); assert.notEqual(v, "EXECUTION-" + n); load[v] = (load[v] ?? 0) + 1; }
+    assert.ok(Math.max(...Object.values(load)) <= 2, JSON.stringify(load));
+    const e1 = E(1); assert.equal(e1.nextToVerify({ prefix: "build" }), null); assert.ok(e1.nextToVerify({ prefix: "screen" }));
+  } finally { rm(d); }
+});
+
+test("state stays bounded: spawn/kill churn is rate limited, finished tasks' bookkeeping is pruned, recover() prunes, a state file with a valid hash but bad shape is not trusted", () => {
+  const { d, c, E, clock } = mk({ limits: { subSpawnPerHour: 5, keepDoneMs: 1000 } });
+  try {
+    const e1 = E(1); e1.register({ id: "t1", kind: "execute.job", payload: 1 }); e1.start("t1"); e1.checkpoint("t1", { a: 1 });
+    let refused = 0; for (let i = 0; i < 10; i++) { const s = e1.spawnSub({ task: "t1" }); if (s.ok) e1.killSub(s.sub); else { refused++; assert.equal(s.reason, "SUB_SPAWN_RATE"); } } assert.equal(refused, 5);
+    e1.complete("t1", H("r")); const v = c.connect(c.verifierOf("t1")); assert.equal(v.verify("t1", { decision: "ACCEPT", resultSha256: H("r") }).ok, true);
+    clock.t += 5000; const rec = c.recover(); assert.ok(rec.pruned >= 1);
+    const st = JSON.parse(JSON.parse(fs.readFileSync(path.join(d, "coordinator.json"), "utf8")).body); assert.equal(Object.keys(st.checkpoints).length, 0); assert.equal(Object.keys(st.taskMsgs).length, 0);
+    const body = JSON.stringify({ ...st, mail: null }); fs.writeFileSync(path.join(d, "coordinator.json"), JSON.stringify({ sha: H(body), body }));
+    assert.equal(createCoordinator({ dir: d }).recover().loadedFrom, "CORRUPT_STARTED_EMPTY");
+    const body2 = JSON.stringify({ ...st, rate: { x: "no" } }); fs.writeFileSync(path.join(d, "coordinator.json"), JSON.stringify({ sha: H(body2), body: body2 }));
+    assert.equal(createCoordinator({ dir: d }).recover().loadedFrom, "CORRUPT_STARTED_EMPTY");
+  } finally { rm(d); }
+});
+
+test("kill switch: sub-agent steps, acceptance, verification and verifier claims stop; killing a sub-agent and closing a thread still work; dead or orphaned sub-agents get no mail", () => {
+  let stop = false; const { d, c, E } = mk({ isStopped: () => stop });
+  try {
+    const e1 = E(1), e2 = E(2); e1.register({ id: "t1", kind: "execute.job", payload: 1 }); e1.start("t1"); const s = e1.spawnSub({ task: "t1" }), sh = e1.subHandle(s.sub);
+    const m = e1.send({ to: "COORDINATOR", task: "t1", type: "ESCALATION", body: "need help" }); assert.equal(m.ok, true);
+    assert.equal(c.summary().escalationsWaiting, 1); const ci = c.coordinatorInbox(); assert.equal(ci.messages.length, 1); assert.equal(ci.messages[0].from, "EXECUTION-1"); assert.equal(c.coordinatorAck(ci.messages[0].id).ok, true); assert.equal(c.summary().escalationsWaiting, 0);
+    e1.complete("t1", H("r")); const ver = c.connect(c.verifierOf("t1"));
+    stop = true;
+    assert.equal(sh.step("x").reason, "OWNER_STOP_OR_SAFE_MODE_ACTIVE"); assert.equal(ver.verify("t1", { decision: "ACCEPT", resultSha256: H("r") }).reason, "OWNER_STOP_OR_SAFE_MODE_ACTIVE");
+    assert.equal(e2.heartbeat().reason, "OWNER_STOP_OR_SAFE_MODE_ACTIVE"); assert.equal(e1.accept("t1", art("a")).reason, "OWNER_STOP_OR_SAFE_MODE_ACTIVE");
+    assert.equal(c.closeThread("tnope").reason, "THREAD_UNKNOWN");
+    stop = false; const k = E(3); k.register({ id: "t3", kind: "execute.job", payload: 3 }); k.start("t3"); const s2 = k.spawnSub({ task: "t3" }); stop = true; assert.equal(k.killSub(s2.sub).ok, true); stop = false;
+    assert.equal(k.send({ to: s2.sub, task: "t3", type: "TASK_NOTE", body: "hello?" }).reason, "RECIPIENT_NOT_ACTIVE");
+  } finally { rm(d); }
+});
+
+test("runtime hosting under load: many screenings across the execution agents are all coordinated and independently checked; uncoordinated work is counted, never silent", async () => {
+  const { createRuntime } = await import("../atlasz-runtime/supervisor-safe.mjs");
+  const hits = Array.from({ length: 12 }, (_, i) => hit("L" + i, "We are looking for a developer for a freelance project number " + i + ": need help with a website, remote, budget $" + (1000 + i * 100) + ". Contact jobs" + i + "@example.com"));
+  const d = tmp("m4-rt-"), rt = createRuntime({ dataDir: d, fetchImpl: fakeFetch(hits) });
+  try {
+    await rt.search(0); assert.equal(rt.state.candidates.length, 12);
+    for (let pass = 0; pass < 3; pass++) for (let i = 5; i < 30; i++) await rt.execute(i);
+    const s = rt.coordination.summary(); const done = rt.coordination.ledger.list("JOCI", { status: "DONE" }).length;
+    assert.equal(s.counters.uncoordinated + done + (s.tasks.VERIFYING ?? 0) + (s.tasks.FAILED ?? 0) >= 12, true, JSON.stringify(s.tasks) + JSON.stringify(s.counters));
+    assert.equal(done, 12 - s.counters.uncoordinated); assert.equal(s.tasks.VERIFYING ?? 0, 0);
+    for (const c of rt.state.candidates) assert.ok(/^(INDEPENDENTLY_CHECKED|UNCOORDINATED)/.test(c.coordination?.state ?? ""), c.coordination?.state);
+    const owners = new Set(rt.coordination.ledger.list("JOCI", {}).map(x => x.owner)); assert.ok(owners.size >= 2);
+    assert.equal(s.permanentAgents, 30);
+  } finally { rt.stop(); rm(d); }
+});
+
+test("a replaced checker is never chosen again; an unassigned check cannot be claimed while stopped", () => {
+  let stop = false; const { d, c, E, clock } = mk({ isStopped: () => stop });
+  try {
+    E(25).register({ id: "v1", kind: "execute.job", payload: "v" }); E(25).start("v1"); E(25).complete("v1", H("r"));
+    const seen = [c.verifierOf("v1")]; for (let i = 0; i < 4; i++) { clock.t += 1_000_000; c.reclaimStalled({ olderThanMs: 600_000 }); seen.push(c.verifierOf("v1")); }
+    assert.equal(new Set(seen).size, 5, seen.join(",")); assert.ok(!seen.includes("EXECUTION-25"));
+    // a task submitted behind the coordinator's back has no checker yet: an eligible agent may claim it, but not while stopped
+    const led = c.ledger; led.register("JOCI", { id: "u1", kind: "execute.job", payload: "u", owner: "EXECUTION-3" }); led.start("JOCI", "u1", { agent: "EXECUTION-3" }); led.complete("JOCI", "u1", { agent: "EXECUTION-3", resultSha256: H("u") });
+    stop = true; assert.equal(E(7).nextToVerify({ prefix: "execute" })?.id === "u1", false); assert.equal(c.verifierOf("u1"), null);
+    stop = false; assert.equal(E(7).nextToVerify({ prefix: "execute" })?.id !== undefined, true);
+  } finally { rm(d); }
 });
