@@ -93,3 +93,49 @@ brain/model-intelligence <- provider-resilience <- model-gateway (model evolutio
 
 ## 10. What was NOT done
 No code, registry status change, agent change, deployment, spend, network access to discovery sources, or change to main/Railway/payments/credentials.
+
+---
+# ADDENDUM (2026-10-09, same planning-only status): 23-point and 150-item packages received
+
+Both documents were supplied after the report above, so §0 is superseded: they ARE now available. Still no code, no registry change. Registry rule unchanged: "present in code" is not "verified".
+
+## A. Order of work stated by the packages
+85 capabilities first (still in progress: 18/44/1/22) -> the 23-point package -> the 150 ideas only after the exact owner phrase **"Claude, begin the ATLASZ 150-capability development phase."** That phrase has not been given, so Phase A of the 150 package (the per-entry audit) was NOT started. Only the 23-point mapping below was done, as a read-only inventory.
+
+## B. 23-point package mapped to the repository (greps of module headers only; not tested or verified here)
+| # | Requirement | Existing | Gap |
+|---|---|---|---|
+| 1 | API Key Vault | secret-vault.mjs (AES-256-GCM, name bound as AAD, locked without key, owner-signed set/delete, names-only listing, redaction), owner-keystore.mjs (passphrase-encrypted owner key) | No encrypted backup package + separate backup passphrase + restore check, no inactivity auto-lock, no rotation/revocation workflow, no credential broker for agents (agent-tool-broker brokers tools, not credentials), master key comes from host env |
+| 2 | Malware/ransomware defense | restricted-node (Node permission model + namespaces), code-sandbox, inbox security screen | No file quarantine/AV scanner integration, archive limits for uploads, ransomware monitoring, image/dependency scanning. Environment must be discovered first (Windows desktop + Linux/Railway runtime) |
+| 3 | Exfiltration/intrusion prevention | secret-patterns, brain/security-brain (prompt-injection screen), guardrail-engine, rate limits, owner-auth on routes | No per-provider outbound allowlist enforcement (network namespace only for plugins), leak detection in commits not wired as a gate |
+| 4 | AI Models dashboard (13 providers) | Control Center models view, model-gateway summary | Only fake/probe-gated providers; no cards for most providers; none LIVE |
+| 5 | Multi-model routing | cost-model-router, provider-resilience, model-gateway, brain/model-intelligence (C10 VERIFIED_WORKING) | Gateway-vs-direct duplicate-billing guard missing; no live comparison data |
+| 6 | Local AI manager (Ollama) | none | Entirely missing; needs hardware discovery and owner approval for installs/downloads |
+| 7 | Chat Providers center (15) | universal-inbox, inbox-pipeline, connector-catalog | No messaging adapters; most listed providers have no lawful official API route (e.g. personal WhatsApp/WeChat/Zalo Personal, iMessage) and must stay "unavailable" |
+| 8 | Markdown memory (MEMORY.md, memory/DATE.md) | project-memory (durable decisions), brain/memory-fabric, knowledge-projects | File layout not implemented; versioning/recovery partial |
+| 9 | SQLite FTS5 | knowledge-projects keyword BM25 (own index, labelled not semantic) | No SQLite/FTS5; would add a dependency (decision needed) |
+| 10 | Local semantic/hybrid search | enterprise-knowledge-agentic-rag (structure only) | No embeddings/vector index; needs local embedding model |
+| 11 | Central coordinator/delegation | master-planner-orchestrator, brain/orchestrator, orchestrator, agent-tool-broker, stall-replanner | Partial (M04 PARTIAL) |
+| 12 | Scheduled background work | scheduler.mjs (C12 VERIFIED_WORKING) | Email/calendar monitoring needs connectors |
+| 13 | Proactive goal-based work | suggestions, master-brief, human-core | Goal-to-plan generation partial |
+| 14 | Maker-checker | business/judge, qa-reviewer, anti-collusion-guard, brain/verifier, this R6 independent-round method | Partial; per-capability enforcement not automated |
+| 15 | Secure shared workspace | tenant-isolation, shared-project-registry | Partial |
+| 16 | Agent-to-agent messaging | none found (agents go through the broker only) | Missing; needs loop/runaway limits |
+| 17 | Permanent agents + temporary sub-agents | fixed 30-agent roster, agent-factory (owner-gated) | Temporary sub-agents with isolated sessions/limits not built; must not enlarge the 30 |
+| 18 | Dynamic model assignment | model-intelligence, cost-model-router | Per-agent assignment table missing |
+| 19 | Network/system hardening | Control Center binds 127.0.0.1; owner auth | Runtime `supervisor-safe.mjs` binds 0.0.0.0 (needed for Railway; changing bind or exposure needs owner approval); not a defect found now |
+| 20 | Unified Control Center | atlasz-control-center (many panels) | Missing Vault, Chat Providers, Local Models, Security Center panels; mobile |
+| 21 | Autonomous problem solving | stall-replanner, self-healing, system-doctor | Partial |
+| 22 | E2E testing | 1090 tests, 52 probes, mutation method, independent rounds | Security acceptance gates 1-12 not yet organised as a named suite |
+| 23 | Safe self-maintenance/updates | update-center.mjs (detect, compatibility, backup/LKG, staging, tests), local-update-adapters | Source-authenticity (signing) and production steps stay owner-gated |
+
+Overlap with the Global Business package: 4/5/18 (model evolution), 12 (revenue persistence scheduling), 20 (dashboard), 23 and 9 of the Fortress items. These should be built once.
+
+## C. 150 ideas: scope note (no audit done)
+10 groups x 15 (S, AS, OP, SN, HK, MR, GR, GE, O5, S5). The package itself warns they are not 150 unique features and that vendor attributions must not be taken as documented facts. Known ID clash to resolve in Phase A: the idea IDs GE01-GE15 collide with the existing capability IDs GE01-GE12 in the 85-capability registry; the 150 entries need a distinct prefix (e.g. "I-GE01") to keep registry IDs unambiguous. Many are near-duplicates of existing work (e.g. S08/GE03 vs checkpointing, S07/GE09/HK04 vs model-intelligence, OP07 vs requirement traceability, AS02/OP04 vs judge/code-review). Phase A, B and everything after wait for the exact phrase.
+
+## D. Additional owner decisions raised
+1. Confirm the order: finish the 85 -> 23-point package -> Global Business package, or interleave model-evolution with 23-point items 4/5/18.
+2. SQLite/FTS5, an AV scanner (e.g. ClamAV) and Ollama are new dependencies/software installs, each needing approval.
+3. Chat providers: approve only officially supported ones; confirm that unofficial/personal-account routes (WhatsApp personal, WeChat, Zalo Personal, Tor Messenger, iMessage bridge) remain "unavailable".
+4. Whether the runtime may stay bound to 0.0.0.0 on Railway, or a hardening change is wanted (approval-gated).
