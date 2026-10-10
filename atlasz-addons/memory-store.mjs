@@ -30,22 +30,30 @@ const bodyBad = b => typeof b !== "string" || !b.trim() || b.length > LIMITS.max
 // NAME = value detection. Names: password/passphrase/passcode/pwd/psw/pin/passwort/jelszo/kennwort/contrasena, secret, token, credential(s)/creds, api key (also "api key"), access/secret/private/signing/encryption/auth/client/master/ssh/license key,
 // with up to three short prefix segments (db_password, client_secret, AWS_SECRET_ACCESS_KEY) or a known prefix glued on (DBPASSWORD, AUTHTOKEN), and a suffix (password1, password_prod, SECRET_KEY_BASE, "password for admin").
 // camelCase is split, combining accents and look-alike letters are folded, Markdown decoration is removed (checked both ways). Every part is length-bounded so the scan stays linear ("bypass" / "compass" are not names).
-const NAME_CORE = "(?:pass(?:word|wd|phrase|wort|code)?|pass[ _-]word|pwd|psw|pw|pin(?:code)?|secret|token|credentials?|creds|api[ _-]?key|apikey|(?:access|secret|private|signing|encryption|auth|client|master|ssh|license|licence)[ _-]key|kennwort|jelszo|contrasena|clave|titkos(?:kulcs)?)s?";
+const plain = n => n.normalize("NFD").replace(/\p{M}/gu, "");      // names are matched in the same accent-free form the text is reduced to
+const FOREIGN = ["пароль", "密码", "密碼", "パスワード", "비밀번호", "heslo", "hasło", "şifre", "lösenord", "wachtwoord", "mot de passe", "passwörter", "geheimnis", "senha", "jelszavam"].map(plain).join("|");
+const NAME_CORE = "(?:pass(?:word|wd|phrase|wort|code)?|pass[ _-]word|pwd|psw|pw|psk|otp|pin(?:code)?|secret|token|credentials?|creds|api[ _-]?key|apikey|(?:access|secret|private|signing|encryption|auth|client|master|ssh|license|licence|recovery|unlock|backup|wifi|wpa|wep)[ _-](?:key|code)|kennwort|jelszo|jelszav[a-z]*|contrasena|clave|titkos(?:kulcs)?|auth|key|" + FOREIGN + ")s?";
 const PREFIX = "(?:(?:[a-z0-9]{1,20}[_.-]){1,3}|(?:db|auth|api|user|admin|root|app|jwt|bearer|session|refresh|access|oauth|mysql|pg|redis|aws|ssh|vpn|wifi|smtp|login|master|service|site|sql)(?=pass|pwd|psw|secret|token|cred|key|pin))";
-const SUFFIX = "(?:\\d{1,4}|(?:[_.-][a-z0-9]{1,15}){1,3}|(?:[ \\t]{1,20}[a-z]{2,12}){1,3})?";
+const SUFFIX = "(?:(?:[ \\t]{0,3}\\([^)\\n]{1,20}\\))|\\d{1,4}|(?:[_.-][a-z0-9]{1,15}){1,3}|(?:[ \\t]{1,20}(?!(?:is|was|are|ist|war|est)\\b)[a-z]{2,12}){1,3})?";
 const NAMES = "(?<pre>" + PREFIX + ")?(?<core>" + NAME_CORE + ")(?<suf>" + SUFFIX + ")";
 const VAL = "(?:\"([^\"\\n]{4,2000})\"|'([^'\\n]{4,2000})'|([^\\s\"')}\\]]{4,300}))";
-const ASSIGN_RE = new RegExp("(?<![A-Za-z0-9])" + NAMES + "[\"'\\])]?[ \\t]{0,20}(?:(?<colon>:|\\|)|(?<eq>=>?|->)|[ \\t]+(?:is|was)[ \\t]+)\\s{0,50}" + VAL, "gi");
+const ASSIGN_RE = new RegExp("(?<![A-Za-z0-9])" + NAMES + "[\"'\\])]?[ \\t]{0,20}(?:(?<colon>:(?!=)|\\||>|[-\u2013\u2014\u2192](?=[ \\t]))|(?<eq>:=|=>?|->)|[ \\t]+(?:is|was|are|ist|war|est)[ \\t]+|(?<sp>[ \\t]+(?=\\S)))\\s{0,50}" + VAL, "gi");
 const PASSY = /pass|pwd|psw|pw|pin|jelsz|kennwort|contrasena|titkos/i;
 const PLACEHOLDER = /^(?:true|false|null|none|nil|undefined|empty|unset|todo|tbd|n\/a|yes|no)$/i;
-const STRONG_SYM = /[@#$%^&*+\[\]{}|\\<>~`!]/;
+const STRONG_SYM = /[@#$%^&*\[\]{}|\\<>~`!]/;
 const hasSymbol = v => /[@#$%^&*_+=\[\]{}|\\<>\/~`!]/.test(v);
 const looksStructural = v => /^v?\d+(?:\.\d+)+/.test(v) || /^\d{4}-\d{2}-\d{2}/.test(v) || /^[a-z][a-z0-9+.-]*:\/\//i.test(v);
 /** Does the value after NAME look like a credential? "=" / "->" assignments are strict; prose-like "name: value" and "name is value" are checked more carefully (letters-only words, versions, dates and URLs are not credentials). */
 const credLike = (name, assign, v, rest, quoted) => {
   v = v.replace(/[.,;:?]+$/, ""); if (v.length < 4 || PLACEHOLDER.test(v) || /^\[redacted/i.test(v)) return false;      // already redacted
   const passy = PASSY.test(name), hasDigit = /\d/.test(v), hasLetter = /\p{L}/u.test(v);
-  if (assign) return true;
+  if (assign && !hasDigit && !STRONG_SYM.test(v) && /^\p{L}+$/u.test(v) && v.length < 6) return false;      // "Pass = fail"
+  if (assign) {      // "=" / ":=" / "->": credential unless a plain word under a name that is also an ordinary word ("Token = Alpha", "Secret = something")
+    if (passy || /key|psk|otp|code/.test(name) || hasDigit || STRONG_SYM.test(v) || v.length >= 12) return !/^[\/~]/.test(v) || !/pwd/.test(name);
+    return false;
+  }
+  if (/^\s+(?:vs\.?|versus)\s/i.test(rest)) return false;      // "Password manager: 1Password vs Bitwarden"
+  if (/pwd/.test(name) && /^(?:[\/~.]|[A-Za-z]:[\\/])/.test(v)) return false;      // `pwd` is also the shell command: a path is not a password
   if (quoted && passy && v.length >= 8) return true;      // a quoted passphrase of several words
   if (v.length < 6) return false;
   if (passy) {
@@ -56,18 +64,23 @@ const credLike = (name, assign, v, rest, quoted) => {
   if (looksStructural(v)) return false;
   if (STRONG_SYM.test(v) && !/\s/.test(v)) return true;
   if (/^[A-Za-z0-9]+$/.test(v)) return hasDigit && hasLetter;
+  if (!/\s/.test(v) && v.split(/[\/:@]/).some(x => /^[A-Za-z0-9]{8,}$/.test(x) && /\d/.test(x) && /[A-Za-z]/.test(x))) return true;      // creds: bob/Xk9mQ2v8
   const d = (v.match(/\d/g) || []).length, l = (v.match(/\p{L}/gu) || []).length;
   return v.length >= 16 && d >= 3 && l >= 3 && !/\s/.test(v);
 };
-/** Text as the filter sees it: NFKC, hidden characters removed, combining accents and look-alike letters folded, camelCase split. */
-const norm = raw => foldLookalikes(String(raw ?? "").normalize("NFKC").normalize("NFD").replace(/[\p{Cf}\u00ad\p{M}]/gu, ""));
+/** Text as the filter sees it: NFKC, hidden characters removed, combining accents removed; with and without look-alike folding (Cyrillic/CJK names are matched unfolded, Latin names folded). */
+const base = raw => String(raw ?? "").normalize("NFKC").normalize("NFD").replace(/[\p{Cf}\u00ad\p{M}]/gu, "");
 const camel = t => t.replace(/([a-z0-9])([A-Z])/g, "$1_$2");      // secretKey -> secret_Key (checked in addition to the unsplit text, because it would also cut a value like Ab12cd34Ef56)
-const views = raw => { const t = norm(raw), c = camel(t); return [t, deco(t), c, deco(c)]; };
+const LEETN = { 0: "o", 1: "i", 3: "e", 4: "a", 5: "s", 7: "t", "@": "a", $: "s" };
+const unleet = t => t.replace(/(?<=[a-z])[013457@$](?=[a-z])/gi, c => LEETN[c]);      // passw0rd -> password (names only matter; the value rules still run on every view)
+const views = raw => { const b = base(raw), out = new Set(); for (const t of [foldLookalikes(b), b]) for (const x of [t, camel(t), unleet(t)]) { out.add(x); out.add(deco(x)); } return [...out]; };
 const deco = t => t.replace(/[*`~]/g, "").replace(/(?<![A-Za-z0-9])_+(?=[A-Za-z])|(?<=[A-Za-z0-9])_{2,}(?![A-Za-z0-9])/g, "");
 function* credentialAssignments(t) {
   for (const m of t.matchAll(ASSIGN_RE)) {
     const g = m.groups, name = ((g.pre ?? "") + g.core + (g.suf ?? "")).toLowerCase(), assign = Boolean(g.eq), q = m[m.length - 3] !== undefined || m[m.length - 2] !== undefined;
     const v = m[m.length - 3] ?? m[m.length - 2] ?? m[m.length - 1] ?? "";
+    if (g.sp && !/key$/i.test(g.core)) continue;      // "api key V" (no separator) only for key names
+    if (!g.pre && !g.suf && /^key$/i.test(g.core) && !assign) continue;      // a bare "key:" is a label; bare "key=" is an assignment ("auth: V" is judged by its value like any other name)
     if (!assign && /^pass$/i.test(g.core) && !g.suf) continue;      // "Boarding pass: 2024-01-15" is prose; password/pwd/passphrase are not
     if (!assign && /^pins?$/i.test(g.core) && !/^\d{4,8}$/.test(v.replace(/[.,;:!?]+$/, ""))) continue;
     if (credLike(name, assign, v, t.slice(m.index + m[0].length, m.index + m[0].length + 40), q)) yield { index: m.index, value: v };
@@ -286,6 +299,7 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
         for (const r of recs.values()) if (r.bodySha === bodySha && canSee(r, wr)) return fail("DUPLICATE_OF:" + r.id);      // a hidden note is never revealed by a duplicate answer
         const id = crypto.randomBytes(8).toString("hex"), t = nowFn();
         const meta = { id, title: title.trim(), tags: [...new Set(tags)].join(", "), classification, tenant: tenantId, author: authorId, source, createdAt: t, updatedAt: t, version: "1", bodySha };
+        if (!auditNow().ok) return fail("AUDIT_UNAVAILABLE");      // no note without a working audit trail (checked before anything is written)
         const file = path.join(notesDir, id + ".md"); writeAtomic(file, render(meta, body));
         noteFloor(id, classification); audit.append("MEMORY_WRITTEN", { id, authorId, classification, bodySha, titleSha: sha(meta.title).slice(0, 16) });
         sync(); return { ok: true, id, version: 1 };
@@ -327,6 +341,7 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
         const old = fs.readdirSync(versionsDir).filter(n => n.startsWith(id + ".v")).sort((a, b) => Number(a.slice(id.length + 2, -3)) - Number(b.slice(id.length + 2, -3)));
         for (const n of old.slice(0, Math.max(0, old.length - LIMITS.versionsKept))) { try { fs.unlinkSync(path.join(versionsDir, n)); } catch { /* gone */ } }
         const meta = { id, title: title.trim(), tags: [...new Set(tags)].join(", "), classification: cls, tenant: tenantId, author: parsed.rec.author, source, createdAt: parsed.rec.created, updatedAt: t, version: String(version), bodySha };
+        if (!auditNow().ok) return fail("AUDIT_UNAVAILABLE");
         writeAtomic(path.join(notesDir, id + ".md"), render(meta, body));
         noteFloor(id, cls); audit.append("MEMORY_UPDATED", { id, by: patch.authorId, version, classification: cls, bodySha });
         sync(); return { ok: true, id, version };

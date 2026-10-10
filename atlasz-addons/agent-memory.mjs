@@ -15,7 +15,7 @@ import { scrub } from "./secret-patterns.mjs";
 import { redactAssignments } from "./memory-store.mjs";
 import { okName } from "./safe-keys.mjs";
 
-export const LIMITS = Object.freeze({ maxBody: 4000, maxTitle: 120, maxUserTags: 5, notesPerAgent: 200, writesPerDay: 50, readsPerMin: 60, contextChars: 3000, contextNotes: 5, maxProjects: 20, forgetRequests: 200, forgetPerAgent: 20, ttlMaxDays: 365, activity: 200 });
+export const LIMITS = Object.freeze({ maxBody: 4000, maxTitle: 120, maxUserTags: 5, notesPerAgent: 200, writesPerDay: 50, readsPerMin: 60, contextChars: 3000, contextNotes: 5, maxProjects: 20, forgetRequests: 200, forgetPerAgent: 20, attemptsPerDay: 200, ttlMaxDays: 365, activity: 200 });
 export const DEFAULT_POLICY = Object.freeze({
   clearance: Object.freeze({ SEARCH: "PERSONAL", EXECUTION: "PERSONAL" }),      // read ceiling per team; CONFIDENTIAL is owner-only unless the owner raises it
   writeCeiling: Object.freeze({ SEARCH: "PERSONAL", EXECUTION: "PERSONAL" }),
@@ -28,13 +28,14 @@ const sha = t => crypto.createHash("sha256").update(t).digest("hex");
 const defang = t => String(t).replace(/<{2,}|>{2,}/g, m => m.split("").join("​"));
 // Text that reads like an instruction aimed at a later reader is not stored as memory by an agent. (Retrieval is fenced anyway; this is the second line.)
 const INJECTION = [/ignore\s+(?:all\s+|any\s+|the\s+)?(?:previous|prior|above|earlier)\s+(?:instructions?|rules?|prompts?)/i, /disregard\s+(?:the\s+)?(?:system|previous|above)/i, /(?:reveal|print|show|leak)\s+(?:the\s+)?(?:system\s+prompt|credentials?|api[_ -]?keys?|secrets?)/i,
-  /\byou\s+are\s+now\b/i, /\bnew\s+instructions?\s*:/i, /\bact\s+as\s+(?:the\s+)?(?:owner|admin|root|coordinator)\b/i, /<<\s*(?:END_)?UNTRUSTED/i, /\bapprov(?:e|al)\s+granted\s+by\s+(?:the\s+)?(?:owner|admin\w*|root|coordinator)\b/i, /"(?:tool|function)_?call"\s*:/i];
+  /\byou\s+are\s+now\b/i, /\bnew\s+instructions?\s*:/i, /\bact\s+as\s+(?:the\s+)?(?:owner|admin|root|coordinator)\b/i, /<<\s*(?:END_)?UNTRUSTED/i, /\bapprov(?:e|al)\s+granted\s+by\s+(?:the\s+)?(?:owner|admin\w*|root|coordinator)\b/i, /"(?:tool|function)_?call"\s*:/i,
+  /\b(?:forget|override)\s+(?:all\s+|any\s+|the\s+|your\s+)?(?:previous|prior)\s+(?:instructions?|rules?|prompts?)/i, /\bignore\s+the\s+(?:rules|instructions)\s+(?:above|before)\b/i, /\bdisregard\s+(?:all\s+)?(?:prior|previous)\s+context\b/i, /\bprint\s+your\s+system\s+prompt\b/i, /\bfrom\s+now\s+on\s+you\s+(?:must|will|shall)\b/i, /\[\/?INST\]|<\|im_(?:start|end)\|>/i];
 // Compact form: letters only, look-alike digits/symbols mapped back ("1gn0re  pr3vious" -> "ignorepreviousinstructions"), so spacing and leetspeak tricks do not hide a phrase. Best effort: the real defence is that
 // retrieved text is always fenced and flagged as untrusted data.
 const LEET = { 0: "o", 1: "i", 3: "e", 4: "a", 5: "s", 7: "t", "@": "a", $: "s", "!": "i" };
 // Whole text: the ignore-previous-instructions family only (cross-sentence joins are rare). Per sentence: the rest. Word boundaries are lost in the compact form, so only phrases that cannot occur inside ordinary words are used here;
 // plain-spaced phrasings (including "approval granted", "act as the admin") are in INJECTION above, with word boundaries.
-const COMPACT_ALL = [/(?:ignore|disregard)(?:all|any|the|your|every)?(?:previous|prior|above|earlier|preceding|former|system)(?:instructions?|rules?|prompts?|messages?|guidelines?)/, /(?:forget|override)(?:all|any|the|your|every)(?:previous|prior|above|earlier|preceding|former|system)(?:instructions?|rules?|prompts?|messages?|guidelines?)/];
+const COMPACT_ALL = [/(?:ignore|disregard)(?:all|any|the|your|every)?(?:previous|prior|above|earlier|preceding|former|system)(?:instructions?|rules?|prompts?|messages?|guidelines?)/, /(?:forget|override)(?:all|any|the|your|every)(?:previous|prior|above|earlier|preceding|former)(?:instructions?|rules?|prompts?|guidelines?)/];
 const COMPACT_SENTENCE = [/(?:system|developer)(?:message|prompt)?youmust(?:obey|comply|follow)/, /^admin(?:message)?youmust(?:obey|comply)/, /ignore(?:everything|anything|all)(?:above|before)/, /(?:reveal|print|leak|dump)(?:the)?(?:systemprompt|apikeys?)/, /untrustedmemory/];
 const compact = n => n.toLowerCase().replace(/[01345 7@$!]/g, ch => LEET[ch] ?? ch).replace(/[^\p{L}]/gu, "");
 export const looksLikeInstruction = t => {
@@ -55,7 +56,7 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
   const cleanState = s => {      // a damaged or hand-edited state file must never throw into an agent call
     const o = { v: 1, agents: {}, forgets: {}, refused: Number.isInteger(s?.refused) && s.refused >= 0 ? s.refused : 0, errors: Array.isArray(s?.errors) ? s.errors.filter(e => e && typeof e === "object").slice(-50) : [] };
     for (const [k, v] of Object.entries(s?.forgets ?? {})) if (ID.test(k) && v && typeof v === "object" && typeof v.agent === "string") o.forgets[k] = { agent: v.agent, reason: String(v.reason ?? "").slice(0, 200), at: String(v.at ?? "") };
-    for (const [k, v] of Object.entries(s?.agents ?? {})) if (v && typeof v === "object") { const a = { ...v }; if (!(a.lastAt === null || Number.isFinite(a.lastAt))) a.lastAt = null; if (a.days && typeof a.days === "object" && !Array.isArray(a.days)) { for (const d of Object.keys(a.days)) if (!Number.isInteger(a.days[d]) || a.days[d] < 0) delete a.days[d]; } o.agents[k] = a; }
+    for (const [k, v] of Object.entries(s?.agents ?? {})) if (v && typeof v === "object") { const a = { ...v }; if (!(a.lastAt === null || Number.isFinite(new Date(a.lastAt).getTime()))) a.lastAt = null; if (a.days && typeof a.days === "object" && !Array.isArray(a.days)) { for (const d of Object.keys(a.days)) if (!Number.isInteger(a.days[d]) || a.days[d] < 0) delete a.days[d]; } o.agents[k] = a; }
     return o;
   };
   let lastM = 0; const mtimeOf = () => { try { return fs.statSync(stateFile).mtimeMs; } catch { return 0; } };
@@ -70,12 +71,13 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
   const log = (event, data = {}) => { try { audit.append(event, { tenantId, ...data }); auditBad = false; return true; } catch { auditBad = true; return false; } };
   const auditHealthy = () => { if (!auditBad) return true; const t = nowFn(); if (t - auditCheckedAt > 5000) { auditCheckedAt = t; if (auditNow().ok) auditBad = false; } return !auditBad; };
   // Refusals and failures are logged at most once a minute per agent and event (with a count of those suppressed), so a refusal flood cannot make the log grow or every call slow.
+  const IMPORTANT = /^(?:LOOKS_LIKE_INSTRUCTION|SECRET|SCREEN_REFUSED|CLASSIFICATION_ABOVE|PROJECT_NOT_GRANTED|SCOPE_NOT|ACCESS_AUDIT)/;      // rare and security-relevant: always logged (bounded by the daily attempt cap)
   const lastLogged = new Map();
-  const logLimited = (event, agentId, data = {}) => { const key = event + "|" + agentId, t = nowFn(), e = lastLogged.get(key); if (e && t - e.at < 60_000) { e.n++; return true; } const n = e?.n ?? 0; lastLogged.set(key, { at: t, n: 0 }); if (lastLogged.size > 500) lastLogged.delete(lastLogged.keys().next().value); return log(event, n ? { ...data, suppressedSince: n } : data); };
+  const logLimited = (event, agentId, data = {}) => { if (IMPORTANT.test(String(data.reason ?? ""))) return log(event, data); const key = event + "|" + agentId + "|" + String(data.reason ?? ""), t = nowFn(), e = lastLogged.get(key); if (e && t - e.at < 60_000) { e.n++; return true; } const n = e?.n ?? 0; lastLogged.set(key, { at: t, n: 0 }); if (lastLogged.size > 500) lastLogged.delete(lastLogged.keys().next().value); return log(event, n ? { ...data, suppressedSince: n } : data); };
   const OPS = ["remember", "recall", "context", "read", "list", "refused", "forgetRequests"];
   const A = id => {
     let a = Object.hasOwn(S.agents, id) ? S.agents[id] : undefined;
-    const ok = a && typeof a === "object" && Number.isInteger(a.notes) && a.notes >= 0 && (a.lastAt === null || a.lastAt === undefined || Number.isFinite(a.lastAt)) && a.days && typeof a.days === "object" && !Array.isArray(a.days) && Array.isArray(a.reads) && a.reads.every(x => Number.isFinite(x)) && a.ops && typeof a.ops === "object" && OPS.every(k => Number.isInteger(a.ops[k]) && a.ops[k] >= 0);
+    const ok = a && typeof a === "object" && Number.isInteger(a.notes) && a.notes >= 0 && (a.lastAt === null || a.lastAt === undefined || Number.isFinite(new Date(a.lastAt).getTime())) && a.days && typeof a.days === "object" && !Array.isArray(a.days) && Array.isArray(a.reads) && a.reads.every(x => Number.isFinite(x)) && a.ops && typeof a.ops === "object" && OPS.every(k => Number.isInteger(a.ops[k]) && a.ops[k] >= 0);
     if (!ok) { a = { notes: 0, days: {}, reads: [], lastAt: null, ops: Object.fromEntries(OPS.map(k => [k, 0])) }; S.agents[id] = a; }      // a damaged per-agent record is replaced, never allowed to throw into an agent call
     return a;
   };
@@ -108,7 +110,9 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
   function remember(agentId, { title, body, tags = [], scope = "agent", project = null, kind = "long", classification = "PERSONAL", ttlDays = null } = {}) {
     const c = check(agentId, "write"); if (c) return c; const a = fresh(agentId);
     tags = Array.isArray(tags) ? Array.from(tags) : tags;      // one snapshot: what is validated is what is stored (no getter tricks)
+    a.tries = a.tries && typeof a.tries === "object" && !Array.isArray(a.tries) ? a.tries : {}; for (const k of Object.keys(a.tries)) if (k !== day()) delete a.tries[k];
     const refuse = (reason, extra) => { a.ops.refused++; S.refused++; logLimited("MEMORY_WRITE_REFUSED", agentId, { agent: agentId, reason }); save(); return fail(reason, extra); };
+    if ((a.tries[day()] ?? 0) >= LIMITS.attemptsPerDay) return refuse("DAILY_ATTEMPT_QUOTA"); a.tries[day()] = (a.tries[day()] ?? 0) + 1;      // every attempt counts, not only the ones that succeed: a flood of refusals is capped (and so is what it can write to the log)
     if (!Object.hasOwn(RANK, classification) || RANK[classification] > RANK[ceilingOf(agentId)]) return refuse("CLASSIFICATION_ABOVE_WRITE_CEILING");
     if (!["agent", "project", "tenant"].includes(scope)) return refuse("SCOPE_INVALID"); if (kind !== "long" && kind !== "ops") return refuse("KIND_INVALID");
     if (typeof title !== "string" || title.length > LIMITS.maxTitle || typeof body !== "string" || body.length > LIMITS.maxBody) return refuse("TITLE_OR_BODY_INVALID");
@@ -121,7 +125,7 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
     if (a.notes >= LIMITS.notesPerAgent) return refuse("AGENT_NOTE_QUOTA"); if ((a.days[day()] ?? 0) >= LIMITS.writesPerDay) return refuse("DAILY_WRITE_QUOTA");
     if (looksLikeInstruction(title) || looksLikeInstruction(body)) return refuse("LOOKS_LIKE_INSTRUCTION_NOT_MEMORY");
     if (typeof screenText === "function") { let r; try { r = screenText(title + "\n" + body); } catch { r = { allowed: false, reason: "SCREEN_ERROR" }; } if (r && r.allowed === false) return refuse("SCREEN_REFUSED:" + String(r.reason ?? "").slice(0, 40)); }
-    if (!log("MEMORY_WRITE_INTENT", { agent: agentId, scope, kind, classification })) return refuse("ACCESS_AUDIT_UNAVAILABLE");      // intent is recorded BEFORE the note exists
+    if (!auditNow().ok) { auditBad = true; return refuse("ACCESS_AUDIT_UNAVAILABLE"); }      // no note without a working access trail (checked before anything is written)
     const w = store.write({ authorId: agentId, title, body, tags: [...tags, ...sys], classification, source: "agent:" + agentId, clearance: clearanceOf(agentId), allow: r => canSeeNote(agentId, r) });
     if (!w.ok) return refuse(String(w.reason ?? "WRITE_FAILED").replace(/DUPLICATE_OF:.*/, "DUPLICATE"));
     a.notes++; a.days[day()] = (a.days[day()] ?? 0) + 1; a.ops.remember++; a.lastAt = nowFn(); log("MEMORY_REMEMBERED", { agent: agentId, id: w.id, scope, kind, classification, project: scope === "project" ? project : undefined }); save();
@@ -156,14 +160,16 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
   function requestForget(agentId, id, reason = "") {
     const c = check(agentId, "write"); if (c) return c; if (typeof id !== "string" || !ID.test(id)) return fail("NOT_FOUND");
     const g = store.get(id, readerFor(agentId)); if (!g.ok) return fail("NOT_FOUND"); if (g.author !== agentId) return fail("ONLY_THE_AUTHOR_MAY_REQUEST");
+    if (S.forgets[id]?.agent === agentId) return { ok: true, id, state: "WAITING_FOR_OWNER", duplicate: true };      // idempotent: asking again changes and logs nothing
     if (!S.forgets[id] && (Object.keys(S.forgets).length >= LIMITS.forgetRequests || Object.values(S.forgets).filter(r => r.agent === agentId).length >= LIMITS.forgetPerAgent)) return fail("TOO_MANY_REQUESTS");
-    S.forgets[id] = { agent: agentId, reason: redactAssignments(String(reason)).slice(0, 200), at: new Date(nowFn()).toISOString() }; A(agentId).ops.forgetRequests++; log("MEMORY_FORGET_REQUESTED", { agent: agentId, id }); save(); return { ok: true, id, state: "WAITING_FOR_OWNER" };
+    if (!log("MEMORY_FORGET_REQUESTED", { agent: agentId, id })) return fail("ACCESS_AUDIT_UNAVAILABLE");
+    S.forgets[id] = { agent: agentId, reason: redactAssignments(String(reason)).slice(0, 200), at: new Date(nowFn()).toISOString() }; A(agentId).ops.forgetRequests++; save(); return { ok: true, id, state: "WAITING_FOR_OWNER" };
   }
   function activity(agentId) { const a = A(agentId); return { ok: true, agent: agentId, notes: a.notes, writesToday: a.days[day()] ?? 0, lastAt: a.lastAt ? new Date(a.lastAt).toISOString() : null, ops: { ...a.ops } }; }
 
   // ------------------------------------------------------------------ coordinator hook: memory is updated only after independently verified work
   function recordVerifiedWork({ taskId, owner, verifier, summary, project = null } = {}) {
-    if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE");
+    if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); if (!auditNow().ok) { auditBad = true; return fail("ACCESS_AUDIT_UNAVAILABLE"); }
     if (typeof taskId !== "string" || !TASK.test(taskId) || !rosterOk(owner) || !rosterOk(verifier) || owner === verifier) return fail("VERIFIED_WORK_INVALID");
     if (typeof summary !== "string" || !summary.trim() || summary.length > LIMITS.maxBody) return fail("SUMMARY_INVALID");
     if (looksLikeInstruction(summary)) return fail("SUMMARY_LOOKS_LIKE_INSTRUCTION");

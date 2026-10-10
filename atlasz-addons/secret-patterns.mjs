@@ -24,7 +24,7 @@ const ALL = [
   /(?<=:\/\/)[^\s\/:@]{0,100}:[^\s@]{1,300}(?=@)/g,                                                    // user:password@host (password may contain "/")
   // NAME=value / "name": "value" for credential-looking names (also inside JSON embedded in a string, and names like OPENAI_API_KEY)
   /(?<![A-Za-z0-9_.-])["']?[A-Za-z0-9_.-]*(?:password|passwd|passphrase|passwort|kennwort|jelsz[óo]|titkos[_ ]?kulcs|secret|token|api[_-]?key|access[_-]?key|auth[_-]?(?:key|token)|private[_-]?key|credentials?|authorization|session[_-]?(?:id|key))["']?\s*(?:=>|:=|[:=])\s*(?:"[^"\n]{4,}"|'[^'\n]{4,}'|(?:(?:bearer|basic|token|apikey|api-key|digest|negotiate|hmac|aws4-hmac-sha256)\s+)?[^\s"',;}]{4,})/gi,
-  /\b(?:(?:my|your|new|old|admin|root|wi-?fi|temp(?:orary)?|the|jelsz[óo]m?)\s+)?(?:password|passwd|passphrase|pwd|jelsz[óo]|jelszavam|kennwort|passwort)\s+(?:is|was|are)?\s*[:=]?\s*(?=\S*[0-9_@!#$%^&*])\S{4,}/gi,
+  /\b(?:(?:my|your|new|old|admin|root|wi-?fi|temp(?:orary)?|the|jelsz[óo]m?)\s{1,20})?(?:password|passwd|passphrase|pwd|jelsz[óo]|jelszavam|kennwort|passwort)\s{1,20}(?:(?:is|was|are)\s{0,20})?(?:[:=]\s{0,20})?(?=\S*[0-9_@!#$%^&*])\S{4,}/gi,
   /(?<![A-Za-z0-9])["']?(?:pw|pwd|pass)["']?\s*[:=]\s*(?:"[^"\n]{3,}"|'[^'\n]{3,}'|[^\s"',;}]{3,})/gi,
   /\b(?:seed|recovery|backup)\s+(?:phrase|words)\s*(?:is|are|:|=)\s*(?:[a-z]{3,8}\s+){11,23}[a-z]{3,8}\b|\bmnemonic\s*(?:is|:|=)\s*(?:[a-z]{3,8}\s+){11,23}[a-z]{3,8}\b/gi,
 ];
