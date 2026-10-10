@@ -363,6 +363,26 @@ for (const [force, backend] of BACKENDS) {
     } finally { m.close(); rm(d); }
   });
 
+
+  test(`memory[${backend}]: round 3 - only the author raises a class; hand-edit audit entries are not repeated; obfuscated credential assignments are refused`, () => {
+    const { d, m } = mk();
+    try {
+      const w = m.write({ ...base, classification: "PUBLIC" });
+      assert.equal(m.update(w.id, { authorId: "mallory", clearance: "PUBLIC", classification: "CONFIDENTIAL" }).reason, "CLASSIFICATION_RAISE_AUTHOR_ONLY");
+      assert.equal(m.update(w.id, { authorId: "E-01", clearance: "PUBLIC", classification: "PERSONAL" }).ok, true);
+      const c = m.write({ ...base, body: "other text entirely", classification: "CONFIDENTIAL" });
+      const f = path.join(d, "notes", c.id + ".md");
+      fs.writeFileSync(f, fs.readFileSync(f, "utf8").replace("classification: CONFIDENTIAL", "classification: PUBLIC") + " edited");
+      for (let i = 0; i < 6; i++) m.verify();
+      assert.equal(m.auditEntries().filter(e => e.event === "MEMORY_EXTERNAL_DECLASSIFY_IGNORED").length, 1);
+      assert.equal(m.auditEntries().filter(e => e.event === "MEMORY_EXTERNAL_EDIT").length, 1);
+      const bad = ['{"password":"abc12345"}', '{"password": "abc12345"}', "client_secret=abc12345", "db_password=abc12345", "passphrase=abc12345", "pw=abc12345", "password -> abc12345",
+        "password\u200b=abc12345", "pass\u00adword=abc12345", "\uff50\uff41\uff53\uff53\uff57\uff4f\uff52\uff44=abc12345", 'password="abc 12345"', "password: correcthorsebatterystaple"];
+      for (const [i, b] of bad.entries()) assert.equal(m.write({ ...base, body: b + " x" + i }).reason, "SECRET_DETECTED_NOT_STORED", b);
+      for (const [i, b] of ["Password: reset required", "token: none", "the password policy is strict", "Authorization: pending"].entries()) assert.equal(m.write({ ...base, body: b + " y" + i }).ok, true, b);
+    } finally { m.close(); rm(d); }
+  });
+
 }
 
 function fileSha(m, id, d) { const t = fs.readFileSync(path.join(d, "notes", id + ".md"), "utf8"); return t.match(/^bodySha: (.*)$/m)[1]; }

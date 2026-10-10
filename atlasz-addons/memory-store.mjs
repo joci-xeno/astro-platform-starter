@@ -25,8 +25,16 @@ const ID_RE = /^[0-9a-f]{16}$/, AGENT_RE = /^[A-Za-z0-9_.:-]{1,40}$/, TENANT_RE 
 const KEYS = ["id", "title", "tags", "classification", "tenant", "author", "source", "createdAt", "updatedAt", "version", "bodySha"];
 const isClass = c => typeof c === "string" && Object.hasOwn(RANK, c);
 const bodyBad = b => typeof b !== "string" || !b.trim() || b.length > LIMITS.maxBody || Buffer.byteLength(b) > 50000 || !b.isWellFormed() || b.includes("\0");
-const ASSIGN = /\b(?:pass(?:word|wd)?|pwd|secret|api[_-]?key|token)\s*[=:]\s*(?=\S{6,})\S*[\d@#$%^&*_+=\[\]{}|\\<>\/~`]/i;      // NAME=value where the value looks like a credential (>=6 chars with a digit or symbol)
-const sensitive = t => containsSecret(t) || ASSIGN.test(t);
+const NAMES = "(?:[a-z0-9_.-]*(?:pass(?:word|wd|phrase)?|pwd|secret|token|api[_-]?key|apikey|credential)s?|pw)";
+const ASSIGN_RE = new RegExp("\\b" + NAMES + "[\"']?\\s*(?::|=>?|->)\\s*(?:\"([^\"\\n]{6,120})\"|'([^'\\n]{6,120})'|([^\\s\"',;)}\\]]{6,120}))", "gi");
+const hasSymbolOrDigit = v => /[\d@#$%^&*_+=\[\]{}|\\<>\/~`]/.test(v);
+/** NAME=value / "NAME": "value" where the value looks like a credential. Runs on normalised text (NFKC, hidden characters removed), like containsSecret. */
+const assignsSecret = raw => {
+  const t = String(raw ?? "").normalize("NFKC").replace(/[\p{Cf}\u00ad]/gu, ""); ASSIGN_RE.lastIndex = 0;
+  for (const m of t.matchAll(ASSIGN_RE)) { const v = m[1] ?? m[2] ?? m[3] ?? ""; if (hasSymbolOrDigit(v) || (!/\s/.test(v) && /^[A-Za-z]{10,}$/.test(v))) return true; }
+  return false;
+};
+const sensitive = t => containsSecret(t) || assignsSecret(t);
 const sha = t => crypto.createHash("sha256").update(t).digest("hex");
 const oneLine = (v, max) => typeof v === "string" && v.length <= max && v.isWellFormed() && !/[\u0000-\u001f\u007f\u2028\u2029\p{Cf}]/u.test(v);
 const memorySubject = (id, bodySha, extra = "") => "memory:" + id + ":" + bodySha.slice(0, 16) + extra;
@@ -74,7 +82,7 @@ function openSqlite(file) {
   const open = () => new DatabaseSync(file);
   let db = open();
   const check = d => { const r = d.prepare("PRAGMA quick_check").all(); return r.length === 1 && Object.values(r[0])[0] === "ok"; };
-  let rebuiltFromDamage = false;
+  let rebuiltFromDamage = false, inBatch = false;
   try { if (!check(db)) throw new Error("damaged"); }
   catch (e) { if (/locked|busy/i.test(String(e?.message))) { try { db.close(); } catch { /* closed */ } throw e; }      // another process holds the index: that is not damage, never delete a live database
     try { db.close(); } catch { /* closed */ } for (const x of ["", "-wal", "-shm", "-journal"]) { try { fs.unlinkSync(file + x); } catch { /* none */ } } db = open(); rebuiltFromDamage = true; }
@@ -88,7 +96,8 @@ function openSqlite(file) {
   };
   return {
     backend: "SQLITE_FTS5", rebuiltFromDamage,
-    upsert(r) { db.exec("BEGIN"); try { q.del.run(r.id); q.delFts.run(r.id); q.ins.run(r.id, r.title, r.tags.join(" "), r.classification, r.author, r.updated, r.bodySha, r.mtime, r.size, vecBuf(r.vec)); q.insFts.run(r.id, r.title, r.tags.join(" "), r.body); db.exec("COMMIT"); } catch (e) { try { db.exec("ROLLBACK"); } catch { /* none */ } throw e; } },
+    batch(fn) { db.exec("BEGIN"); inBatch = true; try { fn(); db.exec("COMMIT"); } catch (e) { try { db.exec("ROLLBACK"); } catch { /* none */ } throw e; } finally { inBatch = false; } },
+    upsert(r) { if (inBatch) { q.del.run(r.id); q.delFts.run(r.id); q.ins.run(r.id, r.title, r.tags.join(" "), r.classification, r.author, r.updated, r.bodySha, r.mtime, r.size, vecBuf(r.vec)); q.insFts.run(r.id, r.title, r.tags.join(" "), r.body); return; } db.exec("BEGIN"); try { q.del.run(r.id); q.delFts.run(r.id); q.ins.run(r.id, r.title, r.tags.join(" "), r.classification, r.author, r.updated, r.bodySha, r.mtime, r.size, vecBuf(r.vec)); q.insFts.run(r.id, r.title, r.tags.join(" "), r.body); db.exec("COMMIT"); } catch (e) { try { db.exec("ROLLBACK"); } catch { /* none */ } throw e; } },
     remove(id) { q.del.run(id); q.delFts.run(id); },
     clear() { db.exec("DELETE FROM notes; DELETE FROM notes_fts"); },
     rows() { return q.all.all().map(x => ({ id: x.id, title: x.title, tags: x.tags ? x.tags.split(" ") : [], classification: x.classification, author: x.author, updated: x.updated, bodySha: x.body_sha, mtime: x.mtime, size: x.size, vec: bufVec(x.vec) })); },
@@ -100,6 +109,7 @@ function openMemoryIndex() {
   const m = new Map();
   return {
     backend: "MEMORY_LEXICAL", rebuiltFromDamage: false,
+    batch(fn) { fn(); },
     upsert(r) { m.set(r.id, { ...r, tokens: terms(r.title + " " + r.tags.join(" ") + " " + r.body) }); },
     remove(id) { m.delete(id); }, clear() { m.clear(); },
     rows() { return [...m.values()].map(({ tokens, body, ...x }) => x); },
@@ -120,7 +130,7 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
   for (const d of [dir, notesDir, versionsDir, trashDir, quarDir]) fs.mkdirSync(d, { recursive: true, mode: 0o700 });
   const audit = createAuditChain({ filePath: path.join(dir, "memory-audit.jsonl") });
   // Last audited classification per note: a hand edit of the file can raise a class but never lower it (lowering needs the signed approval path).
-  const floor = new Map();
+  const floor = new Map(), flagged = new Map();
   const noteFloor = (id, cls) => { if (isClass(cls)) floor.set(id, cls); };
   for (const e of audit.entries()) { const d = e.data ?? {}; if ((e.event === "MEMORY_WRITTEN" || e.event === "MEMORY_UPDATED") && ID_RE.test(String(d.id))) noteFloor(d.id, d.classification); }
   const fail = (reason, extra = {}) => ({ ok: false, reason, ...extra });
@@ -158,19 +168,19 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
   function sync(force = false) {
     const st = stampOf(); if (!force && st === dirStamp) return;
     const names = fs.readdirSync(notesDir).filter(n => n.endsWith(".md") && !n.includes(".tmp")), seen = new Set(); let changed = 0, total = recs.size;
-    for (const n of names) {
+    index.batch(() => { for (const n of names) {
       const file = path.join(notesDir, n), id = n.slice(0, -3);
       let s; try { s = fs.statSync(file); } catch { continue; }
       const known = recs.get(id);
       if (!force && known && known.mtime === s.mtimeMs && known.size === s.size) { seen.add(id); continue; }
       const r = readNote(file);
       if (r.bad) { quarantine(file, r.bad); continue; }
-      const fl = floor.get(r.rec.id);
-      if (fl && RANK[r.rec.classification] < RANK[fl]) { try { audit.append("MEMORY_EXTERNAL_DECLASSIFY_IGNORED", { id: r.rec.id, fileClass: r.rec.classification, keptClass: fl }); } catch { /* ignore */ } r.rec.classification = fl; r.rec.classMismatch = true; }
-      if (r.edited) { try { audit.append("MEMORY_EXTERNAL_EDIT", { id: r.rec.id, newBodySha: r.rec.bodySha }); } catch { /* ignore */ } }
+      const flagKey = r.rec.mtime + ":" + r.rec.size, fl = floor.get(r.rec.id), fresh = flagged.get(r.rec.id) !== flagKey; flagged.set(r.rec.id, flagKey);
+      if (fl && RANK[r.rec.classification] < RANK[fl]) { if (fresh) try { audit.append("MEMORY_EXTERNAL_DECLASSIFY_IGNORED", { id: r.rec.id, fileClass: r.rec.classification, keptClass: fl }); } catch { /* ignore */ } r.rec.classification = fl; r.rec.classMismatch = true; }
+      if (r.edited && fresh) { try { audit.append("MEMORY_EXTERNAL_EDIT", { id: r.rec.id, newBodySha: r.rec.bodySha }); } catch { /* ignore */ } }
       if (total >= maxNotes && !known) { quarantine(file, "NOTE_LIMIT"); continue; }
       index.upsert(r.rec); seen.add(r.rec.id); changed++; if (!known) total++;
-    }
+    } });
     for (const row of index.rows()) if (!seen.has(row.id)) { index.remove(row.id); changed++; }      // also rows left behind by files that vanished while the store was closed
     loadRecs(); dirStamp = stampOf();
     return changed;
@@ -231,6 +241,7 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
         if (!oneLine(source, LIMITS.maxSource)) return fail("SOURCE_INVALID");
         if (sensitive(title) || sensitive(body) || sensitive(source)) return fail("SECRET_DETECTED_NOT_STORED");
         const bodySha = sha(body);
+        if (RANK[cls] > RANK[cur.classification] && patch.authorId !== cur.author) return fail("CLASSIFICATION_RAISE_AUTHOR_ONLY");      // another agent cannot raise a note's class and so lock its readers out (lowering already needs the owner)
         if (RANK[cls] < RANK[cur.classification]) {
           if (bodySha !== cur.bodySha) return fail("DECLASSIFY_AND_EDIT_SEPARATELY");      // the approval covers the body it was issued for
           if (!ownerAuth) return fail("OWNER_AUTH_REQUIRED");
