@@ -86,13 +86,33 @@ function* credentialAssignments(t) {
     else if (!assign && /^pass$/i.test(g.core) && !g.suf) skip = true;      // "Boarding pass: 2024-01-15" is prose; password/pwd/passphrase are not
     else if (!assign && /^pins?$/i.test(g.core) && !/^\d{4,8}$/.test(v.replace(/[.,;:?]+$/, ""))) skip = true;
     if (!skip && credLike(name, assign, v, t.slice(m.index + m[0].length, m.index + m[0].length + 40), q)) { yield { index: m.index, value: v }; continue; }
+    if (!skip && !q && (assign || g.colon)) {      // the value stops at the first quote/bracket: "password=ab'cd1234Zq" - judge the whole whitespace-delimited token as well
+      const at = m.index + m[0].length - v.length, ext = (t.slice(at, at + 300).match(/^\S+/) ?? [""])[0].replace(/[.,;:?]+$/, "");
+      if (ext.length > v.length && credLike(name, assign, ext, "", false)) { yield { index: m.index, value: ext }; continue; }
+    }
     re.lastIndex = m.index + 1;      // a rejected candidate must not swallow a real name inside it ("password|token: V")
   }
 }
+// Proximity rule (second net, independent of the separator grammar): a password-like NAME followed, on the same line and within a few words, by a token that is unmistakably a credential
+// (>= 8 characters, letters AND digits, or letters/digits with a symbol; not a date, version or URL). "password must be Xk9mQ2v8", "The password has been changed to Xk9mQ2v8", "password: now Xk9mQ2v8".
+const PROX_NAME = new RegExp("(?<![A-Za-z0-9])(?:pass(?:word|wd|phrase|wort|code)|pwd|psw|pw|psk|secret|credentials?|creds|api[ _-]?key|apikey|kennwort|jelsz[a-z]{0,6}|contrasena|" + FOREIGN + ")s?(?![A-Za-z0-9])", "giu");
+const proxCred = tok => tok.length >= 8 && tok.length <= 120 && !/\s/.test(tok) && !PLACEHOLDER.test(tok) && !/^\[redacted/i.test(tok) && !looksStructural(tok) && /\p{L}/u.test(tok) && (/\d/.test(tok) || STRONG_SYM.test(tok)) && (/[^\p{L}\d\-_.]/u.test(tok) || ((tok.match(/\d/g) ?? []).length >= 2 && /\p{Lu}/u.test(tok) && /\p{Ll}/u.test(tok))) && !/\p{L}{6,}/u.test(tok) && !/^[A-Za-z]:[\\/]|^[\\/~.]|[\\/]{1}\p{L}{3,}/u.test(tok) && !/^[A-Za-z]+-[A-Za-z-]+$/.test(tok);
+function* proximityAssignments(t) {
+  const re = PROX_NAME; re.lastIndex = 0; let m;
+  while ((m = re.exec(t)) !== null) {
+    const from = m.index + m[0].length, seg = t.slice(from, from + 200).split(/[\r\n\u2028\u2029]/, 1)[0]; let n = 0, ended = false;
+    for (const w of seg.matchAll(/\S+/g)) {
+      if (ended || ++n > 8) break; const raw = w[0], tok = raw.replace(/^[\s"'`(<\[{:=,;|]+/, "").replace(/[.,;:?!)\]}>"'`]+$/, ""), off = raw.indexOf(tok);
+      if (tok && proxCred(tok)) { yield { index: from + w.index + Math.max(0, off), value: tok }; break; }
+      if (/[.!?]$/.test(raw) && !/\d/.test(raw)) ended = true;      // a sentence ended: the next words are not about this name
+    }
+  }
+}
+function* allAssignments(t) { yield* credentialAssignments(t); yield* proximityAssignments(t); }
 /** NAME=value / "NAME": "value" where the value looks like a credential. Runs on normalised text like containsSecret. */
 const assignsSecret = raw => {
   if (String(raw ?? "").length > 400000) return true;
-  for (const x of views(raw)) for (const _ of credentialAssignments(x)) return true;
+  for (const x of views(raw)) for (const _ of allAssignments(x)) return true;
   return false;
 };
 /** The text with credential-looking assignment values replaced (after scrub). For places that redact instead of refusing. */
@@ -101,7 +121,7 @@ export const redactAssignments = (raw, marker = "[redacted]") => {
   for (let round = 0; round < 6; round++) {      // each view can reveal assignments the others do not (decoration, camelCase); repeat until nothing more is found
     let changed = false;
     for (const x of views(out)) {
-      const hits = [...credentialAssignments(x)]; if (!hits.length) continue; let r = "", pos = 0;
+      const hits = [...allAssignments(x)].sort((a, b) => a.index - b.index); if (!hits.length) continue; let r = "", pos = 0;
       for (const h of hits) { if (h.index < pos) continue; const at = x.indexOf(h.value, h.index); if (at < 0) continue; r += x.slice(pos, at) + marker; pos = at + h.value.length; }
       out = r + x.slice(pos); changed = true; break;
     }
