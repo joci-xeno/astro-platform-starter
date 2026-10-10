@@ -22,6 +22,13 @@ export const contrast = (fg, bg) => { const r = contrastRatio(fg, bg); return r 
 
 const NEUTRAL_AT = /^@(?:font-face|page|property|counter-style|keyframes|-webkit-keyframes|namespace|import|charset|view-transition)\b/i, GROUPING_AT = /^@(?:media|supports|layer|container|scope|document)\b/i;
 const DARK_ONLY = /^@media\s*\(\s*prefers-color-scheme\s*:\s*dark\s*\)\s*$/i, LAYER = /^@layer\b/i, ROOTS = /^(?:html|:root|html:root|:root:root)$/i;
+const ENT = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: "\u00a0", tab: "\t", newline: "\n" };
+/** Character references in attribute values and text (numeric and the common named ones): aria-hidden="&#116;rue" is "true" to a browser. */
+const decodeEnt = t => typeof t === "string" && t.includes("&") ? t.replace(/&(?:#[xX]([0-9a-fA-F]{1,6})|#(\d{1,7})|([A-Za-z][A-Za-z0-9]{1,8}));?/g, (m, h, d, n) => { if (h || d) { try { return String.fromCodePoint(h ? parseInt(h, 16) : Number(d)); } catch { return m; } } return ENT[n] ?? m; }) : t;
+/** Split declarations on ";" outside quotes and parentheses (content:"a;b" and url(data:...;base64,..) are one declaration). */
+function splitDecls(body) { const out = []; let q = null, par = 0, st = 0; for (let i = 0; i < body.length; i++) { const c = body[i]; if (c === "\\") { i++; continue; } if (q) { if (c === q) q = null; continue; } if (c === '"' || c === "'") q = c; else if (c === "(") par++; else if (c === ")") par = Math.max(0, par - 1); else if (c === ";" && !par) { out.push(body.slice(st, i)); st = i + 1; } } out.push(body.slice(st)); return out; }
+const AFFECT = new Set(["opacity", "filter", "backdrop-filter", "-webkit-text-fill-color", "background-image", "mix-blend-mode", "-webkit-background-clip", "background-clip"]);      // change the colour a user sees without being a colour: a rule that also declares colours is not evaluated
+const tabIdx = v => { const m = /^[\s]*([+-]?\d+)/.exec(v ?? ""); return m ? Number(m[1]) : NaN; };      // browsers read the leading integer ("1abc" is 1)
 /** Brace-aware CSS reader (linear). Returns the rules AND an account of what it could not understand: unsupported at-rules and nested rules make the audit incomplete instead of being skipped silently.
  *  Each rule carries its context: dark (prefers-color-scheme: dark or [data-theme=dark]) and cond (the text of any other @media/@supports/@container condition it sits in: those rules are evaluated as separate variants, never merged into the base). */
 function blocks(css) {
@@ -33,9 +40,13 @@ function blocks(css) {
       i++; }
     r += css.slice(last); css = r; }   // strip comments in linear time
   if (/@[A-Za-z0-9_-]*\\|@import\b/i.test(css)) out.unsupported.push("EXTERNAL_STYLESHEET_NOT_EVALUATED:@import");   // any @import (or a CSS-escaped @\69mport) anywhere, with or without a following rule, in a string or not: the imported sheet is never read
-  const close = (t, from) => { let d = 1, j = from; while (j < t.length) { const c = t[j]; if (c === '"' || c === "'") { const e = t.indexOf(c, j + 1); j = e < 0 ? t.length : e + 1; continue; } if (c === "{") d++; else if (c === "}") { d--; if (!d) return j; } j++; } return -1; };
+  const close = (t, from) => { let d = 1, j = from; while (j < t.length) { const c = t[j]; if (c === "\\") { j += 2; continue; } if (c === '"' || c === "'") { let e = j + 1; while (e < t.length && t[e] !== c) { if (t[e] === "\\") e++; e++; } j = e + 1; continue; } if (c === "{") d++; else if (c === "}") { d--; if (!d) return j; } j++; } return -1; };
   const THEME = /\[data-theme\s*=\s*["']?(dark|light)["']?\]/ig, NOT_THEME = /:not\(\s*\[data-theme\s*=\s*["']?(?:dark|light)["']?\]\s*\)/ig;
-  const decl = body => { const decls = new Map(); for (const d of body.split(";")) { const k = d.indexOf(":"); if (k > 0) { const name = d.slice(0, k).trim().toLowerCase(), val = d.slice(k + 1).trim(); if (name.includes("\\")) out.unsupported.push("ESCAPED_PROPERTY_NAME_NOT_EVALUATED"); decls.set(name, val); if (name === "background" || name === "background-color") decls.set("__bg", val); } } return decls; };   // __bg: whichever of the two was declared LAST wins, as in a browser
+  const decl = body => { const decls = new Map(), imp = new Set(); for (const d of splitDecls(body)) { const k = d.indexOf(":"); if (k > 0) { const name = d.slice(0, k).trim().toLowerCase(), val = d.slice(k + 1).trim(); if (name.includes("\\") && !out.unsupported.includes("ESCAPED_PROPERTY_NAME_NOT_EVALUATED")) out.unsupported.push("ESCAPED_PROPERTY_NAME_NOT_EVALUATED");
+      const key = name === "background" || name === "background-color" ? "__bg" : name, isImp = /!\s*important\s*$/i.test(val); if (imp.has(key) && !isImp) continue; if (isImp) imp.add(key);      // an earlier !important declaration beats a later normal one
+      decls.set(name, val); if (key === "__bg") decls.set("__bg", val); } }
+    if ([...decls.keys()].some(k => AFFECT.has(k)) && (decls.has("color") || decls.has("__bg")) && !out.unsupported.includes("COLOUR_AFFECTING_PROPERTY_NOT_EVALUATED")) out.unsupported.push("COLOUR_AFFECTING_PROPERTY_NOT_EVALUATED");
+    return decls; };   // __bg: whichever of the two was declared LAST wins, as in a browser
   const walk = (t, ctx, depth) => {
     let i = 0, semi = -2, open = -2;                                                               // the next ";" and "{" are searched again only after they have been passed (linear overall)
     while (i < t.length) {
@@ -48,11 +59,11 @@ function blocks(css) {
       if (prelude.startsWith("@")) {
         if (/^@(?:-webkit-)?keyframes\b/i.test(prelude)) { if (/(?:^|[;{\s])(?:color|background(?:-color)?)\s*:/i.test(body)) out.unsupported.push("KEYFRAME_COLOURS_NOT_EVALUATED"); }
         else if (NEUTRAL_AT.test(prelude)) { /* no text-colour rules of interest */ }
-        else if (GROUPING_AT.test(prelude) && depth < 8) walk(body, DARK_ONLY.test(prelude) ? { ...ctx, dark: true } : LAYER.test(prelude) ? ctx : { ...ctx, cond: (ctx.cond ? ctx.cond + " > " : "") + prelude.replace(/\s+/g, " ").slice(0, 80) }, depth + 1);
+        else if (GROUPING_AT.test(prelude) && depth < 8) walk(body, DARK_ONLY.test(prelude) ? { ...ctx, dark: true } : LAYER.test(prelude) ? (out.unsupported.includes("CASCADE_LAYERS_NOT_EVALUATED") || out.unsupported.push("CASCADE_LAYERS_NOT_EVALUATED"), ctx) : { ...ctx, cond: (ctx.cond ? ctx.cond + " > " : "") + prelude.replace(/\s+/g, " ").slice(0, 80) }, depth + 1);
         else out.unsupported.push("UNSUPPORTED_AT_RULE:" + prelude.slice(0, 30));
       } else {
         const nested = body.includes("{"); if (nested) out.unsupported.push("NESTED_CSS_RULES:" + prelude.slice(0, 30));
-        const own = nested ? body.slice(0, body.indexOf("{")).split(";").slice(0, -1).join(";") : body;      // declarations before the first nested rule
+        const own = nested ? splitDecls(body.slice(0, body.indexOf("{"))).slice(0, -1).join(";") : body;      // declarations before the first nested rule
         const decls = decl(own);
         for (const sel0 of prelude.split(",")) {
           const sel = sel0.trim(); if (!sel) continue; let isDark = ctx.dark; const th = [...sel.matchAll(THEME)].map(m => m[1].toLowerCase()); if (th.includes("dark")) isDark = true;
@@ -81,7 +92,8 @@ function tagEnd(h, from) {                                                      
     if (st === 2) { if (/\s/.test(c)) { st = 0; inName = false; } else if (c === ">") return j; continue; }
     if (c === ">") return j;
     if (st === 1) { if (/\s/.test(c)) continue; if (c === '"' || c === "'") { q = c; st = 3; } else st = 2; continue; }
-    if (/\s/.test(c) || c === "/") { inName = false; continue; }
+    if (/\s/.test(c)) continue;                                                                     // whitespace between a name and "=" keeps the name pending: title = ">" is still a quoted value
+    if (c === "/") { inName = false; continue; }
     if (c === "=" && inName) { st = 1; continue; }
     inName = true; }
   return h.indexOf(">", from);                                                                     // an unterminated quote: fall back to the plain scan
@@ -93,16 +105,22 @@ function htmlTags(html) {
     const a = html.indexOf("<", i); if (a < 0) break;
     if (html.startsWith("<!--", a)) { if (p1 !== -1 && p1 < a + 2) p1 = html.indexOf("-->", a + 2); if (p2 !== -1 && p2 < a + 2) p2 = html.indexOf("--!>", a + 2);   /* each terminator is searched again only after it has been passed: linear overall */
       const z1 = p1, z2 = p2, z = z1 < 0 ? z2 : z2 < 0 ? z1 : Math.min(z1, z2); if (z < 0) break; i = z + (z === z2 ? 4 : 3); continue; }       // "<!-->" is a complete (empty) comment, as in browsers
-    const z = /^<\/?[A-Za-z]/.test(html.slice(a, a + 3)) ? tagEnd(html, a + 1) : html.indexOf(">", a + 1); if (z < 0) break; const m = /^<(\/?)([A-Za-z][^\s\/>]*)/.exec(html.slice(a, a + 60)); i = z + 1; if (!m) continue;
-    const nextLt = html.indexOf("<", z + 1), name = m[2].toLowerCase(), attrs = html.slice(a + m[0].length, z), map = new Map();
-    for (const am of attrs.matchAll(ATTR)) { const k = am[1].toLowerCase(); if (!map.has(k)) map.set(k, am[2] ?? am[3] ?? am[4] ?? ""); }
+    const head3 = html.slice(a, a + 3), isTag = /^<\/?[A-Za-z]/.test(head3);
+    if (!isTag && !/^<[!?]/.test(head3) && !/^<\/[^A-Za-z>]/.test(head3)) { i = a + 1; continue; }              // a stray "<" (as in "1 < 2") is text: it must not swallow the next real tag
+    const z = isTag ? tagEnd(html, a + 1) : html.indexOf(">", a + 1); if (z < 0) break; const m = /^<(\/?)([A-Za-z][^\s\/>]*)/.exec(html.slice(a, a + 60)); i = z + 1; if (!m) continue;
+    const nextLt = html.indexOf("<", z + 1), name0 = m[2].toLowerCase(), name = name0 === "image" && foreign === 0 ? "img" : name0, attrs = html.slice(a + m[0].length, z), map = new Map();
+    for (const am of attrs.matchAll(ATTR)) { const k = am[1].toLowerCase(); if (!map.has(k)) map.set(k, decodeEnt(am[2] ?? am[3] ?? am[4] ?? "")); }
     out.push({ name, closing: m[1] === "/", attrs, map, text: m[1] ? "" : html.slice(z + 1, nextLt < 0 ? Math.min(html.length, z + 301) : Math.min(nextLt, z + 301)) });
     if (foreign > 0 && !m[1] && /^(?:title|textarea|foreignobject|desc|script|style|xmp|iframe|noembed|noframes)$/.test(name)) out.ambiguous = true;      // HTML integration points inside svg/math: browsers switch parsing rules here and this tokenizer does not follow them reliably
     if (name === "svg" || name === "math") { if (m[1]) foreign = Math.max(0, foreign - 1); else { const ams = [...attrs.matchAll(ATTR)], lastM = ams[ams.length - 1], selfClosed = /\/\s*$/.test(attrs) && !(lastM && lastM[4] !== undefined && /\/\s*$/.test(attrs) && lastM[4].endsWith("/")); if (!selfClosed) foreign++; } }
+    if (!m[1] && foreign === 0 && name === "template") { (out.notes ??= []).includes("TEMPLATE_CONTENT_NOT_EVALUATED") || out.notes.push("TEMPLATE_CONTENT_NOT_EVALUATED"); const re = /<(\/?)template\b/ig; re.lastIndex = i; let depth = 1, mm; while (depth > 0 && (mm = re.exec(html))) depth += mm[1] ? -1 : 1; i = mm ? mm.index + 1 : html.length; if (mm) i = tagEnd(html, mm.index + 1) + 1 || html.length; }      // inert content: elements inside a <template> are not part of the page
+    if (!m[1] && foreign === 0 && name === "noscript") (out.notes ??= []).includes("NOSCRIPT_CONTENT_AMBIGUOUS") || out.notes.push("NOSCRIPT_CONTENT_AMBIGUOUS");
     if (!m[1] && name === "plaintext") { out.ambiguous = true; i = html.length; }
     if (!m[1] && /^(?:script|style|textarea|title|xmp|iframe|noembed|noframes)$/.test(name) && foreign === 0) {       // raw text: skip to the matching close tag
       const re = new RegExp("</" + name + "\\b", "ig"); re.lastIndex = i; const e = re.exec(html);
-      if (name === "style") out.styles.push(html.slice(i, e ? e.index : html.length).slice(0, LIMITS.maxInputChars));
+      if (name === "style") { const sm = out[out.length - 1].map, med = (sm.get("media") ?? "").trim().toLowerCase(), ty = (sm.get("type") ?? "").trim().toLowerCase();
+        if (sm.has("disabled") || (med && med !== "all" && med !== "screen") || (ty && ty !== "text/css")) ((out.notes ??= []).includes("CONDITIONAL_STYLE_NOT_EVALUATED") || out.notes.push("CONDITIONAL_STYLE_NOT_EVALUATED"));      // media=print, disabled or a non-CSS type: not part of the screen cascade, and not merged into it
+        else out.styles.push(html.slice(i, e ? e.index : html.length).slice(0, LIMITS.maxInputChars)); }
       if (name === "title") { out[out.length - 1].text = html.slice(i, e ? e.index : html.length).slice(0, 300); }
       i = e ? e.index : html.length;
     }
@@ -146,8 +164,8 @@ export function auditAccessibility({ html = "", css = "", js = "", cssSources = 
     }
   }
   // inline style="" attributes: evaluated when they declare both colours, otherwise reported as not evaluated
-  for (const t of tg) { const st = t.closing ? undefined : t.map.get("style"); if (st !== undefined && st.includes("\\")) { skipped.push("inline style on <" + t.name + "> (escaped CSS not evaluated)"); continue; } if (st === undefined || !/(?:^|[;\s])(?:color|background(?:-color)?)\s*:/i.test(st)) continue; const d = new Map(); for (const x of st.split(";")) { const k = x.indexOf(":"); if (k > 0) { const nm = x.slice(0, k).trim().toLowerCase(), v = x.slice(k + 1).trim(); d.set(nm, v); if (nm === "background" || nm === "background-color") d.set("__bg", v); } }
-    const fg = d.get("color"), bg = d.get("__bg"); if (fg && bg && parseHex(fg) && parseHex(bg)) pairs.push({ theme: "light", sel: "inline style on <" + t.name + ">", fg, bg, large: false }); else skipped.push("inline style on <" + t.name + "> (colours not fully declared)"); }
+  for (const t of tg) { const st = t.closing ? undefined : t.map.get("style"); if (st !== undefined && st.includes("\\")) { skipped.push("inline style on <" + t.name + "> (escaped CSS not evaluated)"); continue; } if (st === undefined || !/(?:^|[;\s])(?:color|background(?:-color)?)\s*:/i.test(st)) continue; const d = new Map(); for (const x of splitDecls(st)) { const k = x.indexOf(":"); if (k > 0) { const nm = x.slice(0, k).trim().toLowerCase(), v = x.slice(k + 1).trim(); d.set(nm, v); if (nm === "background" || nm === "background-color") d.set("__bg", v); } }
+    const fg = d.get("color"), bg = d.get("__bg"); if ([...d.keys()].some(k => AFFECT.has(k))) skipped.push("inline style on <" + t.name + "> (opacity/filter/background-image not evaluated)"); else if (fg && bg && parseHex(fg) && parseHex(bg)) pairs.push({ theme: "light", sel: "inline style on <" + t.name + ">", fg, bg, large: false }); else skipped.push("inline style on <" + t.name + "> (colours not fully declared)"); }
   const seen = new Set(); let checked = 0, unresolved = 0; const unresolvedList = [];
   for (const p of pairs) {
     const key = [p.theme, p.sel, p.fg, p.bg, p.large].join("|"); if (seen.has(key)) continue; seen.add(key); const raw = contrastRatio(p.fg, p.bg);
@@ -159,32 +177,35 @@ export function auditAccessibility({ html = "", css = "", js = "", cssSources = 
   const htmlOk = html.trim() !== "";   // an empty page is "nothing supplied" (reported as INCOMPLETE), not a list of invented failures
   if (htmlOk) {
   const root = by("html")[0], lang = root ? attr(root, "lang") : undefined; if (!lang || !/^[a-zA-Z]{2,3}(?:-[A-Za-z0-9]+)*$/.test(lang)) add("FAIL", "HTML_LANG", "The <html> element has no valid lang attribute.");
-  if (!by("title").some(t => t.text.trim())) add("FAIL", "TITLE", "The page has no non-empty <title>.");
-  const vp = by("meta").find(t => attr(t, "name")?.toLowerCase() === "viewport"); if (!vp) add("WARN", "VIEWPORT", "No viewport meta tag."); else { const content = attr(vp, "content") ?? "", ms = /maximum-scale\s*=\s*([0-9.]+)/i.exec(content); if (/user-scalable\s*=\s*(no|0)/i.test(content) || (ms && Number(ms[1]) < 2)) add("FAIL", "ZOOM_BLOCKED", "The viewport meta tag stops users from zooming to 200%."); }
-  if (!by("main").length) add("FAIL", "LANDMARK_MAIN", "No <main> landmark."); if (by("nav").some(t => attr(t, "aria-label") === undefined && attr(t, "aria-labelledby") === undefined)) add("WARN", "NAV_LABEL", "A <nav> has no aria-label.");
+  if (!by("title").some(t => decodeEnt(t.text).replace(/[\s\u00a0]+/g, ""))) add("FAIL", "TITLE", "The page has no non-empty <title>.");
+  const vps = by("meta").filter(t => attr(t, "name")?.trim().toLowerCase() === "viewport"); if (!vps.length) add("WARN", "VIEWPORT", "No viewport meta tag."); else if (vps.some(vp => { const content = attr(vp, "content") ?? "", ms = /maximum-scale\s*=\s*([0-9.]+)/i.exec(content); return /user-scalable\s*=\s*(no|0)/i.test(content) || (ms && Number(ms[1]) < 2); })) add("FAIL", "ZOOM_BLOCKED", "The viewport meta tag stops users from zooming to 200%.");      // every viewport meta is read: a later one can override the first
+  if (!by("main").length) add("FAIL", "LANDMARK_MAIN", "No <main> landmark."); if (by("nav").some(t => !attr(t, "aria-label")?.trim() && !attr(t, "aria-labelledby")?.trim())) add("WARN", "NAV_LABEL", "A <nav> has no aria-label.");
   for (const t of by("img")) if (attr(t, "alt") === undefined) add("FAIL", "IMG_ALT", "An <img> has no alt attribute.");
   { // form controls, buttons, ids, hidden-but-focusable (markup only; a control inside a <label> counts as labelled)
-    const labelFor = new Set(by("label").map(t => attr(t, "for")).filter(x => x !== undefined)); let inLabel = 0, unlabeled = 0, emptyButtons = 0; const ids = new Map(), dup = new Set();
+    const labelFor = new Set(by("label").map(t => attr(t, "for")).filter(x => x !== undefined)); let labelEnd = -1, unlabeled = 0, emptyButtons = 0; const ids = new Map(), dup = new Set();
     const VOID = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"]), hid = [];
     for (let k = 0; k < tg.length; k++) { const t = tg[k];
       const hiddenSelf = !t.closing && String(attr(t, "aria-hidden") ?? "").trim().toLowerCase() === "true";
       if (hid.length && !hiddenSelf && t.name === hid.at(-1).name && !VOID.has(t.name)) { if (t.closing) { if (hid.at(-1).d === 0) hid.pop(); else hid.at(-1).d--; } else hid.at(-1).d++; }
-      if (t.name === "label") { inLabel += t.closing ? -1 : 1; if (inLabel < 0) inLabel = 0; continue; }
-      if (t.closing) continue; const id = attr(t, "id"); if (id !== undefined && id !== "") { if (ids.has(id)) dup.add(id); ids.set(id, 1); }
-      if (["input", "textarea", "select"].includes(t.name)) { const type = (attr(t, "type") ?? "text").toLowerCase(); if (["hidden", "submit", "button", "reset", "image"].includes(type)) continue;
-        if (!inLabel && !attr(t, "aria-label")?.trim() && attr(t, "aria-labelledby") === undefined && !(id && labelFor.has(id))) unlabeled++; }
-      if (t.name === "button" && !attr(t, "aria-label")?.trim() && attr(t, "aria-labelledby") === undefined && !attr(t, "title")?.trim()) { let nextClose = -1; for (let j2 = k + 1; j2 < tg.length && j2 < k + 60; j2++) if (tg[j2].name === "button" && tg[j2].closing) { nextClose = j2; break; } const inner = tg.slice(k + 1, nextClose < 0 ? k + 1 : nextClose); if (!t.text.trim() && !inner.some(x => (x.name === "img" && attr(x, "alt")?.trim()) || attr(x, "aria-label")?.trim())) emptyButtons++; }
+      { const id0 = t.closing ? undefined : attr(t, "id"); if (id0 !== undefined && id0 !== "") { if (ids.has(id0)) dup.add(id0); ids.set(id0, 1); } }
+      if (t.name === "label") { if (!t.closing) { labelEnd = -1; for (let j2 = k + 1; j2 < tg.length && j2 < k + 200; j2++) if (tg[j2].name === "label") { if (tg[j2].closing) labelEnd = j2; break; } } continue; }      // a <label> only wraps what is before ITS </label>: an unclosed one labels nothing
+      if (t.closing) continue; const id = attr(t, "id");
+      if (["input", "textarea", "select"].includes(t.name)) { const type = (attr(t, "type") ?? "text").toLowerCase(); if (type === "image") { if (!attr(t, "alt")?.trim() && !attr(t, "aria-label")?.trim() && !attr(t, "aria-labelledby")?.trim() && !attr(t, "title")?.trim()) unlabeled++; continue; } if (["hidden", "submit", "button", "reset"].includes(type)) continue;
+        if (!(k < labelEnd) && !attr(t, "aria-label")?.trim() && !attr(t, "aria-labelledby")?.trim() && !(id && labelFor.has(id))) unlabeled++; }
+      if (t.name === "button" && !attr(t, "aria-label")?.trim() && !attr(t, "aria-labelledby")?.trim() && !attr(t, "title")?.trim()) { let nextClose = -1; for (let j2 = k + 1; j2 < tg.length && j2 < k + 60; j2++) if (tg[j2].name === "button" && tg[j2].closing) { nextClose = j2; break; } const inner = tg.slice(k + 1, nextClose < 0 ? k + 1 : nextClose); if (!t.text.trim() && !inner.some(x => (x.name === "img" && attr(x, "alt")?.trim()) || attr(x, "aria-label")?.trim())) emptyButtons++; }
       if (hiddenSelf && !VOID.has(t.name)) hid.push({ name: t.name, d: 0 });
-      if ((hiddenSelf || hid.length) && (["a", "button", "input", "select", "textarea"].includes(t.name) || (attr(t, "tabindex") !== undefined && Number(attr(t, "tabindex")) >= 0))) add("FAIL", "ARIA_HIDDEN_FOCUSABLE", "A focusable <" + t.name + "> is hidden from assistive technology with aria-hidden=\"true\".");
+      if ((hiddenSelf || hid.length) && (["a", "button", "input", "select", "textarea", "summary", "iframe", "audio", "video"].includes(t.name) || (attr(t, "tabindex") !== undefined && tabIdx(attr(t, "tabindex")) >= 0) || (attr(t, "contenteditable") !== undefined && attr(t, "contenteditable").trim().toLowerCase() !== "false"))) add("FAIL", "ARIA_HIDDEN_FOCUSABLE", "A focusable <" + t.name + "> is hidden from assistive technology with aria-hidden=\"true\".");
     }
     if (unlabeled) add("FAIL", "INPUT_LABEL", unlabeled + " form control(s) in the markup have no label, aria-label or aria-labelledby.", { count: unlabeled });
     if (emptyButtons) add("FAIL", "BUTTON_NAME", emptyButtons + " <button> element(s) in the markup have no accessible name.", { count: emptyButtons });
     if (dup.size) add("FAIL", "DUPLICATE_ID", "Duplicate id value(s): " + [...dup].slice(0, 5).join(", ") + ".", { count: dup.size });
   }
-  for (const t of tg) { const ti = attr(t, "tabindex"); if (ti !== undefined && Number(ti) > 0) add("WARN", "TABINDEX_POSITIVE", "A positive tabindex changes the natural focus order."); }
+  for (const t of tg) { const ti = attr(t, "tabindex"); if (ti !== undefined && tabIdx(ti) > 0) add("WARN", "TABINDEX_POSITIVE", "A positive tabindex changes the natural focus order."); }
   }
   // ---- focus visibility: outline removed on interactive selectors without a replacement
-  for (const b of bl) { const o = (b.decls.get("outline") ?? "").toLowerCase(), os = (b.decls.get("outline-style") ?? "").toLowerCase(); if ((o === "none" || o === "0" || os === "none") && (/\b(button|a|input|textarea|select|summary)\b|\[tabindex\]/.test(b.sel) || /:focus(?!-visible)/.test(b.sel)) && !b.decls.has("box-shadow") && !/:not\(\s*:focus-visible\s*\)/.test(b.sel)) add("FAIL", "FOCUS_REMOVED", `${b.sel} removes the focus outline without a replacement.`, { selector: b.sel }); }
+  for (const b of bl) { const strip = v => String(v ?? "").toLowerCase().replace(/!\s*important\s*$/, "").trim(), o = strip(b.decls.get("outline")), os = strip(b.decls.get("outline-style")), ow = strip(b.decls.get("outline-width")), oc = strip(b.decls.get("outline-color")), sh = strip(b.decls.get("box-shadow"));
+    const removed = /^(?:none|0|0(?:px|em|rem)?|transparent|hidden)(?:\s|$)/.test(o) || /^(?:none|hidden)$/.test(os) || /^0(?:px|em|rem)?$/.test(ow) || oc === "transparent", replaced = sh !== "" && sh !== "none" && !/^0(?:px)?$/.test(sh);
+    if (removed && (/\b(button|a|input|textarea|select|summary)\b|\[tabindex\]|\*/.test(b.sel) || /:focus/.test(b.sel)) && !replaced && !/:not\(\s*:focus-visible\s*\)/.test(b.sel)) add("FAIL", "FOCUS_REMOVED", `${b.sel} removes the focus outline without a replacement.`, { selector: b.sel }); }
   // ---- script-built controls (advisory): placeholder-only inputs and unlabeled controls
   const inputs = callArgs(js, /h\(\s*["'`](?:input|textarea|select)["'`]\s*,\s*\{/g); let placeholderOnly = 0, labelled = 0;
   const namesFromPlaceholder = /setAttribute\(\s*["']aria-label["']\s*,\s*String\(\s*attrs\.placeholder\s*\)/.test(js);                        // the element helper copies the placeholder into aria-label
@@ -193,7 +214,7 @@ export function auditAccessibility({ html = "", css = "", js = "", cssSources = 
   if (!/h\(\s*["'`]label["'`]/.test(js) && inputs.length && !namesFromPlaceholder) add("WARN", "NO_LABEL_ELEMENTS", "The script never builds <label> elements for its form controls.");
   for (const m of callArgs(js, /h\(\s*["'`]button["'`]\s*,\s*\{/g)) if (/^\s*,\s*(?:""|''|``)\s*\)/.test(js.slice(m.end + 1, m.end + 40))) add("FAIL", "BUTTON_NAME", "A script-built button has an empty name.");
   const sev = total;   // true totals, not only the findings that fit in the list
-  const incomplete = []; if (truncated) incomplete.push("FINDINGS_TRUNCATED"); if (unresolved) incomplete.push("CONTRAST_PAIRS_UNRESOLVED:" + unresolved); if (!checked) incomplete.push("NO_CONTRAST_PAIRS_CHECKED"); for (const u of bl.unsupported.slice(0, 10)) incomplete.push(u); if (tg.some(t => t.name === "link" && !t.closing && (/(^|\s)stylesheet(\s|$)/i.test(attr(t, "rel") ?? "") || /&/.test(attr(t, "rel") ?? "")) && !covered.has(attr(t, "href") ?? ""))) incomplete.push("EXTERNAL_STYLESHEET_NOT_EVALUATED:<link>"); if (tg.ambiguous) incomplete.push("HTML_PARSING_AMBIGUOUS:svg_math_integration_point_or_plaintext"); if (tg.truncated) incomplete.push("TAG_LIMIT_REACHED:markup_after_the_limit_not_read"); if (skipped.length) incomplete.push("COLOUR_RULES_NOT_EVALUATED:" + skipped.length); if (!html.trim()) incomplete.push("NO_HTML_SUPPLIED"); if (!css.trim()) incomplete.push("NO_CSS_SUPPLIED");
+  const incomplete = []; if (truncated) incomplete.push("FINDINGS_TRUNCATED"); if (unresolved) incomplete.push("CONTRAST_PAIRS_UNRESOLVED:" + unresolved); if (!checked) incomplete.push("NO_CONTRAST_PAIRS_CHECKED"); for (const u of bl.unsupported.slice(0, 10)) incomplete.push(u); if (tg.some(t => t.name === "link" && !t.closing && (/(^|\s)stylesheet(\s|$)/i.test(attr(t, "rel") ?? "") || /&/.test(attr(t, "rel") ?? "")) && !covered.has(attr(t, "href") ?? ""))) incomplete.push("EXTERNAL_STYLESHEET_NOT_EVALUATED:<link>"); if (tg.ambiguous) incomplete.push("HTML_PARSING_AMBIGUOUS:svg_math_integration_point_or_plaintext"); for (const n of tg.notes ?? []) incomplete.push(n); if (tg.truncated) incomplete.push("TAG_LIMIT_REACHED:markup_after_the_limit_not_read"); if (skipped.length) incomplete.push("COLOUR_RULES_NOT_EVALUATED:" + skipped.length); if (!html.trim()) incomplete.push("NO_HTML_SUPPLIED"); if (!css.trim()) incomplete.push("NO_CSS_SUPPLIED");
   const enriched = findings.map(f => ({ ...f, location: f.selector ? "css: " + f.selector : "rule " + f.rule, remediation: REMEDIATION[f.rule] ?? "Review this item manually." }));
   // A clean-looking result is only ever reported for a COMPLETE audit; otherwise it is INCOMPLETE_AUDIT (failures that were found are still reported as FAIL_FOUND).
   return { ok: true, verdict: sev.FAIL ? "FAIL_FOUND" : incomplete.length ? "INCOMPLETE_AUDIT" : sev.WARN ? "WARNINGS_ONLY" : "NO_FAILS_BY_THESE_CHECKS", complete: incomplete.length === 0, incomplete, counts: sev, findings: enriched, truncated, contrast: { pairsChecked: checked, unresolved, unresolvedPairs: unresolvedList, notEvaluated: skipped.slice(0, 20) },

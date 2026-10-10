@@ -17,6 +17,7 @@ import { createStore } from "./business/store.mjs";
 import { terms } from "./knowledge-projects.mjs";
 import crypto from "node:crypto";
 import fs from "node:fs";
+import { lockMethods } from "./file-lock.mjs";
 
 export const FINDING_KINDS = Object.freeze(["CLAIM", "ASSUMPTION"]);
 export const RELATIONS = Object.freeze(["SUPPORTS", "REFUTES"]);
@@ -38,6 +39,7 @@ import { scrub, containsSecret } from "./secret-patterns.mjs";
 const looksSecret = v => { const t = String(v ?? ""); return containsSecret(t) || scrub(t, "[r]") !== t; };
 const sha = s => crypto.createHash("sha256").update(s).digest("hex");
 const canon = v => Array.isArray(v) ? "[" + v.map(canon).join(",") + "]" : v && typeof v === "object" ? "{" + Object.keys(v).filter(k => v[k] !== undefined && typeof v[k] !== "function").sort().map(k => JSON.stringify(k) + ":" + canon(v[k])).join(",") + "}" : JSON.stringify(v) ?? "null";
+const sv = v => v == null ? null : (typeof v === "string" || (typeof v === "number" && Number.isFinite(v))) ? v : String(v).slice(0, 2000);      // optional citation fields are stored as plain strings/numbers: nothing the JSON file cannot give back unchanged
 const norm = s => String(s ?? "").toLowerCase().replace(/\s+/g, " ").trim();
 
 export function createResearchLedger({ file = null, knowledge, security = null, blackBox = null, now = () => new Date().toISOString(), freshnessDays = LIMITS.freshnessDays } = {}) {
@@ -53,11 +55,11 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   const headFile = file ? file + ".head" : null, baseSave = store.save;
   const readHead = () => { if (!headFile || !fs.existsSync(headFile)) return null; try { const h = JSON.parse(fs.readFileSync(headFile, "utf8")); return Number.isInteger(h?.n) && typeof h?.hash === "string" ? h : { n: -1, hash: "" }; } catch { return { n: -1, hash: "" }; } };
   store.save = () => { baseSave(); if (headFile && S.events.length) { try { fs.writeFileSync(headFile, JSON.stringify({ n: S.events.length, hash: S.events.at(-1).hash }), { mode: 0o600 }); } catch { /* the store itself is saved */ } } };
-  if (headFile && S.events.length && !fs.existsSync(headFile)) store.save();            // a store written before anchors existed adopts one when opened
+  // a store with events but no head anchor is NOT adopted when opened (a deleted anchor must not launder a forged or rolled-back store): reanchor() is the explicit, logged, owner-only recovery
   const anchorOk = () => { if (!headFile) return true; if (!S.events.length) { const h0 = readHead(); return !(h0 && h0.n > 0); } const h = readHead(); return Boolean(h) && h.n === S.events.length && S.events.at(-1).hash === h.hash; };
   /** Whole-store seal: every event records a hash of questions + findings + contradictions as they were after that change. A store edited outside the ledger no longer matches the newest event. */
-  let stMemo = null; const stNow = () => (stMemo ??= sha(canon([S.questions, S.findings, S.contradictions])));
-  const stateOk = () => { const last = S.events.at(-1); return !last || typeof last.st !== "string" || last.st === stNow(); };
+  let stMemo = null; const stNow = () => (stMemo ??= sha(canon(JSON.parse(JSON.stringify([S.questions, S.findings, S.contradictions])))));      // hash what a reload will read back (JSON semantics: undefined keys vanish, Dates become strings)
+  const stateOk = () => { const last = S.events.at(-1); if (!last) return [S.questions, S.findings, S.contradictions].every(o => Object.keys(o ?? {}).length === 0); return typeof last.st !== "string" || last.st === stNow(); };
   function event(type, by, d) {
     if (!anchorOk() || loadTamper) throw new Error("CHAIN_BROKEN");
     stMemo = null;
@@ -85,7 +87,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
     factMemo = { key, v }; return v; };
   const confirmedSet = () => { const key = S.events.length + ":" + (S.events.at(-1)?.hash ?? "") + ":" + anchorOk() + stateOk(); if (confMemo.key === key) return confMemo.set; const ok = verifyChain().ok && stateOk(); confMemo = { key, set: new Set(ok ? S.events.filter(e => e.type === "EVIDENCE_CONFIRMED" && e.by === "OWNER" && typeof e.bind === "string").map(e => e.findingId + "|" + e.evidence + "|" + e.bind) : []) }; return confMemo.set; };
   const who = w => ({ tenantId: w?.tenantId, role: w?.role ?? "OWNER", forAgent: Boolean(w?.forAgent) });
-  const byOf = (w, by) => (who(w).forAgent ? "AGENT" : (typeof by === "string" && by ? by : "OWNER"));   // an agent can never name itself OWNER (or anyone else)
+  const byOf = (w, by) => (who(w).forAgent ? "AGENT" : (typeof by === "string" && by ? by.slice(0, 80) : "OWNER"));   // an agent can never name itself OWNER (or anyone else)
   function access(projectId, w) {                                   // the caller must be allowed to use the project (tenant + role), else it does not exist for them
     if (!w?.tenantId) throw new Error("TENANT_REQUIRED");
     if (!knowledge.list({ tenantId: w.tenantId, role: who(w).role }).some(p => p.id === projectId)) throw new Error("PROJECT_NOT_PERMITTED");
@@ -130,13 +132,13 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
     if (cov < LIMITS.minCoverage) throw new Error("EVIDENCE_DOES_NOT_COVER_CLAIM");
     if (relation === "SUPPORTS") { const bad = supportMismatch(f.claim, citation.quote); if (bad) throw new Error(bad); }
     const meta = knowledge.summary(q.projectId, w).members.find(m => m.id === citation.memberId);
-    const e = { id: id("re"), relation, citation: { projectId: citation.projectId, memberId: citation.memberId, kind: citation.kind ?? null, title: citation.title ?? null, version: citation.version ?? null, sha256: citation.sha256, url: citation.url ?? null, start: citation.start, end: citation.end, quote: citation.quote },
+    const e = { id: id("re"), relation, citation: { projectId: citation.projectId, memberId: citation.memberId, kind: sv(citation.kind), title: sv(citation.title), version: sv(citation.version), sha256: citation.sha256, url: sv(citation.url), start: citation.start, end: citation.end, quote: citation.quote },
       retrievedAt: meta?.retrievedAt ?? null, coverage: Number(cov.toFixed(2)), addedBy: b, addedAt: now() };
     f.evidence.push(e); event("EVIDENCE_ATTACHED", b, { findingId: f.id, evidence: e.id, relation, member: citation.memberId }); store.save(); return { id: e.id, relation, coverage: e.coverage };
   }
   /** Only the OWNER turns a quotation match into VERIFIED (or a refutation claim into REFUTED): the ledger itself cannot judge meaning. The citation must still verify now. */
   function confirmEvidence(fid, eid, { note } = {}, w) {
-    reload(); if (who(w).forAgent || who(w).role !== "OWNER") throw new Error("OWNER_ONLY");
+    reload(); if (who(w).forAgent || w?.role !== "OWNER") throw new Error("OWNER_ONLY");
     const f = finding(fid, w), e = f.evidence.find(x => x.id === eid); if (!e) throw new Error("UNKNOWN_EVIDENCE"); if (confirmedSet().has(f.id + "|" + e.id + "|" + bindOf(f, e))) throw new Error("ALREADY_CONFIRMED");
     const v = knowledge.verifyCitation(e.citation, w); if (v.status !== "OK") throw new Error("CITATION_" + v.status);
     const age = ageDays(e.retrievedAt); if (age != null && (age > freshnessDays || age < -1)) throw new Error("EVIDENCE_AGED_OR_DATED_IN_FUTURE");
@@ -154,7 +156,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   }
   /** Only the OWNER resolves a contradiction (agents and models cannot make a conflict disappear). winner = one of the two findings, or null if they do not truly conflict. */
   function resolveContradiction(kid, { winner = null, note } = {}, w) {
-    reload(); if (who(w).forAgent || who(w).role !== "OWNER") throw new Error("OWNER_ONLY");
+    reload(); if (who(w).forAgent || w?.role !== "OWNER") throw new Error("OWNER_ONLY");
     const k = S.contradictions[kid]; if (!k || k.tenantId !== w.tenantId) throw new Error("UNKNOWN_CONTRADICTION"); question(k.questionId, w); if (k.state !== "OPEN") throw new Error("ALREADY_RESOLVED");
     if (winner != null && ![k.a, k.b].includes(winner)) throw new Error("WINNER_NOT_IN_CONTRADICTION"); const n = vet(note, LIMITS.noteChars, "NOTE", "OWNER");
     k.state = "RESOLVED"; k.resolution = { winner, note: n.text, by: "OWNER", at: now() }; event("CONTRADICTION_RESOLVED", "OWNER", { id: k.id, winner }); store.save(); return structuredClone(k);
@@ -210,5 +212,12 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   function list(w, { projectId = null } = {}) { reload(); return Object.values(S.questions).filter(q => q.tenantId === w?.tenantId && (!projectId || q.projectId === projectId)).filter(q => { try { access(q.projectId, w); return true; } catch { return false; } }).map(q => ({ id: q.id, text: q.text, projectId: q.projectId, createdBy: q.createdBy, createdAt: q.createdAt })); }
   function summary(w) { const l = list(w), u = unresolved(w); return { questions: l.length, unresolved: u.length, answered: l.length - u.length, events: S.events.length, chain: verifyChain(), method: "EXTRACTIVE_CITATIONS_OVER_KEYWORD_RETRIEVAL" }; }
   const events = (w, { limit = 100 } = {}) => { reload(); if (who(w).forAgent) throw new Error("OWNER_ONLY"); return S.events.slice(-Math.min(limit, 500)).map(e => structuredClone(e)); };
-  return { openQuestion, addSource, addFinding, attachEvidence, declareContradiction, resolveContradiction, confirmEvidence, report, unresolved, list, summary, events, verifyChain: () => (reload(), verifyChain()) };
+  /** Owner-only, explicit recovery for a store whose head anchor is missing or stale (crash between the two writes, or deleted anchor). It re-anchors ONLY when every event still links and hashes correctly and the seal matches; the action is recorded. */
+  function reanchor(w) {
+    reload(); if (who(w).forAgent || w?.role !== "OWNER") throw new Error("OWNER_ONLY"); if (!headFile) return { ok: true, events: S.events.length };
+    let prev = "GENESIS"; for (const e of S.events) { const { hash, ...rest } = e; if (e.prev !== prev || sha(prev + JSON.stringify({ ...rest, hash: undefined })) !== hash) return { ok: false, reason: "CHAIN_BROKEN", brokenAt: e.n }; prev = hash; }
+    if (!stateOk()) return { ok: false, reason: "STORE_ALTERED_OUTSIDE_LEDGER" };
+    const before = readHead(); store.save(); loadTamper = false; log("RESEARCH_REANCHORED", { by: "OWNER", events: S.events.length, previousHead: before ? before.n : null }); return { ok: true, events: S.events.length, previousHead: before ? before.n : null };
+  }
+  return lockMethods({ openQuestion, addSource, addFinding, attachEvidence, declareContradiction, resolveContradiction, confirmEvidence, report, unresolved, list, summary, events, reanchor, verifyChain: () => (reload(), verifyChain()) }, file, ["openQuestion", "addSource", "addFinding", "attachEvidence", "declareContradiction", "resolveContradiction", "confirmEvidence", "reanchor"]);
 }

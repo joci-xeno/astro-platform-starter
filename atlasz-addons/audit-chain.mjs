@@ -4,6 +4,7 @@
 // It is not WORM storage; an attacker with file access can delete the whole file (callers must treat a missing
 // chain after a known start as suspicious).
 import fs from "node:fs";
+import { withFileLock } from "./file-lock.mjs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 
@@ -56,7 +57,8 @@ export function createAuditChain({ filePath = null, now = () => new Date().toISO
     if (!whole) { fs.truncateSync(filePath, Buffer.byteLength(body.slice(0, nl + 1))); return; }       // the reader already ignores an unparseable LAST line; it is cut off so the next entry cannot bury it mid-file
     if (!raw.endsWith("\n")) fs.appendFileSync(filePath, "\n");
   }
-  function append(event, data = {}) {
+  function append(event, data = {}) { return filePath ? withFileLock(filePath, () => append0(event, data)) : append0(event, data); }      // one writer at a time across processes: the sequence is never forked
+  function append0(event, data = {}) {
     if (!event) throw new Error("AUDIT_EVENT_REQUIRED");
     if (filePath) { reload(); healTail(); }                                  // another manager in this process (or the owner CLI) may have appended since we last looked: continue the real tail, never fork the chain
     const prev = entries.length ? entries[entries.length - 1].hash : GENESIS;

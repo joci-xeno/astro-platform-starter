@@ -1,6 +1,6 @@
 # ATLASZ V7.3 — Unified Master Gap Register
 
-Total gaps: **814** (registry 738, 85-capability 67, scans 9).
+Total gaps: **815** (registry 738, 85-capability 67, scans 10).
 
 LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence exists in this workspace.
 
@@ -10,7 +10,7 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - EXTERNAL: 58
 - STRUCTURE_ONLY: 56
 - MODULE_NOT_CONNECTED: 27
-- UNTESTED: 10
+- UNTESTED: 11
 - OWNER_DECISION: 4
 
 ## By workstream
@@ -27,7 +27,7 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - SCHEDULER_PCC: 23
 - OBSERVABILITY_DOCTOR: 23
 - SECTION_S31: 17
-- UNASSIGNED: 15
+- UNASSIGNED: 16
 - SECTION_S52: 11
 - SECTION_S18: 10
 - SECTION_S44: 10
@@ -48,7 +48,7 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 - LIVE_VOICE: 2
 
 ## Reachability
-- Modules in atlasz-addons: 181; reachable from entry points: 175
+- Modules in atlasz-addons: 182; reachable from entry points: 176
 - ORPHAN: atlasz-addons/a11y-audit.mjs
 - ORPHAN: atlasz-addons/a11y-worker.mjs
 - ORPHAN: atlasz-addons/digital-twin.mjs
@@ -58,6 +58,7 @@ LIVE_VERIFIED: **0** — no live provider/payment/delivery/Windows-run evidence 
 
 ## Modules without a test reference
 - atlasz-addons/a11y-worker.mjs
+- atlasz-addons/file-lock.mjs
 
 ## Unconnected provider slots (declared PLACEHOLDER_UNCONNECTED)
 - atlasz-addons/approval-command-gateway.mjs

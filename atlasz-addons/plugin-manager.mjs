@@ -5,6 +5,7 @@
 // Themes/skins are DATA ONLY (whitelisted CSS variables), never code or raw CSS.
 import crypto from "node:crypto";
 import fs from "node:fs";
+import { withFileLock, lockMethods } from "./file-lock.mjs";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { restrictedNodeCommand } from "./restricted-node.mjs";
@@ -74,7 +75,7 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
   }
   load();
   const STATE_BAD = { ok: false, reason: "STATE_UNREADABLE:plugins-state.json" };
-  const save = () => { if (unreadable) return true; try { const t = stateFile + ".tmp"; fs.writeFileSync(t, JSON.stringify(S)); fs.renameSync(t, stateFile); memQuarantine.clear(); return true; } catch { return false; } };   // an unwritable state dir is reported (false), never thrown into a timer or child callback
+  const save = () => { if (unreadable) return true; try { const t = stateFile + ".tmp"; fs.writeFileSync(t, JSON.stringify(S)); fs.renameSync(t, stateFile); memQuarantine.clear(); memFails.clear(); return true; } catch { return false; } };   // an unwritable state dir is reported (false), never thrown into a timer or child callback
   const approve = (ap, action, subject) => ownerAuth.verifyApproval(ap, { action, subject });
 
   function scan() {
@@ -107,7 +108,8 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
     return { plugins: [...found.values()].map(({ manifest: m }) => ({ id: m.id, name: m.name, version: m.version, kind: m.kind, permissions: m.permissions, status: status(m.id), failures: S.health[m.id]?.failures ?? 0, lastError: S.health[m.id]?.lastError ?? null, activeTheme: S.theme === m.id })),
       rejected, activeTheme: S.theme, ...(unreadable ? { stateProblem: "STATE_UNREADABLE:plugins-state.json (kept as found; all plugins stay disabled until the owner repairs or removes the file)" } : {}), note: "Plugin code runs in isolated child processes with no secrets; themes are data only." };
   }
-  function enable(id, { ownerApproval = null } = {}) {
+  function enable(id, opts) {
+    const { ownerApproval = null } = opts ?? {};
     load();
     if (unreadable) return STATE_BAD;
     const p = scan().found.get(id); if (!p) return { ok: false, reason: "UNKNOWN_PLUGIN" };
@@ -122,7 +124,8 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
   /** What the owner signs for PLUGIN_ENABLE: the plugin id and the content hash of its folder as it is now (a code-less theme needs no approval). */
   const enableSubject = id => { const p = scan().found.get(id); if (!p || p.manifest.kind === "THEME" || p.manifest.kind === "SKIN") return null; const h = dirHash(p.dir); return h ? id + "#" + h : null; };
   function disable(id) { load(); if (unreadable) return STATE_BAD; if (!own(S.enabled, id)) return { ok: true, already: true }; const snap = structuredClone(S); delete S.enabled[id]; if (S.theme === id) S.theme = null; return commit("PLUGIN_DISABLED", { id }, snap); }
-  function resetQuarantine(id, { ownerApproval = null } = {}) {
+  function resetQuarantine(id, opts) {
+    const { ownerApproval = null } = opts ?? {};
     load();
     if (unreadable) return STATE_BAD;
     const v = approve(ownerApproval, "PLUGIN_RESET_QUARANTINE", id); if (!v.allowed) return { ok: false, reason: "OWNER_APPROVAL_REQUIRED:" + v.reason };
@@ -132,16 +135,22 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
   const rec = (e, d) => { try { audit.append(e, d); return true; } catch { return false; } };
   /** Persist a management change: audit first, then state; if either cannot be written the in-memory change is rolled back (never an enabled-in-memory plugin the disk does not know about). */
   const commit = (ev, data, snap) => { let ok = true; try { audit.append(ev, data); } catch { ok = false; } if (ok && !save()) ok = false; if (!ok) { S = snap; rec("PLUGIN_CHANGE_NOT_APPLIED", { event: ev, id: data?.id ?? null }); return { ok: false, reason: "STATE_NOT_WRITTEN_OR_AUDIT_UNAVAILABLE" }; } return { ok: true }; };
-  function fail(id, why) {
+  function fail(id, why) { try { withFileLock(stateFile, () => fail0(id, why)); } catch { fail0(id, why); } }
+  function fail0(id, why) {
     load();
+    if (own(S.health, id)?.quarantined) return;                                                      // already quarantined (a run that was in flight): no second quarantine event
     const h = (Object.hasOwn(S.health, id) ? S.health[id] : (S.health[id] = { failures: 0 })); h.failures++; memFails.set(id, h.failures); h.lastError = scrub(String(why)).slice(0, 200);
     if (h.failures >= quarantineAfter) { h.quarantined = true; memQuarantine.add(id); delete S.enabled[id]; if (S.theme === id) S.theme = null; rec("PLUGIN_QUARANTINED", { id, why: h.lastError }); }
     else rec("PLUGIN_FAILURE", { id, why: h.lastError });
     save();
   }
   /** Invoke a hook inside an isolated child process. NEVER throws into the caller. */
+  const inflight = new Map();                                                                       // concurrent hook runs per plugin (a crashing plugin cannot be started 8 times at once before its quarantine lands)
   function invoke(id, hook, input = {}) {
-    return new Promise(resolve => { try { run(resolve); } catch { resolve({ ok: false, reason: "INVOKE_FAILED" }); } });      // NEVER throws or rejects: any failure while starting is a result
+    if (typeof hook !== "string" || !/^[A-Za-z][A-Za-z0-9_.:-]{0,39}$/.test(hook)) return Promise.resolve({ ok: false, reason: "HOOK_NAME_INVALID" });      // a malformed hook name is the caller's error, never a plugin failure
+    if ((inflight.get(id) ?? 0) >= 2) return Promise.resolve({ ok: false, reason: "PLUGIN_BUSY" });
+    inflight.set(id, (inflight.get(id) ?? 0) + 1);
+    return new Promise(resolve0 => { const resolve = r => { inflight.set(id, Math.max(0, (inflight.get(id) ?? 1) - 1)); resolve0(r); }; try { run(resolve); } catch { resolve({ ok: false, reason: "INVOKE_FAILED" }); } });      // NEVER throws or rejects: any failure while starting is a result
     function run(resolve) {
       load();
       try { audit.reload(); } catch { return resolve({ ok: false, reason: "AUDIT_UNAVAILABLE" }); }       // no hook runs when its run cannot be audited
@@ -163,13 +172,13 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
       try { child = spawn(rc.cmd, rc.args, { cwd: p.dir, env: rc.env, stdio: ["pipe", "pipe", "pipe"], windowsHide: true }); }
       catch (e) { fail(id, "SPAWN_FAILED:" + e.message); return finish({ ok: false, reason: "SPAWN_FAILED" }); }
       timer = setTimeout(() => { child.kill("SIGKILL"); fail(id, "TIMEOUT"); finish({ ok: false, reason: "TIMEOUT" }); }, hookTimeoutMs);
-      child.stdout.on("data", d => { if (done) return; out += d; if (out.length > MAX_OUT) { child.kill("SIGKILL"); fail(id, "OUTPUT_TOO_LARGE"); finish({ ok: false, reason: "OUTPUT_TOO_LARGE" }); } });
+      child.stdout.setEncoding("utf8"); child.stdout.on("data", d => { if (done) return; out += d; if (out.length > MAX_OUT) { child.kill("SIGKILL"); fail(id, "OUTPUT_TOO_LARGE"); finish({ ok: false, reason: "OUTPUT_TOO_LARGE" }); } });
       child.stderr.on("data", d => { if (err.length < 2000) err += d; });
       child.on("error", e => { fail(id, "PROCESS_ERROR:" + e.message); finish({ ok: false, reason: "PROCESS_ERROR" }); });
       child.on("close", code => {
         if (done) return;
         if (code !== 0) { fail(id, "EXIT_" + code + ":" + err.split("\n")[0]); return finish({ ok: false, reason: "PLUGIN_CRASHED", exit: code }); }
-        try { const r = JSON.parse(out); load(); if (own(S.health, id) && !unreadable) S.health[id].failures = 0; memFails.delete(id); rec("PLUGIN_HOOK_RUN", { id, hook: String(hook).slice(0, 40) }); save(); finish({ ok: true, result: r }); }
+        try { const r = JSON.parse(out); withFileLock(stateFile, () => { load(); if (own(S.health, id) && !unreadable) S.health[id].failures = 0; memFails.delete(id); rec("PLUGIN_HOOK_RUN", { id, hook: String(hook).slice(0, 40) }); save(); }); finish({ ok: true, result: r }); }
         catch { fail(id, "INVALID_JSON_OUTPUT"); finish({ ok: false, reason: "INVALID_OUTPUT" }); }
       });
       child.stdin.on("error", () => {}); child.stdin.end(payload);
@@ -183,5 +192,6 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
     const snap = structuredClone(S); S.theme = id; S.enabled[id] ??= { since: now(), version: p.manifest.version, permissions: ["UI_THEME"] }; return commit("THEME_SET", { id }, snap);
   }
   function activeTheme() { load(); if (!S.theme) return { id: null, variables: {} }; const p = scan().found.get(S.theme); return p ? { id: S.theme, name: p.manifest.name, variables: p.manifest.variables } : { id: null, variables: {} }; }
-  return { scan: () => { const s = scan(); return { found: [...s.found.keys()], rejected: s.rejected }; }, list, enable, enableSubject, disable, resetQuarantine, invoke, setTheme, activeTheme, auditVerify: () => audit.verify(), validateManifest };
+  const api = { scan: () => { const s = scan(); return { found: [...s.found.keys()], rejected: s.rejected }; }, list, enable, enableSubject, disable, resetQuarantine, invoke, setTheme, activeTheme, auditVerify: () => audit.verify(), validateManifest };
+  return lockMethods(api, stateFile, ["enable", "disable", "resetQuarantine", "setTheme"]);
 }

@@ -34,9 +34,9 @@ Branch `atlasz-v73-integration`. Audit only: no product code was changed in Task
 | REGISTRY item gaps | 710 | 738 | +28 |
 | CAPABILITY_85 gaps | 79 | 67 | -12 |
 | IMPORT_SCAN orphans | 3 | 6 | +0 |
-| **Total** | 792 | 814 | +22 |
+| **Total** | 792 | 815 | +23 |
 
-**What the change means.** Nothing was newly built and no gap was closed in Task 3. The open-gap count rose by 22 = 23 registry items + 3 capabilities **reclassified downward** (their 'working' status was not supported: modules are tested but nothing runs them; these are over-claims, not new problems) + 9 **newly discovered** gaps registered as ATLASZ-T3-001..009 (8 MISSING, 1 EXTERNAL_BLOCKER): unauthenticated runtime dashboard, unsandboxed plugin/update child processes, agents cannot invoke tools, duplicate/hub-bag-only modules, weak-random id fallbacks, no restore UI, 4 untested routes, no schedule creation in the UI, unverified real-source discovery.
+**What the change means.** Nothing was newly built and no gap was closed in Task 3. The open-gap count rose by 23 = 23 registry items + 3 capabilities **reclassified downward** (their 'working' status was not supported: modules are tested but nothing runs them; these are over-claims, not new problems) + 9 **newly discovered** gaps registered as ATLASZ-T3-001..009 (8 MISSING, 1 EXTERNAL_BLOCKER): unauthenticated runtime dashboard, unsandboxed plugin/update child processes, agents cannot invoke tools, duplicate/hub-bag-only modules, weak-random id fallbacks, no restore UI, 4 untested routes, no schedule creation in the UI, unverified real-source discovery.
 
 ## 3. Reconciliation: requirements vs gaps (no double counting)
 
@@ -53,8 +53,8 @@ The three documents measure different things and overlap. Rule used: **a require
 
 - **974 rows = 930 items + 53 section roll-ups.** The registry figures quoted at the start of Task 3 (478 PARTIAL / 194 MISSING; now 501 / 194 after the 23 downgrades) include roll-ups: at item level it is 479 PARTIAL (+28 STRUCTURAL_ONLY, +10 EXISTS_NEEDS_TEST, which this audit also reports as PARTIAL) and 182 MISSING.
 - **Unique outstanding requirements: 675** (588 product + 87 supplementary, not implemented). The remaining open registry rows are 63 roll-ups/labels/process tasks/implementation records.
-- **Gap register total 814 = 738 registry item gaps + 67 open capabilities + 6 import-scan orphans (+ 3 other scans).** Every REGISTRY gap links to exactly one registry item; each CAPABILITY gap links to the registry items it depends on (`depends_on`). 63 of the 67 open capabilities link to registry items, so most capability gaps are *views of the same work*, not additional work; only G01, GE07, A01, A13 have no registry link and are independent.
-- Therefore the honest size of the remaining work is **~679 requirements** (not 814 gaps and not 974); the 814-gap figure double counts capability views and non-product rows. Dangling capability→registry links: 0.
+- **Gap register total 815 = 738 registry item gaps + 67 open capabilities + 6 import-scan orphans (+ 4 other scans).** Every REGISTRY gap links to exactly one registry item; each CAPABILITY gap links to the registry items it depends on (`depends_on`). 63 of the 67 open capabilities link to registry items, so most capability gaps are *views of the same work*, not additional work; only G01, GE07, A01, A13 have no registry link and are independent.
+- Therefore the honest size of the remaining work is **~679 requirements** (not 815 gaps and not 974); the 815-gap figure double counts capability views and non-product rows. Dangling capability→registry links: 0.
 
 Final classification of all 930 items (registry status mapped to the five classes requested; STRUCTURAL_ONLY and EXISTS_NEEDS_TEST are reported as PARTIAL; **no item is LIVE-verified**):
 
@@ -206,7 +206,7 @@ These categories are derived from each row's own blocker/evidence text and the m
 
 ## 7. Test results and coverage limits
 
-- Full suite (`npm test --prefix atlasz-runtime`): **1037 tests, 1037 pass, 0 fail, 0 skipped, 0 cancelled** (see recorded note in full_suite_result.json).
+- Full suite (`npm test --prefix atlasz-runtime`): **1053 tests, 1053 pass, 0 fail, 0 skipped, 0 cancelled** (see recorded note in full_suite_result.json).
 - Per-file run (`docs/audit/run_tests_per_file.py`): 86 files, 568 tests, 568 pass, 0 fail, 0 skipped.
 - Line coverage (node --experimental-test-coverage, full suite, 527/527): **98.8% lines / 84.5% branches** over 151 loaded source files; lowest-covered: atlasz-addons/negotiation-engine.mjs 30%; atlasz-addons/tracing-evals.mjs 61%; atlasz-addons/enterprise-knowledge-agentic-rag.mjs 78%; atlasz-control-center/server.mjs 83%; atlasz-addons/tool-fabric.mjs 89%; atlasz-addons/personal-command-center.mjs 93%. Absent from the coverage report (not loaded, or not attributed by the collector - e.g. supervisor-safe.mjs is exercised through real-process tests): atlasz-control-center/public/app.js, atlasz-runtime/agent-child.js, atlasz-runtime/owner-cli.mjs, atlasz-runtime/supervisor-safe.mjs, atlasz-runtime/supervisor.js, atlasz-runtime/worker.js. Caveat: coverage counts executed lines, not asserted behaviour, so it supports but does not prove the 'working' claims (e.g. `negotiation-engine.mjs` is the least covered module and is hub-bag only).
 - Limits: tests run against temp dirs with fake providers, so they show logic and failure handling, not provider behaviour; Windows-only branches (env scrubbing, junctions, process limits) cannot run on this Linux host; the Electron shell and installer are untested here; timing/robustness tests use short real timeouts and can be load-sensitive; mutation testing was done per module by hand-written mutants, not for the whole code base; the registry/gap-register generators have their own tests, so some of the suite verifies tooling rather than product behaviour.

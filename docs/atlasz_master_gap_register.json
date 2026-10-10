@@ -16,12 +16,13 @@
   ]
  },
  "summary": {
-  "total_gaps": 814,
+  "total_gaps": 815,
   "by_source": {
    "REGISTRY": 738,
    "CAPABILITY_85": 67,
    "IMPORT_SCAN": 6,
-   "TODO_SCAN": 3
+   "TODO_SCAN": 3,
+   "TEST_SCAN": 1
   },
   "by_reality": {
    "SANDBOX_TESTED_PARTIAL": 473,
@@ -29,7 +30,7 @@
    "EXTERNAL": 58,
    "STRUCTURE_ONLY": 56,
    "MODULE_NOT_CONNECTED": 27,
-   "UNTESTED": 10,
+   "UNTESTED": 11,
    "OWNER_DECISION": 4
   },
   "by_workstream": {
@@ -46,7 +47,7 @@
    "SCHEDULER_PCC": 23,
    "OBSERVABILITY_DOCTOR": 23,
    "SECTION_S31": 17,
-   "UNASSIGNED": 15,
+   "UNASSIGNED": 16,
    "SECTION_S52": 11,
    "SECTION_S18": 10,
    "SECTION_S44": 10,
@@ -75,13 +76,14 @@
    "DISCONNECTED": 5,
    "BLOCKED_AWAITING_JOCI_APPROVAL": 3,
    "UNFINISHED_MARKER": 3,
-   "DISCONNECTED_BY_DESIGN": 1
+   "DISCONNECTED_BY_DESIGN": 1,
+   "UNTESTED": 1
   },
   "registry_items": 930,
   "registry_gaps": 738,
   "capabilities_with_gaps": 67,
-  "modules_total": 181,
-  "modules_reachable_from_entrypoints": 175,
+  "modules_total": 182,
+  "modules_reachable_from_entrypoints": 176,
   "orphan_modules": [
    "atlasz-addons/a11y-audit.mjs",
    "atlasz-addons/a11y-worker.mjs",
@@ -91,7 +93,8 @@
    "atlasz-addons/tenant-isolation.mjs"
   ],
   "modules_without_test_reference": [
-   "atlasz-addons/a11y-worker.mjs"
+   "atlasz-addons/a11y-worker.mjs",
+   "atlasz-addons/file-lock.mjs"
   ],
   "unconnected_provider_slots": [
    "atlasz-addons/approval-command-gateway.mjs",
@@ -11836,6 +11839,20 @@
    "tests": "tenant-isolation.test.mjs",
    "blocker": "Owner authorization for commercialization",
    "workstream": "SECURITY_OWNER",
+   "depends_on": ""
+  },
+  {
+   "gap_id": "GAP-NOTEST-file-lock.mjs",
+   "source": "TEST_SCAN",
+   "requirement_id": "",
+   "title": "atlasz-addons/file-lock.mjs has no test that references it by name",
+   "status": "UNTESTED",
+   "reality": "UNTESTED",
+   "priority": "CHECK",
+   "modules": "atlasz-addons/file-lock.mjs",
+   "tests": "",
+   "blocker": "",
+   "workstream": "UNASSIGNED",
    "depends_on": ""
   },
   {

@@ -78,14 +78,15 @@
   "A13"
  ],
  "capability_dangling_links": [],
- "gap_register_total": 814,
+ "gap_register_total": 815,
  "gap_register_by_source": {
   "REGISTRY": 738,
   "CAPABILITY_85": 67,
   "IMPORT_SCAN": 6,
+  "TEST_SCAN": 1,
   "TODO_SCAN": 3
  },
- "gap_register_formula": "738 registry item gaps + 67 open capabilities + 6 import-scan orphans (+ 3 other scans)",
+ "gap_register_formula": "738 registry item gaps + 67 open capabilities + 6 import-scan orphans (+ 4 other scans)",
  "milestone_counts": {
   "M1": {
    "PARTIAL": 62,
