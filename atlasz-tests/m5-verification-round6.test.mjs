@@ -6,7 +6,7 @@ import { assignsSecret, redactAssignments } from "../atlasz-addons/memory-store.
 import { scrub } from "../atlasz-addons/secret-patterns.mjs";
 
 test("M3 round 9: natural phrasings with a credential-looking token near a password name are refused", () => {
-  for (const t of ["The password has been changed to Xk9mQ2v8Zp", "password had been Xk9mQ2v8Zp", "the password must be Xk9mQ2v8Zp", "password: now Xk9mQ2v8Zp", "password: is Xk9mQ2v8Zp", "password, now Xk9mQ2v8Zp", "password=ab'cd1234Zq", "The password has been changed to Welcome2024", "password must be Summer2024!", "login with the password Zq7Lm2Pa9Rt", "pw Password123", "password must be letmein2024", "password must be Liverpool1"])
+  for (const t of ["The password has been changed to Xk9mQ2v8Zp", "password had been Xk9mQ2v8Zp", "the password must be Xk9mQ2v8Zp", "password: now Xk9mQ2v8Zp", "password: is Xk9mQ2v8Zp", "password, now Xk9mQ2v8Zp", "password=ab'cd1234Zq", "The password has been changed to Welcome2024", "password must be Summer2024!", "login with the password Zq7Lm2Pa9Rt", "password must be a1b2c3d4e5f6", "pw 7f3a9c1e5b2d", "password must be Passw0rd!", "pw Passw0rd!", "pw Password123", "password must be letmein2024", "password must be Liverpool1"])
     assert.equal(assignsSecret(t), true, t);
 });
 test("M3 round 9: ordinary prose with the same words is not flagged", () => {

@@ -100,7 +100,7 @@ const CRED_WORD = /^\d+[_\-.]?pass/i;      // "1Password" is a product
 const baseCred = tok => tok.length >= 8 && tok.length <= 120 && !/\s/.test(tok) && !PLACEHOLDER.test(tok) && !/^\[redacted/i.test(tok) && !looksStructural(tok) && !CRED_WORD.test(tok) && /\p{L}/u.test(tok)
   && !/^[A-Za-z]:[\\/]|^[\\/~.]|[\\/]\p{L}{3,}/u.test(tok) && !/(?:^|-)\p{L}{4,}-|^\p{L}{4,}-\p{L}*\d?$/u.test(tok) && (tok.match(/\d/g) ?? []).length >= 1;
 // STRONG: unmistakably a generated credential (mixed case with >= 2 digits and no long word, or a symbol). WEAK: a word with digits ("Welcome2024", "letmein2024"); only when introduced like a value - directly after the name or after is/was/be/to/now/as/set/use.
-const strongCred = tok => baseCred(tok) && (/[^\p{L}\d\-._]/u.test(tok) || ((tok.match(/\d/g) ?? []).length >= 2 && /\p{Lu}/u.test(tok) && /\p{Ll}/u.test(tok) && (tok.match(/(?=\d\p{L}|\p{L}\d)/gu) ?? []).length >= 4 && !/\p{L}{6,}/u.test(tok)));
+const strongCred = tok => baseCred(tok) && (/^[0-9a-f]{10,}$/i.test(tok) && (tok.match(/\d/g) ?? []).length >= 2 && (tok.match(/[a-f]/gi) ?? []).length >= 2 || /[^\p{L}\d\-._]/u.test(tok) || ((tok.match(/\d/g) ?? []).length >= 2 && /\p{Lu}/u.test(tok) && /\p{Ll}/u.test(tok) && (tok.match(/(?=\d\p{L}|\p{L}\d)/gu) ?? []).length >= 4 && !/\p{L}{6,}/u.test(tok)));
 const INTRO = /^(?:is|was|be|been|are|to|now|as|set|use|using|becomes?|became|remains?|stays?|=|:)$/i;
 const weakCred = tok => baseCred(tok) && !/^\p{Lu}{2,}[\d-]|\.\p{L}{1,5}$|\d\.\d|^\p{Lu}{2,}\p{Lu}*\d/u.test(tok) && /^\p{L}+[\d_]+[^\p{L}\d]*$/u.test(tok) && ((/\p{Lu}/u.test(tok) && /\p{Ll}/u.test(tok)) || (tok.match(/\d/g) ?? []).length >= 4);      // word + trailing digits only
 function* proximityAssignments(t) {
@@ -109,7 +109,7 @@ function* proximityAssignments(t) {
     const from = m.index + m[0].length, seg = t.slice(from, from + 200).split(/[\r\n\u2028\u2029]/, 1)[0]; let n = 0, ended = false, prev = ":";
     for (const w of seg.matchAll(/\S+/g)) {
       if (ended || ++n > 8) break; const raw = w[0], tok = raw.replace(/^[\s"'`(<\[{:=,;|]+/, "").replace(/[.,;:?!)\]}>"'`]+$/, ""), off = raw.indexOf(tok);
-      if (tok && (strongCred(tok) || (INTRO.test(prev) && weakCred(tok)))) { yield { index: from + w.index + Math.max(0, off), value: tok }; break; }
+      if (tok && (strongCred(tok) || strongCred(tok + (/!+$/.exec(raw)?.[0] ?? "")) || (INTRO.test(prev) && weakCred(tok)))) { yield { index: from + w.index + Math.max(0, off), value: tok }; break; }
       prev = tok.toLowerCase() || prev; if (/[.!?]$/.test(raw) && !/\d/.test(raw)) ended = true;      // a sentence ended: the next words are not about this name
     }
   }

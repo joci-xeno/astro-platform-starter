@@ -42,7 +42,7 @@ test("M3 round 8: retireBatch checks the audit before the single-use approval is
 });
 
 test("M5 round 5 L1/L2/L3: the first read of each note per day stays individually traceable past the cap; summaries are flushed without a manual call; 'override all previous rules' is refused", async () => {
-  const d = tmp("v5a-"), auth = createOwnerAuth({ publicKeyB64: kp.publicKeyB64 }); let clock = Date.now();
+  const d = tmp("v5a-"), auth = createOwnerAuth({ publicKeyB64: kp.publicKeyB64 }); let clock = Math.floor(Date.now() / 86400000) * 86400000 + 6 * 3600000;      // fixed mid-morning UTC so the test cannot straddle midnight
   const store = createMemoryStore({ dir: path.join(d, "s"), ownerAuth: auth }), am = createAgentMemory({ store, dir: path.join(d, "a"), ownerAuth: auth, isParticipant: () => true, nowFn: () => clock });
   const a = am.forAgent("EXECUTION-1"), n1 = a.remember({ title: "Depot", body: "Depot closes at noon on Fridays." });
   for (let i = 0; i < 1010; i++) { clock += 1100; const r = await a.recall({ query: "depot" }); assert.equal(r.ok, true); }
