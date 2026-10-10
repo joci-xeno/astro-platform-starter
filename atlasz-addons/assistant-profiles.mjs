@@ -43,10 +43,12 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
     return { ok: true, def: { id: inp.id, name: redactSecrets(inp.name.trim()), instructions: redactSecrets(inp.instructions.trim()), tools: uniqSorted(tools), skills: uniqSorted(skills), memoryScopes: uniqSorted(scopes) } };
   }
   // The file may have been damaged since this process loaded it: a write never replaces an unreadable file (the owner must repair or remove it first).
-  const writable = () => { if (!file) return true; try { const j = JSON.parse(fs.readFileSync(file, "utf8")); if (j && typeof j === "object" && j.tenants && typeof j.tenants === "object" && !Array.isArray(j.tenants)) { if (!markerAgrees(file, j.tenants)) return false; d.tenants = j.tenants; } return true; } catch (e) { return e?.code === "ENOENT" && markerKeys(file) === null; } };      // a missing store is only writable when it never existed: if a marker is left, deleting the store must not be undone by an unrelated write      // also adopts what another instance wrote since this one loaded: a stale instance never reverts it
+  let refusal = "PROFILE_STORE_UNREADABLE";
+  const writable = () => { refusal = "PROFILE_STORE_UNREADABLE"; if (!file) return true; try { const j = JSON.parse(fs.readFileSync(file, "utf8")); if (!j || typeof j !== "object" || Array.isArray(j) || !j.tenants || typeof j.tenants !== "object" || Array.isArray(j.tenants)) return false;      // a parseable file without a tenants record is damaged, never 'empty'
+      if (!markerAgrees(file, j.tenants)) { refusal = "PROFILE_STORE_ASSIGNMENTS_CHANGED_RECONCILE_REQUIRED"; return false; } d.tenants = j.tenants; return true; } catch (e) { return e?.code === "ENOENT" && markerKeys(file) === null; } };      // a missing store is only writable when it never existed: if a marker is left, deleting the store must not be undone by an unrelated write      // also adopts what another instance wrote since this one loaded: a stale instance never reverts it
   function save(tenantId, inp, how) {
     if (inp?.actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" };
-    if (!writable()) return { ok: false, reason: "PROFILE_STORE_UNREADABLE" };
+    if (!writable()) return { ok: false, reason: refusal };
     const v = validate(inp); if (!v.ok) return v; const t = T(tenantId), cur = own(t.profiles, v.def.id);
     if (!cur && Object.keys(t.profiles).length >= LIMITS.maxProfiles) return { ok: false, reason: "TOO_MANY_PROFILES" };
     const hash = hashOf(v.def); if (cur && cur.versions.at(-1).hash === hash) return { ok: true, id: v.def.id, version: cur.versions.at(-1).version, unchanged: true };
@@ -62,7 +64,7 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
     if (hashOf(v.definition) !== v.hash) return { ok: false, reason: "STORED_VERSION_TAMPERED" };
     return save(tenantId, { ...clone(v.definition), actor: "OWNER" }, "ROLLBACK_TO_" + version);   // re-validated against today's grants, stored as a NEW version
   }
-  function remove(tenantId, id, { actor } = {}) { if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" }; if (!writable()) return { ok: false, reason: "PROFILE_STORE_UNREADABLE" }; const t = peek(tenantId); if (!t || typeof id !== "string" || !Object.hasOwn(t.profiles, id)) return { ok: false, reason: "PROFILE_NOT_FOUND" }; delete t.profiles[id]; store.save(); markIfUsed(); return { ok: true }; }
+  function remove(tenantId, id, { actor } = {}) { if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" }; if (!writable()) return { ok: false, reason: refusal }; const t = peek(tenantId); if (!t || typeof id !== "string" || !Object.hasOwn(t.profiles, id)) return { ok: false, reason: "PROFILE_NOT_FOUND" }; delete t.profiles[id]; store.save(); markIfUsed(); return { ok: true }; }
   const summary = p => { const v = p.versions.at(-1); return { id: p.id, name: v.definition.name, version: v.version, hash: v.hash, versions: p.versions.map(x => x.version), tools: v.definition.tools.length, skills: v.definition.skills.length, memoryScopes: v.definition.memoryScopes.length }; };
   const listAll = tenantId => Object.values(peek(tenantId)?.profiles ?? {}).map(summary);
   function get(tenantId, id) { const p = own(peek(tenantId)?.profiles, id); if (!p) return { ok: false, reason: "PROFILE_NOT_FOUND" }; const v = p.versions.at(-1); return { ok: true, profile: { ...summary(p), definition: clone(v.definition), history: p.versions.map(x => ({ version: x.version, hash: x.hash, at: x.at, how: x.how })) } }; }
@@ -92,7 +94,7 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
   function assign(tenantId, agentId, profileId, { actor } = {}) {
     if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" };
     if (typeof agentId !== "string" || !roleOf(agentId)) return { ok: false, reason: "UNKNOWN_AGENT" };
-    if (!writable()) return { ok: false, reason: "PROFILE_STORE_UNREADABLE" };
+    if (!writable()) return { ok: false, reason: refusal };
     const t = T(tenantId); t.assignments ??= {};
     if (profileId === null) { delete t.assignments[agentId]; store.save(); mark(); return { ok: true, agentId, profileId: null }; }
     if (typeof profileId !== "string" || !own(t.profiles, profileId)) return { ok: false, reason: "PROFILE_NOT_FOUND" };

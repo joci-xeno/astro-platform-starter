@@ -166,7 +166,7 @@ test("R6 verification regressions: dark-token selectors, conditional overrides, 
 });
 
 test("R6 verification regressions: external stylesheets, --!> comments and aria-hidden containers are never silently clean", () => {
-  const C = ":root{--bg:#fff;--ink:#000}body{color:var(--ink);background:var(--bg)}", H = b => "<html lang=en><head><title>t</title><meta name=viewport content='width=device-width'></head><body><main>" + b + "</main></body></html>";
+  const C = ":root{--bg:#fff;--ink:#000}body{color:var(--ink);background:var(--bg)}a{color:var(--ink)}", H = b => "<html lang=en><head><title>t</title><meta name=viewport content='width=device-width'></head><body><main>" + b + "</main></body></html>";
   const a = (h, c = C) => auditAccessibility({ html: h, css: c });
   const l = a(H("<link rel=stylesheet href=x.css><p>x")); assert.equal(l.complete, false); assert.ok(l.incomplete.some(x => x.startsWith("EXTERNAL_STYLESHEET")));
   assert.equal(auditAccessibility({ html: H("<link rel=stylesheet href=x.css><p>x"), css: C, cssSources: ["x.css"] }).complete, true, "a link whose text the caller supplied is covered");
@@ -178,7 +178,7 @@ test("R6 verification regressions: external stylesheets, --!> comments and aria-
 });
 
 test("R6 round 3: @import without a following rule, > inside a quoted attribute, entity-obfuscated rel", () => {
-  const C = ":root{--bg:#fff;--ink:#000}body{color:var(--ink);background:var(--bg)}", H = b => "<html lang=en><head><title>t</title><meta name=viewport content='width=device-width'></head><body><main>" + b + "</main></body></html>";
+  const C = ":root{--bg:#fff;--ink:#000}body{color:var(--ink);background:var(--bg)}a{color:var(--ink)}", H = b => "<html lang=en><head><title>t</title><meta name=viewport content='width=device-width'></head><body><main>" + b + "</main></body></html>";
   const a = (h, c = C) => auditAccessibility({ html: h, css: c });
   for (const [h, c] of [[H("<style>@import 'evil.css';</style><p>x"), C], [H("<p>x"), C + "@import 'x.css';"], [H("<p>x"), "@import url(data:text/css;base64,AAA);" + C], [H("<p>x"), "@\\69mport 'x.css';" + C], [H("<style>@import 'e.css';"), C]]) { const r = a(h, c); assert.equal(r.complete, false, h + c); assert.ok(r.incomplete.some(x => x.startsWith("EXTERNAL_STYLESHEET")), h + c); }
   assert.equal(a(H('<link title="a>b" rel="stylesheet" href="e.css"><p>x')).complete, false);
@@ -188,20 +188,20 @@ test("R6 round 3: @import without a following rule, > inside a quoted attribute,
 });
 
 test("R6 round 4: many comments are linear time; bogus-comment shapes with a quote do not hide a real <link>", () => {
-  const C = ":root{--bg:#fff;--ink:#000}body{color:var(--ink);background:var(--bg)}", H = b => "<html lang=en><head><title>t</title><meta name=viewport content='width=device-width'></head><body><main>" + b + "</main></body></html>";
+  const C = ":root{--bg:#fff;--ink:#000}body{color:var(--ink);background:var(--bg)}a{color:var(--ink)}", H = b => "<html lang=en><head><title>t</title><meta name=viewport content='width=device-width'></head><body><main>" + b + "</main></body></html>";
   let t0 = Date.now(); auditAccessibility({ html: H("<!--x-->".repeat(50000)), css: C }); auditAccessibility({ html: H("<!-- --!>".repeat(50000)), css: C }); auditAccessibility({ html: H("<!--".repeat(50000)), css: C });
   assert.ok(Date.now() - t0 < 5000, "comment scanning is linear: " + (Date.now() - t0) + " ms");
   for (const pre of ['<?x a=">', '<!x a=">', '</ a=">', '< a=">', '<1 a=">']) { const r = auditAccessibility({ html: H(pre + '\n<link rel=stylesheet href=x.css>\n">'), css: C }); assert.equal(r.complete, false, pre); }
 });
 
 test("R6 round 5: <style/> still hides nothing; '=' inside an unquoted value does not open a quote", () => {
-  const C = ":root{--bg:#fff;--ink:#000}body{color:var(--ink);background:var(--bg)}", H = b => "<html lang=en><head><title>t</title><meta name=viewport content='width=device-width'></head><body><main>" + b + "</main></body></html>";
+  const C = ":root{--bg:#fff;--ink:#000}body{color:var(--ink);background:var(--bg)}a{color:var(--ink)}", H = b => "<html lang=en><head><title>t</title><meta name=viewport content='width=device-width'></head><body><main>" + b + "</main></body></html>";
   for (const b of ['<style/>@import url(x.css);</style><p>x', '<style a=b/>@import "x.css";</style><p>x', '<a b=c=" ><link rel=stylesheet href=x.css><a d=">x</a>', "<a b=c=' ><link rel=stylesheet href=x.css><a d='>x</a>"]) { const r = auditAccessibility({ html: H(b), css: C }); assert.equal(r.complete, false, b); }
   assert.equal(auditAccessibility({ html: H('<a title="x>y" href=#>ok</a>'), css: C }).complete, true, "a quoted > after a real value start is still handled");
 });
 
 test("R6 round 6: '=' starting an attribute name, <title>/<textarea> inside <svg>, '/*' inside CSS strings, and large inputs", () => {
-  const C = ":root{--bg:#fff;--ink:#000}body{color:var(--ink);background:var(--bg)}", H = b => "<html lang=en><head><title>t</title><meta name=viewport content='width=device-width'></head><body><main>" + b + "</main></body></html>";
+  const C = ":root{--bg:#fff;--ink:#000}body{color:var(--ink);background:var(--bg)}a{color:var(--ink)}", H = b => "<html lang=en><head><title>t</title><meta name=viewport content='width=device-width'></head><body><main>" + b + "</main></body></html>";
   for (const b of ['<a =">' + "<style>@import url(x.css);</style>" + '<b a=">', '<a =">' + "<link rel=stylesheet href=//x/y.css>" + '<b a=">', `<a b="c"='>` + "<link rel=stylesheet href=x.css>" + `<b a='>`,
     "<svg><title><style>@import url(x);</style></title></svg>", "<svg><title><link rel=stylesheet href=//x/y.css></title></svg>", "<svg><textarea><style>@import url(x);</style></textarea></svg>"]) assert.equal(auditAccessibility({ html: H(b), css: C }).complete, false, b);
   assert.equal(auditAccessibility({ html: H("<title>a<link rel=stylesheet href=x.css></title><p>x"), css: C }).complete, true, "outside svg <title> is raw text, as in a browser");
@@ -212,7 +212,7 @@ test("R6 round 6: '=' starting an attribute name, <title>/<textarea> inside <svg
 });
 
 test("R6 round 7: raw-text elements, svg integration points, '/=' in tags, tag cap, unquoted url() with comment markers, escaped property names, quadratic CSS statements", () => {
-  const C = ":root{--bg:#fff;--ink:#000}body{color:var(--ink);background:var(--bg)}", H = b => "<html lang=en><head><title>t</title><meta name=viewport content='width=device-width'></head><body><main>" + b + "</main></body></html>";
+  const C = ":root{--bg:#fff;--ink:#000}body{color:var(--ink);background:var(--bg)}a{color:var(--ink)}", H = b => "<html lang=en><head><title>t</title><meta name=viewport content='width=device-width'></head><body><main>" + b + "</main></body></html>";
   const L = "<link rel=stylesheet href=x>";
   for (const b of ["<xmp><!--</xmp>" + L, "<iframe><!--</iframe>" + L, "<noembed><!--</noembed>" + L, "<noframes><!--</noframes>" + L, "<svg><foreignObject><title><!--</title></foreignObject></svg>" + L, "<svg><div><textarea><!--</textarea>" + L,
     '<a b/="x>' + L + '<p title="z">', "<b>".repeat(200001) + L]) assert.equal(auditAccessibility({ html: H(b), css: C }).complete, false, b.slice(0, 60));

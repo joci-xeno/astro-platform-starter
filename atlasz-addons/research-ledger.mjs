@@ -54,7 +54,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   // Head anchor: the newest event's number and hash live in a second file, so a truncated event list (or a deleted anchor) is noticed instead of being extended.
   const headFile = file ? file + ".head" : null, baseSave = store.save;
   const readHead = () => { if (!headFile || !fs.existsSync(headFile)) return null; try { const h = JSON.parse(fs.readFileSync(headFile, "utf8")); return Number.isInteger(h?.n) && typeof h?.hash === "string" ? h : { n: -1, hash: "" }; } catch { return { n: -1, hash: "" }; } };
-  store.save = () => { baseSave(); if (headFile && S.events.length) { try { fs.writeFileSync(headFile, JSON.stringify({ n: S.events.length, hash: S.events.at(-1).hash }), { mode: 0o600 }); } catch { /* the store itself is saved */ } } };
+  store.save = () => { baseSave(); if (headFile && S.events.length) { try { const t = headFile + ".tmp"; fs.writeFileSync(t, JSON.stringify({ n: S.events.length, hash: S.events.at(-1).hash }), { mode: 0o600 }); fs.renameSync(t, headFile); } catch { /* the store itself is saved */ } } };
   // a store with events but no head anchor is NOT adopted when opened (a deleted anchor must not launder a forged or rolled-back store): reanchor() is the explicit, logged, owner-only recovery
   const anchorOk = () => { if (!headFile) return true; if (!S.events.length) { const h0 = readHead(); return !(h0 && h0.n > 0); } const h = readHead(); return Boolean(h) && h.n === S.events.length && S.events.at(-1).hash === h.hash; };
   /** Whole-store seal: every event records a hash of questions + findings + contradictions as they were after that change. A store edited outside the ledger no longer matches the newest event. */
@@ -86,7 +86,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
       for (const e of S.events) { if (e.type === "EVIDENCE_ATTACHED" && typeof e.findingId === "string") { if (!v.attached.has(e.findingId)) v.attached.set(e.findingId, new Set()); v.attached.get(e.findingId).add(e.evidence); } else if (e.type === "QUESTION_OPENED" && typeof e.qsig === "string") v.questions.set(e.id, e.qsig); else if (e.type === "FINDING_ADDED" && typeof e.fsig === "string") v.findings.set(e.id, { fsig: e.fsig, questionId: e.questionId }); else if (e.type === "CONTRADICTION_DECLARED") v.declared.push({ id: e.id, a: e.a, b: e.b }); else if (e.type === "CONTRADICTION_RESOLVED") v.resolved.set(e.id, String(e.winner ?? null)); } }
     factMemo = { key, v }; return v; };
   const confirmedSet = () => { const key = S.events.length + ":" + (S.events.at(-1)?.hash ?? "") + ":" + anchorOk() + stateOk(); if (confMemo.key === key) return confMemo.set; const ok = verifyChain().ok && stateOk(); confMemo = { key, set: new Set(ok ? S.events.filter(e => e.type === "EVIDENCE_CONFIRMED" && e.by === "OWNER" && typeof e.bind === "string").map(e => e.findingId + "|" + e.evidence + "|" + e.bind) : []) }; return confMemo.set; };
-  const who = w => ({ tenantId: w?.tenantId, role: w?.role ?? "OWNER", forAgent: Boolean(w?.forAgent) });
+  const who = w => ({ tenantId: w?.tenantId, role: typeof w?.role === "string" ? w.role : "NONE", forAgent: Boolean(w?.forAgent) });
   const byOf = (w, by) => (who(w).forAgent || (w?.role != null && w.role !== "OWNER") ? "AGENT" : (typeof by === "string" && by ? by.slice(0, 80) : "OWNER"));   // an agent can never name itself OWNER (or anyone else)
   function access(projectId, w) {                                   // the caller must be allowed to use the project (tenant + role), else it does not exist for them
     if (!w?.tenantId) throw new Error("TENANT_REQUIRED");
@@ -123,6 +123,11 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   /** Attach a Knowledge-Projects citation. It must verify OK right now, belong to the question's project and actually cover the claim's terms. */
   function attachEvidence(fid, { citation, relation = "SUPPORTS", by } = {}, w) {
     reload(); const f = finding(fid, w), q = S.questions[f.questionId], b = byOf(w, by);
+    if (citation && typeof citation === "object") {      // one snapshot of plain values: what is verified is what is stored (no getters, valueOf or toJSON can differ between the two)
+      const S1 = v => (typeof v === "string" ? v : String(v ?? "")), N1 = v => { const n = Number(v); return Number.isSafeInteger(n) ? n : NaN; };
+      citation = { projectId: S1(citation.projectId), memberId: S1(citation.memberId), kind: sv(citation.kind), title: sv(citation.title), version: sv(citation.version), sha256: S1(citation.sha256), url: sv(citation.url), start: N1(citation.start), end: N1(citation.end), quote: S1(citation.quote) };
+      if (Number.isNaN(citation.start) || Number.isNaN(citation.end)) throw new Error("CITATION_INVALID_OFFSETS");
+    }
     if (f.kind === "ASSUMPTION") throw new Error("ASSUMPTION_CANNOT_HAVE_EVIDENCE");
     if (!RELATIONS.includes(relation)) throw new Error("RELATION_INVALID"); if (!citation || citation.projectId !== q.projectId) throw new Error("CITATION_NOT_IN_PROJECT");
     if (f.evidence.length >= LIMITS.evidencePerFinding) throw new Error("TOO_MUCH_EVIDENCE");
@@ -218,9 +223,10 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
     let prev = "GENESIS"; for (const e of S.events) { const { hash, ...rest } = e; if (e.prev !== prev || sha(prev + JSON.stringify({ ...rest, hash: undefined })) !== hash) return { ok: false, reason: "CHAIN_BROKEN", brokenAt: e.n }; prev = hash; }
     if (!stateOk()) return { ok: false, reason: "STORE_ALTERED_OUTSIDE_LEDGER" };
     const before = readHead();
+    if (before && before.n > S.events.length && S.events.length) return { ok: false, reason: "STORE_BEHIND_HEAD_ROLLBACK_SUSPECTED", previousHead: before.n, events: S.events.length };      // the anchor is AHEAD of the store: that is a rollback, not a crash; it is never blessed automatically
     if (!S.events.length) return { ok: false, reason: before && before.n > 0 ? "STORE_EMPTY_BUT_HEAD_REMAINS" : "NOTHING_TO_ANCHOR", previousHead: before ? before.n : null };      // nothing to re-anchor to: the owner must remove the stale anchor deliberately
     store.save(); if (!anchorOk()) return { ok: false, reason: "HEAD_NOT_WRITTEN", previousHead: before ? before.n : null };      // never report success unless the anchor now matches
     loadTamper = false; log("RESEARCH_REANCHORED", { by: "OWNER", events: S.events.length, previousHead: before ? before.n : null }); return { ok: true, events: S.events.length, previousHead: before ? before.n : null };
   }
-  return lockMethods({ openQuestion, addSource, addFinding, attachEvidence, declareContradiction, resolveContradiction, confirmEvidence, report, unresolved, list, summary, events, reanchor, verifyChain: () => (reload(), verifyChain()) }, file, ["openQuestion", "addSource", "addFinding", "attachEvidence", "declareContradiction", "resolveContradiction", "confirmEvidence", "reanchor"]);
+  return lockMethods({ openQuestion, addSource, addFinding, attachEvidence, declareContradiction, resolveContradiction, confirmEvidence, report, unresolved, list, summary, events, reanchor, verifyChain: () => (reload(), verifyChain()) }, file, ["openQuestion", "addSource", "addFinding", "attachEvidence", "declareContradiction", "resolveContradiction", "confirmEvidence", "reanchor", "report", "summary", "list", "unresolved", "verifyChain"]);
 }

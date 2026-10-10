@@ -150,7 +150,8 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
     if (typeof hook !== "string" || !/^[A-Za-z][A-Za-z0-9_.:-]{0,39}$/.test(hook)) return Promise.resolve({ ok: false, reason: "HOOK_NAME_INVALID" });      // a malformed hook name is the caller's error, never a plugin failure
     if ((inflight.get(id) ?? 0) >= 2) return Promise.resolve({ ok: false, reason: "PLUGIN_BUSY" });
     inflight.set(id, (inflight.get(id) ?? 0) + 1);
-    return new Promise(resolve0 => { const resolve = r => { inflight.set(id, Math.max(0, (inflight.get(id) ?? 1) - 1)); resolve0(r); }; try { run(resolve); } catch { resolve({ ok: false, reason: "INVOKE_FAILED" }); } });      // NEVER throws or rejects: any failure while starting is a result
+    return new Promise(resolve0 => { let fin = false; const resolve = r => { if (fin) return; fin = true; inflight.set(id, Math.max(0, (inflight.get(id) ?? 1) - 1)); resolve0(r); }; try { withFileLock(stateFile, () => run(resolve)); } catch (e) { if (e?.message === "LOCK_TIMEOUT") return resolve({ ok: false, reason: "STATE_LOCKED" });      // the enabled/quarantined check and the audited start happen inside the state lock: a plugin disabled or quarantined by another process cannot be started afterwards
+       resolve({ ok: false, reason: "INVOKE_FAILED" }); } });      // NEVER throws or rejects: any failure while starting is a result
     function run(resolve) {
       load();
       try { audit.reload(); } catch { return resolve({ ok: false, reason: "AUDIT_UNAVAILABLE" }); }       // no hook runs when its run cannot be audited

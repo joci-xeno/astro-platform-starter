@@ -88,11 +88,16 @@ test("plugins r10: a busy state lock is a result (STATE_LOCKED) and never turns 
     assert.equal(pm.enable("p1", { ownerApproval: ap("PLUGIN_ENABLE", pm.enableSubject("p1")) }).ok, true);
     const lock = path.join(root, "state", "plugins-state.json.lock"); fs.writeFileSync(lock, "other-process");
     await withTimings({ waitMs: 200, staleMs: 600000 }, async () => {
-      const r = await pm.invoke("p1", "h", {}); assert.equal(r.ok, true, JSON.stringify(r)); assert.ok(fs.existsSync(lock), "lock survived invoke");
+      const r = await pm.invoke("p1", "h", {}); assert.equal(r.ok, false); assert.equal(r.reason, "STATE_LOCKED", "the check + audited start need the lock; busy is a result, not a plugin failure"); assert.ok(fs.existsSync(lock), "lock survived invoke");
       const dd = pm.disable("p1"); assert.equal(dd.ok, false, JSON.stringify(dd)); assert.equal(dd.reason, "STATE_LOCKED", JSON.stringify(dd));
       assert.ok(fs.existsSync(lock), "lock survived disable"); assert.equal(pm.enable("p1", null).ok, false);
     });
     fs.rmSync(lock); assert.equal(pm.list().plugins[0].failures, 0); assert.equal(pm.list().plugins[0].status, "ENABLED");
+    // the lock becomes busy only AFTER the hook started: the finished run is still a success and the bookkeeping miss is not a failure
+    fs.writeFileSync(path.join(plugins, "p1", "main.mjs"), "setTimeout(()=>console.log(JSON.stringify({ok:2})),500);"); assert.equal(pm.disable("p1").ok, true);
+    assert.equal(pm.enable("p1", { ownerApproval: ap("PLUGIN_ENABLE", pm.enableSubject("p1")) }).ok, true);
+    const pend = withTimings({ waitMs: 100, staleMs: 600000 }, () => { const pr = pm.invoke("p1", "h", {}); setTimeout(() => fs.writeFileSync(lock, "other"), 150); return pr; });
+    const r2 = await pend; assert.equal(r2.ok, true, JSON.stringify(r2)); fs.rmSync(lock, { force: true }); assert.equal(pm.list().plugins[0].failures, 0);
   } finally { rm(root); }
 });
 

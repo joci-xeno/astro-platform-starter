@@ -12,14 +12,14 @@ import crypto from "node:crypto";
 export const lockTimings = { staleMs: 15000, waitMs: 5000 };
 const held = new Map();                                                                             // lock path -> depth (re-entrant inside one process)
 const sleep = ms => { try { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); } catch { const t = Date.now() + ms; while (Date.now() < t) { /* spin */ } } };
-function lockPath(file) { const abs = path.resolve(file); let dir = path.dirname(abs); try { dir = fs.realpathSync(dir); } catch { /* directory not created yet */ } return path.join(dir, path.basename(abs)) + ".lock"; }      // one lock per real location, however the path is spelled
+function lockPath(file) { const abs = path.resolve(file); try { return fs.realpathSync(abs) + ".lock"; } catch { /* the store does not exist yet */ } let dir = path.dirname(abs); try { dir = fs.realpathSync(dir); } catch { /* directory not created yet */ } return path.join(dir, path.basename(abs)) + ".lock"; }      // one lock per real file: symlinked directories AND a symlinked store file resolve to the same lock      // one lock per real location, however the path is spelled
 const staleStat = st => !st.isFile() || Math.abs(Date.now() - st.mtimeMs) > lockTimings.staleMs;               // a directory/symlink in the lock's place, or a lock far in the past OR the future, is not a live lock
 
 /** Remove a stale lock, under the guard, after re-checking that it is still the same stale file. */
 export function _takeOver(lp, seen) {
   const gp = lp + ".guard"; let gfd = null;
   try { gfd = fs.openSync(gp, "wx", 0o600); }
-  catch (e) { if (e?.code === "EEXIST") { try { const g = fs.lstatSync(gp); if (Date.now() - g.mtimeMs > lockTimings.staleMs || !g.isFile()) fs.rmSync(gp, { recursive: true, force: true }); } catch { /* ignore */ } } return false; }
+  catch (e) { if (e?.code === "EEXIST") { try { const g = fs.lstatSync(gp); if (Math.abs(Date.now() - g.mtimeMs) > lockTimings.staleMs || !g.isFile()) fs.rmSync(gp, { recursive: true, force: true }); } catch { /* ignore */ } } return false; }
   try {
     let now; try { now = fs.lstatSync(lp); } catch { return true; }                                   // already gone
     if (now.ino !== seen.ino || now.mtimeMs !== seen.mtimeMs || !staleStat(now)) return false;       // somebody renewed or replaced it: not ours to remove
