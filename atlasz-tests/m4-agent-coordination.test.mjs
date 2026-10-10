@@ -344,9 +344,10 @@ test("loop detection works across threads on one task; the pair is blocked until
     const e1 = E(1), e2 = E(2); e1.register({ id: "t1", kind: "execute.job", payload: 1 }); e1.start("t1"); e1.delegate("t1", { to: "EXECUTION-2", artifacts: art("a") });
     const m = (a, to, b) => a.send({ to, task: "t1", type: "STATUS", body: b });
     assert.equal(m(e1, "EXECUTION-2", "same words").ok, true); assert.equal(m(e1, "EXECUTION-2", "same words").ok, true); assert.equal(m(e1, "EXECUTION-2", "SAME words").reason, "LOOP_REPEATED_MESSAGE");
-    assert.equal(m(e2, "EXECUTION-1", "anything new").reason, "LOOP_PAIR_BLOCKED");
+    assert.equal(m(e1, "EXECUTION-2", "anything new").reason, "LOOP_PAIR_BLOCKED");      // only the looping direction is blocked ...
+    assert.equal(m(e2, "EXECUTION-1", "the other side can always answer").ok, true);   // ... so the victim of a spammer is never silenced
     assert.equal(e1.withdrawDelegation("t1", "start over").ok, true); assert.equal(e1.delegate("t1", { to: "EXECUTION-2", artifacts: art("a") }).ok, true);      // real progress on the task lifts the block
-    assert.equal(m(e2, "EXECUTION-1", "after progress").ok, true);
+    assert.equal(m(e1, "EXECUTION-2", "after progress").ok, true);
     e2.accept("t1", art("a"));                                                                     // the task moved: the block lifts
     assert.equal(m(e1, "EXECUTION-2", "post-progress").reason, "SENDER_NOT_A_PARTICIPANT");      // e1 handed the task away: no longer a participant
     assert.equal(m(e2, "EXECUTION-1", "new owner speaking").reason, "RECIPIENT_NOT_A_PARTICIPANT");
@@ -355,8 +356,8 @@ test("loop detection works across threads on one task; the pair is blocked until
   try {
     const e1 = t2.E(1), e2 = t2.E(2); e1.register({ id: "t1", kind: "execute.job", payload: 1 }); e1.start("t1"); e1.delegate("t1", { to: "EXECUTION-2", artifacts: art("a") });
     const seq = []; for (let i = 0; i < 12; i++) seq.push((i % 2 ? e2 : e1).send({ to: i % 2 ? "EXECUTION-1" : "EXECUTION-2", task: "t1", type: "QUESTION", body: "ping " + i }).reason ?? "ok");
-    assert.ok(seq.includes("LOOP_PING_PONG"), seq.join(",")); assert.equal(e1.send({ to: "EXECUTION-2", task: "t1", type: "QUESTION", body: "once more" }).reason, "LOOP_PAIR_BLOCKED");
-    t2.clock.t += t2.c.limits.pairBlockMs + 1; assert.equal(e1.send({ to: "EXECUTION-2", task: "t1", type: "QUESTION", body: "after the block" }).ok, true);
+    assert.ok(seq.includes("LOOP_PING_PONG"), seq.join(",")); const again = [e1.send({ to: "EXECUTION-2", task: "t1", type: "QUESTION", body: "once more" }).reason, e2.send({ to: "EXECUTION-1", task: "t1", type: "QUESTION", body: "once more" }).reason]; assert.ok(again.includes("LOOP_PAIR_BLOCKED"), again.join(","));
+    t2.clock.t += t2.c.limits.pairBlockMs + 1; assert.equal(e1.send({ to: "EXECUTION-2", task: "t1", type: "QUESTION", body: "after the block" }).ok, true); assert.equal(e2.send({ to: "EXECUTION-1", task: "t1", type: "QUESTION", body: "after the block too" }).ok, true);
   } finally { rm(t2.d); }
 });
 
@@ -449,5 +450,58 @@ test("a replaced checker is never chosen again; an unassigned check cannot be cl
     const led = c.ledger; led.register("JOCI", { id: "u1", kind: "execute.job", payload: "u", owner: "EXECUTION-3" }); led.start("JOCI", "u1", { agent: "EXECUTION-3" }); led.complete("JOCI", "u1", { agent: "EXECUTION-3", resultSha256: H("u") });
     stop = true; assert.equal(E(7).nextToVerify({ prefix: "execute" })?.id === "u1", false); assert.equal(c.verifierOf("u1"), null);
     stop = false; assert.equal(E(7).nextToVerify({ prefix: "execute" })?.id !== undefined, true);
+  } finally { rm(d); }
+});
+
+// ---- independent-verification round 2 regressions
+test("sub-agents spend their parent's message share; per-initiator thread quota; the coordinator mailbox cannot be flooded out; escalations are kept", () => {
+  const { d, c, E, clock } = mk({ limits: { ratePerMin: 100000, subPerParent: 10, subGlobal: 10, perTask: 30, perTaskPerSender: 6, subMessages: 5, threadsPerTask: 100, coordinatorPerSender: 3, coordinatorMailbox: 5 } });
+  try {
+    const e1 = E(1), e2 = E(2); e1.register({ id: "t1", kind: "execute.job", payload: 1 }); e1.start("t1"); const subs = [e1.spawnSub({ task: "t1" }), e1.spawnSub({ task: "t1" })].map(x => e1.subHandle(x.sub));
+    const res = []; for (const [i, sh] of subs.entries()) for (let j = 0; j < 5; j++) res.push(sh.send({ to: "EXECUTION-1", task: "t1", type: "STATUS", body: "s" + i + "/" + j }).reason ?? "ok");
+    assert.equal(res.filter(x => x === "ok").length, 6); assert.ok(res.includes("MESSAGE_BUDGET_EXHAUSTED"));      // the parent's share (6) covers its sub-agents too
+    e1.delegate("t1", { to: "EXECUTION-2", artifacts: art("a") });
+    assert.equal(e2.send({ to: "EXECUTION-1", task: "t1", type: "STATUS", body: "the other participant still has its own share" }).ok, true);
+  } finally { rm(d); }
+  const t3 = mk({ limits: { ratePerMin: 100000, threadsPerTask: 3, perTask: 1000, perTaskPerSender: 1000, repeatWindow: 1000, pingPong: 1000 } });
+  try {
+    const e1 = t3.E(1), e2 = t3.E(2); e1.register({ id: "t1", kind: "execute.job", payload: 1 }); e1.start("t1"); e1.delegate("t1", { to: "EXECUTION-2", artifacts: art("a") });
+    const r = []; for (let i = 0; i < 6; i++) r.push(e1.send({ to: "EXECUTION-2", task: "t1", type: "STATUS", body: "e1 thread " + i }).reason ?? "ok");
+    assert.equal(r.filter(x => x === "ok").length, 3); assert.ok(r.includes("TOO_MANY_THREADS_ON_TASK"));
+    assert.equal(e2.send({ to: "EXECUTION-1", task: "t1", type: "STATUS", body: "e2 opens its own thread" }).ok, true);      // one participant cannot squat the others' thread slots
+  } finally { rm(t3.d); }
+  const t2 = mk({ limits: { ratePerMin: 100000, coordinatorPerSender: 3, coordinatorMailbox: 4, perTask: 1000, perTaskPerSender: 1000, repeatWindow: 1000, pingPong: 1000, threadsPerTask: 1000 } });
+  try {
+    const e1 = t2.E(1), e2 = t2.E(2); for (const [id, a] of [["a", e1], ["b", e2]]) { a.register({ id, kind: "execute.job", payload: id }); a.start(id); }
+    assert.equal(e2.send({ to: "COORDINATOR", task: "b", type: "ESCALATION", body: "real escalation" }).ok, true);
+    const r = []; for (let i = 0; i < 8; i++) r.push(e1.send({ to: "COORDINATOR", task: "a", type: "STATUS", body: "spam " + i }).reason ?? "ok");
+    assert.equal(r.filter(x => x === "ok").length, 3); assert.ok(r.includes("COORDINATOR_MAILBOX_SENDER_LIMIT"));
+    assert.ok(t2.c.coordinatorInbox().messages.some(m => m.type === "ESCALATION" && m.from === "EXECUTION-2"));
+    t2.clock.t += 90_000_000; assert.equal(t2.c.coordinatorInbox().messages.length >= 0, true); assert.equal(e1.send({ to: "COORDINATOR", task: "a", type: "STATUS", body: "fresh" }).ok, true);
+  } finally { rm(t2.d); }
+});
+
+test("stalled work ends: a task is reassigned at most maxReassign times then abandoned; checker pool recycles then abandons; a restart grants a grace period", () => {
+  const { d, c, E, clock } = mk();
+  try {
+    E(1).register({ id: "t1", kind: "execute.job", payload: 1 }); E(1).start("t1");
+    let abandoned = []; for (let i = 0; i < 8; i++) { clock.t += 700_000; const r = c.reclaimStalled({ olderThanMs: 600_000 }); abandoned.push(...r.abandoned); }
+    assert.deepEqual(abandoned, ["t1"]); assert.equal(c.ledger.get("JOCI", "t1").task.status, "FAILED"); assert.equal(c.summary().counters.reassigned, c.limits.maxReassign);
+    E(2).register({ id: "v1", kind: "execute.job", payload: 2 }); E(2).start("v1"); E(2).complete("v1", H("r"));
+    let swaps = 0; for (let i = 0; i < 150; i++) { clock.t += 1_000_000; const r = c.reclaimStalled({ olderThanMs: 600_000 }); swaps += r.reverifier.length; if (c.ledger.get("JOCI", "v1").task.status === "FAILED") break; }
+    assert.equal(c.ledger.get("JOCI", "v1").task.status, "FAILED"); assert.ok(swaps >= 24, "tried every other agent before giving up: " + swaps);
+    E(3).register({ id: "g1", kind: "execute.job", payload: 3 }); E(3).start("g1"); E(3).complete("g1", H("g")); const before = c.verifierOf("g1");
+    clock.t += 20 * 60_000; const c2 = createCoordinator({ dir: d, nowFn: () => clock.t }); c2.recover();
+    assert.deepEqual(c2.reclaimStalled({ olderThanMs: 600_000 }).reverifier, []); assert.equal(c2.verifierOf("g1"), before);      // downtime is not a stall
+  } finally { rm(d); }
+});
+
+test("state shape holes are rejected at load (valid hash, wrong inner types) and recover() never throws on them", () => {
+  const { d, c, E } = mk();
+  try {
+    const e1 = E(1); e1.register({ id: "t1", kind: "execute.job", payload: 1 }); e1.start("t1"); e1.checkpoint("t1", { a: 1 }); e1.spawnSub({ task: "t1" }); e1.send({ to: "COORDINATOR", task: "t1", type: "STATUS", body: "x" });
+    const f = path.join(d, "coordinator.json"), st = JSON.parse(JSON.parse(fs.readFileSync(f, "utf8")).body);
+    const bad = [{ subs: { x: null } }, { spawns: { "EXECUTION-1": 5 } }, { taskLoop: { t1: { recent: [null], blocks: {}, alt: 0, progress: 0 } } }, { checkpoints: { t1: [null] } }, { checkpoints: { t1: [{ n: 1 }] } }, { msgs: { m0000000000000001: { id: "x" } } }, { verifiers: { t1: 5 } }, { threads: { x: null } }, { taskMsgs: { t1: { n: 1 } } }];
+    for (const patch of bad) { const body = JSON.stringify({ ...st, ...patch }); fs.writeFileSync(f, JSON.stringify({ sha: H(body), body })); const c2 = createCoordinator({ dir: d }); assert.equal(c2.recover().loadedFrom, "CORRUPT_STARTED_EMPTY", JSON.stringify(patch)); }
   } finally { rm(d); }
 });

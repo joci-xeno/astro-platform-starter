@@ -92,8 +92,8 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
   const codeEdit = createCodeEditWorkflow({ projectsRoot: path.join(dataDir, "projects"), stateDir: path.join(dataDir, "code-edit"), ownerAuth, isKnownAgent: id => (state?.agents ?? []).some(a => a.id === id), isStopped: () => emergencyStatus().mode !== "RUNNING" || safeMode.status().mode !== "NORMAL" });      // M2/C01: controlled code edits; no agent tool is wired (agent-tool-policy denies unlisted tools)
   const memoryStore = createMemoryStore({ dir: path.join(dataDir, "memory", "knowledge-store"), ownerAuth, isStopped: () => emergencyStatus().mode !== "RUNNING" || safeMode.status().mode !== "NORMAL" });      // M3: Markdown memory + SQLite FTS5 (or in-memory fallback); no agent tool is wired
   // M4 coordination of the 30 permanent agents (messaging, delegation rules, loop limits, bounded sub-agents, checkpoints, maker-checker). Orchestration logic only: it creates no agent.
-  const coordination = createCoordinator({ dir: path.join(dataDir, "coordination"), isStopped: () => emergencyStatus().mode !== "RUNNING" || safeMode.status().mode !== "NORMAL", toolsOf: () => ["hn-search", "screening"] });
-  const coordRecovery = coordination.recover();
+  const coordination = createCoordinator({ dir: path.join(dataDir, "coordination"), isStopped: () => emergencyStatus().mode !== "RUNNING" || safeMode.status().mode !== "NORMAL", toolsOf: () => ["hn-search", "screening"], ledgerLimits: { maxTasks: 400 } });
+  let coordRecovery; try { coordRecovery = coordination.recover(); } catch (e) { coordRecovery = { ok: false, error: String(e?.message ?? e).slice(0, 80) }; }      // coordination is a second line of control: a damaged state must never stop the boot
   const safeMode = createSafeMode({ statePath: path.join(dataDir, "safe-mode.json"), auditPath: path.join(dataDir, "safe-mode-audit.jsonl"), ownerAuth });
   const ledger = createFinancialLedger({ dir: path.join(dataDir, "ledger") });
   const bootedAt = new Date().toISOString();

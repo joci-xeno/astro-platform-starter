@@ -17,7 +17,7 @@ import { containsSecret, scrub } from "./secret-patterns.mjs";
 import { okName } from "./safe-keys.mjs";
 
 export const LIMITS = Object.freeze({
-  maxBody: 2000, mailbox: 100, coordinatorMailbox: 200, mailTtlMs: 3600_000, ratePerMin: 20, maxHop: 8, perThread: 40, perTask: 120, perTaskPerSender: 60, taskWindowMs: 3600_000, threadsPerTask: 20, threadTtlMs: 86_400_000,
+  maxBody: 2000, mailbox: 100, coordinatorMailbox: 200, coordinatorPerSender: 20, coordinatorTtlMs: 86_400_000, maxReassign: 3, verifierResets: 2, mailTtlMs: 3600_000, ratePerMin: 20, maxHop: 8, perThread: 40, perTask: 120, perTaskPerSender: 60, taskWindowMs: 3600_000, threadsPerTask: 20, threadTtlMs: 86_400_000,
   repeatWindow: 10, pingPong: 6, pairBlockMs: 600_000, maxHandoffs: 3, maxRejections: 3, maxCheckpoint: 20000, checkpointsKept: 5, handoffStaleMs: 600_000, verifyStaleMs: 900_000,
   subPerParent: 2, subGlobal: 10, subSpawnPerHour: 20, subTtlMs: 120_000, subMaxTtlMs: 600_000, subMessages: 10, subSteps: 20, subTools: 8, maxThreads: 2000, keepDoneMs: 86_400_000
 });
@@ -25,7 +25,7 @@ export const MESSAGE_TYPES = Object.freeze(["TASK_NOTE", "QUESTION", "ANSWER", "
 // Which team may own which kind of task (prefix of the ledger kind). An unknown prefix is refused: delegation fails closed.
 export const KIND_ROLES = Object.freeze({ search: "SEARCH", discover: "SEARCH", lead: "SEARCH", screen: "EXECUTION", execute: "EXECUTION", build: "EXECUTION", qa: "EXECUTION", review: "EXECUTION", fix: "EXECUTION", deliver: "EXECUTION" });
 const COORD = "COORDINATOR", TASK_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,59}$/, MSG_RE = /^m[0-9a-f]{16}$/, SUB_RE = /^SUB-(?:SEARCH-[1-5]|EXECUTION-(?:[1-9]|1\d|2[0-5]))-[0-9a-f]{8}$/, TOOL_RE = /^[a-z][a-z0-9._-]{0,39}$/;
-const MAPS = ["mail", "msgs", "threads", "taskMsgs", "taskLoop", "checkpoints", "verifiers", "verifierTried", "beats", "subs", "rate", "spawns", "doneAt"];
+const MAPS = ["mail", "msgs", "threads", "taskMsgs", "taskLoop", "checkpoints", "verifiers", "verifierTried", "beats", "subs", "rate", "spawns", "doneAt", "progress", "reassigns", "verifierResets"];
 const sha = t => crypto.createHash("sha256").update(t).digest("hex");
 const rosterOk = a => typeof a === "string" && AGENT_ID_RE.test(a);
 const ROSTER = Object.freeze(Array.from({ length: 30 }, (_, i) => (i < 5 ? "SEARCH-" + (i + 1) : "EXECUTION-" + (i - 4))));
@@ -35,12 +35,12 @@ const fenceMsg = m => "<<UNTRUSTED_AGENT_MESSAGE from=" + m.from + " type=" + m.
 const np = o => Object.assign(Object.create(null), o && typeof o === "object" && !Array.isArray(o) ? o : {});      // no prototype: an id like "constructor" can never read an inherited member
 const plain = v => v !== null && typeof v === "object" && !Array.isArray(v);
 
-export function createCoordinator({ dir, tenantId = "JOCI", ledger = null, isStopped = () => false, nowFn = () => Date.now(), limits = {}, toolsOf = () => [], rng = () => crypto.randomBytes(8).toString("hex") } = {}) {
+export function createCoordinator({ dir, tenantId = "JOCI", ledger = null, isStopped = () => false, nowFn = () => Date.now(), limits = {}, ledgerLimits = {}, toolsOf = () => [], rng = () => crypto.randomBytes(8).toString("hex") } = {}) {
   if (!dir) throw new Error("COORDINATION_DIR_REQUIRED");
   if (typeof tenantId !== "string" || !okName(/^[A-Za-z0-9._-]{1,64}$/, tenantId)) throw new Error("TENANT_INVALID");
   const L = { ...LIMITS, ...limits };
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-  const led = ledger ?? createHandoffLedger({ file: path.join(dir, "ledger.json"), isStopped, now: nowFn });
+  const led = ledger ?? createHandoffLedger({ file: path.join(dir, "ledger.json"), isStopped, now: nowFn, limits: ledgerLimits });
   const audit = createAuditChain({ filePath: path.join(dir, "coordination-audit.jsonl") });
   const stateFile = path.join(dir, "coordinator.json");
   const fail = (reason, extra = {}) => ({ ok: false, reason, ...extra });
@@ -55,10 +55,17 @@ export function createCoordinator({ dir, tenantId = "JOCI", ledger = null, isSto
   if (fs.existsSync(stateFile)) {
     try {
       const w = JSON.parse(fs.readFileSync(stateFile, "utf8")); if (w.sha !== sha(w.body)) throw new Error("hash"); const s = JSON.parse(w.body);
-      if (!plain(s) || s.v !== 2 || !plain(s.counters) || !MAPS.every(k => plain(s[k]))) throw new Error("shape");
-      for (const [k, v] of Object.entries(s.mail)) if (!Array.isArray(v)) throw new Error("shape-mail"); for (const [k, v] of Object.entries(s.rate)) if (!Array.isArray(v)) throw new Error("shape-rate");
-      for (const [k, v] of Object.entries(s.checkpoints)) if (!Array.isArray(v)) throw new Error("shape-cp"); for (const th of Object.values(s.threads)) if (!plain(th) || typeof th.task !== "string") throw new Error("shape-th"); for (const tl of Object.values(s.taskLoop)) if (!plain(tl) || !Array.isArray(tl.recent) || !plain(tl.blocks)) throw new Error("shape-tl"); for (const tm of Object.values(s.taskMsgs)) if (!plain(tm) || !plain(tm.by)) throw new Error("shape-tm");
-      const base = fresh(); S = { ...base, ...s, counters: { ...base.counters, ...s.counters } }; for (const k of MAPS) S[k] = np(s[k]); loadedFrom = "FILE";
+      if (!plain(s) || s.v !== 2 || !plain(s.counters) || !MAPS.every(k => s[k] === undefined || plain(s[k]))) throw new Error("shape");
+      const arr = (o, f) => { for (const v of Object.values(o ?? {})) if (!Array.isArray(v) || !v.every(f)) throw new Error("shape-array"); };
+      arr(s.mail, x => typeof x === "string"); arr(s.rate, x => Number.isFinite(x)); arr(s.spawns, x => Number.isFinite(x)); arr(s.verifierTried, x => typeof x === "string");
+      arr(s.checkpoints, x => plain(x) && typeof x.text === "string" && typeof x.sha === "string" && Number.isInteger(x.n));
+      for (const m of Object.values(s.msgs ?? {})) if (!plain(m) || typeof m.to !== "string" || typeof m.from !== "string" || typeof m.task !== "string" || typeof m.body !== "string" || !Number.isFinite(m.at) || !Number.isInteger(m.hop)) throw new Error("shape-msg");
+      for (const th of Object.values(s.threads ?? {})) if (!plain(th) || typeof th.task !== "string") throw new Error("shape-th");
+      for (const tl of Object.values(s.taskLoop ?? {})) if (!plain(tl) || !Array.isArray(tl.recent) || !tl.recent.every(r => plain(r) && typeof r.fp === "string" && typeof r.from === "string" && typeof r.to === "string") || !plain(tl.blocks)) throw new Error("shape-tl");
+      for (const tm of Object.values(s.taskMsgs ?? {})) if (!plain(tm) || !plain(tm.by) || !Number.isFinite(tm.since)) throw new Error("shape-tm");
+      for (const sb of Object.values(s.subs ?? {})) if (!plain(sb) || typeof sb.parent !== "string" || typeof sb.task !== "string" || typeof sb.status !== "string" || !plain(sb.budget) || !Number.isFinite(sb.expiresAt)) throw new Error("shape-sub");
+      for (const v of Object.values(s.verifiers ?? {})) if (typeof v !== "string") throw new Error("shape-ver");
+      const base = fresh(); S = { ...base, ...s, counters: { ...base.counters, ...s.counters } }; for (const k of MAPS) S[k] = np(s[k]); delete S.escalations; loadedFrom = "FILE";
     } catch { try { fs.renameSync(stateFile, stateFile + ".corrupt-" + Date.now()); } catch { /* ignore */ } S = fresh(); loadedFrom = "CORRUPT_STARTED_EMPTY"; log("COORDINATION_STATE_CORRUPT"); }
   }
 
@@ -67,7 +74,7 @@ export function createCoordinator({ dir, tenantId = "JOCI", ledger = null, isSto
   const own = (m, k) => (typeof k === "string" && Object.hasOwn(m, k) ? m[k] : undefined);
   const subOf = id => (typeof id === "string" && SUB_RE.test(id) ? own(S.subs, id) ?? null : null);
   const participants = k => { const set = new Set([k.owner]); const h = k.handoffs?.find(x => x.n === k.handoff && x.status === "PENDING"); if (h) set.add(h.to); const v = own(S.verifiers, k.id); if (v) set.add(v); return set; };
-  const ledgerProgress = taskId => { const r = led.events(tenantId, 500); return Array.isArray(r) ? r.filter(e => e.task === taskId).length : 0; };
+  const ledgerProgress = taskId => own(S.progress, taskId) ?? 0, bump = id => { S.progress[id] = (own(S.progress, id) ?? 0) + 1; };
   const perAgentLoad = () => { const per = { ...(led.load(tenantId).perAgent ?? {}) }; for (const v of Object.values(S.verifiers)) per[v] = (per[v] ?? 0) + 1; return per; };      // duty = owned open tasks + checks assigned
   function reapSubs() {
     const t = nowFn(); let n = 0;
@@ -83,7 +90,7 @@ export function createCoordinator({ dir, tenantId = "JOCI", ledger = null, isSto
   function gc() {
     const t = nowFn(); let n = 0;
     for (const [id, th] of Object.entries(S.threads)) if (t - (th.at ?? 0) > L.threadTtlMs || !task(th.task)) { delete S.threads[id]; n++; }
-    for (const k of ["taskMsgs", "taskLoop", "checkpoints", "verifiers", "verifierTried"]) for (const id of Object.keys(S[k])) { const tk = task(id); if (!tk) { delete S[k][id]; n++; } else if (["DONE", "FAILED", "CANCELLED"].includes(tk.status)) { S.doneAt[id] ??= t; if (t - S.doneAt[id] > L.keepDoneMs) { delete S[k][id]; n++; } } }
+    for (const k of ["taskMsgs", "taskLoop", "checkpoints", "verifiers", "verifierTried", "progress", "reassigns", "verifierResets"]) for (const id of Object.keys(S[k])) { const tk = task(id); if (!tk) { delete S[k][id]; n++; } else if (["DONE", "FAILED", "CANCELLED"].includes(tk.status)) { S.doneAt[id] ??= t; if (t - S.doneAt[id] > L.keepDoneMs) { delete S[k][id]; n++; } } }
     for (const id of Object.keys(S.doneAt)) if (!task(id)) delete S.doneAt[id];
     for (const [id, w] of Object.entries(S.rate)) if (!w.length || t - w[w.length - 1] > 60_000) { delete S.rate[id]; n++; }
     for (const [id, s] of Object.entries(S.subs)) if (s.status !== "ACTIVE" && t - (s.expiresAt ?? 0) > 3600_000) { delete S.subs[id]; delete S.rate[id]; n++; }
@@ -124,8 +131,8 @@ export function createCoordinator({ dir, tenantId = "JOCI", ledger = null, isSto
     const t = nowFn(), tm = (S.taskMsgs[taskId] = own(S.taskMsgs, taskId) && t - S.taskMsgs[taskId].since < L.taskWindowMs ? S.taskMsgs[taskId] : { n: 0, since: t, by: {} });
     const prog = ledgerProgress(taskId), tl = (S.taskLoop[taskId] ??= { recent: [], alt: 0, progress: prog, blocks: {} });
     if (tl.progress !== prog) { tl.progress = prog; tl.alt = 0; tl.blocks = {}; }
-    const pair = [from, to].sort().join("|"); if (own(tl.blocks, pair) > t) return refuse("LOOP_PAIR_BLOCKED");
-    if (tm.n >= L.perTask || (tm.by[from] ?? 0) >= L.perTaskPerSender) { S.counters.loops++; log("MESSAGE_BUDGET_EXHAUSTED", { task: taskId, from }); save(); return refuse("MESSAGE_BUDGET_EXHAUSTED"); }
+    const who = sub ? sub.parent : from, pair = from + ">" + to; if ((own(tl.blocks, pair) ?? 0) > t) return refuse("LOOP_PAIR_BLOCKED");      // directional: only the sender that looped is blocked, the other side can always answer
+    if (tm.n >= L.perTask || (tm.by[who] ?? 0) >= L.perTaskPerSender) { S.counters.loops++; log("MESSAGE_BUDGET_EXHAUSTED", { task: taskId, from }); save(); return refuse("MESSAGE_BUDGET_EXHAUSTED"); }
     if (!rate(from)) { S.counters.loops++; log("MESSAGE_RATE_LIMITED", { from }); return refuse("RATE_LIMITED"); }
     let hop = 0, thread, isNew = false;
     if (replyTo !== null) {
@@ -135,9 +142,9 @@ export function createCoordinator({ dir, tenantId = "JOCI", ledger = null, isSto
     } else { thread = "t" + rng().slice(0, 12); isNew = true; }
     let th = own(S.threads, thread);
     if (isNew || !th) {
-      th = { task: taskId, n: 0, frozen: false, at: t };
-      const mine = Object.values(S.threads).filter(x => x.task === taskId).length;
-      if (mine >= L.threadsPerTask) { const old = Object.entries(S.threads).filter(([, x]) => x.task === taskId).sort((a, b) => a[1].at - b[1].at)[0]; if (old && (old[1].frozen || t - old[1].at > 60_000)) delete S.threads[old[0]]; else return refuse("TOO_MANY_THREADS_ON_TASK"); }
+      th = { task: taskId, n: 0, frozen: false, at: t, by: who };
+      const mine = Object.values(S.threads).filter(x => x.task === taskId && x.by === who).length;
+      if (mine >= L.threadsPerTask) { const old = Object.entries(S.threads).filter(([, x]) => x.task === taskId && x.by === who).sort((a, b) => a[1].at - b[1].at)[0]; if (old && (old[1].frozen || t - old[1].at > 60_000)) delete S.threads[old[0]]; else return refuse("TOO_MANY_THREADS_ON_TASK"); }
       if (Object.keys(S.threads).length >= L.maxThreads) { gc(); if (Object.keys(S.threads).length >= L.maxThreads) return refuse("TOO_MANY_THREADS"); }
     }
     if (th.frozen) return refuse("THREAD_FROZEN");
@@ -150,11 +157,15 @@ export function createCoordinator({ dir, tenantId = "JOCI", ledger = null, isSto
     tl.alt = last && last.from === to && last.to === from ? tl.alt + 1 : 0;      // strict A->B, B->A, A->B ... on the task with no ledger progress in between (any thread)
     if (tl.alt >= L.pingPong) { tl.alt = 0; return block("LOOP_PING_PONG"); }
     const box = to === COORD ? (own(S.mail, COORD) ?? []) : dropOldMail(to);
-    if (to === COORD) { if (box.length >= L.coordinatorMailbox) { const old = box.shift(); delete S.msgs[old]; } } else if (box.length >= L.mailbox) return refuse("MAILBOX_FULL");
+    if (to === COORD) {
+      const t0 = t; for (const m of box.slice()) { const mm = own(S.msgs, m); if (!mm || t0 - mm.at > L.coordinatorTtlMs) { box.splice(box.indexOf(m), 1); delete S.msgs[m]; } }
+      if (box.filter(m => own(S.msgs, m)?.from === from).length >= L.coordinatorPerSender) return refuse("COORDINATOR_MAILBOX_SENDER_LIMIT");
+      if (box.length >= L.coordinatorMailbox) { const victim = box.find(m => own(S.msgs, m)?.type !== "ESCALATION") ?? null; if (victim === null) return refuse("COORDINATOR_MAILBOX_FULL"); box.splice(box.indexOf(victim), 1); delete S.msgs[victim]; }
+    } else if (box.length >= L.mailbox) return refuse("MAILBOX_FULL");
     const id = "m" + rng().slice(0, 16).padEnd(16, "0");
     S.msgs[id] = { id, thread, task: taskId, from, to, type, body, hop, replyTo, at: t, fp: fp.slice(0, 16), acked: false };
     S.mail[to] = [...box, id]; th.n++; th.at = t; S.threads[thread] = th; tl.recent.push({ fp, from, to }); if (tl.recent.length > L.repeatWindow * 2) tl.recent.shift();
-    tm.n++; tm.by[from] = (tm.by[from] ?? 0) + 1; S.counters.sent++; if (sub) sub.sent++;
+    tm.n++; tm.by[who] = (tm.by[who] ?? 0) + 1; S.counters.sent++; if (sub) sub.sent++;
     log("MESSAGE", { id, from, to, task: taskId, type, hop, bodySha: sha(body).slice(0, 16) }); save();
     return { ok: true, id, thread, hop };
   }
@@ -178,9 +189,9 @@ export function createCoordinator({ dir, tenantId = "JOCI", ledger = null, isSto
     if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); if (!rosterOk(from)) return refuse("ONLY_ROSTER_AGENTS_REGISTER_TASKS");
     if (typeof id !== "string" || !TASK_RE.test(id) || !okName(TASK_RE, id)) return refuse("TASK_ID_INVALID");
     const need = kindRole(kind); if (!need) return refuse("KIND_NOT_PERMITTED"); if (need !== roleOf(from)) return refuse("KIND_NOT_FOR_THIS_TEAM");
-    const r = led.register(tenantId, { id, kind, payload, owner: from, dependsOn }); if (r.ok) { heartbeat(from); log("TASK_REGISTERED", { id, kind, owner: from }); save(); } return r;
+    const r = led.register(tenantId, { id, kind, payload, owner: from, dependsOn }); if (r.ok) { bump(id); heartbeat(from); log("TASK_REGISTERED", { id, kind, owner: from }); save(); } return r;
   }
-  function start(from, id) { if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const r = led.start(tenantId, id, { agent: from }); if (r.ok) { heartbeat(from); log("TASK_STARTED", { id, by: from }); save(); } return r; }
+  function start(from, id) { if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const r = led.start(tenantId, id, { agent: from }); if (r.ok) { bump(id); heartbeat(from); log("TASK_STARTED", { id, by: from }); save(); } return r; }
   function delegate(from, id, { to, artifacts, summary = "" } = {}) {
     if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const k = task(id); if (!k) return refuse("TASK_NOT_FOUND"); if (!rosterOk(to)) return refuse("RECIPIENT_NOT_IN_ROSTER");
     if (k.owner !== from) return refuse("NOT_THE_OWNER");
@@ -188,27 +199,30 @@ export function createCoordinator({ dir, tenantId = "JOCI", ledger = null, isSto
     if (k.owners.includes(to)) { S.counters.loops++; log("DELEGATION_CYCLE_REFUSED", { id, from, to }); return refuse("DELEGATION_CYCLE"); }
     if (k.handoffs.length >= L.maxHandoffs) { S.counters.loops++; log("DELEGATION_DEPTH_LIMIT", { id }); return refuse("DELEGATION_DEPTH_LIMIT"); }
     if (k.rejections >= L.maxRejections) return refuse("TOO_MANY_REJECTIONS_ESCALATE");
-    const r = led.handoff(tenantId, id, { from, to, artifacts, summary }); if (r.ok) { log("TASK_DELEGATED", { id, from, to, contract: r.contract }); save(); } return r;
+    const r = led.handoff(tenantId, id, { from, to, artifacts, summary }); if (r.ok) { bump(id); log("TASK_DELEGATED", { id, from, to, contract: r.contract }); save(); } return r;
   }
-  function withdrawDelegation(who, id, reason = "") { if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const r = led.rescind(tenantId, id, { by: who, reason }); if (r.ok) { S.counters.rescinded++; log("DELEGATION_WITHDRAWN", { id, by: who }); save(); } return r; }
-  function accept(who, id, received) { if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const r = led.accept(tenantId, id, { agent: who, received }); if (r.ok) { heartbeat(who); log("TASK_ACCEPTED", { id, by: who }); save(); } return r; }
-  function reject(who, id, reason) { if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const r = led.rejectHandoff(tenantId, id, { agent: who, reason }); if (r.ok) { log("HANDOFF_REJECTED", { id, by: who }); save(); } return r; }
+  function withdrawDelegation(who, id, reason = "") { if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const r = led.rescind(tenantId, id, { by: who, reason }); if (r.ok) { bump(id); S.counters.rescinded++; log("DELEGATION_WITHDRAWN", { id, by: who }); save(); } return r; }
+  function accept(who, id, received) { if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const r = led.accept(tenantId, id, { agent: who, received }); if (r.ok) { bump(id); heartbeat(who); log("TASK_ACCEPTED", { id, by: who }); save(); } return r; }
+  function reject(who, id, reason) { if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const r = led.rejectHandoff(tenantId, id, { agent: who, reason }); if (r.ok) { bump(id); log("HANDOFF_REJECTED", { id, by: who }); save(); } return r; }
   function complete(who, id, resultSha256) {
     if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const r = led.complete(tenantId, id, { agent: who, resultSha256 }); if (!r.ok) return r;
-    log("TASK_SUBMITTED", { id, by: who, resultSha256 }); assignVerifier(id); heartbeat(who); save(); return r;
+    bump(id); log("TASK_SUBMITTED", { id, by: who, resultSha256 }); assignVerifier(id); heartbeat(who); save(); return r;
   }
   /** The coordinator (not the maker) picks the checker: a roster agent of the right team that never owned the task, never already failed to check it, and carries the least duty (owned tasks + checks assigned). */
   function assignVerifier(id) {
     const k = task(id); if (!k || k.status !== "VERIFYING") return null; if (own(S.verifiers, id)) return S.verifiers[id];
     const need = kindRole(k.kind), per = perAgentLoad(), tried = own(S.verifierTried, id) ?? [];
     const pool = ROSTER.filter(a => !k.owners.includes(a) && !tried.includes(a) && roleOf(a) === need).sort((a, b) => (per[a] ?? 0) - (per[b] ?? 0) || (a < b ? -1 : 1));
-    if (!pool.length) { log("NO_INDEPENDENT_VERIFIER_AVAILABLE", { id }); return null; }
+    if (!pool.length) {
+      if (tried.length && (own(S.verifierResets, id) ?? 0) < L.verifierResets) { S.verifierResets[id] = (own(S.verifierResets, id) ?? 0) + 1; S.verifierTried[id] = []; log("VERIFIER_POOL_RECYCLED", { id }); return assignVerifier(id); }
+      log("NO_INDEPENDENT_VERIFIER_AVAILABLE", { id }); if (tried.length) abandon(id, "NO_CHECKER_AVAILABLE"); return null;
+    }
     S.verifiers[id] = pool[0]; S.verifierTried[id] = [...tried, pool[0]]; S.beats["verify:" + id] = nowFn(); log("VERIFIER_ASSIGNED", { id, verifier: pool[0] }); return pool[0];
   }
   function verify(who, id, { decision, resultSha256 } = {}) {
     if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); if (own(S.verifiers, id) !== who) return refuse("NOT_THE_ASSIGNED_VERIFIER");
     const r = led.verify(tenantId, id, { verifier: who, decision, resultSha256 });
-    if (r.ok) { log("TASK_VERIFIED", { id, verifier: who, decision, status: r.status }); delete S.verifiers[id]; delete S.verifierTried[id]; if (r.status === "DONE") { S.doneAt[id] = nowFn(); try { onVerified?.({ id, verifier: who }); } catch { /* a hook failure never undoes a verification */ } } heartbeat(who); save(); }
+    if (r.ok) { bump(id); log("TASK_VERIFIED", { id, verifier: who, decision, status: r.status }); delete S.verifiers[id]; delete S.verifierTried[id]; if (r.status === "DONE") { S.doneAt[id] = nowFn(); try { onVerified?.({ id, verifier: who }); } catch { /* a hook failure never undoes a verification */ } } heartbeat(who); save(); }
     return r;
   }
   let onVerified = null;
@@ -227,7 +241,7 @@ export function createCoordinator({ dir, tenantId = "JOCI", ledger = null, isSto
   /** Coordinator decision for work that cannot be completed (a rejected result nobody can rework, a task with too many rejections): mark it FAILED so its owner's slot is freed, and tell the owner side. */
   function abandon(id, reason = "") {
     if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const k = task(id); if (!k) return fail("TASK_NOT_FOUND");
-    const r = led.close(tenantId, id, { agent: k.owner, status: "FAILED", reason: "COORDINATOR:" + scrub(String(reason)).slice(0, 80) }); if (r.ok) { S.counters.abandoned++; delete S.verifiers[id]; log("TASK_ABANDONED", { id, owner: k.owner, reason: scrub(String(reason)).slice(0, 80) }); save(); } return r;
+    const r = led.close(tenantId, id, { agent: k.owner, status: "FAILED", reason: "COORDINATOR:" + scrub(String(reason)).slice(0, 80) }); if (r.ok) { bump(id); S.counters.abandoned++; delete S.verifiers[id]; log("TASK_ABANDONED", { id, owner: k.owner, reason: scrub(String(reason)).slice(0, 80) }); save(); } return r;
   }
 
   // ------------------------------------------------------------------ checkpoints
@@ -279,30 +293,31 @@ export function createCoordinator({ dir, tenantId = "JOCI", ledger = null, isSto
   // ------------------------------------------------------------------ recovery and stalled work (coordinator only)
   function recover() {
     let subs = 0; for (const s of Object.values(S.subs)) if (s.status === "ACTIVE") { s.status = "RECOVERED_EXPIRED"; delete S.mail[s.id]; subs++; }
-    const pruned = gc(), rows = led.list(tenantId, {});
+    const pruned = gc(), rows = led.list(tenantId, {}); for (const k of Object.keys(S.beats)) S.beats[k] = nowFn();      // after a restart nobody has been quiet for long: a downtime must not look like a stall
     const resumable = rows.filter(x => x.status === "IN_PROGRESS" || x.status === "ASSIGNED").map(x => ({ id: x.id, owner: x.owner, checkpoint: (own(S.checkpoints, x.id) ?? []).at(-1)?.n ?? null }));
     S.counters.recovered++; log("COORDINATION_RECOVERED", { subsExpired: subs, resumable: resumable.length, pruned, loadedFrom }); save();
     return { ok: true, loadedFrom, subsExpired: subs, pruned, resumable, pendingVerification: rows.filter(x => x.status === "VERIFYING").map(x => x.id) };
   }
   /** Coordinator sweep: work whose owner went quiet is reassigned; a handoff nobody answers is withdrawn; a check nobody performs moves to another checker. */
   function reclaimStalled({ olderThanMs = 600_000 } = {}) {
-    if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const t = nowFn(), out = { reassigned: [], rescinded: [], reverifier: [] };
+    if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const t = nowFn(), out = { reassigned: [], rescinded: [], reverifier: [], abandoned: [] };
     for (const x of led.list(tenantId, {})) {
       const k = task(x.id); if (!k) continue;
       if (x.status === "IN_PROGRESS" || x.status === "ASSIGNED") {
         if (t - (own(S.beats, x.owner) ?? 0) < olderThanMs) continue;
+        if ((own(S.reassigns, x.id) ?? 0) >= L.maxReassign) { const a = abandon(x.id, "STALLED_AFTER_" + L.maxReassign + "_REASSIGNMENTS"); if (a.ok) out.abandoned.push(x.id); continue; }
         const need = kindRole(k.kind), per = perAgentLoad(), pool = ROSTER.filter(a => roleOf(a) === need && !k.owners.includes(a)).sort((a, b) => (per[a] ?? 0) - (per[b] ?? 0) || (a < b ? -1 : 1));
-        let moved = false; for (const to of pool) { const r = led.reassign(tenantId, x.id, { to, reason: "STALLED_" + k.owner }); if (r.ok) { S.beats[to] = t; S.counters.reassigned++; log("TASK_RECLAIMED", { id: x.id, from: k.owner, to }); out.reassigned.push({ id: x.id, from: k.owner, to, checkpoint: (own(S.checkpoints, x.id) ?? []).at(-1)?.n ?? null }); moved = true; break; } }
+        let moved = false; for (const to of pool) { const r = led.reassign(tenantId, x.id, { to, reason: "STALLED_" + k.owner }); if (r.ok) { bump(x.id); S.reassigns[x.id] = (own(S.reassigns, x.id) ?? 0) + 1; S.beats[to] = t; S.counters.reassigned++; log("TASK_RECLAIMED", { id: x.id, from: k.owner, to }); out.reassigned.push({ id: x.id, from: k.owner, to, checkpoint: (own(S.checkpoints, x.id) ?? []).at(-1)?.n ?? null }); moved = true; break; } }
         if (!moved) log("TASK_STALLED_NO_TAKER", { id: x.id, owner: k.owner });
       } else if (x.status === "HANDOFF_PENDING") {
         const h = k.handoffs.find(y => y.n === k.handoff && y.status === "PENDING"); if (!h || t - Date.parse(h.at) < Math.min(olderThanMs, L.handoffStaleMs)) continue;
-        const r = led.rescind(tenantId, x.id, { by: COORD, reason: "UNANSWERED_" + h.to }); if (r.ok) { S.counters.rescinded++; log("HANDOFF_RESCINDED_UNANSWERED", { id: x.id, to: h.to }); out.rescinded.push({ id: x.id, to: h.to }); }
+        const r = led.rescind(tenantId, x.id, { by: COORD, reason: "UNANSWERED_" + h.to }); if (r.ok) { bump(x.id); S.counters.rescinded++; log("HANDOFF_RESCINDED_UNANSWERED", { id: x.id, to: h.to }); out.rescinded.push({ id: x.id, to: h.to }); }
       } else if (x.status === "VERIFYING") {
         const v = own(S.verifiers, x.id); if (v && t - (own(S.beats, "verify:" + x.id) ?? 0) < Math.min(olderThanMs, L.verifyStaleMs)) continue;
         if (v) { delete S.verifiers[x.id]; S.counters.verifierChanged++; } const n = assignVerifier(x.id); if (n && n !== v) { log("VERIFIER_REPLACED", { id: x.id, from: v ?? null, to: n }); out.reverifier.push({ id: x.id, from: v ?? null, to: n }); }
       }
     }
-    if (out.reassigned.length || out.rescinded.length || out.reverifier.length) save(); return { ok: true, ...out };
+    if (out.reassigned.length || out.rescinded.length || out.reverifier.length || out.abandoned.length) save(); return { ok: true, ...out };
   }
   function closeThread(thread) { const th = own(S.threads, thread); if (!th) return fail("THREAD_UNKNOWN"); th.frozen = true; log("THREAD_CLOSED", { thread }); save(); return { ok: true }; }      // a safety move: allowed while stopped
   const noteUncoordinated = (agent, reason) => { S.counters.uncoordinated++; log("UNCOORDINATED", { agent, reason: String(reason).slice(0, 60) }); };

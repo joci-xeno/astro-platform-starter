@@ -39,7 +39,7 @@ export function createHandoffLedger({ file = null, isStopped = () => false, now 
     let size; try { size = canon(payload).length; } catch { return { ok: false, reason: "PAYLOAD_INVALID" } } if (size > L.maxPayloadChars) return { ok: false, reason: "PAYLOAD_TOO_LARGE" };
     if (!Array.isArray(dependsOn) || dependsOn.length > L.maxDeps || !dependsOn.every(x => typeof x === "string" && TASK.test(x))) return { ok: false, reason: "DEPENDENCIES_INVALID" };
     const t = T(tenantId); if (Object.hasOwn(t.tasks, id)) return { ok: false, reason: "TASK_ID_EXISTS" }; if (Object.keys(t.tasks).length >= L.maxTasks) {                       // make room by archiving the oldest VERIFIED-DONE tasks nothing depends on; open, failed and referenced tasks are never dropped
-      const ref = new Set(Object.values(t.tasks).flatMap(x => x.dependsOn ?? [])), old = Object.values(t.tasks).filter(x => x.status === "DONE" && !ref.has(x.id)).sort((x, y) => (x.createdAt < y.createdAt ? -1 : 1));
+      const ref = new Set(Object.values(t.tasks).flatMap(x => x.dependsOn ?? [])), old = Object.values(t.tasks).filter(x => (x.status === "DONE" || RETRYABLE.has(x.status)) && !ref.has(x.id)).sort((x, y) => (x.createdAt < y.createdAt ? -1 : 1));
       for (const x of old.slice(0, Math.max(1, Math.ceil(L.maxTasks / 10)))) delete t.tasks[x.id];
       if (Object.keys(t.tasks).length >= L.maxTasks) return { ok: false, reason: "TOO_MANY_TASKS" };
     }
