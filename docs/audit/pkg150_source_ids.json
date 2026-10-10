@@ -1,0 +1,902 @@
+[
+ {
+  "id": "S01",
+  "desc": "Autonomous computer operation",
+  "group": 1,
+  "group_name": "GPT-6.1 Sol (S01–S15)"
+ },
+ {
+  "id": "S02",
+  "desc": "Intelligent multi-application workflow builder",
+  "group": 1,
+  "group_name": "GPT-6.1 Sol (S01–S15)"
+ },
+ {
+  "id": "S03",
+  "desc": "Automated software debugging",
+  "group": 1,
+  "group_name": "GPT-6.1 Sol (S01–S15)"
+ },
+ {
+  "id": "S04",
+  "desc": "Self-healing workflow recovery",
+  "group": 1,
+  "group_name": "GPT-6.1 Sol (S01–S15)"
+ },
+ {
+  "id": "S05",
+  "desc": "Advanced document interpretation",
+  "group": 1,
+  "group_name": "GPT-6.1 Sol (S01–S15)"
+ },
+ {
+  "id": "S06",
+  "desc": "Digital form completion assistant",
+  "group": 1,
+  "group_name": "GPT-6.1 Sol (S01–S15)"
+ },
+ {
+  "id": "S07",
+  "desc": "Model and task cost optimization",
+  "group": 1,
+  "group_name": "GPT-6.1 Sol (S01–S15)"
+ },
+ {
+  "id": "S08",
+  "desc": "Long-running task checkpointing and continuation",
+  "group": 1,
+  "group_name": "GPT-6.1 Sol (S01–S15)"
+ },
+ {
+  "id": "S09",
+  "desc": "Automated software test generation",
+  "group": 1,
+  "group_name": "GPT-6.1 Sol (S01–S15)"
+ },
+ {
+  "id": "S10",
+  "desc": "Codebase dependency and architecture mapping",
+  "group": 1,
+  "group_name": "GPT-6.1 Sol (S01–S15)"
+ },
+ {
+  "id": "S11",
+  "desc": "Scientific computation and simulation assistant",
+  "group": 1,
+  "group_name": "GPT-6.1 Sol (S01–S15)"
+ },
+ {
+  "id": "S12",
+  "desc": "Data quality and integrity checking",
+  "group": 1,
+  "group_name": "GPT-6.1 Sol (S01–S15)"
+ },
+ {
+  "id": "S13",
+  "desc": "Browser-based task execution",
+  "group": 1,
+  "group_name": "GPT-6.1 Sol (S01–S15)"
+ },
+ {
+  "id": "S14",
+  "desc": "Automated action and evidence logging",
+  "group": 1,
+  "group_name": "GPT-6.1 Sol (S01–S15)"
+ },
+ {
+  "id": "S15",
+  "desc": "Goal decomposition and verified execution",
+  "group": 1,
+  "group_name": "GPT-6.1 Sol (S01–S15)"
+ },
+ {
+  "id": "AS01",
+  "desc": "Strategic planning engine",
+  "group": 2,
+  "group_name": "GPT-6 Astra (AS01–AS15)"
+ },
+ {
+  "id": "AS02",
+  "desc": "Independent AI judge and second-opinion verification",
+  "group": 2,
+  "group_name": "GPT-6 Astra (AS01–AS15)"
+ },
+ {
+  "id": "AS03",
+  "desc": "Complex multi-solution problem solver",
+  "group": 2,
+  "group_name": "GPT-6 Astra (AS01–AS15)"
+ },
+ {
+  "id": "AS04",
+  "desc": "Research hypothesis verification",
+  "group": 2,
+  "group_name": "GPT-6 Astra (AS01–AS15)"
+ },
+ {
+  "id": "AS05",
+  "desc": "Security architecture auditor",
+  "group": 2,
+  "group_name": "GPT-6 Astra (AS01–AS15)"
+ },
+ {
+  "id": "AS06",
+  "desc": "Large-scale software architecture refactoring",
+  "group": 2,
+  "group_name": "GPT-6 Astra (AS01–AS15)"
+ },
+ {
+  "id": "AS07",
+  "desc": "Risk and scenario analysis",
+  "group": 2,
+  "group_name": "GPT-6 Astra (AS01–AS15)"
+ },
+ {
+  "id": "AS08",
+  "desc": "Financial forecasting and sensitivity analysis",
+  "group": 2,
+  "group_name": "GPT-6 Astra (AS01–AS15)"
+ },
+ {
+  "id": "AS09",
+  "desc": "Mathematical proof and calculation verification",
+  "group": 2,
+  "group_name": "GPT-6 Astra (AS01–AS15)"
+ },
+ {
+  "id": "AS10",
+  "desc": "Structured multi-agent debate",
+  "group": 2,
+  "group_name": "GPT-6 Astra (AS01–AS15)"
+ },
+ {
+  "id": "AS11",
+  "desc": "Long-term research project coordination",
+  "group": 2,
+  "group_name": "GPT-6 Astra (AS01–AS15)"
+ },
+ {
+  "id": "AS12",
+  "desc": "Cross-document contradiction detection",
+  "group": 2,
+  "group_name": "GPT-6 Astra (AS01–AS15)"
+ },
+ {
+  "id": "AS13",
+  "desc": "System-wide root-cause investigation",
+  "group": 2,
+  "group_name": "GPT-6 Astra (AS01–AS15)"
+ },
+ {
+  "id": "AS14",
+  "desc": "Evidence-backed decision packages",
+  "group": 2,
+  "group_name": "GPT-6 Astra (AS01–AS15)"
+ },
+ {
+  "id": "AS15",
+  "desc": "Complexity-based AI model escalation",
+  "group": 2,
+  "group_name": "GPT-6 Astra (AS01–AS15)"
+ },
+ {
+  "id": "OP01",
+  "desc": "Large development project management",
+  "group": 3,
+  "group_name": "Claude Opus 5.5 (OP01–OP15)"
+ },
+ {
+  "id": "OP02",
+  "desc": "Multi-file code transformation",
+  "group": 3,
+  "group_name": "Claude Opus 5.5 (OP01–OP15)"
+ },
+ {
+  "id": "OP03",
+  "desc": "Software architecture review",
+  "group": 3,
+  "group_name": "Claude Opus 5.5 (OP01–OP15)"
+ },
+ {
+  "id": "OP04",
+  "desc": "Independent AI code review",
+  "group": 3,
+  "group_name": "Claude Opus 5.5 (OP01–OP15)"
+ },
+ {
+  "id": "OP05",
+  "desc": "Automated regression analysis",
+  "group": 3,
+  "group_name": "Claude Opus 5.5 (OP01–OP15)"
+ },
+ {
+  "id": "OP06",
+  "desc": "Comprehensive technical documentation",
+  "group": 3,
+  "group_name": "Claude Opus 5.5 (OP01–OP15)"
+ },
+ {
+  "id": "OP07",
+  "desc": "Requirement-to-implementation traceability",
+  "group": 3,
+  "group_name": "Claude Opus 5.5 (OP01–OP15)"
+ },
+ {
+  "id": "OP08",
+  "desc": "Change-impact analysis",
+  "group": 3,
+  "group_name": "Claude Opus 5.5 (OP01–OP15)"
+ },
+ {
+  "id": "OP09",
+  "desc": "Complex contract analysis",
+  "group": 3,
+  "group_name": "Claude Opus 5.5 (OP01–OP15)"
+ },
+ {
+  "id": "OP10",
+  "desc": "Long-term development task memory",
+  "group": 3,
+  "group_name": "Claude Opus 5.5 (OP01–OP15)"
+ },
+ {
+  "id": "OP11",
+  "desc": "Secure migration planning",
+  "group": 3,
+  "group_name": "Claude Opus 5.5 (OP01–OP15)"
+ },
+ {
+  "id": "OP12",
+  "desc": "System diagnostic investigation",
+  "group": 3,
+  "group_name": "Claude Opus 5.5 (OP01–OP15)"
+ },
+ {
+  "id": "OP13",
+  "desc": "Evidence-based quality assurance management",
+  "group": 3,
+  "group_name": "Claude Opus 5.5 (OP01–OP15)"
+ },
+ {
+  "id": "OP14",
+  "desc": "Large-scale research synthesis",
+  "group": 3,
+  "group_name": "Claude Opus 5.5 (OP01–OP15)"
+ },
+ {
+  "id": "OP15",
+  "desc": "Complex multi-agent task delegation",
+  "group": 3,
+  "group_name": "Claude Opus 5.5 (OP01–OP15)"
+ },
+ {
+  "id": "SN01",
+  "desc": "Daily software development agent",
+  "group": 4,
+  "group_name": "Claude Sonnet 5.5 (SN01–SN15)"
+ },
+ {
+  "id": "SN02",
+  "desc": "Automated debugging and repair cycles",
+  "group": 4,
+  "group_name": "Claude Sonnet 5.5 (SN01–SN15)"
+ },
+ {
+  "id": "SN03",
+  "desc": "Professional document generation",
+  "group": 4,
+  "group_name": "Claude Sonnet 5.5 (SN01–SN15)"
+ },
+ {
+  "id": "SN04",
+  "desc": "Spreadsheet automation",
+  "group": 4,
+  "group_name": "Claude Sonnet 5.5 (SN01–SN15)"
+ },
+ {
+  "id": "SN05",
+  "desc": "User interface quality inspection",
+  "group": 4,
+  "group_name": "Claude Sonnet 5.5 (SN01–SN15)"
+ },
+ {
+  "id": "SN06",
+  "desc": "Website development assistant",
+  "group": 4,
+  "group_name": "Claude Sonnet 5.5 (SN01–SN15)"
+ },
+ {
+  "id": "SN07",
+  "desc": "Code review assistant",
+  "group": 4,
+  "group_name": "Claude Sonnet 5.5 (SN01–SN15)"
+ },
+ {
+  "id": "SN08",
+  "desc": "Technical task specification generator",
+  "group": 4,
+  "group_name": "Claude Sonnet 5.5 (SN01–SN15)"
+ },
+ {
+  "id": "SN09",
+  "desc": "Data import and format transformation",
+  "group": 4,
+  "group_name": "Claude Sonnet 5.5 (SN01–SN15)"
+ },
+ {
+  "id": "SN10",
+  "desc": "Multilingual administration",
+  "group": 4,
+  "group_name": "Claude Sonnet 5.5 (SN01–SN15)"
+ },
+ {
+  "id": "SN11",
+  "desc": "Form and report generation",
+  "group": 4,
+  "group_name": "Claude Sonnet 5.5 (SN01–SN15)"
+ },
+ {
+  "id": "SN12",
+  "desc": "API integration testing",
+  "group": 4,
+  "group_name": "Claude Sonnet 5.5 (SN01–SN15)"
+ },
+ {
+  "id": "SN13",
+  "desc": "Data visualization generation",
+  "group": 4,
+  "group_name": "Claude Sonnet 5.5 (SN01–SN15)"
+ },
+ {
+  "id": "SN14",
+  "desc": "Independent subtask execution",
+  "group": 4,
+  "group_name": "Claude Sonnet 5.5 (SN01–SN15)"
+ },
+ {
+  "id": "SN15",
+  "desc": "Release and installation quality checklist",
+  "group": 4,
+  "group_name": "Claude Sonnet 5.5 (SN01–SN15)"
+ },
+ {
+  "id": "HK01",
+  "desc": "Fast incoming-message classification",
+  "group": 5,
+  "group_name": "Claude Haiku 5.5 (HK01–HK15)"
+ },
+ {
+  "id": "HK02",
+  "desc": "Automatic document tagging",
+  "group": 5,
+  "group_name": "Claude Haiku 5.5 (HK01–HK15)"
+ },
+ {
+  "id": "HK03",
+  "desc": "High-volume structured data extraction",
+  "group": 5,
+  "group_name": "Claude Haiku 5.5 (HK01–HK15)"
+ },
+ {
+  "id": "HK04",
+  "desc": "Fast task routing",
+  "group": 5,
+  "group_name": "Claude Haiku 5.5 (HK01–HK15)"
+ },
+ {
+  "id": "HK05",
+  "desc": "Conversation history compression",
+  "group": 5,
+  "group_name": "Claude Haiku 5.5 (HK01–HK15)"
+ },
+ {
+  "id": "HK06",
+  "desc": "Customer service triage",
+  "group": 5,
+  "group_name": "Claude Haiku 5.5 (HK01–HK15)"
+ },
+ {
+  "id": "HK07",
+  "desc": "Duplicate record detection",
+  "group": 5,
+  "group_name": "Claude Haiku 5.5 (HK01–HK15)"
+ },
+ {
+  "id": "HK08",
+  "desc": "Task urgency classification",
+  "group": 5,
+  "group_name": "Claude Haiku 5.5 (HK01–HK15)"
+ },
+ {
+  "id": "HK09",
+  "desc": "Fast multilingual translation",
+  "group": 5,
+  "group_name": "Claude Haiku 5.5 (HK01–HK15)"
+ },
+ {
+  "id": "HK10",
+  "desc": "Automated data cleaning",
+  "group": 5,
+  "group_name": "Claude Haiku 5.5 (HK01–HK15)"
+ },
+ {
+  "id": "HK11",
+  "desc": "Short response drafting",
+  "group": 5,
+  "group_name": "Claude Haiku 5.5 (HK01–HK15)"
+ },
+ {
+  "id": "HK12",
+  "desc": "Large-scale feedback analysis",
+  "group": 5,
+  "group_name": "Claude Haiku 5.5 (HK01–HK15)"
+ },
+ {
+  "id": "HK13",
+  "desc": "Cost-efficient lightweight agent processing",
+  "group": 5,
+  "group_name": "Claude Haiku 5.5 (HK01–HK15)"
+ },
+ {
+  "id": "HK14",
+  "desc": "Lightweight browser assistance",
+  "group": 5,
+  "group_name": "Claude Haiku 5.5 (HK01–HK15)"
+ },
+ {
+  "id": "HK15",
+  "desc": "Background data quality monitoring",
+  "group": 5,
+  "group_name": "Claude Haiku 5.5 (HK01–HK15)"
+ },
+ {
+  "id": "MR01",
+  "desc": "Browser-integrated AI assistant",
+  "group": 6,
+  "group_name": "Merlin AI (MR01–MR15)"
+ },
+ {
+  "id": "MR02",
+  "desc": "Selected-text explanation, translation and analysis",
+  "group": 6,
+  "group_name": "Merlin AI (MR01–MR15)"
+ },
+ {
+  "id": "MR03",
+  "desc": "Webpage summarization",
+  "group": 6,
+  "group_name": "Merlin AI (MR01–MR15)"
+ },
+ {
+  "id": "MR04",
+  "desc": "YouTube video transcript analysis",
+  "group": 6,
+  "group_name": "Merlin AI (MR01–MR15)"
+ },
+ {
+  "id": "MR05",
+  "desc": "Citation-backed PDF question answering",
+  "group": 6,
+  "group_name": "Merlin AI (MR01–MR15)"
+ },
+ {
+  "id": "MR06",
+  "desc": "Multi-model response comparison",
+  "group": 6,
+  "group_name": "Merlin AI (MR01–MR15)"
+ },
+ {
+  "id": "MR07",
+  "desc": "Cross-website product and service comparison",
+  "group": 6,
+  "group_name": "Merlin AI (MR01–MR15)"
+ },
+ {
+  "id": "MR08",
+  "desc": "Email drafting and summarization",
+  "group": 6,
+  "group_name": "Merlin AI (MR01–MR15)"
+ },
+ {
+  "id": "MR09",
+  "desc": "Social media writing assistance",
+  "group": 6,
+  "group_name": "Merlin AI (MR01–MR15)"
+ },
+ {
+  "id": "MR10",
+  "desc": "Permission-controlled screen understanding",
+  "group": 6,
+  "group_name": "Merlin AI (MR01–MR15)"
+ },
+ {
+  "id": "MR11",
+  "desc": "Personal web research collection",
+  "group": 6,
+  "group_name": "Merlin AI (MR01–MR15)"
+ },
+ {
+  "id": "MR12",
+  "desc": "Website content change monitoring",
+  "group": 6,
+  "group_name": "Merlin AI (MR01–MR15)"
+ },
+ {
+  "id": "MR13",
+  "desc": "Universal AI quick-command panel",
+  "group": 6,
+  "group_name": "Merlin AI (MR01–MR15)"
+ },
+ {
+  "id": "MR14",
+  "desc": "Reading and learning assistant",
+  "group": 6,
+  "group_name": "Merlin AI (MR01–MR15)"
+ },
+ {
+  "id": "MR15",
+  "desc": "One-click web source capture into Knowledge Projects",
+  "group": 6,
+  "group_name": "Merlin AI (MR01–MR15)"
+ },
+ {
+  "id": "GR01",
+  "desc": "Real-time internet research",
+  "group": 7,
+  "group_name": "Grok (GR01–GR15)"
+ },
+ {
+  "id": "GR02",
+  "desc": "Public X/social media monitoring",
+  "group": 7,
+  "group_name": "Grok (GR01–GR15)"
+ },
+ {
+  "id": "GR03",
+  "desc": "Emerging trend detection",
+  "group": 7,
+  "group_name": "Grok (GR01–GR15)"
+ },
+ {
+  "id": "GR04",
+  "desc": "Market demand signal analysis",
+  "group": 7,
+  "group_name": "Grok (GR01–GR15)"
+ },
+ {
+  "id": "GR05",
+  "desc": "Source reliability comparison",
+  "group": 7,
+  "group_name": "Grok (GR01–GR15)"
+ },
+ {
+  "id": "GR06",
+  "desc": "Image-based web research",
+  "group": 7,
+  "group_name": "Grok (GR01–GR15)"
+ },
+ {
+  "id": "GR07",
+  "desc": "Social media video analysis",
+  "group": 7,
+  "group_name": "Grok (GR01–GR15)"
+ },
+ {
+  "id": "GR08",
+  "desc": "Isolated computation assistant",
+  "group": 7,
+  "group_name": "Grok (GR01–GR15)"
+ },
+ {
+  "id": "GR09",
+  "desc": "Current-events monitoring",
+  "group": 7,
+  "group_name": "Grok (GR01–GR15)"
+ },
+ {
+  "id": "GR10",
+  "desc": "Competitor and public market research",
+  "group": 7,
+  "group_name": "Grok (GR01–GR15)"
+ },
+ {
+  "id": "GR11",
+  "desc": "Traceable web research citation chains",
+  "group": 7,
+  "group_name": "Grok (GR01–GR15)"
+ },
+ {
+  "id": "GR12",
+  "desc": "Public community feedback analysis",
+  "group": 7,
+  "group_name": "Grok (GR01–GR15)"
+ },
+ {
+  "id": "GR13",
+  "desc": "Approved AI image generation workflows",
+  "group": 7,
+  "group_name": "Grok (GR01–GR15)"
+ },
+ {
+  "id": "GR14",
+  "desc": "Voice and video assistance",
+  "group": 7,
+  "group_name": "Grok (GR01–GR15)"
+ },
+ {
+  "id": "GR15",
+  "desc": "Dynamic tool loading",
+  "group": 7,
+  "group_name": "Grok (GR01–GR15)"
+ },
+ {
+  "id": "GE01",
+  "desc": "Very-large-context document processing",
+  "group": 8,
+  "group_name": "Gemini 3.5 Family (GE01–GE15)"
+ },
+ {
+  "id": "GE02",
+  "desc": "Parallel sub-agent coordination",
+  "group": 8,
+  "group_name": "Gemini 3.5 Family (GE01–GE15)"
+ },
+ {
+  "id": "GE03",
+  "desc": "Long-task context continuity",
+  "group": 8,
+  "group_name": "Gemini 3.5 Family (GE01–GE15)"
+ },
+ {
+  "id": "GE04",
+  "desc": "Multimodal tool responses",
+  "group": 8,
+  "group_name": "Gemini 3.5 Family (GE01–GE15)"
+ },
+ {
+  "id": "GE05",
+  "desc": "Complex tool chaining",
+  "group": 8,
+  "group_name": "Gemini 3.5 Family (GE01–GE15)"
+ },
+ {
+  "id": "GE06",
+  "desc": "Geographic and map-assisted research",
+  "group": 8,
+  "group_name": "Gemini 3.5 Family (GE01–GE15)"
+ },
+ {
+  "id": "GE07",
+  "desc": "Advanced PDF and visual document processing",
+  "group": 8,
+  "group_name": "Gemini 3.5 Family (GE01–GE15)"
+ },
+ {
+  "id": "GE08",
+  "desc": "Isolated image computation",
+  "group": 8,
+  "group_name": "Gemini 3.5 Family (GE01–GE15)"
+ },
+ {
+  "id": "GE09",
+  "desc": "Adaptive reasoning effort",
+  "group": 8,
+  "group_name": "Gemini 3.5 Family (GE01–GE15)"
+ },
+ {
+  "id": "GE10",
+  "desc": "Large-context caching",
+  "group": 8,
+  "group_name": "Gemini 3.5 Family (GE01–GE15)"
+ },
+ {
+  "id": "GE11",
+  "desc": "Batch task processing",
+  "group": 8,
+  "group_name": "Gemini 3.5 Family (GE01–GE15)"
+ },
+ {
+  "id": "GE12",
+  "desc": "Permission-controlled computer interface operation",
+  "group": 8,
+  "group_name": "Gemini 3.5 Family (GE01–GE15)"
+ },
+ {
+  "id": "GE13",
+  "desc": "Adaptive image and video processing quality",
+  "group": 8,
+  "group_name": "Gemini 3.5 Family (GE01–GE15)"
+ },
+ {
+  "id": "GE14",
+  "desc": "Long-running agent session management",
+  "group": 8,
+  "group_name": "Gemini 3.5 Family (GE01–GE15)"
+ },
+ {
+  "id": "GE15",
+  "desc": "Alternative software solution testing",
+  "group": 8,
+  "group_name": "Gemini 3.5 Family (GE01–GE15)"
+ },
+ {
+  "id": "O501",
+  "desc": "Independent architecture assessment",
+  "group": 9,
+  "group_name": "Claude Opus 5 (O501–O515)"
+ },
+ {
+  "id": "O502",
+  "desc": "Long-running development campaigns",
+  "group": 9,
+  "group_name": "Claude Opus 5 (O501–O515)"
+ },
+ {
+  "id": "O503",
+  "desc": "Independent security verification",
+  "group": 9,
+  "group_name": "Claude Opus 5 (O501–O515)"
+ },
+ {
+  "id": "O504",
+  "desc": "Multi-perspective critical decision analysis",
+  "group": 9,
+  "group_name": "Claude Opus 5 (O501–O515)"
+ },
+ {
+  "id": "O505",
+  "desc": "Requirement verification and evidence mapping",
+  "group": 9,
+  "group_name": "Claude Opus 5 (O501–O515)"
+ },
+ {
+  "id": "O506",
+  "desc": "Technical design improvement",
+  "group": 9,
+  "group_name": "Claude Opus 5 (O501–O515)"
+ },
+ {
+  "id": "O507",
+  "desc": "Complex data migration planning",
+  "group": 9,
+  "group_name": "Claude Opus 5 (O501–O515)"
+ },
+ {
+  "id": "O508",
+  "desc": "Multi-agent disagreement resolution",
+  "group": 9,
+  "group_name": "Claude Opus 5 (O501–O515)"
+ },
+ {
+  "id": "O509",
+  "desc": "Architecture change simulation",
+  "group": 9,
+  "group_name": "Claude Opus 5 (O501–O515)"
+ },
+ {
+  "id": "O510",
+  "desc": "Multi-document contract analysis",
+  "group": 9,
+  "group_name": "Claude Opus 5 (O501–O515)"
+ },
+ {
+  "id": "O511",
+  "desc": "Deep root-cause analysis",
+  "group": 9,
+  "group_name": "Claude Opus 5 (O501–O515)"
+ },
+ {
+  "id": "O512",
+  "desc": "Research evidence quality assessment",
+  "group": 9,
+  "group_name": "Claude Opus 5 (O501–O515)"
+ },
+ {
+  "id": "O513",
+  "desc": "Risk-based test prioritization",
+  "group": 9,
+  "group_name": "Claude Opus 5 (O501–O515)"
+ },
+ {
+  "id": "O514",
+  "desc": "Interrupted project recovery",
+  "group": 9,
+  "group_name": "Claude Opus 5 (O501–O515)"
+ },
+ {
+  "id": "O515",
+  "desc": "Independent final acceptance review",
+  "group": 9,
+  "group_name": "Claude Opus 5 (O501–O515)"
+ },
+ {
+  "id": "S501",
+  "desc": "Continuous code maintenance",
+  "group": 10,
+  "group_name": "Claude Sonnet 5 (S501–S515)"
+ },
+ {
+  "id": "S502",
+  "desc": "Automated test coverage expansion",
+  "group": 10,
+  "group_name": "Claude Sonnet 5 (S501–S515)"
+ },
+ {
+  "id": "S503",
+  "desc": "Secure API integration development",
+  "group": 10,
+  "group_name": "Claude Sonnet 5 (S501–S515)"
+ },
+ {
+  "id": "S504",
+  "desc": "Functional user interface development",
+  "group": 10,
+  "group_name": "Claude Sonnet 5 (S501–S515)"
+ },
+ {
+  "id": "S505",
+  "desc": "Multi-format document processing workflows",
+  "group": 10,
+  "group_name": "Claude Sonnet 5 (S501–S515)"
+ },
+ {
+  "id": "S506",
+  "desc": "Issue-to-fix automation",
+  "group": 10,
+  "group_name": "Claude Sonnet 5 (S501–S515)"
+ },
+ {
+  "id": "S507",
+  "desc": "Code quality monitoring",
+  "group": 10,
+  "group_name": "Claude Sonnet 5 (S501–S515)"
+ },
+ {
+  "id": "S508",
+  "desc": "Automatic documentation synchronization",
+  "group": 10,
+  "group_name": "Claude Sonnet 5 (S501–S515)"
+ },
+ {
+  "id": "S509",
+  "desc": "Bidirectional data synchronization checks",
+  "group": 10,
+  "group_name": "Claude Sonnet 5 (S501–S515)"
+ },
+ {
+  "id": "S510",
+  "desc": "Task dependency management",
+  "group": 10,
+  "group_name": "Claude Sonnet 5 (S501–S515)"
+ },
+ {
+  "id": "S511",
+  "desc": "Automated UI testing",
+  "group": 10,
+  "group_name": "Claude Sonnet 5 (S501–S515)"
+ },
+ {
+  "id": "S512",
+  "desc": "Safe software release preparation",
+  "group": 10,
+  "group_name": "Claude Sonnet 5 (S501–S515)"
+ },
+ {
+  "id": "S513",
+  "desc": "Reusable data processing templates",
+  "group": 10,
+  "group_name": "Claude Sonnet 5 (S501–S515)"
+ },
+ {
+  "id": "S514",
+  "desc": "Hungarian-English interface verification",
+  "group": 10,
+  "group_name": "Claude Sonnet 5 (S501–S515)"
+ },
+ {
+  "id": "S515",
+  "desc": "Module completion and handover validation",
+  "group": 10,
+  "group_name": "Claude Sonnet 5 (S501–S515)"
+ }
+]

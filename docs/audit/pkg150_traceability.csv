@@ -1,0 +1,151 @@
+namespaced_id,source_id,group,description,class,evidence_level,existing_modules,registry85_refs,p23_refs,global_business_refs,later_work_or_external_dependency
+PKG150-S01,S01,GPT-6.1 Sol (S01–S15),Autonomous computer operation,EXTERNAL_BLOCKER,SOURCE-INSPECTION ONLY,computer-use-fabric,"C04,C02,GE06",20,-,sandbox computer-use provider; policy layer only today
+PKG150-S02,S02,GPT-6.1 Sol (S01–S15),Intelligent multi-application workflow builder,PARTIAL,SOURCE-INSPECTION ONLY,"workflow-engine,tool-bridge,connector-catalog","P06,C06,GE05","11,12",-,app connectors; multi-app builder UI
+PKG150-S03,S03,GPT-6.1 Sol (S01–S15),Automated software debugging,PARTIAL,SOURCE-INSPECTION ONLY,"self-healing-loop,repo-analyzer,code-sandbox","C01,P07",21,-,code edit/repair workflow absent (C01)
+PKG150-S04,S04,GPT-6.1 Sol (S01–S15),Self-healing workflow recovery,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"self-healing-loop,recovery,stall-replanner,dead-letter-queue,durable-queue","P08,P05",21,RPE,no live fault injection beyond tests
+PKG150-S05,S05,GPT-6.1 Sol (S01–S15),Advanced document interpretation,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"doc-extractors,document-center","G07,GE09,M02",-,-,OCR/scanned docs (provider); layout understanding
+PKG150-S06,S06,GPT-6.1 Sol (S01–S15),Digital form completion assistant,MISSING,NOTHING EXISTS,-,"P14,C02",-,-,typed form-fill tool; needs computer-use or connector
+PKG150-S07,S07,GPT-6.1 Sol (S01–S15),Model and task cost optimization,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"cost-model-router,effort-allocation,budget-consumption-governor,model-gateway","C10,G13","5,18",7.7,real cost data needs live providers
+PKG150-S08,S08,GPT-6.1 Sol (S01–S15),Long-running task checkpointing and continuation,COVERED_BY_VERIFIED_85,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"checkpoint-engine,task-ledger,progress-ledger,scheduler","P08,P05,P16",12,RPE,-
+PKG150-S09,S09,GPT-6.1 Sol (S01–S15),Automated software test generation,MISSING,NOTHING EXISTS,regression-eval-suite,"C01,P07",22,12,test generator; needs code model
+PKG150-S10,S10,GPT-6.1 Sol (S01–S15),Codebase dependency and architecture mapping,PARTIAL,SOURCE-INSPECTION ONLY,"repo-analyzer,brain/capability-graph",C01,-,10,dependency/architecture graph for external repos
+PKG150-S11,S11,GPT-6.1 Sol (S01–S15),Scientific computation and simulation assistant,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"analyst,code-sandbox","M07,GE07,G05",-,-,simulation libraries; Python sandbox escape unresolved
+PKG150-S12,S12,GPT-6.1 Sol (S01–S15),Data quality and integrity checking,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),analyst,M07,-,-,integrity checks on external data sources
+PKG150-S13,S13,GPT-6.1 Sol (S01–S15),Browser-based task execution,EXTERNAL_BLOCKER,SOURCE-INSPECTION ONLY,"computer-use-fabric,page-ingest","GE06,M01,P13",20,-,browser provider; page-ingest works on supplied pages only
+PKG150-S14,S14,GPT-6.1 Sol (S01–S15),Automated action and evidence logging,COVERED_BY_VERIFIED_85,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"audit-chain,evidence-record,observability-black-box,brain/black-box","C13,G12",-,12,-
+PKG150-S15,S15,GPT-6.1 Sol (S01–S15),Goal decomposition and verified execution,PARTIAL,SOURCE-INSPECTION ONLY,"master-planner-orchestrator,brain/planning-brain,brain/verifier","M04,C03","11,14",6,M04 is PARTIAL; verified-execution loop on live work unproven
+PKG150-AS01,AS01,GPT-6 Astra (AS01–AS15),Strategic planning engine,PARTIAL,SOURCE-INSPECTION ONLY,"master-planner-orchestrator,brain/planning-brain,general-intelligence-extensions",M04,11,6,live reasoning model (G04 blocked)
+PKG150-AS02,AS02,GPT-6 Astra (AS01–AS15),Independent AI judge and second-opinion verification,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"business/judge,qa-reviewer,anti-collusion-guard,provider-resilience","P10,P07",14,7.4,genuinely independent live provider route
+PKG150-AS03,AS03,GPT-6 Astra (AS01–AS15),Complex multi-solution problem solver,MISSING,NOTHING EXISTS,-,G04,-,-,multi-solution generator + comparator; live model
+PKG150-AS04,AS04,GPT-6 Astra (AS01–AS15),Research hypothesis verification,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),research-ledger,"M08,C08",-,-,live sources; M08 not independently clean
+PKG150-AS05,AS05,GPT-6 Astra (AS01–AS15),Security architecture auditor,PARTIAL,SOURCE-INSPECTION ONLY,"brain/security-brain,docs/audit/independent_probes.mjs",C13,"3,22",9,automated architecture auditor is not a product module; R6 rounds were run by hand with sub-agents
+PKG150-AS06,AS06,GPT-6 Astra (AS01–AS15),Large-scale software architecture refactoring,MISSING,NOTHING EXISTS,-,C01,-,-,code edit workflow absent
+PKG150-AS07,AS07,GPT-6 Astra (AS01–AS15),Risk and scenario analysis,PARTIAL,SOURCE-INSPECTION ONLY,"digital-twin,brain/simulation-lab",-,-,5,"scenario library, calibrated inputs"
+PKG150-AS08,AS08,GPT-6 Astra (AS01–AS15),Financial forecasting and sensitivity analysis,PARTIAL,SOURCE-INSPECTION ONLY,"business/finance-intelligence,profit-accounting-engine,market-intelligence-engine",-,-,5,forecast methodology; verified revenue history absent
+PKG150-AS09,AS09,GPT-6 Astra (AS01–AS15),Mathematical proof and calculation verification,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"analyst,code-sandbox","M07,GE07",-,-,formal proof tooling absent; numeric re-calculation only
+PKG150-AS10,AS10,GPT-6 Astra (AS01–AS15),Structured multi-agent debate,MISSING,NOTHING EXISTS,-,"G03,P10",-,-,debate protocol on top of judge/anti-collusion; live models
+PKG150-AS11,AS11,GPT-6 Astra (AS01–AS15),Long-term research project coordination,PARTIAL,SOURCE-INSPECTION ONLY,"research-ledger,project-memory,knowledge-projects","M08,C07",8,-,multi-week project coordination layer
+PKG150-AS12,AS12,GPT-6 Astra (AS01–AS15),Cross-document contradiction detection,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"research-ledger,evidence-record",M08,-,-,cross-document (not only cross-claim) detection
+PKG150-AS13,AS13,GPT-6 Astra (AS01–AS15),System-wide root-cause investigation,PARTIAL,SOURCE-INSPECTION ONLY,"owner-control/system-doctor,brain/black-box,brain/brain-health",-,21,-,automated causal analysis
+PKG150-AS14,AS14,GPT-6 Astra (AS01–AS15),Evidence-backed decision packages,PARTIAL,SOURCE-INSPECTION ONLY,"business/judge,evidence-record,master-brief",-,-,5,decision-package generator
+PKG150-AS15,AS15,GPT-6 Astra (AS01–AS15),Complexity-based AI model escalation,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"effort-allocation,brain/model-intelligence",C10,"5,18",7.7,escalation to a stronger live model
+PKG150-OP01,OP01,Claude Opus 5.5 (OP01–OP15),Large development project management,PARTIAL,SOURCE-INSPECTION ONLY,"project-memory,task-ledger,progress-ledger,master-planner-orchestrator","C07,M04",11,-,dev-project dashboard
+PKG150-OP02,OP02,Claude Opus 5.5 (OP01–OP15),Multi-file code transformation,MISSING,NOTHING EXISTS,-,C01,-,-,multi-file transform with tests; code model
+PKG150-OP03,OP03,Claude Opus 5.5 (OP01–OP15),Software architecture review,PARTIAL,SOURCE-INSPECTION ONLY,"repo-analyzer,code-review","C01,P07",-,-,architecture review output
+PKG150-OP04,OP04,Claude Opus 5.5 (OP01–OP15),Independent AI code review,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"code-review,qa-reviewer,business/judge","P07,C01",14,12,P07 PARTIAL; independent live reviewer
+PKG150-OP05,OP05,Claude Opus 5.5 (OP01–OP15),Automated regression analysis,PARTIAL,SOURCE-INSPECTION ONLY,"regression-eval-suite,tracing-evals",-,22,12,automatic regression analysis/diffing
+PKG150-OP06,OP06,Claude Opus 5.5 (OP01–OP15),Comprehensive technical documentation,MISSING,NOTHING EXISTS,-,-,-,-,documentation generator (docs here are produced by repo scripts)
+PKG150-OP07,OP07,Claude Opus 5.5 (OP01–OP15),Requirement-to-implementation traceability,PARTIAL,SOURCE-INSPECTION ONLY,"completion-registry,docs/build_registry.py,docs/audit/item_audit.py",-,-,12,"offline scripts today, not a runtime module"
+PKG150-OP08,OP08,Claude Opus 5.5 (OP01–OP15),Change-impact analysis,PARTIAL,SOURCE-INSPECTION ONLY,"brain/capability-graph,repo-analyzer",C01,-,10,"change-impact on code, not only registry"
+PKG150-OP09,OP09,Claude Opus 5.5 (OP01–OP15),Complex contract analysis,MISSING,NOTHING EXISTS,doc-extractors,G07,-,-,clause analysis; legal review dependency
+PKG150-OP10,OP10,Claude Opus 5.5 (OP01–OP15),Long-term development task memory,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"project-memory,brain/memory-fabric","C07,P16",8,-,long-horizon retrieval
+PKG150-OP11,OP11,Claude Opus 5.5 (OP01–OP15),Secure migration planning,MISSING,NOTHING EXISTS,"backup-recovery,update-center",-,23,-,data-migration planner
+PKG150-OP12,OP12,Claude Opus 5.5 (OP01–OP15),System diagnostic investigation,PARTIAL,SOURCE-INSPECTION ONLY,"owner-control/system-doctor,watchdog,brain/brain-health",-,21,-,-
+PKG150-OP13,OP13,Claude Opus 5.5 (OP01–OP15),Evidence-based quality assurance management,PARTIAL,SOURCE-INSPECTION ONLY,"qa-reviewer,business/qa-factory,regression-eval-suite",P07,14,12,-
+PKG150-OP14,OP14,Claude Opus 5.5 (OP01–OP15),Large-scale research synthesis,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"research-ledger,knowledge-projects","M08,C08",-,-,live sources
+PKG150-OP15,OP15,Claude Opus 5.5 (OP01–OP15),Complex multi-agent task delegation,PARTIAL,SOURCE-INSPECTION ONLY,"master-planner-orchestrator,agent-tool-broker,handoff-ledger,execution-factory,team-lead-workflows",C03,"11,16",4,-
+PKG150-SN01,SN01,Claude Sonnet 5.5 (SN01–SN15),Daily software development agent,MISSING,NOTHING EXISTS,-,C01,-,-,code edit workflow absent
+PKG150-SN02,SN02,Claude Sonnet 5.5 (SN01–SN15),Automated debugging and repair cycles,PARTIAL,SOURCE-INSPECTION ONLY,"self-healing-loop,code-sandbox",C01,21,-,code repair cycle absent
+PKG150-SN03,SN03,Claude Sonnet 5.5 (SN01–SN15),Professional document generation,PARTIAL,SOURCE-INSPECTION ONLY,"business/artifact-registry,prototype-builder,render","M13,C09",-,-,docx/pdf generation not in product
+PKG150-SN04,SN04,Claude Sonnet 5.5 (SN01–SN15),Spreadsheet automation,PARTIAL,SOURCE-INSPECTION ONLY,"analyst,doc-extractors",M07,-,-,xlsx writing not in product (csv export only)
+PKG150-SN05,SN05,Claude Sonnet 5.5 (SN01–SN15),User interface quality inspection,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),a11y-audit,"A13,A07",-,12,A13 PARTIAL heuristic
+PKG150-SN06,SN06,Claude Sonnet 5.5 (SN01–SN15),Website development assistant,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"prototype-builder,render","P04,M13",-,-,-
+PKG150-SN07,SN07,Claude Sonnet 5.5 (SN01–SN15),Code review assistant,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),code-review,"P07,C01",-,12,duplicate of OP04
+PKG150-SN08,SN08,Claude Sonnet 5.5 (SN01–SN15),Technical task specification generator,PARTIAL,SOURCE-INSPECTION ONLY,master-planner-orchestrator,M04,11,-,spec generator
+PKG150-SN09,SN09,Claude Sonnet 5.5 (SN01–SN15),Data import and format transformation,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"analyst,doc-extractors,chunker",M07,-,-,more formats
+PKG150-SN10,SN10,Claude Sonnet 5.5 (SN01–SN15),Multilingual administration,PARTIAL,SOURCE-INSPECTION ONLY,"preferences,master-brief,universal-inbox",A04,20,-,translation needs a live model
+PKG150-SN11,SN11,Claude Sonnet 5.5 (SN01–SN15),Form and report generation,PARTIAL,SOURCE-INSPECTION ONLY,"business/finance-intelligence,master-brief,delivery-engine",-,-,6,-
+PKG150-SN12,SN12,Claude Sonnet 5.5 (SN01–SN15),API integration testing,PARTIAL,SOURCE-INSPECTION ONLY,"connector-catalog,mcp-client",C06,22,-,live provider probes
+PKG150-SN13,SN13,Claude Sonnet 5.5 (SN01–SN15),Data visualization generation,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"analyst,render",M07,-,11,-
+PKG150-SN14,SN14,Claude Sonnet 5.5 (SN01–SN15),Independent subtask execution,PARTIAL,SOURCE-INSPECTION ONLY,"execution-factory,agent-tool-broker",C03,"11,17",4,-
+PKG150-SN15,SN15,Claude Sonnet 5.5 (SN01–SN15),Release and installation quality checklist,PARTIAL,SOURCE-INSPECTION ONLY,"update-center,startup-self-check",-,23,10,-
+PKG150-HK01,HK01,Claude Haiku 5.5 (HK01–HK15),Fast incoming-message classification,PARTIAL,SOURCE-INSPECTION ONLY,"universal-inbox,business/inbox-pipeline",M11,7,-,rule based; no live model
+PKG150-HK02,HK02,Claude Haiku 5.5 (HK01–HK15),Automatic document tagging,PARTIAL,SOURCE-INSPECTION ONLY,"modality-fabric,document-center,notes-organizer","P03,M02",8,-,-
+PKG150-HK03,HK03,Claude Haiku 5.5 (HK01–HK15),High-volume structured data extraction,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"doc-extractors,chunker,analyst",M07,-,-,-
+PKG150-HK04,HK04,Claude Haiku 5.5 (HK01–HK15),Fast task routing,PARTIAL,SOURCE-INSPECTION ONLY,"brain/model-intelligence,agent-tool-broker,effort-allocation",C10,"5,11",4,-
+PKG150-HK05,HK05,Claude Haiku 5.5 (HK01–HK15),Conversation history compression,PARTIAL,SOURCE-INSPECTION ONLY,"context-manager,conversation","G13,P16",8,-,summarizing model
+PKG150-HK06,HK06,Claude Haiku 5.5 (HK01–HK15),Customer service triage,PARTIAL,SOURCE-INSPECTION ONLY,"universal-inbox,business/communication-center",M11,7,-,-
+PKG150-HK07,HK07,Claude Haiku 5.5 (HK01–HK15),Duplicate record detection,PARTIAL,SOURCE-INSPECTION ONLY,"opportunity-qualification-engine,business/crm,universal-inbox",-,-,-,-
+PKG150-HK08,HK08,Claude Haiku 5.5 (HK01–HK15),Task urgency classification,PARTIAL,SOURCE-INSPECTION ONLY,"universal-inbox,personal-command-center",M11,13,-,-
+PKG150-HK09,HK09,Claude Haiku 5.5 (HK01–HK15),Fast multilingual translation,EXTERNAL_BLOCKER,NOTHING EXISTS,-,A04,-,-,live translation model
+PKG150-HK10,HK10,Claude Haiku 5.5 (HK01–HK15),Automated data cleaning,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),analyst,M07,-,-,-
+PKG150-HK11,HK11,Claude Haiku 5.5 (HK01–HK15),Short response drafting,PARTIAL,SOURCE-INSPECTION ONLY,business/communication-center,M11,7,-,live model
+PKG150-HK12,HK12,Claude Haiku 5.5 (HK01–HK15),Large-scale feedback analysis,EXTERNAL_BLOCKER,NOTHING EXISTS,-,G01,-,-,feedback data + live model
+PKG150-HK13,HK13,Claude Haiku 5.5 (HK01–HK15),Cost-efficient lightweight agent processing,PARTIAL,SOURCE-INSPECTION ONLY,"cost-model-router,agent-tool-broker",G13,"5,17,18",7.7,-
+PKG150-HK14,HK14,Claude Haiku 5.5 (HK01–HK15),Lightweight browser assistance,MISSING,NOTHING EXISTS,-,M01,-,-,browser extension (M01)
+PKG150-HK15,HK15,Claude Haiku 5.5 (HK01–HK15),Background data quality monitoring,MISSING,NOTHING EXISTS,"scheduler,analyst",M07,12,-,monitor job
+PKG150-MR01,MR01,Merlin AI (MR01–MR15),Browser-integrated AI assistant,MISSING,NOTHING EXISTS,-,M01,-,-,browser extension (M01) not built
+PKG150-MR02,MR02,Merlin AI (MR01–MR15),"Selected-text explanation, translation and analysis",MISSING,NOTHING EXISTS,-,M01,-,-,M01; live model
+PKG150-MR03,MR03,Merlin AI (MR01–MR15),Webpage summarization,PARTIAL,SOURCE-INSPECTION ONLY,page-ingest,P13,-,-,summarization needs live model
+PKG150-MR04,MR04,Merlin AI (MR01–MR15),YouTube video transcript analysis,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"transcript-actions,voice-session",P02,-,-,no transcript fetching; supplied transcripts only
+PKG150-MR05,MR05,Merlin AI (MR01–MR15),Citation-backed PDF question answering,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"knowledge-projects,research-ledger,doc-extractors","M08,GE09,G07",9,-,-
+PKG150-MR06,MR06,Merlin AI (MR01–MR15),Multi-model response comparison,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"provider-resilience,model-gateway,text-compare","M03,P10",5,7.4,live providers
+PKG150-MR07,MR07,Merlin AI (MR01–MR15),Cross-website product and service comparison,COVERED_BY_VERIFIED_85,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"page-ingest,text-compare",P13,-,-,supplied pages only
+PKG150-MR08,MR08,Merlin AI (MR01–MR15),Email drafting and summarization,PARTIAL,SOURCE-INSPECTION ONLY,"business/communication-center,universal-inbox",M11,7,-,connector + live model; sending stays approval gated
+PKG150-MR09,MR09,Merlin AI (MR01–MR15),Social media writing assistance,MISSING,NOTHING EXISTS,-,M11,7,-,publishing is owner-approved
+PKG150-MR10,MR10,Merlin AI (MR01–MR15),Permission-controlled screen understanding,EXTERNAL_BLOCKER,SOURCE-INSPECTION ONLY,"observation-memory,computer-use-fabric",A02,20,-,screen capture provider; consent gate exists
+PKG150-MR11,MR11,Merlin AI (MR01–MR15),Personal web research collection,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"knowledge-projects,page-ingest,research-ledger","M02,M08",8,-,-
+PKG150-MR12,MR12,Merlin AI (MR01–MR15),Website content change monitoring,PARTIAL,SOURCE-INSPECTION ONLY,"tech-watch,page-ingest,text-compare,scheduler","P09,G01",12,2,snapshots supplied; fetching needs source allowlist
+PKG150-MR13,MR13,Merlin AI (MR01–MR15),Universal AI quick-command panel,PARTIAL,SOURCE-INSPECTION ONLY,"workbench,brain/owner-command",M01,20,-,palette UI
+PKG150-MR14,MR14,Merlin AI (MR01–MR15),Reading and learning assistant,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"tutor,spaced-repetition",P01,-,-,-
+PKG150-MR15,MR15,Merlin AI (MR01–MR15),One-click web source capture into Knowledge Projects,PARTIAL,SOURCE-INSPECTION ONLY,"page-ingest,knowledge-projects",M02,8,-,browser capture needs M01
+PKG150-GR01,GR01,Grok (GR01–GR15),Real-time internet research,EXTERNAL_BLOCKER,NOTHING EXISTS,-,G02,-,2,source allowlist + search provider
+PKG150-GR02,GR02,Grok (GR01–GR15),Public X/social media monitoring,EXTERNAL_BLOCKER,NOTHING EXISTS,-,"G01,P09",-,2,social data access
+PKG150-GR03,GR03,Grok (GR01–GR15),Emerging trend detection,PARTIAL,SOURCE-INSPECTION ONLY,market-intelligence-engine,G01,-,2,offline signals only
+PKG150-GR04,GR04,Grok (GR01–GR15),Market demand signal analysis,PARTIAL,SOURCE-INSPECTION ONLY,"market-intelligence-engine,tech-watch",-,-,"2,5",live data
+PKG150-GR05,GR05,Grok (GR01–GR15),Source reliability comparison,PARTIAL,SOURCE-INSPECTION ONLY,"research-ledger,brain/search-pipeline",M08,-,"2,3",-
+PKG150-GR06,GR06,Grok (GR01–GR15),Image-based web research,EXTERNAL_BLOCKER,NOTHING EXISTS,-,G08,-,-,vision provider
+PKG150-GR07,GR07,Grok (GR01–GR15),Social media video analysis,EXTERNAL_BLOCKER,NOTHING EXISTS,-,"G09,M09",-,-,video provider
+PKG150-GR08,GR08,Grok (GR01–GR15),Isolated computation assistant,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),code-sandbox,"G05,GE07",-,-,-
+PKG150-GR09,GR09,Grok (GR01–GR15),Current-events monitoring,EXTERNAL_BLOCKER,NOTHING EXISTS,-,G02,-,2,live feeds
+PKG150-GR10,GR10,Grok (GR01–GR15),Competitor and public market research,PARTIAL,SOURCE-INSPECTION ONLY,"market-intelligence-engine,tech-watch",-,-,"2,3",live data
+PKG150-GR11,GR11,Grok (GR01–GR15),Traceable web research citation chains,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),research-ledger,M08,-,3,-
+PKG150-GR12,GR12,Grok (GR01–GR15),Public community feedback analysis,EXTERNAL_BLOCKER,NOTHING EXISTS,-,G01,-,-,data + live model
+PKG150-GR13,GR13,Grok (GR01–GR15),Approved AI image generation workflows,EXTERNAL_BLOCKER,NOTHING EXISTS,-,G11,-,-,image provider; paid
+PKG150-GR14,GR14,Grok (GR01–GR15),Voice and video assistance,EXTERNAL_BLOCKER,NOTHING EXISTS,voice-session,"G10,GE03",-,-,STT/TTS/video providers
+PKG150-GR15,GR15,Grok (GR01–GR15),Dynamic tool loading,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"plugin-manager,typed-tools,skill-registry,tool-fabric","M05,C05,C06","3,19",10,-
+PKG150-GE01,GE01,Gemini 3.5 Family (GE01–GE15),Very-large-context document processing,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"chunker,knowledge-projects,context-manager","GE01,G13",-,-,-
+PKG150-GE02,GE02,Gemini 3.5 Family (GE01–GE15),Parallel sub-agent coordination,PARTIAL,SOURCE-INSPECTION ONLY,"master-planner-orchestrator,execution-factory,agent-tool-broker",C03,"11,16",4,-
+PKG150-GE03,GE03,Gemini 3.5 Family (GE01–GE15),Long-task context continuity,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"checkpoint-engine,project-memory,scheduler","P16,P08","8,12",RPE,-
+PKG150-GE04,GE04,Gemini 3.5 Family (GE01–GE15),Multimodal tool responses,PARTIAL,SOURCE-INSPECTION ONLY,modality-fabric,GE02,-,-,-
+PKG150-GE05,GE05,Gemini 3.5 Family (GE01–GE15),Complex tool chaining,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"workflow-engine,typed-tools,agent-tool-broker","GE08,G06,P06",11,-,-
+PKG150-GE06,GE06,Gemini 3.5 Family (GE01–GE15),Geographic and map-assisted research,EXTERNAL_BLOCKER,NOTHING EXISTS,-,GE10,-,-,mapping provider
+PKG150-GE07,GE07,Gemini 3.5 Family (GE01–GE15),Advanced PDF and visual document processing,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),doc-extractors,"G07,G08",-,-,no OCR; visual docs blocked
+PKG150-GE08,GE08,Gemini 3.5 Family (GE01–GE15),Isolated image computation,EXTERNAL_BLOCKER,NOTHING EXISTS,-,G08,-,-,vision/imaging provider
+PKG150-GE09,GE09,Gemini 3.5 Family (GE01–GE15),Adaptive reasoning effort,COVERED_BY_VERIFIED_85,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"effort-allocation,brain/model-intelligence",C10,"5,18",7.7,-
+PKG150-GE10,GE10,Gemini 3.5 Family (GE01–GE15),Large-context caching,PARTIAL,SOURCE-INSPECTION ONLY,context-manager,G13,-,-,provider caching
+PKG150-GE11,GE11,Gemini 3.5 Family (GE01–GE15),Batch task processing,COVERED_BY_VERIFIED_85,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"workflow-engine,workbench",P11,12,-,-
+PKG150-GE12,GE12,Gemini 3.5 Family (GE01–GE15),Permission-controlled computer interface operation,EXTERNAL_BLOCKER,SOURCE-INSPECTION ONLY,computer-use-fabric,"C04,GE06",20,-,provider
+PKG150-GE13,GE13,Gemini 3.5 Family (GE01–GE15),Adaptive image and video processing quality,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"detail-level,modality-fabric",P15,-,-,image/video part blocked
+PKG150-GE14,GE14,Gemini 3.5 Family (GE01–GE15),Long-running agent session management,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"scheduler,durable-queue,conversation","P16,P08,GE13",12,RPE,-
+PKG150-GE15,GE15,Gemini 3.5 Family (GE01–GE15),Alternative software solution testing,MISSING,NOTHING EXISTS,-,-,-,-,alternative-solution test harness
+PKG150-O501,O501,Claude Opus 5 (O501–O515),Independent architecture assessment,MISSING,NOTHING EXISTS,-,-,-,10,automated assessor; done by hand in R6
+PKG150-O502,O502,Claude Opus 5 (O501–O515),Long-running development campaigns,MISSING,NOTHING EXISTS,project-memory,C07,8,-,campaign manager
+PKG150-O503,O503,Claude Opus 5 (O501–O515),Independent security verification,PARTIAL,SOURCE-INSPECTION ONLY,"docs/audit/independent_probes.mjs,brain/security-brain",C13,"3,22",9,probe script exists; independent verification stays a manual/owner process
+PKG150-O504,O504,Claude Opus 5 (O501–O515),Multi-perspective critical decision analysis,MISSING,NOTHING EXISTS,-,-,-,-,decision analysis
+PKG150-O505,O505,Claude Opus 5 (O501–O515),Requirement verification and evidence mapping,PARTIAL,SOURCE-INSPECTION ONLY,"completion-registry,evidence-record",-,-,12,-
+PKG150-O506,O506,Claude Opus 5 (O501–O515),Technical design improvement,MISSING,NOTHING EXISTS,-,-,-,-,-
+PKG150-O507,O507,Claude Opus 5 (O501–O515),Complex data migration planning,MISSING,NOTHING EXISTS,-,-,-,-,data-migration planner
+PKG150-O508,O508,Claude Opus 5 (O501–O515),Multi-agent disagreement resolution,MISSING,NOTHING EXISTS,business/judge,G03,-,-,-
+PKG150-O509,O509,Claude Opus 5 (O501–O515),Architecture change simulation,PARTIAL,SOURCE-INSPECTION ONLY,"digital-twin,brain/simulation-lab",-,-,-,-
+PKG150-O510,O510,Claude Opus 5 (O501–O515),Multi-document contract analysis,MISSING,NOTHING EXISTS,-,-,-,-,legal review dependency
+PKG150-O511,O511,Claude Opus 5 (O501–O515),Deep root-cause analysis,PARTIAL,SOURCE-INSPECTION ONLY,"owner-control/system-doctor,brain/black-box",-,21,-,-
+PKG150-O512,O512,Claude Opus 5 (O501–O515),Research evidence quality assessment,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),research-ledger,M08,-,-,-
+PKG150-O513,O513,Claude Opus 5 (O501–O515),Risk-based test prioritization,MISSING,NOTHING EXISTS,-,-,-,-,-
+PKG150-O514,O514,Claude Opus 5 (O501–O515),Interrupted project recovery,COVERED_BY_VERIFIED_85,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"recovery,checkpoint-engine,task-ledger","P08,P05",12,RPE,-
+PKG150-O515,O515,Claude Opus 5 (O501–O515),Independent final acceptance review,PARTIAL,SOURCE-INSPECTION ONLY,"business/judge,qa-reviewer",-,14,12,owner confirmation is required for VERIFIED_WORKING
+PKG150-S501,S501,Claude Sonnet 5 (S501–S515),Continuous code maintenance,MISSING,NOTHING EXISTS,-,C01,-,-,code edit workflow absent
+PKG150-S502,S502,Claude Sonnet 5 (S501–S515),Automated test coverage expansion,MISSING,NOTHING EXISTS,-,C01,-,-,-
+PKG150-S503,S503,Claude Sonnet 5 (S501–S515),Secure API integration development,PARTIAL,SOURCE-INSPECTION ONLY,"connector-catalog,tool-fabric",C06,3,-,-
+PKG150-S504,S504,Claude Sonnet 5 (S501–S515),Functional user interface development,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"prototype-builder,a11y-audit","P04,M13",20,11,-
+PKG150-S505,S505,Claude Sonnet 5 (S501–S515),Multi-format document processing workflows,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"doc-extractors,document-center,workflow-engine","G07,M02",-,-,-
+PKG150-S506,S506,Claude Sonnet 5 (S501–S515),Issue-to-fix automation,MISSING,NOTHING EXISTS,-,C01,-,-,-
+PKG150-S507,S507,Claude Sonnet 5 (S501–S515),Code quality monitoring,PARTIAL,REGISTRY-TESTED (existing tests with fakes/sandbox; not re-run for this item),"code-review,repo-analyzer","C01,P07",-,12,-
+PKG150-S508,S508,Claude Sonnet 5 (S501–S515),Automatic documentation synchronization,MISSING,NOTHING EXISTS,-,-,-,-,docs are generated offline by repo scripts
+PKG150-S509,S509,Claude Sonnet 5 (S501–S515),Bidirectional data synchronization checks,MISSING,NOTHING EXISTS,-,A12,-,-,cross-device sync (A12 PARTIAL)
+PKG150-S510,S510,Claude Sonnet 5 (S501–S515),Task dependency management,PARTIAL,SOURCE-INSPECTION ONLY,"master-planner-orchestrator,task-ledger,handoff-ledger",C03,11,6,-
+PKG150-S511,S511,Claude Sonnet 5 (S501–S515),Automated UI testing,PARTIAL,SOURCE-INSPECTION ONLY,a11y-audit,A13,22,12,static analysis only; no browser E2E
+PKG150-S512,S512,Claude Sonnet 5 (S501–S515),Safe software release preparation,PARTIAL,SOURCE-INSPECTION ONLY,update-center,-,23,10,-
+PKG150-S513,S513,Claude Sonnet 5 (S501–S515),Reusable data processing templates,PARTIAL,SOURCE-INSPECTION ONLY,"workflow-engine,skill-registry","P06,C05",-,-,-
+PKG150-S514,S514,Claude Sonnet 5 (S501–S515),Hungarian-English interface verification,MISSING,NOTHING EXISTS,preferences,A04,-,-,UI string verifier
+PKG150-S515,S515,Claude Sonnet 5 (S501–S515),Module completion and handover validation,PARTIAL,SOURCE-INSPECTION ONLY,"completion-registry,startup-self-check,internal-integration-hub",-,22,"10,12",-

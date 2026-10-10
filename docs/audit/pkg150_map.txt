@@ -1,0 +1,153 @@
+# id|class|ev|modules|r85|p23|gb|later work / external dependency
+# class: C=covered by a registry item that is VERIFIED_WORKING; P=partially exists; M=missing; E=external blocker (needs a live provider/data source/hardware that is not connected)
+# ev: R=module is cited by a registry item with tests (fakes/sandbox); S=source inspection only (no test of this item was run or checked); N=nothing exists
+S01|E|S|computer-use-fabric|C04,C02,GE06|20|-|sandbox computer-use provider; policy layer only today
+S02|P|S|workflow-engine,tool-bridge,connector-catalog|P06,C06,GE05|11,12|-|app connectors; multi-app builder UI
+S03|P|S|self-healing-loop,repo-analyzer,code-sandbox|C01,P07|21|-|code edit/repair workflow absent (C01)
+S04|P|R|self-healing-loop,recovery,stall-replanner,dead-letter-queue,durable-queue|P08,P05|21|RPE|no live fault injection beyond tests
+S05|P|R|doc-extractors,document-center|G07,GE09,M02|-|-|OCR/scanned docs (provider); layout understanding
+S06|M|N|-|P14,C02|-|-|typed form-fill tool; needs computer-use or connector
+S07|P|R|cost-model-router,effort-allocation,budget-consumption-governor,model-gateway|C10,G13|5,18|7.7|real cost data needs live providers
+S08|C|R|checkpoint-engine,task-ledger,progress-ledger,scheduler|P08,P05,P16|12|RPE|-
+S09|M|N|regression-eval-suite|C01,P07|22|12|test generator; needs code model
+S10|P|S|repo-analyzer,brain/capability-graph|C01|-|10|dependency/architecture graph for external repos
+S11|P|R|analyst,code-sandbox|M07,GE07,G05|-|-|simulation libraries; Python sandbox escape unresolved
+S12|P|R|analyst|M07|-|-|integrity checks on external data sources
+S13|E|S|computer-use-fabric,page-ingest|GE06,M01,P13|20|-|browser provider; page-ingest works on supplied pages only
+S14|C|R|audit-chain,evidence-record,observability-black-box,brain/black-box|C13,G12|-|12|-
+S15|P|S|master-planner-orchestrator,brain/planning-brain,brain/verifier|M04,C03|11,14|6|M04 is PARTIAL; verified-execution loop on live work unproven
+AS01|P|S|master-planner-orchestrator,brain/planning-brain,general-intelligence-extensions|M04|11|6|live reasoning model (G04 blocked)
+AS02|P|R|business/judge,qa-reviewer,anti-collusion-guard,provider-resilience|P10,P07|14|7.4|genuinely independent live provider route
+AS03|M|N|-|G04|-|-|multi-solution generator + comparator; live model
+AS04|P|R|research-ledger|M08,C08|-|-|live sources; M08 not independently clean
+AS05|P|S|brain/security-brain,docs/audit/independent_probes.mjs|C13|3,22|9|automated architecture auditor is not a product module; R6 rounds were run by hand with sub-agents
+AS06|M|N|-|C01|-|-|code edit workflow absent
+AS07|P|S|digital-twin,brain/simulation-lab|-|-|5|scenario library, calibrated inputs
+AS08|P|S|business/finance-intelligence,profit-accounting-engine,market-intelligence-engine|-|-|5|forecast methodology; verified revenue history absent
+AS09|P|R|analyst,code-sandbox|M07,GE07|-|-|formal proof tooling absent; numeric re-calculation only
+AS10|M|N|-|G03,P10|-|-|debate protocol on top of judge/anti-collusion; live models
+AS11|P|S|research-ledger,project-memory,knowledge-projects|M08,C07|8|-|multi-week project coordination layer
+AS12|P|R|research-ledger,evidence-record|M08|-|-|cross-document (not only cross-claim) detection
+AS13|P|S|owner-control/system-doctor,brain/black-box,brain/brain-health|-|21|-|automated causal analysis
+AS14|P|S|business/judge,evidence-record,master-brief|-|-|5|decision-package generator
+AS15|P|R|effort-allocation,brain/model-intelligence|C10|5,18|7.7|escalation to a stronger live model
+OP01|P|S|project-memory,task-ledger,progress-ledger,master-planner-orchestrator|C07,M04|11|-|dev-project dashboard
+OP02|M|N|-|C01|-|-|multi-file transform with tests; code model
+OP03|P|S|repo-analyzer,code-review|C01,P07|-|-|architecture review output
+OP04|P|R|code-review,qa-reviewer,business/judge|P07,C01|14|12|P07 PARTIAL; independent live reviewer
+OP05|P|S|regression-eval-suite,tracing-evals|-|22|12|automatic regression analysis/diffing
+OP06|M|N|-|-|-|-|documentation generator (docs here are produced by repo scripts)
+OP07|P|S|completion-registry,docs/build_registry.py,docs/audit/item_audit.py|-|-|12|offline scripts today, not a runtime module
+OP08|P|S|brain/capability-graph,repo-analyzer|C01|-|10|change-impact on code, not only registry
+OP09|M|N|doc-extractors|G07|-|-|clause analysis; legal review dependency
+OP10|P|R|project-memory,brain/memory-fabric|C07,P16|8|-|long-horizon retrieval
+OP11|M|N|backup-recovery,update-center|-|23|-|data-migration planner
+OP12|P|S|owner-control/system-doctor,watchdog,brain/brain-health|-|21|-|-
+OP13|P|S|qa-reviewer,business/qa-factory,regression-eval-suite|P07|14|12|-
+OP14|P|R|research-ledger,knowledge-projects|M08,C08|-|-|live sources
+OP15|P|S|master-planner-orchestrator,agent-tool-broker,handoff-ledger,execution-factory,team-lead-workflows|C03|11,16|4|-
+SN01|M|N|-|C01|-|-|code edit workflow absent
+SN02|P|S|self-healing-loop,code-sandbox|C01|21|-|code repair cycle absent
+SN03|P|S|business/artifact-registry,prototype-builder,render|M13,C09|-|-|docx/pdf generation not in product
+SN04|P|S|analyst,doc-extractors|M07|-|-|xlsx writing not in product (csv export only)
+SN05|P|R|a11y-audit|A13,A07|-|12|A13 PARTIAL heuristic
+SN06|P|R|prototype-builder,render|P04,M13|-|-|-
+SN07|P|R|code-review|P07,C01|-|12|duplicate of OP04
+SN08|P|S|master-planner-orchestrator|M04|11|-|spec generator
+SN09|P|R|analyst,doc-extractors,chunker|M07|-|-|more formats
+SN10|P|S|preferences,master-brief,universal-inbox|A04|20|-|translation needs a live model
+SN11|P|S|business/finance-intelligence,master-brief,delivery-engine|-|-|6|-
+SN12|P|S|connector-catalog,mcp-client|C06|22|-|live provider probes
+SN13|P|R|analyst,render|M07|-|11|-
+SN14|P|S|execution-factory,agent-tool-broker|C03|11,17|4|-
+SN15|P|S|update-center,startup-self-check|-|23|10|-
+HK01|P|S|universal-inbox,business/inbox-pipeline|M11|7|-|rule based; no live model
+HK02|P|S|modality-fabric,document-center,notes-organizer|P03,M02|8|-|-
+HK03|P|R|doc-extractors,chunker,analyst|M07|-|-|-
+HK04|P|S|brain/model-intelligence,agent-tool-broker,effort-allocation|C10|5,11|4|-
+HK05|P|S|context-manager,conversation|G13,P16|8|-|summarizing model
+HK06|P|S|universal-inbox,business/communication-center|M11|7|-|-
+HK07|P|S|opportunity-qualification-engine,business/crm,universal-inbox|-|-|-|-
+HK08|P|S|universal-inbox,personal-command-center|M11|13|-|-
+HK09|E|N|-|A04|-|-|live translation model
+HK10|P|R|analyst|M07|-|-|-
+HK11|P|S|business/communication-center|M11|7|-|live model
+HK12|E|N|-|G01|-|-|feedback data + live model
+HK13|P|S|cost-model-router,agent-tool-broker|G13|5,17,18|7.7|-
+HK14|M|N|-|M01|-|-|browser extension (M01)
+HK15|M|N|scheduler,analyst|M07|12|-|monitor job
+MR01|M|N|-|M01|-|-|browser extension (M01) not built
+MR02|M|N|-|M01|-|-|M01; live model
+MR03|P|S|page-ingest|P13|-|-|summarization needs live model
+MR04|P|R|transcript-actions,voice-session|P02|-|-|no transcript fetching; supplied transcripts only
+MR05|P|R|knowledge-projects,research-ledger,doc-extractors|M08,GE09,G07|9|-|-
+MR06|P|R|provider-resilience,model-gateway,text-compare|M03,P10|5|7.4|live providers
+MR07|C|R|page-ingest,text-compare|P13|-|-|supplied pages only
+MR08|P|S|business/communication-center,universal-inbox|M11|7|-|connector + live model; sending stays approval gated
+MR09|M|N|-|M11|7|-|publishing is owner-approved
+MR10|E|S|observation-memory,computer-use-fabric|A02|20|-|screen capture provider; consent gate exists
+MR11|P|R|knowledge-projects,page-ingest,research-ledger|M02,M08|8|-|-
+MR12|P|S|tech-watch,page-ingest,text-compare,scheduler|P09,G01|12|2|snapshots supplied; fetching needs source allowlist
+MR13|P|S|workbench,brain/owner-command|M01|20|-|palette UI
+MR14|P|R|tutor,spaced-repetition|P01|-|-|-
+MR15|P|S|page-ingest,knowledge-projects|M02|8|-|browser capture needs M01
+GR01|E|N|-|G02|-|2|source allowlist + search provider
+GR02|E|N|-|G01,P09|-|2|social data access
+GR03|P|S|market-intelligence-engine|G01|-|2|offline signals only
+GR04|P|S|market-intelligence-engine,tech-watch|-|-|2,5|live data
+GR05|P|S|research-ledger,brain/search-pipeline|M08|-|2,3|-
+GR06|E|N|-|G08|-|-|vision provider
+GR07|E|N|-|G09,M09|-|-|video provider
+GR08|P|R|code-sandbox|G05,GE07|-|-|-
+GR09|E|N|-|G02|-|2|live feeds
+GR10|P|S|market-intelligence-engine,tech-watch|-|-|2,3|live data
+GR11|P|R|research-ledger|M08|-|3|-
+GR12|E|N|-|G01|-|-|data + live model
+GR13|E|N|-|G11|-|-|image provider; paid
+GR14|E|N|voice-session|G10,GE03|-|-|STT/TTS/video providers
+GR15|P|R|plugin-manager,typed-tools,skill-registry,tool-fabric|M05,C05,C06|3,19|10|-
+GE01|P|R|chunker,knowledge-projects,context-manager|GE01,G13|-|-|-
+GE02|P|S|master-planner-orchestrator,execution-factory,agent-tool-broker|C03|11,16|4|-
+GE03|P|R|checkpoint-engine,project-memory,scheduler|P16,P08|8,12|RPE|-
+GE04|P|S|modality-fabric|GE02|-|-|-
+GE05|P|R|workflow-engine,typed-tools,agent-tool-broker|GE08,G06,P06|11|-|-
+GE06|E|N|-|GE10|-|-|mapping provider
+GE07|P|R|doc-extractors|G07,G08|-|-|no OCR; visual docs blocked
+GE08|E|N|-|G08|-|-|vision/imaging provider
+GE09|C|R|effort-allocation,brain/model-intelligence|C10|5,18|7.7|-
+GE10|P|S|context-manager|G13|-|-|provider caching
+GE11|C|R|workflow-engine,workbench|P11|12|-|-
+GE12|E|S|computer-use-fabric|C04,GE06|20|-|provider
+GE13|P|R|detail-level,modality-fabric|P15|-|-|image/video part blocked
+GE14|P|R|scheduler,durable-queue,conversation|P16,P08,GE13|12|RPE|-
+GE15|M|N|-|-|-|-|alternative-solution test harness
+O501|M|N|-|-|-|10|automated assessor; done by hand in R6
+O502|M|N|project-memory|C07|8|-|campaign manager
+O503|P|S|docs/audit/independent_probes.mjs,brain/security-brain|C13|3,22|9|probe script exists; independent verification stays a manual/owner process
+O504|M|N|-|-|-|-|decision analysis
+O505|P|S|completion-registry,evidence-record|-|-|12|-
+O506|M|N|-|-|-|-|-
+O507|M|N|-|-|-|-|data-migration planner
+O508|M|N|business/judge|G03|-|-|-
+O509|P|S|digital-twin,brain/simulation-lab|-|-|-|-
+O510|M|N|-|-|-|-|legal review dependency
+O511|P|S|owner-control/system-doctor,brain/black-box|-|21|-|-
+O512|P|R|research-ledger|M08|-|-|-
+O513|M|N|-|-|-|-|-
+O514|C|R|recovery,checkpoint-engine,task-ledger|P08,P05|12|RPE|-
+O515|P|S|business/judge,qa-reviewer|-|14|12|owner confirmation is required for VERIFIED_WORKING
+S501|M|N|-|C01|-|-|code edit workflow absent
+S502|M|N|-|C01|-|-|-
+S503|P|S|connector-catalog,tool-fabric|C06|3|-|-
+S504|P|R|prototype-builder,a11y-audit|P04,M13|20|11|-
+S505|P|R|doc-extractors,document-center,workflow-engine|G07,M02|-|-|-
+S506|M|N|-|C01|-|-|-
+S507|P|R|code-review,repo-analyzer|C01,P07|-|12|-
+S508|M|N|-|-|-|-|docs are generated offline by repo scripts
+S509|M|N|-|A12|-|-|cross-device sync (A12 PARTIAL)
+S510|P|S|master-planner-orchestrator,task-ledger,handoff-ledger|C03|11|6|-
+S511|P|S|a11y-audit|A13|22|12|static analysis only; no browser E2E
+S512|P|S|update-center|-|23|10|-
+S513|P|S|workflow-engine,skill-registry|P06,C05|-|-|-
+S514|M|N|preferences|A04|-|-|UI string verifier
+S515|P|S|completion-registry,startup-self-check,internal-integration-hub|-|22|10,12|-
