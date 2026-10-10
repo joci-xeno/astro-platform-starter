@@ -40,7 +40,7 @@ export const grantSubject = g => "grant:" + g.id + ":" + sha(canon(g)).slice(0, 
 export function normaliseGrant(raw, { nowMs = Date.now(), checkExpiry = true } = {}) {
   const e = r => ({ error: r });
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return e("GRANT_OBJECT_REQUIRED");
-  const arr = (v, max) => Array.isArray(v) && v.length <= max ? v : null;
+  const arr = (v, max) => Array.isArray(v) && v.length <= max ? [...v] : null;      // spread: holes in a sparse array become undefined and fail the element checks
   if (typeof raw.id !== "string" || !ID_RE.test(raw.id)) return e("GRANT_ID_INVALID");
   if (typeof raw.credential !== "string" || !CRED_RE.test(raw.credential) || ["__proto__", "constructor", "prototype", "__check__"].includes(raw.credential)) return e("GRANT_CREDENTIAL_INVALID");
   const agents = arr(raw.agents ?? [], 30), roles = arr(raw.roles ?? [], 10);
@@ -57,7 +57,7 @@ export function normaliseGrant(raw, { nowMs = Date.now(), checkExpiry = true } =
   const methods = arr(raw.methods ?? ["GET"], 6);
   if (!methods || !methods.length || !methods.every(m => READ.includes(m) || (allowWrite && WRITE.includes(m)))) return e(allowWrite ? "GRANT_METHODS_INVALID" : "GRANT_WRITE_METHODS_NEED_allowWrite");
   const pathPrefixes = arr(raw.pathPrefixes ?? ["/"], 10);
-  if (!pathPrefixes || !pathPrefixes.length || !pathPrefixes.every(p => typeof p === "string" && p.startsWith("/") && p.length <= 200 && !/[?#\\]|\.\.|%2e|%2f|%5c/i.test(p))) return e("GRANT_PATH_PREFIX_INVALID");
+  if (!pathPrefixes || !pathPrefixes.length || !pathPrefixes.every(p => typeof p === "string" && p.startsWith("/") && p.length <= 200 && !/[?#\\;]|\.\.|%2e|%2f|%5c|%3b/i.test(p))) return e("GRANT_PATH_PREFIX_INVALID");
   const a = raw.auth ?? { style: "bearer" };
   if (!a || typeof a !== "object" || !["bearer", "header"].includes(a.style)) return e("GRANT_AUTH_INVALID");
   if (a.style === "header" && (typeof a.name !== "string" || !/^[A-Za-z0-9-]{1,40}$/.test(a.name) || FORBIDDEN_AUTH_HEADERS.has(a.name.toLowerCase()))) return e("GRANT_AUTH_HEADER_INVALID");
@@ -80,21 +80,28 @@ export function createCredentialBroker({ vault, ownerAuth = getDefaultOwnerAuth(
   const grantsFile = stateDir ? path.join(stateDir, "broker-grants.json") : null;
   if (stateDir) fs.mkdirSync(stateDir, { recursive: true });
   const grants = new Map(), win = new Map(), day = new Map();
-  let inflight = 0, integrity = "OK";
+  let integrity = "OK"; const flights = new Set();      // start times of fetches that have not really settled
+  const liveFlights = () => { const t = now(); for (const f of [...flights]) if (t - f.t > 5 * timeoutMs) flights.delete(f); return flights.size; };      // a fetch that never settles stops counting after 5 timeouts, so it cannot block the broker forever
   const stats = { requests: 0, ok: 0, denied: 0, upstreamErrors: 0, redactions: 0, deniedNotAudited: 0 };
   const tryAudit = (event, data) => { try { audit.append(event, data); return true; } catch { return false; } };
 
   const save = () => {
     if (!grantsFile) return;
-    const tmp = grantsFile + ".tmp", fd = fs.openSync(tmp, "w", 0o600);
+    const tmp = grantsFile + ".tmp"; try { fs.unlinkSync(tmp); } catch { /* none */ }
+    const fd = fs.openSync(tmp, "wx", 0o600);      // never write through a pre-planted file or symlink
     try { fs.writeSync(fd, JSON.stringify({ version: 1, grants: [...grants.values()].map(({ grant, approval }) => ({ grant, approval })) })); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
-    fs.renameSync(tmp, grantsFile);
+    fs.renameSync(tmp, grantsFile); seenStamp = fstamp();
   };
   const latestInChain = () => { const m = new Map(); for (const x of audit.entries()) { if (x.event === "BROKER_GRANT_CREATED") m.set(x.data?.id, { type: "C", subject: x.data?.subject }); else if (x.event === "BROKER_GRANT_REVOKED") m.set(x.data?.id, { type: "R" }); } return m; };
-  (function load() {
-    if (!grantsFile || !fs.existsSync(grantsFile)) return;
+  const fstamp = () => { try { const st = fs.statSync(grantsFile); return st.size + ":" + st.mtimeMs + ":" + st.ino; } catch { return "none"; } };
+  let seenStamp = "";
+  function load() {
+    if (!grantsFile) return;
+    seenStamp = fstamp();
+    if (!fs.existsSync(grantsFile)) return;
     let doc; try { doc = JSON.parse(fs.readFileSync(grantsFile, "utf8")); } catch { integrity = "GRANTS_FILE_UNREADABLE"; return; }
     if (!doc || !Array.isArray(doc.grants)) { integrity = "GRANTS_FILE_INVALID"; return; }
+    try { audit.reload(); } catch { integrity = "AUDIT_UNREADABLE"; grants.clear(); return; }
     const latest = latestInChain(); let dropped = 0;
     for (const r of doc.grants.slice(0, maxGrants)) {
       const n = normaliseGrant(r?.grant, { checkExpiry: false });      // expiry is enforced at request time; the stored form must already be the normalised form
@@ -106,7 +113,10 @@ export function createCredentialBroker({ vault, ownerAuth = getDefaultOwnerAuth(
       grants.set(n.grant.id, { grant: n.grant, approval: r.approval });
     }
     if (dropped) { integrity = "GRANTS_FILE_ENTRIES_REJECTED:" + dropped; tryAudit("BROKER_GRANTS_REJECTED_ON_LOAD", { dropped }); }
-  })();
+  }
+  load();
+  /** Another broker object / process may have granted or revoked since: re-read the grants file (and re-verify against the audit chain) when it changed. */
+  const refresh = () => { if (grantsFile && fstamp() !== seenStamp) { grants.clear(); load(); } };
 
   function grant(def, { ownerApproval = null } = {}) {
     const n = normaliseGrant(def, { nowMs: now() });
@@ -178,9 +188,10 @@ export function createCredentialBroker({ vault, ownerAuth = getDefaultOwnerAuth(
     try { const g0 = gate({ external: true }); if (!g0 || g0.allowed === false) return D("OWNER_STOP"); } catch { return D("OWNER_STOP"); }
     let vs; try { vs = vault.status(); } catch { return D("VAULT_UNAVAILABLE"); }
     if (vs.state !== "UNLOCKED") return D("VAULT_LOCKED");
-    if (typeof a.agentId !== "string" || !AGENT_RE.test(who)) return D("AGENT_INVALID");
+    if (typeof a.agentId !== "string" || !AGENT_RE.test(a.agentId)) return D("AGENT_INVALID");      // validated on the RAW value, not the truncated one
     if (isKnownAgent && !isKnownAgent(who)) return D("UNKNOWN_AGENT");
-    const rec = typeof a.grantId === "string" ? grants.get(gid) : null;
+    refresh();
+    const rec = typeof a.grantId === "string" && ID_RE.test(a.grantId) ? grants.get(a.grantId) : null;
     if (!rec) return D("NO_SUCH_GRANT");
     const g = rec.grant;
     if (Date.parse(g.expiresAt) <= now()) return D("GRANT_EXPIRED");
@@ -192,7 +203,7 @@ export function createCredentialBroker({ vault, ownerAuth = getDefaultOwnerAuth(
     if (u.username || u.password) return D("URL_CREDENTIALS_FORBIDDEN");
     if (u.port && u.port !== "443") return D("PORT_NOT_ALLOWED");
     if (!g.hosts.includes(u.hostname)) return D("HOST_NOT_ALLOWED", { host: u.hostname.slice(0, 80) });
-    if (!pathOk(g, u.pathname) || /%2f|%5c|%2e|%00/i.test(u.pathname)) return D("PATH_NOT_ALLOWED", { host: u.hostname });      // encoded slashes/dots could be decoded by the server into a path outside the grant
+    if (!pathOk(g, u.pathname) || /%2f|%5c|%2e|%00|%3b|;/i.test(u.pathname)) return D("PATH_NOT_ALLOWED", { host: u.hostname });      // encoded slashes/dots could be decoded by the server into a path outside the grant
     const m = safeStr(a.method ?? "GET", 12).toUpperCase();
     if (!g.methods.includes(m)) return D("METHOD_NOT_ALLOWED", { method: m.slice(0, 8) });
     let payload;
@@ -210,20 +221,22 @@ export function createCredentialBroker({ vault, ownerAuth = getDefaultOwnerAuth(
     if (payload !== undefined && !out["content-type"]) out["content-type"] = "application/json";
     if (stamp(win, gid, 60000).length >= g.maxPerMinute) return D("RATE_LIMITED_MINUTE");
     if (stamp(day, gid, 86400000).length >= g.maxPerDay) return D("RATE_LIMITED_DAY");
-    if (inflight >= maxInflight) return D("BROKER_BUSY");
+    if (liveFlights() >= maxInflight) return D("BROKER_BUSY");
     win.get(gid).push(now()); day.get(gid).push(now());
     if (!tryAudit("BROKER_REQUEST_START", { agentId: who, grantId: g.id, host: u.hostname, method: m, path: u.pathname.slice(0, 200) })) return D("AUDIT_UNAVAILABLE");      // a request only goes out when its start can be audited
     let secret;
     try { secret = vault.get(g.credential, { purpose: "broker:" + g.id + ":" + who }); } catch { return D("CREDENTIAL_UNAVAILABLE"); }
     if (typeof secret !== "string" || !secret) return D("CREDENTIAL_UNAVAILABLE");
     if (g.auth.style === "bearer") out.authorization = "Bearer " + secret; else out[g.auth.name.toLowerCase()] = secret;
-    const scrub = t => { let s = vault.redact(String(t ?? "")); for (const f of new Set([secret, encodeURIComponent(secret), Buffer.from(secret).toString("base64")])) if (f && s.includes(f)) { s = s.split(f).join("[REDACTED]"); stats.redactions++; } return s; };
+    const sb = Buffer.from(secret, "utf8"), b64 = sb.toString("base64");
+    const forms = [...new Set([secret, encodeURIComponent(secret), encodeURIComponent(encodeURIComponent(secret)), b64, b64.replace(/=+$/, ""), sb.toString("base64url"), sb.toString("hex"), sb.toString("hex").toUpperCase(), JSON.stringify(secret).slice(1, -1), escape(secret), [...secret].map(c => "%" + c.charCodeAt(0).toString(16).padStart(2, "0")).join(""), [...secret].reverse().join("")])].filter(f => f && f.length >= 4);
+    const scrub = t => { let s = vault.redact(String(t ?? "")); for (const f of forms) if (s.includes(f)) { s = s.split(f).join("[REDACTED]"); stats.redactions++; } return s; };      // common encodings only: an upstream that transforms the secret arbitrarily cannot be fully covered
     const ctl = new AbortController();
     let timer; const deadline = new Promise((_, rej) => { timer = setTimeout(() => { ctl.abort(); rej(Object.assign(new Error("timeout"), { name: "AbortError" })); }, timeoutMs); });
     deadline.catch(() => {});
-    inflight++;
+    const fl = { t: now() }; flights.add(fl);
     try {
-      const pending = Promise.resolve(fetchImpl(u, { method: m, headers: out, body: payload, redirect: "manual", signal: ctl.signal })); pending.catch(() => {});
+      const pending = Promise.resolve().then(() => fetchImpl(u, { method: m, headers: out, body: payload, redirect: "manual", signal: ctl.signal })); pending.catch(() => {}); pending.finally(() => flights.delete(fl)).catch(() => {});      // the slot is released when the fetch truly settles, not when we stop waiting
       const r = await Promise.race([pending, deadline]);      // a fetch that ignores the abort signal still cannot hold the broker
       const status = Number(r?.status) || 0;
       const hdr = {}; for (const h of RESPONSE_HEADERS) { const v = r?.headers?.get?.(h); if (v) hdr[h] = scrub(v).slice(0, 200); }
@@ -240,9 +253,9 @@ export function createCredentialBroker({ vault, ownerAuth = getDefaultOwnerAuth(
       const msg = scrub(e?.name === "AbortError" ? "TIMEOUT" : e?.message).slice(0, 120);
       tryAudit("BROKER_REQUEST_FAILED", { agentId: who, grantId: g.id, host: u.hostname, method: m, error: msg });
       return { ok: false, reason: "UPSTREAM_ERROR", error: msg };
-    } finally { clearTimeout(timer); inflight--; secret = null; }
+    } finally { clearTimeout(timer); secret = null; }
   }
 
   const listGrants = () => [...grants.values()].map(({ grant: g }) => ({ id: g.id, credential: g.credential, agents: g.agents, roles: g.roles, hosts: g.hosts, methods: g.methods, pathPrefixes: g.pathPrefixes, expiresAt: g.expiresAt, expired: Date.parse(g.expiresAt) <= now(), maxPerMinute: g.maxPerMinute, maxPerDay: g.maxPerDay, purpose: g.purpose }));
-  return { grant, revokeGrant, revokeAll, request, listGrants, summary: () => ({ grants: grants.size, integrity, inflight, ...stats, auditHead: audit.head() }), auditVerify: () => audit.verify(), auditEntries: () => audit.entries() };
+  return { grant, revokeGrant, revokeAll, request, listGrants, summary: () => ({ grants: grants.size, integrity, inflight: liveFlights(), ...stats, auditHead: audit.head() }), auditVerify: () => audit.verify(), auditEntries: () => audit.entries() };
 }

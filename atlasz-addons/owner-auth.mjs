@@ -14,6 +14,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createPublicKey, createPrivateKey, generateKeyPairSync, sign, verify, randomBytes } from "node:crypto";
 import { createAuditChain } from "./audit-chain.mjs";
+import { withFileLock } from "./file-lock.mjs";
 
 export const APPROVAL_VERSION = "v1";
 export const MAX_TTL_MS = 5 * 60 * 1000;
@@ -46,6 +47,8 @@ export function createOwnerAuth({ ownerId = "JOCI", publicKeyB64 = null, stateDi
   const audit = createAuditChain({ filePath: stateDir ? path.join(stateDir, "owner-auth-audit.jsonl") : null });
   if (nonceFile && fs.existsSync(nonceFile)) for (const l of fs.readFileSync(nonceFile, "utf8").split("\n")) if (l) used.add(l);
 
+  const nonceSeenOnDisk = n => { try { return fs.existsSync(nonceFile) && fs.readFileSync(nonceFile, "utf8").split("\n").includes(n); } catch { return false; } };
+
   function configure({ publicKeyB64: k }) {
     try { pub = createPublicKey({ key: Buffer.from(k, "base64"), format: "der", type: "spki" }); configured = true; }
     catch { pub = null; configured = false; audit.append("OWNER_KEY_CONFIG_REJECTED", {}); throw new Error("INVALID_OWNER_PUBLIC_KEY"); }
@@ -77,12 +80,19 @@ export function createOwnerAuth({ ownerId = "JOCI", publicKeyB64 = null, stateDi
     if (t < iss - CLOCK_SKEW_MS) return deny("ISSUED_IN_FUTURE");
     if (!/^[0-9a-f]{32}$/.test(approval.nonce)) return deny("NONCE_INVALID");
     if (used.has(approval.nonce)) return deny("REPLAY_DETECTED");
+    if (consume && nonceFile && nonceSeenOnDisk(approval.nonce)) { used.add(approval.nonce); return deny("REPLAY_DETECTED"); }      // another process/instance already consumed it
     let ok = false;
     try { ok = verify(null, Buffer.from(messageOf(approval)), pub, Buffer.from(approval.signature, "base64")); } catch { ok = false; }
     if (!ok) return deny("SIGNATURE_INVALID");
     if (consume) {
+      if (nonceFile) {
+        // check-and-append atomically across processes: re-read the file under a lock so two instances cannot both accept one approval
+        let dup = false;
+        try { fs.mkdirSync(stateDir, { recursive: true }); withFileLock(nonceFile, () => { if (nonceSeenOnDisk(approval.nonce)) dup = true; else fs.appendFileSync(nonceFile, approval.nonce + "\n", { mode: 0o600 }); }); }
+        catch { return deny("NONCE_STORE_UNAVAILABLE"); }
+        if (dup) { used.add(approval.nonce); return deny("REPLAY_DETECTED"); }
+      }
       used.add(approval.nonce);
-      if (nonceFile) { fs.mkdirSync(stateDir, { recursive: true }); fs.appendFileSync(nonceFile, approval.nonce + "\n", { mode: 0o600 }); }
     }
     audit.append("APPROVAL_VERIFIED", { action: canon(action), subject: subject ?? null, nonce: approval.nonce });
     return { allowed: true, reason: null, nonce: approval.nonce, ownerId };

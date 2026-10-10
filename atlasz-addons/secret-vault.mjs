@@ -19,11 +19,13 @@ import { withFileLock } from "./file-lock.mjs";
 
 export const VAULT_VERSION = "1";
 const NAME_RE = /^[A-Za-z0-9_.-]{1,64}$/;
-const RESERVED = new Set(["__proto__", "prototype", "constructor", "__check__"]);
+const RESERVED = new Set(["__proto__", "prototype", "constructor", "__check__", "__anchor__"]);
+const MAX_PACKAGE_BYTES = 1024 * 1024;
 const CHECK_TEXT = "ATLASZ-VAULT-KEY-CHECK";
 const BACKUP_FORMAT = "ATLASZ-VAULT-BACKUP";
 const MAX_BACKUP_ENTRIES = 200;
 const sha = t => createHash("sha256").update(t).digest("hex");
+const ctHash = e => sha(String(e.iv) + "|" + String(e.tag) + "|" + String(e.ct)).slice(0, 32);      // identifies one exact ciphertext, so replay can tell a current entry from an old copy
 
 export function generateVaultKey() { return randomBytes(32).toString("base64"); }
 
@@ -60,20 +62,22 @@ export function createSecretVault({ dir, keyB64 = process.env.ATLASZ_VAULT_KEY |
     if (Object.keys(parsed.entries).some(n => RESERVED.has(n) || !NAME_RE.test(n))) throw new Error("VAULT_FILE_INVALID");      // JSON.parse makes "__proto__" an own key: refuse such files
     return { ...parsed, entries: Object.assign(Object.create(null), parsed.entries) };
   };
-  let lastUse = nowFn(), failures = 0, throttledUntil = 0;
+  let lastUse = nowFn(), failures = 0, throttledUntil = 0, bkFailures = 0, bkThrottledUntil = 0, inLock = false;
   const lockInternal = reason => { if (key) { key.fill(0); key = null; audit.append("VAULT_LOCKED", { reason }); } };
   /** Facts that must survive a stale file: which credentials are revoked and whether an emergency shutdown is in force, replayed from the audit chain. */
   const replay = () => {
-    const revoked = new Set(); let shut = null;
+    const names = new Map(); let shut = null;
+    const st = n => { if (!names.has(n)) names.set(n, { revoked: false, ever: false, live: null }); return names.get(n); };
     for (const e of audit.entries()) {
       const d = e.data ?? {};
-      if (e.event === "VAULT_REVOKED") revoked.add(d.name);
-      else if (e.event === "VAULT_CREATED" || e.event === "VAULT_ROTATED" || e.event === "VAULT_DELETED") revoked.delete(d.name);
-      else if (e.event === "VAULT_BACKUP_RESTORED") for (const n of d.names ?? []) revoked.delete(n);
+      if (e.event === "VAULT_REVOKED") { const x = st(d.name); x.revoked = true; x.ever = true; x.live = null; }
+      else if (e.event === "VAULT_CREATED" || e.event === "VAULT_ROTATED") { const x = st(d.name); x.revoked = false; x.live = typeof d.ct === "string" ? d.ct : null; }
+      else if (e.event === "VAULT_DELETED") { const x = st(d.name); x.revoked = false; x.live = null; }
+      else if (e.event === "VAULT_BACKUP_RESTORED") for (const n of d.names ?? []) { const x = st(n); x.revoked = false; x.live = typeof d.hashes?.[n] === "string" ? d.hashes[n] : null; }
       else if (e.event === "VAULT_EMERGENCY_SHUTDOWN") shut = { at: e.at, reason: d.reason ?? "" };
       else if (e.event === "VAULT_UNLOCKED" && d.resumedFromShutdown) shut = null;
     }
-    return { revoked, shut };
+    return { names, shut };
   };
   const verifyKey = k => {
     if (store.check) { try { return decWith("__check__", store.check, k) === CHECK_TEXT; } catch { return false; } }
@@ -88,15 +92,19 @@ export function createSecretVault({ dir, keyB64 = process.env.ATLASZ_VAULT_KEY |
     audit.reload();
     store = readStoreFile();
     const r = replay(); let dirty = false;
-    for (const n of r.revoked) {
+    for (const [n, x] of r.names) {
       const e = Object.hasOwn(store.entries, n) ? store.entries[n] : null;
-      if (e && e.ct && !e.revokedAt) { store.entries[n] = { createdAt: e.createdAt ?? null, rotations: e.rotations ?? 0, revokedAt: new Date().toISOString(), reason: "REPLAYED_FROM_AUDIT" }; dirty = true; }
+      if (!e || !e.ct || e.revokedAt) continue;
+      // revoked and never re-created: revoke. Revoked once and later re-created: an entry whose ciphertext is not the one the audit recorded is an OLD copy of the file - revoke it too.
+      const stale = x.revoked || (x.ever && x.live && ctHash(e) !== x.live);
+      if (stale) { store.entries[n] = { createdAt: e.createdAt ?? null, rotations: e.rotations ?? 0, revokedAt: new Date().toISOString(), reason: x.revoked ? "REPLAYED_FROM_AUDIT" : "STALE_COPY_REVOKED" }; dirty = true; }
     }
     if (r.shut && !store.shutdown) { store.shutdown = r.shut; dirty = true; }
     if (!r.shut && store.shutdown) { /* a shutdown flag with no matching audit event is kept: only an owner-approved resume clears it */ }
     if (key && !verifyKey(key)) { key.fill(0); key = null; audit.append("VAULT_WRONG_KEY_DETECTED", {}); }
+    if (key && !anchorOk(key)) { key.fill(0); key = null; audit.append("VAULT_AUDIT_ROLLBACK_DETECTED", {}); }      // audit log shorter than / different from what the vault last saw: stay locked
     if (store.shutdown && key) { key.fill(0); key = null; }
-    if (dirty && !store.shutdown?.replayOnly) { try { persistRaw(); } catch { /* the in-memory view is already correct; the file is fixed by the next successful write */ } }
+    if (dirty && inLock) { try { persistRaw(); } catch { /* the in-memory view is already correct; the file is fixed by the next successful write */ } }
     seen = stamp(file) + "|" + stamp(auditFile);
   }
   const idle = () => { if (key && idleLockMs > 0 && nowFn() - lastUse > idleLockMs) lockInternal("IDLE_TIMEOUT"); };
@@ -106,14 +114,16 @@ export function createSecretVault({ dir, keyB64 = process.env.ATLASZ_VAULT_KEY |
   const active = n => Object.hasOwn(store.entries, n) && !store.entries[n].revokedAt && Boolean(store.entries[n].ct);
   const persistRaw = () => {
     if (key && !store.check) store.check = encRaw("__check__", CHECK_TEXT);
+    if (key) store.anchor = encRaw("__anchor__", JSON.stringify({ n: audit.length(), head: audit.head() }));      // encrypted audit position: a truncated / replaced audit file is noticed at unlock
     const tmp = file + ".tmp";
-    const fd = fs.openSync(tmp, "w", 0o600);
+    try { fs.unlinkSync(tmp); } catch { /* none */ }      // never write through a pre-planted file or symlink
+    const fd = fs.openSync(tmp, "wx", 0o600);
     try { fs.writeSync(fd, JSON.stringify(store)); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
     fs.renameSync(tmp, file);
   };
   const persist = () => { persistRaw(); };
   /** Run a change under the file lock on a freshly re-read store. */
-  const mutate = fn => withFileLock(file, () => { sync(true); idle(); return fn(); });
+  const mutate = fn => withFileLock(file, () => { const was = inLock; inLock = true; try { sync(true); idle(); return fn(); } finally { inLock = was; } });
   const encRaw = (name, value, k = key) => {
     const iv = randomBytes(12), c = createCipheriv("aes-256-gcm", k, iv, { authTagLength: 16 });
     c.setAAD(Buffer.from(name));
@@ -149,7 +159,7 @@ export function createSecretVault({ dir, keyB64 = process.env.ATLASZ_VAULT_KEY |
       const existed = Boolean(prev && prev.ct && !prev.revokedAt);
       store.entries[name] = { ...enc(name, value), createdAt: prev?.createdAt ?? new Date().toISOString(), rotations: existed ? (prev.rotations ?? 0) + 1 : 0 };
       persist();
-      audit.append(existed ? "VAULT_ROTATED" : "VAULT_CREATED", { name, nonce: ownerApproval.nonce });
+      audit.append(existed ? "VAULT_ROTATED" : "VAULT_CREATED", { name, ct: ctHash(store.entries[name]), nonce: ownerApproval.nonce });
       return { name, rotated: existed };
     });
   }
@@ -166,7 +176,7 @@ export function createSecretVault({ dir, keyB64 = process.env.ATLASZ_VAULT_KEY |
   function remove(name, { ownerApproval = null } = {}) {
     checkName(name);
     return mutate(() => {
-      need();
+      view();      // removing needs no key: a locked vault must still be able to get rid of a credential
       approve(ownerApproval, "VAULT_DELETE", name, "VAULT_DELETE_DENIED", { name });
       if (!Object.hasOwn(store.entries, name)) return false;
       delete store.entries[name]; persist(); audit.append("VAULT_DELETED", { name, nonce: ownerApproval.nonce });
@@ -177,7 +187,7 @@ export function createSecretVault({ dir, keyB64 = process.env.ATLASZ_VAULT_KEY |
   function revoke(name, { ownerApproval = null, reason = "" } = {}) {
     checkName(name);
     return mutate(() => {
-      need();
+      view();      // revoking needs no key: it destroys the value and must work while locked or after a shutdown
       approve(ownerApproval, "VAULT_REVOKE", name, "VAULT_REVOKE_DENIED", { name });
       if (!active(name)) return false;
       const e = store.entries[name];
@@ -204,22 +214,39 @@ export function createSecretVault({ dir, keyB64 = process.env.ATLASZ_VAULT_KEY |
   }
   // ---- lock / unlock / emergency shutdown ----
   function lock(reason = "MANUAL") { sync(); lockInternal(String(reason).slice(0, 60)); return { state: "LOCKED" }; }
+  /** Does the encrypted anchor in the vault file still match the audit chain (same length at least, same entry at the anchored position)? Needs the key. */
+  function anchorOk(k) {
+    if (!store.anchor) return true;      // vault written before anchors existed: nothing to compare
+    try {
+      const a = JSON.parse(decWith("__anchor__", store.anchor, k));
+      if (!Number.isInteger(a.n) || a.n < 0) return false;
+      if (a.n === 0) return true;
+      const es = audit.entries();
+      return es.length >= a.n && es[a.n - 1].hash === a.head;
+    } catch { return false; }
+  }
   function unlock(newKeyB64, { ownerApproval = null } = {}) {
-    sync(true);
-    const t = nowFn();
-    if (t < throttledUntil) { audit.append("VAULT_UNLOCK_THROTTLED", {}); throw new Error("VAULT_UNLOCK_THROTTLED"); }
-    const k = typeof newKeyB64 === "string" ? Buffer.from(newKeyB64, "base64") : Buffer.alloc(0);
-    if (k.length !== 32 || !verifyKey(k)) {
-      failures++; if (failures >= unlockMaxFailures) { throttledUntil = t + unlockThrottleMs; failures = 0; }
-      audit.append("VAULT_UNLOCK_FAILED", {}); throw new Error("VAULT_WRONG_KEY");
-    }
-    const wasShutdown = Boolean(store.shutdown);
-    if (wasShutdown) approve(ownerApproval, "VAULT_RESUME", "ALL", "VAULT_RESUME_DENIED");      // checked after the key so a typo does not burn the single-use approval
-    failures = 0; if (key) key.fill(0); key = k; lastUse = t;
-    if (wasShutdown) { delete store.shutdown; persist(); }
-    audit.append("VAULT_UNLOCKED", { resumedFromShutdown: wasShutdown });
-    seen = "";
-    return { state: "UNLOCKED" };
+    return withFileLock(file, () => {
+      const was = inLock; inLock = true;
+      try {
+        sync(true);
+        const t = nowFn();
+        if (t < throttledUntil) { audit.append("VAULT_UNLOCK_THROTTLED", {}); throw new Error("VAULT_UNLOCK_THROTTLED"); }
+        const k = typeof newKeyB64 === "string" ? Buffer.from(newKeyB64, "base64") : Buffer.alloc(0);
+        if (k.length !== 32 || !verifyKey(k)) {
+          failures++; if (failures >= unlockMaxFailures) { throttledUntil = t + unlockThrottleMs; failures = 0; }
+          audit.append("VAULT_UNLOCK_FAILED", {}); throw new Error("VAULT_WRONG_KEY");
+        }
+        if (!anchorOk(k)) { audit.append("VAULT_AUDIT_ROLLBACK_DETECTED", {}); throw new Error("VAULT_AUDIT_ROLLBACK_DETECTED"); }      // the audit log was truncated or replaced: revocations / shutdown it held may be gone
+        const wasShutdown = Boolean(store.shutdown);
+        if (wasShutdown) approve(ownerApproval, "VAULT_RESUME", "ALL", "VAULT_RESUME_DENIED");      // checked after the key so a typo does not burn the single-use approval
+        failures = 0; if (key) key.fill(0); key = k; lastUse = t;
+        if (wasShutdown) { delete store.shutdown; persist(); }
+        audit.append("VAULT_UNLOCKED", { resumedFromShutdown: wasShutdown });
+        seen = "";
+        return { state: "UNLOCKED" };
+      } finally { inLock = was; }
+    });
   }
   /** Lock now and stay locked across restarts until unlock(key, {ownerApproval: VAULT_RESUME}). Does not delete anything. The flag is also recorded in the audit chain, which a stale or edited vault file cannot undo. */
   function emergencyShutdown({ ownerApproval = null, reason = "" } = {}) {
@@ -237,7 +264,7 @@ export function createSecretVault({ dir, keyB64 = process.env.ATLASZ_VAULT_KEY |
   const headerAad = h => Buffer.from(JSON.stringify([h.format, h.v, h.id, h.kdf.N, h.kdf.r, h.kdf.p, h.kdf.salt]));
   const namesDigest = names => sha([...names].sort().join("\n")).slice(0, 40);
   const canonEntries = ent => JSON.stringify(Object.keys(ent).sort().map(n => [n, ent[n]]));
-  const restoreSubject = (id, pkgText, overwrite) => "backup:" + id + ":" + sha(String(pkgText)).slice(0, 32) + (overwrite ? ":overwrite" : "");
+  const restoreSubject = (id, pkgText, overwrite, revive = false) => "backup:" + id + ":" + sha(String(pkgText)).slice(0, 32) + (overwrite ? ":overwrite" : "") + (revive ? ":revive" : "");
   function exportBackup({ names, passphrase, ownerApproval = null } = {}) {
     need();
     if (!Array.isArray(names) || !names.length || names.length > MAX_BACKUP_ENTRIES) throw new Error("VAULT_BACKUP_NAMES_REQUIRED");
@@ -259,6 +286,8 @@ export function createSecretVault({ dir, keyB64 = process.env.ATLASZ_VAULT_KEY |
   }
   function openBackup(pkgText, passphrase) {
     let h;
+    if (typeof pkgText !== "string" || pkgText.length > MAX_PACKAGE_BYTES) throw new Error("VAULT_BACKUP_TOO_LARGE_OR_INVALID");
+    if (nowFn() < bkThrottledUntil) { audit.append("VAULT_BACKUP_THROTTLED", {}); throw new Error("VAULT_BACKUP_THROTTLED"); }
     try { h = JSON.parse(String(pkgText)); } catch { throw new Error("VAULT_BACKUP_UNREADABLE"); }
     if (!h || h.format !== BACKUP_FORMAT || h.v !== 1 || typeof h.id !== "string" || !h.kdf || typeof h.kdf.salt !== "string" || ![h.iv, h.tag, h.ct].every(x => typeof x === "string")) throw new Error("VAULT_BACKUP_INVALID");
     if (h.kdf.N !== kdfParams.N || h.kdf.r !== kdfParams.r || h.kdf.p !== kdfParams.p) throw new Error("VAULT_BACKUP_KDF_UNSUPPORTED");      // never let a package pick expensive/weak parameters
@@ -271,8 +300,9 @@ export function createSecretVault({ dir, keyB64 = process.env.ATLASZ_VAULT_KEY |
       const d = createDecipheriv("aes-256-gcm", bk, Buffer.from(h.iv, "base64"), { authTagLength: 16 });
       d.setAAD(headerAad(h)); d.setAuthTag(tag);
       plain = Buffer.concat([d.update(Buffer.from(h.ct, "base64")), d.final()]).toString("utf8");
-    } catch { audit.append("VAULT_BACKUP_REJECTED", { id: String(h.id).slice(0, 24) }); throw new Error("VAULT_BACKUP_WRONG_PASSPHRASE_OR_TAMPERED"); }
+    } catch { bkFailures++; if (bkFailures >= unlockMaxFailures) { bkThrottledUntil = nowFn() + unlockThrottleMs; bkFailures = 0; } audit.append("VAULT_BACKUP_REJECTED", { id: String(h.id).slice(0, 24) }); throw new Error("VAULT_BACKUP_WRONG_PASSPHRASE_OR_TAMPERED"); }
     finally { bk.fill(0); }
+    bkFailures = 0;
     let p; try { p = JSON.parse(plain); } catch { throw new Error("VAULT_BACKUP_CORRUPT"); }
     if (!p || typeof p.entries !== "object" || Array.isArray(p.entries) || p.entries === null) throw new Error("VAULT_BACKUP_CORRUPT");
     const ents = Object.assign(Object.create(null), p.entries), names = Object.keys(ents);
@@ -287,18 +317,20 @@ export function createSecretVault({ dir, keyB64 = process.env.ATLASZ_VAULT_KEY |
     return { ok: true, id: b.id, names: b.names, count: b.names.length, createdAt: b.createdAt, restoreSubject: restoreSubject(b.id, pkgText, false) };
   }
   /** The restore approval is bound to the package CONTENT hash (not just its id): a different package cannot ride on an approval given for another one. */
-  function restoreBackup(pkgText, passphrase, { ownerApproval = null, overwrite = false } = {}) {
+  function restoreBackup(pkgText, passphrase, { ownerApproval = null, overwrite = false, revive = false } = {}) {
     return mutate(() => {
       need();
       const b = openBackup(pkgText, passphrase);
-      approve(ownerApproval, "VAULT_RESTORE", restoreSubject(b.id, pkgText, overwrite), "VAULT_RESTORE_DENIED", { id: b.id });
+      approve(ownerApproval, "VAULT_RESTORE", restoreSubject(b.id, pkgText, overwrite, revive), "VAULT_RESTORE_DENIED", { id: b.id });
+      const dead = b.names.filter(n => Object.hasOwn(store.entries, n) && store.entries[n].revokedAt);
+      if (dead.length && !revive) throw new Error("VAULT_RESTORE_REVOKED:" + dead.join(","));      // a backup taken before a revocation must not quietly bring the credential back
       const clash = b.names.filter(n => active(n));
       if (clash.length && !overwrite) throw new Error("VAULT_RESTORE_CONFLICT:" + clash.join(","));
       const before = store.entries, next = Object.assign(Object.create(null), before);
       for (const n of b.names) { const prev = Object.hasOwn(before, n) ? before[n] : null; next[n] = { ...enc(n, b.entries[n]), createdAt: prev?.createdAt ?? new Date().toISOString(), rotations: clash.includes(n) ? (prev.rotations ?? 0) + 1 : 0 }; }
       store.entries = next;
       try { persist(); } catch (e) { store.entries = before; throw e; }
-      audit.append("VAULT_BACKUP_RESTORED", { id: b.id, names: b.names, overwritten: clash, nonce: ownerApproval.nonce });
+      audit.append("VAULT_BACKUP_RESTORED", { id: b.id, names: b.names, hashes: Object.fromEntries(b.names.map(n => [n, ctHash(store.entries[n])])), overwritten: clash, revived: dead, nonce: ownerApproval.nonce });
       return { restored: b.names, overwritten: clash };
     });
   }

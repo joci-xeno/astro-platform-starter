@@ -144,7 +144,7 @@ test("vault backup: owner approval bound to the chosen names; package is opaque;
 });
 
 test("vault backup: any tampering, parameter swap or locked target is rejected and leaves the store untouched", () => {
-  const a = mk(), b = mk();
+  const a = mk({ unlockMaxFailures: 1000 }), b = mk();
   try {
     a.v.set("ONE", SECRET, { ownerApproval: a.ap("VAULT_SET", "ONE") });
     const ex = a.v.exportBackup({ names: ["ONE"], passphrase: PASS, ownerApproval: a.ap("VAULT_EXPORT", nameDigest(["ONE"])) });
@@ -432,7 +432,7 @@ test("vault backup: a failed write during restore leaves the vault exactly as it
     const ex = a.v.exportBackup({ names: ["ONE"], passphrase: PASS, ownerApproval: a.ap("VAULT_EXPORT", nameDigest(["ONE"])) });
     b.v.set("KEEP", "keep-this-value", { ownerApproval: b.ap("VAULT_SET", "KEEP") });
     fs.mkdirSync(path.join(b.d, "vault.enc.json.tmp"));      // makes the atomic write fail
-    assert.throws(() => b.v.restoreBackup(ex.package, PASS, { ownerApproval: b.ap("VAULT_RESTORE", ex.restoreSubject) }), /EISDIR|EPERM|EACCES/);
+    assert.throws(() => b.v.restoreBackup(ex.package, PASS, { ownerApproval: b.ap("VAULT_RESTORE", ex.restoreSubject) }), /EISDIR|EPERM|EACCES|EEXIST/);
     assert.deepEqual(b.v.list(), ["KEEP"]); assert.equal(b.v.has("ONE"), false);
     fs.rmdirSync(path.join(b.d, "vault.enc.json.tmp"));
     assert.deepEqual(b.v.restoreBackup(ex.package, PASS, { ownerApproval: b.ap("VAULT_RESTORE", ex.restoreSubject) }).restored, ["ONE"], "the approval was not the problem: a new one works");
@@ -582,12 +582,16 @@ test("broker: a secret straddling the response cap is redacted before truncating
   } finally { rm(t.d); }
 });
 
-test("broker: a fetch that ignores the abort signal cannot wedge the broker", async () => {
+test("broker: a fetch that ignores the abort signal cannot wedge the broker; its slot counts until the ceiling, then frees", async () => {
   const t = mkb({ timeoutMs: 40, maxInflight: 2, fetchImpl: () => new Promise(() => {}) });
   try {
     t.addGrant({ ...GRANT, maxPerMinute: 60 });
-    for (let i = 0; i < 4; i++) { const r = await t.br.request({ agentId: "S-01", grantId: "g1", url: "https://api.example-data.com/v1/a" }); assert.equal(r.reason, "UPSTREAM_ERROR"); assert.equal(r.error, "TIMEOUT"); }
+    const rq = () => t.br.request({ agentId: "S-01", grantId: "g1", url: "https://api.example-data.com/v1/a" });
+    for (let i = 0; i < 2; i++) { const r = await rq(); assert.equal(r.reason, "UPSTREAM_ERROR"); assert.equal(r.error, "TIMEOUT"); }
+    assert.equal((await rq()).reason, "BROKER_BUSY");      // two zombie fetches still hold both slots
+    await new Promise(r => setTimeout(r, 5 * 40 + 60));
     assert.equal(t.br.summary().inflight, 0);
+    assert.equal((await rq()).reason, "UPSTREAM_ERROR");      // ceiling passed: broker serves again
   } finally { rm(t.d); }
 });
 
