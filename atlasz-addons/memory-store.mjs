@@ -31,13 +31,13 @@ const bodyBad = b => typeof b !== "string" || !b.trim() || b.length > LIMITS.max
 // with up to three short prefix segments (db_password, client_secret, AWS_SECRET_ACCESS_KEY) or a known prefix glued on (DBPASSWORD, AUTHTOKEN), and a suffix (password1, password_prod, SECRET_KEY_BASE, "password for admin").
 // camelCase is split, combining accents and look-alike letters are folded, Markdown decoration is removed (checked both ways). Every part is length-bounded so the scan stays linear ("bypass" / "compass" are not names).
 const plain = n => n.normalize("NFD").replace(/\p{M}/gu, "");      // names are matched in the same accent-free form the text is reduced to
-const FOREIGN = ["пароль", "密码", "密碼", "パスワード", "비밀번호", "heslo", "hasło", "şifre", "lösenord", "wachtwoord", "mot de passe", "passwörter", "geheimnis", "senha", "jelszavam"].map(plain).join("|");
-const NAME_CORE = "(?:pass(?:word|wd|phrase|wort|code)?|pass[ _-]word|pwd|psw|pw|psk|otp|pin(?:code)?|secret|token|credentials?|creds|api[ _-]?key|apikey|(?:access|secret|private|signing|encryption|auth|client|master|ssh|license|licence|recovery|unlock|backup|wifi|wpa|wep)[ _-](?:key|code)|kennwort|jelszo|jelszav[a-z]*|contrasena|clave|titkos(?:kulcs)?|auth|key|" + FOREIGN + ")s?";
+const FOREIGN = ["пароль", "密码", "密碼", "パスワード", "비밀번호", "heslo", "hasło", "şifre", "lösenord", "wachtwoord", "mot de passe", "passwörter", "geheimnis", "senha"].map(plain).join("|");
+const NAME_CORE = "(?:pass(?:word|wd|phrase|wort|code)?|pass[ _-]word|pwd|psw|pw|psk|otp|pin(?:code)?|secret|token|credentials?|creds|api[ _-]?key|apikey|(?:access|secret|private|signing|encryption|auth|client|master|ssh|license|licence|recovery|unlock|backup|wifi|wpa|wep)[ _-](?:key|code)|kennwort|kenwort|passwrd|pasword|pswd|pword|paßword|secrete|jelsz[a-z]{0,6}|contrasena|clave|titkos(?:kulcs)?|auth|key|" + FOREIGN + ")s?";
 const PREFIX = "(?:(?:[a-z0-9]{1,20}[_.-]){1,3}|(?:db|auth|api|user|admin|root|app|jwt|bearer|session|refresh|access|oauth|mysql|pg|redis|aws|ssh|vpn|wifi|smtp|login|master|service|site|sql)(?=pass|pwd|psw|secret|token|cred|key|pin))";
-const SUFFIX = "(?:(?:[ \\t]{0,3}\\([^)\\n]{1,20}\\))|\\d{1,4}|(?:[_.-][a-z0-9]{1,15}){1,3}|(?:[ \\t]{1,20}(?!(?:is|was|are|ist|war|est)\\b)[a-z]{2,12}){1,3})?";
+const SUFFIX = "(?:(?:[ \\t]{0,3}\\([^)\\n]{1,20}\\))|\\d{1,4}|(?:[_.-][a-z0-9]{1,15}){1,3}|(?:[ \\t]{1,20}(?!(?:is|was|are|ist|war|est|equals?|will|should|set|reset|changed|updated)\\b)[a-z]{2,20}){1,6})?";
 const NAMES = "(?<pre>" + PREFIX + ")?(?<core>" + NAME_CORE + ")(?<suf>" + SUFFIX + ")";
-const VAL = "(?:\"([^\"\\n]{4,2000})\"|'([^'\\n]{4,2000})'|([^\\s\"')}\\]]{4,300}))";
-const ASSIGN_RE = new RegExp("(?<![A-Za-z0-9])" + NAMES + "[\"'\\])]?[ \\t]{0,20}(?:(?<colon>:(?!=)|\\||>|[-\u2013\u2014\u2192](?=[ \\t]))|(?<eq>:=|=>?|->)|[ \\t]+(?:is|was|are|ist|war|est)[ \\t]+|(?<sp>[ \\t]+(?=\\S)))\\s{0,50}" + VAL, "gi");
+const VAL = "(?:\"([^\"\\n]{4,2000})\"|'([^'\\n]{4,2000})'|[\"']?([^\\s\"')}\\]]{4,300}))";
+const ASSIGN_RE = new RegExp("(?<![A-Za-z0-9])" + NAMES + "[\"'\\])]?[ \\t]{0,20}(?:(?<colon>:(?!=)|\u2236|\\||>|[-\u2013\u2014\u2192](?=[ \\t]))|(?<eq>:=|\\?=|={1,3}>?|->|<-|\u21d2|~)|[ \\t]+(?:(?:is|was|are|ist|war|est)(?:[ \\t]+(?:now|set|changed|reset|updated|rotated))*(?:[ \\t]+to)?|equals?|will[ \\t]+be|should[ \\t]+be|(?:set|reset|changed|updated)[ \\t]+to)[ \\t]+|(?<sp>[ \\t]+(?=\\S)))\\s{0,50}" + VAL, "gi");
 const PASSY = /pass|pwd|psw|pw|pin|jelsz|kennwort|contrasena|titkos/i;
 const PLACEHOLDER = /^(?:true|false|null|none|nil|undefined|empty|unset|todo|tbd|n\/a|yes|no)$/i;
 const STRONG_SYM = /[@#$%^&*\[\]{}|\\<>~`!]/;
@@ -49,11 +49,11 @@ const credLike = (name, assign, v, rest, quoted) => {
   const passy = PASSY.test(name), hasDigit = /\d/.test(v), hasLetter = /\p{L}/u.test(v);
   if (assign && !hasDigit && !STRONG_SYM.test(v) && /^\p{L}+$/u.test(v) && v.length < 6) return false;      // "Pass = fail"
   if (assign) {      // "=" / ":=" / "->": credential unless a plain word under a name that is also an ordinary word ("Token = Alpha", "Secret = something")
-    if (passy || /key|psk|otp|code/.test(name) || hasDigit || STRONG_SYM.test(v) || v.length >= 12) return !/^[\/~]/.test(v) || !/pwd/.test(name);
+    if (passy || /key|psk|otp|code/.test(name) || hasDigit || STRONG_SYM.test(v) || v.length >= 12) return !/pwd/.test(name) || !/^(?:[~.]?\/|[A-Za-z]:[\\/])[\w.\/\\ -]*$/.test(v);
     return false;
   }
-  if (/^\s+(?:vs\.?|versus)\s/i.test(rest)) return false;      // "Password manager: 1Password vs Bitwarden"
-  if (/pwd/.test(name) && /^(?:[\/~.]|[A-Za-z]:[\\/])/.test(v)) return false;      // `pwd` is also the shell command: a path is not a password
+  if (/\s/.test(name) && /^\s+(?:vs\.?|versus)\s/i.test(rest)) return false;      // "Password manager: 1Password vs Bitwarden"
+  if (/pwd/.test(name) && /^(?:[~.]?\/|[A-Za-z]:[\\/])[\w.\/\\ -]*$/.test(v)) return false;      // `pwd` is also the shell command: a path is not a password
   if (quoted && passy && v.length >= 8) return true;      // a quoted passphrase of several words
   if (v.length < 6) return false;
   if (passy) {
@@ -76,14 +76,17 @@ const unleet = t => t.replace(/(?<=[a-z])[013457@$](?=[a-z])/gi, c => LEETN[c]);
 const views = raw => { const b = base(raw), out = new Set(); for (const t of [foldLookalikes(b), b]) for (const x of [t, camel(t), unleet(t)]) { out.add(x); out.add(deco(x)); } return [...out]; };
 const deco = t => t.replace(/[*`~]/g, "").replace(/(?<![A-Za-z0-9])_+(?=[A-Za-z])|(?<=[A-Za-z0-9])_{2,}(?![A-Za-z0-9])/g, "");
 function* credentialAssignments(t) {
-  for (const m of t.matchAll(ASSIGN_RE)) {
+  const re = ASSIGN_RE; re.lastIndex = 0; let m;
+  while ((m = re.exec(t)) !== null) {
     const g = m.groups, name = ((g.pre ?? "") + g.core + (g.suf ?? "")).toLowerCase(), assign = Boolean(g.eq), q = m[m.length - 3] !== undefined || m[m.length - 2] !== undefined;
     const v = m[m.length - 3] ?? m[m.length - 2] ?? m[m.length - 1] ?? "";
-    if (g.sp && !/key$/i.test(g.core)) continue;      // "api key V" (no separator) only for key names
-    if (!g.pre && !g.suf && /^key$/i.test(g.core) && !assign) continue;      // a bare "key:" is a label; bare "key=" is an assignment ("auth: V" is judged by its value like any other name)
-    if (!assign && /^pass$/i.test(g.core) && !g.suf) continue;      // "Boarding pass: 2024-01-15" is prose; password/pwd/passphrase are not
-    if (!assign && /^pins?$/i.test(g.core) && !/^\d{4,8}$/.test(v.replace(/[.,;:!?]+$/, ""))) continue;
-    if (credLike(name, assign, v, t.slice(m.index + m[0].length, m.index + m[0].length + 40), q)) yield { index: m.index, value: v };
+    let skip = false;
+    if (g.sp && !/key$|^jelsz/i.test(g.core)) skip = true;      // "api key V" / "jelszó (otthoni) V" (no separator) only for key names and the Hungarian word
+    else if (!g.pre && !g.suf && /^key$/i.test(g.core) && !assign) skip = true;      // a bare "key:" is a label; bare "key=" is an assignment ("auth: V" is judged by its value like any other name)
+    else if (!assign && /^pass$/i.test(g.core) && !g.suf) skip = true;      // "Boarding pass: 2024-01-15" is prose; password/pwd/passphrase are not
+    else if (!assign && /^pins?$/i.test(g.core) && !/^\d{4,8}$/.test(v.replace(/[.,;:?]+$/, ""))) skip = true;
+    if (!skip && credLike(name, assign, v, t.slice(m.index + m[0].length, m.index + m[0].length + 40), q)) { yield { index: m.index, value: v }; continue; }
+    re.lastIndex = m.index + 1;      // a rejected candidate must not swallow a real name inside it ("password|token: V")
   }
 }
 /** NAME=value / "NAME": "value" where the value looks like a credential. Runs on normalised text like containsSecret. */
@@ -310,6 +313,7 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
   // ---------------------------------------------------------------- update (old version kept; lowering the classification needs the owner)
   function update(id, patch = {}, { ownerApproval = null } = {}) {
     if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE");
+    if (!auditNow().ok) return fail("AUDIT_UNAVAILABLE");      // before an owner approval is spent and before a version copy is made
     if (typeof id !== "string" || !ID_RE.test(id)) return fail("ID_INVALID");
     if (typeof patch.authorId !== "string" || !AGENT_RE.test(patch.authorId)) return fail("AUTHOR_INVALID");
     try {
@@ -352,6 +356,7 @@ export function createMemoryStore({ dir, tenantId = "JOCI", ownerAuth = null, fo
   // ---------------------------------------------------------------- forget (owner only; the file goes to trash, it is not destroyed)
   function forget(id, { ownerApproval = null } = {}) {
     if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE");
+    if (!auditNow().ok) return fail("AUDIT_UNAVAILABLE");      // before the single-use approval is spent and before anything moves
     if (typeof id !== "string" || !ID_RE.test(id)) return fail("ID_INVALID");
     if (!ownerAuth) return fail("OWNER_AUTH_REQUIRED");
     try {

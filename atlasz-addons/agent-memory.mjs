@@ -15,7 +15,7 @@ import { scrub } from "./secret-patterns.mjs";
 import { redactAssignments } from "./memory-store.mjs";
 import { okName } from "./safe-keys.mjs";
 
-export const LIMITS = Object.freeze({ maxBody: 4000, maxTitle: 120, maxUserTags: 5, notesPerAgent: 200, writesPerDay: 50, readsPerMin: 60, contextChars: 3000, contextNotes: 5, maxProjects: 20, forgetRequests: 200, forgetPerAgent: 20, attemptsPerDay: 200, ttlMaxDays: 365, activity: 200 });
+export const LIMITS = Object.freeze({ maxBody: 4000, maxTitle: 120, maxUserTags: 5, notesPerAgent: 200, writesPerDay: 50, readsPerMin: 60, contextChars: 3000, contextNotes: 5, maxProjects: 20, forgetRequests: 200, forgetPerAgent: 20, attemptsPerDay: 200, loggedReadsPerDay: 1000, ttlMaxDays: 365, activity: 200 });
 export const DEFAULT_POLICY = Object.freeze({
   clearance: Object.freeze({ SEARCH: "PERSONAL", EXECUTION: "PERSONAL" }),      // read ceiling per team; CONFIDENTIAL is owner-only unless the owner raises it
   writeCeiling: Object.freeze({ SEARCH: "PERSONAL", EXECUTION: "PERSONAL" }),
@@ -29,13 +29,13 @@ const defang = t => String(t).replace(/<{2,}|>{2,}/g, m => m.split("").join("​
 // Text that reads like an instruction aimed at a later reader is not stored as memory by an agent. (Retrieval is fenced anyway; this is the second line.)
 const INJECTION = [/ignore\s+(?:all\s+|any\s+|the\s+)?(?:previous|prior|above|earlier)\s+(?:instructions?|rules?|prompts?)/i, /disregard\s+(?:the\s+)?(?:system|previous|above)/i, /(?:reveal|print|show|leak)\s+(?:the\s+)?(?:system\s+prompt|credentials?|api[_ -]?keys?|secrets?)/i,
   /\byou\s+are\s+now\b/i, /\bnew\s+instructions?\s*:/i, /\bact\s+as\s+(?:the\s+)?(?:owner|admin|root|coordinator)\b/i, /<<\s*(?:END_)?UNTRUSTED/i, /\bapprov(?:e|al)\s+granted\s+by\s+(?:the\s+)?(?:owner|admin\w*|root|coordinator)\b/i, /"(?:tool|function)_?call"\s*:/i,
-  /\b(?:forget|override)\s+(?:all\s+|any\s+|the\s+|your\s+)?(?:previous|prior)\s+(?:instructions?|rules?|prompts?)/i, /\bignore\s+the\s+(?:rules|instructions)\s+(?:above|before)\b/i, /\bdisregard\s+(?:all\s+)?(?:prior|previous)\s+context\b/i, /\bprint\s+your\s+system\s+prompt\b/i, /\bfrom\s+now\s+on\s+you\s+(?:must|will|shall)\b/i, /\[\/?INST\]|<\|im_(?:start|end)\|>/i];
+  /\b(?:forget|override)\s+(?:all\s+|any\s+|the\s+|your\s+)?(?:previous|prior)\s+(?:instructions?|prompts?)\b/i, /\bignore\s+the\s+(?:rules|instructions)\s+(?:above|before)\b/i, /\bdisregard\s+all\s+(?:prior|previous)\s+context\b(?!\s*:)/i, /\bprint\s+your\s+system\s+prompt\s*(?:$|[.!?;]|\s+(?:and|now|please|verbatim)\b)/i, /\bfrom\s+now\s+on,?\s+you\s+(?:must|will|shall)\s+(?:obey|comply|follow|ignore|only|always|never)\b/i, /\[\/?INST\]|<\|im_(?:start|end)\|>/i];
 // Compact form: letters only, look-alike digits/symbols mapped back ("1gn0re  pr3vious" -> "ignorepreviousinstructions"), so spacing and leetspeak tricks do not hide a phrase. Best effort: the real defence is that
 // retrieved text is always fenced and flagged as untrusted data.
 const LEET = { 0: "o", 1: "i", 3: "e", 4: "a", 5: "s", 7: "t", "@": "a", $: "s", "!": "i" };
 // Whole text: the ignore-previous-instructions family only (cross-sentence joins are rare). Per sentence: the rest. Word boundaries are lost in the compact form, so only phrases that cannot occur inside ordinary words are used here;
 // plain-spaced phrasings (including "approval granted", "act as the admin") are in INJECTION above, with word boundaries.
-const COMPACT_ALL = [/(?:ignore|disregard)(?:all|any|the|your|every)?(?:previous|prior|above|earlier|preceding|former|system)(?:instructions?|rules?|prompts?|messages?|guidelines?)/, /(?:forget|override)(?:all|any|the|your|every)(?:previous|prior|above|earlier|preceding|former)(?:instructions?|rules?|prompts?|guidelines?)/];
+const COMPACT_ALL = [/(?:ignore|disregard)(?:all|any|the|your|every)?(?:previous|prior|above|earlier|preceding|former|system)(?:instructions?|rules?|prompts?|messages?|guidelines?)/, /(?:forget|override)(?:all|any|the|your|every)(?:previous|prior|above|earlier|preceding|former)(?:instructions?|prompts?)/];
 const COMPACT_SENTENCE = [/(?:system|developer)(?:message|prompt)?youmust(?:obey|comply|follow)/, /^admin(?:message)?youmust(?:obey|comply)/, /ignore(?:everything|anything|all)(?:above|before)/, /(?:reveal|print|leak|dump)(?:the)?(?:systemprompt|apikeys?)/, /untrustedmemory/];
 const compact = n => n.toLowerCase().replace(/[01345 7@$!]/g, ch => LEET[ch] ?? ch).replace(/[^\p{L}]/gu, "");
 export const looksLikeInstruction = t => {
@@ -49,7 +49,7 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
   if (!store) throw new Error("MEMORY_STORE_REQUIRED"); if (!dir) throw new Error("MEMORY_DIR_REQUIRED"); if (typeof tenantId !== "string" || !okName(TENANT, tenantId)) throw new Error("TENANT_INVALID");
   const P = { ...DEFAULT_POLICY, ...policy, clearance: { ...DEFAULT_POLICY.clearance, ...(policy.clearance ?? {}) }, writeCeiling: { ...DEFAULT_POLICY.writeCeiling, ...(policy.writeCeiling ?? {}) }, projects: { ...(policy.projects ?? {}) } };
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-  const audit = createAuditChain({ filePath: path.join(dir, "memory-access-audit.jsonl") }), stateFile = path.join(dir, "agent-memory-state.json");
+  const audit = createAuditChain({ filePath: path.join(dir, "memory-access-audit.jsonl"), fastAppend: true }), stateFile = path.join(dir, "agent-memory-state.json");
   const fail = (reason, extra = {}) => ({ ok: false, reason, ...extra });
   const stopped = () => { try { return Boolean(isStopped()); } catch { return true; } };
   let S = { v: 1, agents: {}, forgets: {}, refused: 0, errors: [] };
@@ -72,7 +72,16 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
   const auditHealthy = () => { if (!auditBad) return true; const t = nowFn(); if (t - auditCheckedAt > 5000) { auditCheckedAt = t; if (auditNow().ok) auditBad = false; } return !auditBad; };
   // Refusals and failures are logged at most once a minute per agent and event (with a count of those suppressed), so a refusal flood cannot make the log grow or every call slow.
   const IMPORTANT = /^(?:LOOKS_LIKE_INSTRUCTION|SECRET|SCREEN_REFUSED|CLASSIFICATION_ABOVE|PROJECT_NOT_GRANTED|SCOPE_NOT|ACCESS_AUDIT)/;      // rare and security-relevant: always logged (bounded by the daily attempt cap)
-  const lastLogged = new Map();
+  const lastLogged = new Map(), readAgg = new Map();
+  /** Reads are logged one by one up to a daily number per agent; beyond it they are summed up once a minute (count + a hash of what was read), so a busy or hostile reader cannot make the shared log grow or every other append slower without bound. */
+  function logRead(agentId, event, data) {
+    const a = A(agentId), d = day(); if (!a.rl || a.rl.day !== d) a.rl = { day: d, n: 0 };
+    if (a.rl.n < LIMITS.loggedReadsPerDay) { a.rl.n++; return log(event, data); }
+    const t = nowFn(), g = readAgg.get(agentId) ?? { at: t, n: 0, h: "" }; g.n++; g.h = sha(g.h + event + JSON.stringify(data.ids ?? data.id ?? "")).slice(0, 16); readAgg.set(agentId, g);
+    if (t - g.at >= 60_000) { readAgg.delete(agentId); return log("MEMORY_READS_AGGREGATED", { agent: agentId, count: g.n, sinceMs: t - g.at, digest: g.h, lastEvent: event }); }
+    return true;
+  }
+  function flushSuppressed() { for (const [key, e] of [...lastLogged]) if (e.n > 0) { const [event, agent, reason] = key.split("|"); log("MEMORY_LOG_SUPPRESSED", { event, agent, reason, count: e.n }); e.n = 0; } for (const [agent, g] of [...readAgg]) { log("MEMORY_READS_AGGREGATED", { agent, count: g.n, digest: g.h, flushed: true }); readAgg.delete(agent); } }
   const logLimited = (event, agentId, data = {}) => { if (IMPORTANT.test(String(data.reason ?? ""))) return log(event, data); const key = event + "|" + agentId + "|" + String(data.reason ?? ""), t = nowFn(), e = lastLogged.get(key); if (e && t - e.at < 60_000) { e.n++; return true; } const n = e?.n ?? 0; lastLogged.set(key, { at: t, n: 0 }); if (lastLogged.size > 500) lastLogged.delete(lastLogged.keys().next().value); return log(event, n ? { ...data, suppressedSince: n } : data); };
   const OPS = ["remember", "recall", "context", "read", "list", "refused", "forgetRequests"];
   const A = id => {
@@ -138,7 +147,7 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
     a.ops.recall++; a.lastAt = nowFn();
     if (!r.ok) { logLimited("MEMORY_RECALL_FAILED", agentId, { agent: agentId, reason: r.reason }); save(); return r; }
     const out = r.results.map(x => ({ id: x.id, title: defang(x.title), classification: x.classification, tags: x.tags.map(defang), score: x.score, passage: x.passage }));
-    if (!log("MEMORY_RECALLED", { agent: agentId, task: typeof taskId === "string" && TASK.test(taskId) ? taskId : undefined, queryHash: sha(String(query)).slice(0, 16), queryLen: String(query).length, ids: out.map(x => x.id), backend: r.backend })) return fail("ACCESS_AUDIT_UNAVAILABLE"); save();
+    if (!logRead(agentId, "MEMORY_RECALLED", { agent: agentId, task: typeof taskId === "string" && TASK.test(taskId) ? taskId : undefined, queryHash: sha(String(query)).slice(0, 16), queryLen: String(query).length, ids: out.map(x => x.id), backend: r.backend })) return fail("ACCESS_AUDIT_UNAVAILABLE"); save();
     return { ok: true, untrusted: true, backend: r.backend, retrieval: r.retrieval, semantic: r.semantic, results: out };
   }
   /** The memory block a task puts in front of an agent: bounded, fenced, labelled as data. Only for a task the agent takes part in (when a participation check is wired). */
@@ -153,10 +162,10 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
   }
   function read(agentId, id) {
     const c = check(agentId, "read"); if (c) return c; const r = store.get(id, readerFor(agentId)); A(agentId).ops.read++;
-    const logged = r.ok ? log("MEMORY_READ", { agent: agentId, id: String(id).slice(0, 16) }) : logLimited("MEMORY_READ_MISSING", agentId, { agent: agentId, id: typeof id === "string" ? id.slice(0, 16) : "?" }); save(); if (!logged) return fail("ACCESS_AUDIT_UNAVAILABLE");
+    const logged = r.ok ? logRead(agentId, "MEMORY_READ", { agent: agentId, id: String(id).slice(0, 16) }) : logLimited("MEMORY_READ_MISSING", agentId, { agent: agentId, id: typeof id === "string" ? id.slice(0, 16) : "?" }); save(); if (!logged) return fail("ACCESS_AUDIT_UNAVAILABLE");
     return r.ok ? { ok: true, untrusted: true, id: r.id, title: defang(r.title), tags: r.tags.map(defang), classification: r.classification, version: r.version, text: r.text } : fail("NOT_FOUND");
   }
-  function list(agentId, { limit = 20 } = {}) { const c = check(agentId, "read"); if (c) return c; const r = store.list(readerFor(agentId), { limit }); A(agentId).ops.list++; if (!log("MEMORY_LISTED", { agent: agentId, count: r.ok ? r.notes.length : 0 })) return fail("ACCESS_AUDIT_UNAVAILABLE"); save(); return r.ok ? { ok: true, notes: r.notes.map(n => ({ ...n, title: defang(n.title), tags: n.tags.map(defang) })) } : r; }
+  function list(agentId, { limit = 20 } = {}) { const c = check(agentId, "read"); if (c) return c; const r = store.list(readerFor(agentId), { limit }); A(agentId).ops.list++; if (!logRead(agentId, "MEMORY_LISTED", { agent: agentId, count: r.ok ? r.notes.length : 0 })) return fail("ACCESS_AUDIT_UNAVAILABLE"); save(); return r.ok ? { ok: true, notes: r.notes.map(n => ({ ...n, title: defang(n.title), tags: n.tags.map(defang) })) } : r; }
   function requestForget(agentId, id, reason = "") {
     const c = check(agentId, "write"); if (c) return c; if (typeof id !== "string" || !ID.test(id)) return fail("NOT_FOUND");
     const g = store.get(id, readerFor(agentId)); if (!g.ok) return fail("NOT_FOUND"); if (g.author !== agentId) return fail("ONLY_THE_AUTHOR_MAY_REQUEST");
@@ -204,6 +213,7 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
       ids.splice(500); return { ok: true, ids, subject: ids.length ? store.retentionSubjectFor(ids) : null, action: "MEMORY_RETENTION_SWEEP" };
     },
     retentionApply(ownerApproval, { subject = null } = {}) {
+      refresh();      // the runtime may have saved counters since this instance last looked
       const p = this.retentionPreview(); if (!p.ok || !p.ids.length) return p.ok ? { ok: true, retired: [] } : p;
       if (subject !== null && subject !== p.subject) return fail("REVIEWED_SET_CHANGED");      // the owner approved a list they saw; if it changed since, nothing is swept
       const authors = new Map(); for (const id of p.ids) { const g = store.get(id, OWNER); if (g.ok) authors.set(id, g.author); }
@@ -212,10 +222,10 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
       return r;
     },
     activity: () => (refresh(), Object.entries(S.agents)).map(([id, a]) => ({ agent: id, notes: a.notes, lastAt: a.lastAt ? new Date(a.lastAt).toISOString() : null, ops: { ...a.ops } })).sort((x, y) => (x.agent < y.agent ? -1 : 1)),
-    accessLog: (n = 50) => { try { audit.reload(); } catch { /* auditVerify reports it */ } return audit.entries().slice(-Math.max(1, Math.min(200, Number.isInteger(n) ? n : 50))).filter(e => JSON.stringify(e.data ?? {}).length <= 2000); }
+    accessLog: (n = 50) => { flushSuppressed(); try { audit.reload(); } catch { /* auditVerify reports it */ } return audit.entries().slice(-Math.max(1, Math.min(200, Number.isInteger(n) ? n : 50))).filter(e => JSON.stringify(e.data ?? {}).length <= 2000); }
   });
   function diagnose() {
-    refresh();
+    refresh(); flushSuppressed();
     const v = store.verify(), st = store.status();
     return { ok: true, tenantId, store: { backend: st.backend, notes: st.notes, quarantined: st.quarantined, trashed: st.trashed, consistent: v.consistent, externallyEdited: v.externallyEdited, classificationMismatch: v.classificationMismatch, unreadable: v.unreadable, auditOk: v.auditOk }, accessAuditOk: auditNow().ok, agentStateLoadedFrom: loadedFrom, refusedWrites: S.refused, recentErrors: S.errors.slice(-10), pendingForgetRequests: Object.keys(S.forgets).length };
   }

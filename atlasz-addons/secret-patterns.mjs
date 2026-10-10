@@ -17,7 +17,7 @@ const ALL = [
   new RegExp("PMAK-[A-Za-z0-9-]{30,}", "g"), new RegExp(B + "key-[a-f0-9]{32}(?![A-Za-z0-9])", "g"), new RegExp("sq0(?:atp|csp)-[A-Za-z0-9_-]{20,}", "g"), new RegExp(B + "AAAA[A-Za-z0-9_-]{7}:APA91b[A-Za-z0-9_-]{100,}", "g"),
   /discord(?:app)?\.com\/api\/webhooks\/\d+\/[A-Za-z0-9_-]{20,}/gi, /(?<![a-z0-9.-])[a-z0-9.-]{1,100}\.webhook\.office\.com\/[^\s"']{20,}/gi, /outlook\.office\.com\/webhook\/[^\s"']{20,}/gi, /https?:\/\/[a-f0-9]{32}@[A-Za-z0-9.-]+/g,
   /(?:[?&;]|^|\s)(?:sig|X-Amz-Signature|X-Amz-Credential|X-Goog-Signature)=[A-Za-z0-9%+\/=_-]{20,}/gi, /(?:password|passwd|secret|token|api[_-]?key)%3[Dd][^\s&"']{4,}/gi,
-  /--[a-z-]*(?:password|passwd|token|secret|api-key)=\S{3,}/gi, /--[a-z-]*(?:password|passwd|token|secret|api-key)\s+(?=\S*[0-9_@!#$%^&*])\S{4,}/gi, /\bsshpass\s+-p\s*\S+/gi,
+  /--[a-z-]{0,30}(?:password|passwd|token|secret|api-key)=\S{3,}/gi, /--[a-z-]{0,30}(?:password|passwd|token|secret|api-key)\s+(?=\S*[0-9_@!#$%^&*])\S{4,}/gi, /\bsshpass\s+-p\s*\S+/gi,
   /\bcurl\b[^\n]{0,300}?\s(?:-u\s*|--user[ =])[^\s:]+:\S+/gi, /\b(?:mysql|mysqldump|psql|mariadb)\b[^\n]*?\s-p\S{3,}/gi, /\bdocker\s+login\b[^\n]*?\s(?:-p|--password)[ =]\S+/gi, /\b(?:set-)?cookie\s*:[^\n]*=[^\n]*/gi,
   /\bbearer\s+(?!(?:authentication|authorization|auth|tokens?|scheme|schemes|credentials?|headers?|format|access|style)\b)[A-Za-z0-9._~+\/=-]{8,}/gi, /\bbasic\s+(?:(?=[A-Za-z0-9+\/=]*[\d+\/=])[A-Za-z0-9+\/=]{12,}|[A-Za-z0-9+\/=]{28,})/gi,
   /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g,

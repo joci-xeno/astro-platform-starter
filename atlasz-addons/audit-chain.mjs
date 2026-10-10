@@ -42,7 +42,9 @@ export function readAuditFile(file) {
   return out;
 }
 
-export function createAuditChain({ filePath = null, now = () => new Date().toISOString() } = {}) {
+/** fastAppend (opt-in, for high-volume access logs): an append skips the full re-read and re-verification when the file is exactly as this instance last left it (same size, modification time and inode). Any other change - another process appending, an edit -
+ *  takes the full path. An explicit reload()/verify() is always a full check, so tampering that keeps size and timestamp is still found by the next explicit verification (the chain is tamper-evident, not tamper-proof). */
+export function createAuditChain({ filePath = null, now = () => new Date().toISOString(), fastAppend = false } = {}) {
   let entries = filePath ? readAuditFile(filePath) : [];
   const initial = verifyChain(entries);
   if (!initial.ok) throw new Error("AUDIT_CHAIN_TAMPERED:" + initial.reason + "@" + initial.brokenAt);
@@ -59,9 +61,11 @@ export function createAuditChain({ filePath = null, now = () => new Date().toISO
     if (!raw.endsWith("\n")) fs.appendFileSync(filePath, "\n");
   }
   function append(event, data = {}) { return filePath ? withFileLock(filePath, () => append0(event, data)) : append0(event, data); }      // one writer at a time across processes: the sequence is never forked
+  let seen = null;
+  const statKey = () => { try { const st = fs.statSync(filePath); return st.size + ":" + st.mtimeMs + ":" + st.ino; } catch { return null; } };
   function append0(event, data = {}) {
     if (!event) throw new Error("AUDIT_EVENT_REQUIRED");
-    if (filePath) { reload(); healTail(); }                                  // another manager in this process (or the owner CLI) may have appended since we last looked: continue the real tail, never fork the chain
+    if (filePath && !(fastAppend && seen !== null && seen === statKey())) { reload(); healTail(); }                                  // another manager in this process (or the owner CLI) may have appended since we last looked: continue the real tail, never fork the chain
     const prev = entries.length ? entries[entries.length - 1].hash : GENESIS;
     const e = { seq: entries.length + 1, at: now(), event: String(event), data: structuredClone(data), prevHash: prev };
     e.hash = hashEntry(e);
@@ -69,7 +73,7 @@ export function createAuditChain({ filePath = null, now = () => new Date().toISO
       const fd = fs.openSync(filePath, "a", 0o600);
       try { fs.writeSync(fd, JSON.stringify(e) + "\n"); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
     }
-    entries.push(e);
+    entries.push(e); if (filePath && fastAppend) seen = statKey();
     return structuredClone(e);
   }
   // Re-read the file (another process, e.g. the owner CLI, may have appended). Tampering still throws.
@@ -78,7 +82,7 @@ export function createAuditChain({ filePath = null, now = () => new Date().toISO
     const fresh = readAuditFile(filePath);
     const v = verifyChain(fresh);
     if (!v.ok) throw new Error("AUDIT_CHAIN_TAMPERED:" + v.reason + "@" + v.brokenAt);
-    entries = fresh;
+    entries = fresh; if (fastAppend) seen = statKey();
   }
   return {
     reload,
