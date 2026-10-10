@@ -11,7 +11,9 @@
 // Honest limits: the agent id is asserted by the caller (the trusted agent-tool-broker); this module does not authenticate agents itself. Hostnames are compared by name:
 // DNS answers are not checked here (a hostile resolver or DNS rebinding for an allowed name is out of scope, as is TLS-level interception). A request within a grant's scope
 // is real external action by design: read-only by default, writes need allowWrite in the signed grant, and spending still goes through the control chain of the caller.
-// A file-write attacker can delete the grant file (denial of service) and can undo a revocation unless the audit chain survives (revocations are replayed from the chain).
+// A grant is only honoured if the broker's hash-chained audit log says that exact grant content (its signed subject hash) is the LATEST version created for that id and was not revoked afterwards:
+// restoring an old grants file, widening a grant, or re-adding a revoked one therefore does nothing. A file-write attacker can still delete the grant file (denial of service) or the whole audit file.
+// Denied requests are audited at a bounded rate (the rest are only counted) so unauthenticated callers cannot grow the audit log without limit.
 import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
@@ -79,7 +81,8 @@ export function createCredentialBroker({ vault, ownerAuth = getDefaultOwnerAuth(
   if (stateDir) fs.mkdirSync(stateDir, { recursive: true });
   const grants = new Map(), win = new Map(), day = new Map();
   let inflight = 0, integrity = "OK";
-  const stats = { requests: 0, ok: 0, denied: 0, upstreamErrors: 0, redactions: 0 };
+  const stats = { requests: 0, ok: 0, denied: 0, upstreamErrors: 0, redactions: 0, deniedNotAudited: 0 };
+  const tryAudit = (event, data) => { try { audit.append(event, data); return true; } catch { return false; } };
 
   const save = () => {
     if (!grantsFile) return;
@@ -87,20 +90,22 @@ export function createCredentialBroker({ vault, ownerAuth = getDefaultOwnerAuth(
     try { fs.writeSync(fd, JSON.stringify({ version: 1, grants: [...grants.values()].map(({ grant, approval }) => ({ grant, approval })) })); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
     fs.renameSync(tmp, grantsFile);
   };
-  const revokedInChain = () => new Set(audit.entries().filter(x => x.event === "BROKER_GRANT_REVOKED").map(x => x.data?.id));
+  const latestInChain = () => { const m = new Map(); for (const x of audit.entries()) { if (x.event === "BROKER_GRANT_CREATED") m.set(x.data?.id, { type: "C", subject: x.data?.subject }); else if (x.event === "BROKER_GRANT_REVOKED") m.set(x.data?.id, { type: "R" }); } return m; };
   (function load() {
     if (!grantsFile || !fs.existsSync(grantsFile)) return;
     let doc; try { doc = JSON.parse(fs.readFileSync(grantsFile, "utf8")); } catch { integrity = "GRANTS_FILE_UNREADABLE"; return; }
     if (!doc || !Array.isArray(doc.grants)) { integrity = "GRANTS_FILE_INVALID"; return; }
-    const revoked = revokedInChain(); let dropped = 0;
+    const latest = latestInChain(); let dropped = 0;
     for (const r of doc.grants.slice(0, maxGrants)) {
       const n = normaliseGrant(r?.grant, { checkExpiry: false });      // expiry is enforced at request time; the stored form must already be the normalised form
       let same = false; try { same = !n.error && canon(n.grant) === canon(r.grant); } catch { same = false; }
-      if (!same || !ownerAuth.verifyRecorded(r.approval, { action: "BROKER_GRANT", subject: grantSubject(n.grant) })) { dropped++; continue; }
-      if (revoked.has(n.grant.id)) continue;
+      if (!same) { dropped++; continue; }
+      const l = latest.get(n.grant.id);
+      const subject = grantSubject(n.grant);
+      if (!l || l.subject !== subject || !ownerAuth.verifyRecorded(r.approval, { action: "BROKER_GRANT", subject })) { dropped++; continue; }
       grants.set(n.grant.id, { grant: n.grant, approval: r.approval });
     }
-    if (dropped) { integrity = "GRANTS_FILE_ENTRIES_REJECTED:" + dropped; audit.append("BROKER_GRANTS_REJECTED_ON_LOAD", { dropped }); }
+    if (dropped) { integrity = "GRANTS_FILE_ENTRIES_REJECTED:" + dropped; tryAudit("BROKER_GRANTS_REJECTED_ON_LOAD", { dropped }); }
   })();
 
   function grant(def, { ownerApproval = null } = {}) {
@@ -110,75 +115,94 @@ export function createCredentialBroker({ vault, ownerAuth = getDefaultOwnerAuth(
     if (!vault.has(n.grant.credential)) throw new Error("GRANT_CREDENTIAL_NOT_IN_VAULT");
     const v = ownerAuth.verifyApproval(ownerApproval, { action: "BROKER_GRANT", subject: grantSubject(n.grant) });
     if (!v.allowed) { audit.append("BROKER_GRANT_DENIED", { id: n.grant.id, reason: v.reason }); throw new Error("OWNER_APPROVAL_REQUIRED:BROKER_GRANT"); }
-    grants.set(n.grant.id, { grant: n.grant, approval: ownerApproval }); save();
-    audit.append("BROKER_GRANT_CREATED", { id: n.grant.id, credential: n.grant.credential, hosts: n.grant.hosts, methods: n.grant.methods, agents: n.grant.agents, roles: n.grant.roles, expiresAt: n.grant.expiresAt, nonce: ownerApproval.nonce });
+    const had = grants.get(n.grant.id);
+    grants.set(n.grant.id, { grant: n.grant, approval: ownerApproval });
+    try { audit.append("BROKER_GRANT_CREATED", { id: n.grant.id, subject: grantSubject(n.grant), credential: n.grant.credential, hosts: n.grant.hosts, methods: n.grant.methods, agents: n.grant.agents, roles: n.grant.roles, expiresAt: n.grant.expiresAt, nonce: ownerApproval.nonce }); save(); }
+    catch (e) { if (had) grants.set(n.grant.id, had); else grants.delete(n.grant.id); throw e; }      // a grant that could not be recorded does not exist
     return { id: n.grant.id, expiresAt: n.grant.expiresAt };
   }
   function revokeGrant(id, { ownerApproval = null } = {}) {
     const v = ownerAuth.verifyApproval(ownerApproval, { action: "BROKER_REVOKE", subject: String(id) });
     if (!v.allowed) { audit.append("BROKER_REVOKE_DENIED", { id: String(id).slice(0, 48), reason: v.reason }); throw new Error("OWNER_APPROVAL_REQUIRED:BROKER_REVOKE"); }
     if (!grants.has(id)) return false;
-    grants.delete(id); save(); audit.append("BROKER_GRANT_REVOKED", { id, nonce: ownerApproval.nonce });
+    grants.delete(id);      // effective immediately, whatever happens to the disk
+    if (!tryAudit("BROKER_GRANT_REVOKED", { id, nonce: ownerApproval.nonce })) integrity = "REVOCATION_NOT_RECORDED";
+    try { save(); } catch { if (integrity === "OK") integrity = "GRANTS_FILE_NOT_UPDATED"; }
     return true;
   }
   /** Emergency: revoke every grant at once (owner-signed). */
   function revokeAll({ ownerApproval = null } = {}) {
     const v = ownerAuth.verifyApproval(ownerApproval, { action: "BROKER_REVOKE_ALL", subject: "ALL" });
     if (!v.allowed) { audit.append("BROKER_REVOKE_ALL_DENIED", { reason: v.reason }); throw new Error("OWNER_APPROVAL_REQUIRED:BROKER_REVOKE_ALL"); }
-    const ids = [...grants.keys()]; for (const id of ids) audit.append("BROKER_GRANT_REVOKED", { id, nonce: ownerApproval.nonce });
-    grants.clear(); save(); audit.append("BROKER_REVOKED_ALL", { count: ids.length, nonce: ownerApproval.nonce });
+    const ids = [...grants.keys()]; grants.clear();
+    let rec = true; for (const id of ids) rec = tryAudit("BROKER_GRANT_REVOKED", { id, nonce: ownerApproval.nonce }) && rec;
+    tryAudit("BROKER_REVOKED_ALL", { count: ids.length, nonce: ownerApproval.nonce });
+    if (!rec) integrity = "REVOCATION_NOT_RECORDED";
+    try { save(); } catch { if (integrity === "OK") integrity = "GRANTS_FILE_NOT_UPDATED"; }
     return ids.length;
   }
 
   const stamp = (m, key, span) => { const t = now(), a = (m.get(key) ?? []).filter(x => t - x < span); m.set(key, a); return a; };
-  const deny = (reason, d = {}) => { stats.denied++; audit.append("BROKER_DENIED", { reason, ...d }); return { ok: false, reason }; };
+  let dWin = { t: 0, n: 0, suppressed: 0 };
+  const DENY_AUDIT_PER_MIN = 30;
+  const auditDenied = entry => {
+    const t = now();
+    if (t - dWin.t >= 60000) { if (dWin.suppressed) tryAudit("BROKER_DENIED_SUPPRESSED", { count: dWin.suppressed }); dWin = { t, n: 0, suppressed: 0 }; }
+    if (dWin.n < DENY_AUDIT_PER_MIN) { dWin.n++; tryAudit("BROKER_DENIED", entry); } else { dWin.suppressed++; stats.deniedNotAudited++; }
+  };
+  const deny = (reason, d = {}) => { stats.denied++; auditDenied({ reason, ...d }); return { ok: false, reason }; };
+  const safeStr = (v, n) => { try { return String(v ?? "").slice(0, n); } catch { return ""; } };
   const allowedAgent = (g, agentId) => g.agents.includes(agentId) || (g.roles.length > 0 && g.roles.includes(roleOf(agentId)));
   const pathOk = (g, p) => g.pathPrefixes.some(x => x === "/" || p === x || p.startsWith(x.endsWith("/") ? x : x + "/"));
 
-  async function readCapped(r) {
-    const cap = maxResponseBytes;
+  async function readCapped(r, limit) {
     if (r.body && typeof r.body.getReader === "function") {
       const rd = r.body.getReader(), parts = []; let n = 0, truncated = false;
-      for (;;) { const { done, value } = await rd.read(); if (done) break; n += value.length; if (n > cap) { truncated = true; try { await rd.cancel(); } catch { /* ignore */ } parts.push(value.slice(0, value.length - (n - cap))); break; } parts.push(value); }
+      for (;;) { const { done, value } = await rd.read(); if (done) break; n += value.length; if (n > limit) { truncated = true; try { await rd.cancel(); } catch { /* ignore */ } parts.push(value.slice(0, value.length - (n - limit))); break; } parts.push(value); }
       return { text: Buffer.concat(parts.map(p => Buffer.from(p))).toString("utf8"), truncated };
     }
     const t = typeof r.text === "function" ? String(await r.text()) : "";
-    return t.length > cap ? { text: t.slice(0, cap), truncated: true } : { text: t, truncated: false };
+    return t.length > limit ? { text: t.slice(0, limit), truncated: true } : { text: t, truncated: false };
   }
 
   /** One brokered HTTPS request. Never throws; never returns or logs a credential. */
-  async function request({ agentId, grantId, url, method = "GET", body = null, headers = {} } = {}) {
+  async function request(args) {
     stats.requests++;
-    const who = String(agentId ?? "").slice(0, 40), gid = String(grantId ?? "").slice(0, 48);
+    try { return await request0(args); }
+    catch { stats.upstreamErrors++; return { ok: false, reason: "BROKER_ERROR" }; }      // e.g. hostile argument objects or an unusable audit log: no detail, nothing leaked
+  }
+  async function request0(args) {
+    const a = args && typeof args === "object" ? args : {};
+    const who = safeStr(a.agentId, 40), gid = safeStr(a.grantId, 48);
     const D = (reason, extra = {}) => deny(reason, { agentId: who, grantId: gid, ...extra });
     try { const g0 = gate({ external: true }); if (!g0 || g0.allowed === false) return D("OWNER_STOP"); } catch { return D("OWNER_STOP"); }
     let vs; try { vs = vault.status(); } catch { return D("VAULT_UNAVAILABLE"); }
     if (vs.state !== "UNLOCKED") return D("VAULT_LOCKED");
-    if (!AGENT_RE.test(who)) return D("AGENT_INVALID");
+    if (typeof a.agentId !== "string" || !AGENT_RE.test(who)) return D("AGENT_INVALID");
     if (isKnownAgent && !isKnownAgent(who)) return D("UNKNOWN_AGENT");
-    const rec = grants.get(gid);
+    const rec = typeof a.grantId === "string" ? grants.get(gid) : null;
     if (!rec) return D("NO_SUCH_GRANT");
     const g = rec.grant;
     if (Date.parse(g.expiresAt) <= now()) return D("GRANT_EXPIRED");
     if (!allowedAgent(g, who)) return D("AGENT_NOT_ALLOWED");
     if (!vault.has(g.credential)) return D("CREDENTIAL_UNAVAILABLE");
     let u;
-    try { if (typeof url !== "string" || url.length > 2048) throw new Error("x"); u = new URL(url); } catch { return D("URL_INVALID"); }
+    try { if (typeof a.url !== "string" || a.url.length > 2048) throw new Error("x"); u = new URL(a.url); } catch { return D("URL_INVALID"); }
     if (u.protocol !== "https:") return D("HTTPS_REQUIRED");
     if (u.username || u.password) return D("URL_CREDENTIALS_FORBIDDEN");
     if (u.port && u.port !== "443") return D("PORT_NOT_ALLOWED");
     if (!g.hosts.includes(u.hostname)) return D("HOST_NOT_ALLOWED", { host: u.hostname.slice(0, 80) });
-    if (!pathOk(g, u.pathname)) return D("PATH_NOT_ALLOWED", { host: u.hostname });
-    const m = String(method).toUpperCase();
+    if (!pathOk(g, u.pathname) || /%2f|%5c|%2e|%00/i.test(u.pathname)) return D("PATH_NOT_ALLOWED", { host: u.hostname });      // encoded slashes/dots could be decoded by the server into a path outside the grant
+    const m = safeStr(a.method ?? "GET", 12).toUpperCase();
     if (!g.methods.includes(m)) return D("METHOD_NOT_ALLOWED", { method: m.slice(0, 8) });
     let payload;
-    if (body !== null && body !== undefined) {
+    if (a.body !== null && a.body !== undefined) {
       if (READ.includes(m)) return D("BODY_NOT_ALLOWED_FOR_METHOD");
-      try { payload = typeof body === "string" ? body : JSON.stringify(body); } catch { return D("BODY_NOT_SERIALISABLE"); }
+      try { payload = typeof a.body === "string" ? a.body : JSON.stringify(a.body); } catch { return D("BODY_NOT_SERIALISABLE"); }
       if (typeof payload !== "string" || Buffer.byteLength(payload) > maxBodyBytes) return D("BODY_TOO_LARGE");
     }
     const out = {};
-    if (headers && typeof headers === "object") for (const [k, v] of Object.entries(headers)) {
+    if (a.headers && typeof a.headers === "object") for (const [k, v] of Object.entries(a.headers)) {
       const lk = k.toLowerCase();
       if (!AGENT_HEADERS.has(lk) || typeof v !== "string" || v.length > 200 || /[\r\n\0]/.test(v)) return D("HEADER_NOT_ALLOWED", { header: lk.slice(0, 40) });
       out[lk] = v;
@@ -188,28 +212,33 @@ export function createCredentialBroker({ vault, ownerAuth = getDefaultOwnerAuth(
     if (stamp(day, gid, 86400000).length >= g.maxPerDay) return D("RATE_LIMITED_DAY");
     if (inflight >= maxInflight) return D("BROKER_BUSY");
     win.get(gid).push(now()); day.get(gid).push(now());
+    if (!tryAudit("BROKER_REQUEST_START", { agentId: who, grantId: g.id, host: u.hostname, method: m, path: u.pathname.slice(0, 200) })) return D("AUDIT_UNAVAILABLE");      // a request only goes out when its start can be audited
     let secret;
     try { secret = vault.get(g.credential, { purpose: "broker:" + g.id + ":" + who }); } catch { return D("CREDENTIAL_UNAVAILABLE"); }
     if (typeof secret !== "string" || !secret) return D("CREDENTIAL_UNAVAILABLE");
     if (g.auth.style === "bearer") out.authorization = "Bearer " + secret; else out[g.auth.name.toLowerCase()] = secret;
     const scrub = t => { let s = vault.redact(String(t ?? "")); for (const f of new Set([secret, encodeURIComponent(secret), Buffer.from(secret).toString("base64")])) if (f && s.includes(f)) { s = s.split(f).join("[REDACTED]"); stats.redactions++; } return s; };
-    const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), timeoutMs);
+    const ctl = new AbortController();
+    let timer; const deadline = new Promise((_, rej) => { timer = setTimeout(() => { ctl.abort(); rej(Object.assign(new Error("timeout"), { name: "AbortError" })); }, timeoutMs); });
+    deadline.catch(() => {});
     inflight++;
     try {
-      const r = await fetchImpl(u, { method: m, headers: out, body: payload, redirect: "manual", signal: ctl.signal });
+      const pending = Promise.resolve(fetchImpl(u, { method: m, headers: out, body: payload, redirect: "manual", signal: ctl.signal })); pending.catch(() => {});
+      const r = await Promise.race([pending, deadline]);      // a fetch that ignores the abort signal still cannot hold the broker
       const status = Number(r?.status) || 0;
       const hdr = {}; for (const h of RESPONSE_HEADERS) { const v = r?.headers?.get?.(h); if (v) hdr[h] = scrub(v).slice(0, 200); }
-      let text = "", truncated = false;
-      if (status >= 300 && status < 400) { stats.ok++; audit.append("BROKER_REQUEST", { agentId: who, grantId: g.id, host: u.hostname, method: m, path: u.pathname.slice(0, 200), status, redirectNotFollowed: true }); return { ok: false, reason: "REDIRECT_NOT_FOLLOWED", status, headers: hdr }; }
-      if (m !== "HEAD") ({ text, truncated } = await readCapped(r));
-      const bodyOut = scrub(text);
+      if (status >= 300 && status < 400) { stats.ok++; tryAudit("BROKER_REQUEST", { agentId: who, grantId: g.id, host: u.hostname, method: m, path: u.pathname.slice(0, 200), status, redirectNotFollowed: true }); return { ok: false, reason: "REDIRECT_NOT_FOLLOWED", status, headers: hdr }; }
+      let text = "", rawTruncated = false;
+      if (m !== "HEAD") ({ text, truncated: rawTruncated } = await Promise.race([readCapped(r, maxResponseBytes + 3 * secret.length + 256), deadline]));      // read a margin beyond the cap so a secret straddling the cap is still redacted whole
+      let bodyOut = scrub(text), truncated = rawTruncated;
+      if (bodyOut.length > maxResponseBytes) { bodyOut = bodyOut.slice(0, maxResponseBytes); truncated = true; }
       stats.ok++;
-      audit.append("BROKER_REQUEST", { agentId: who, grantId: g.id, host: u.hostname, method: m, path: u.pathname.slice(0, 200), status, bytes: Buffer.byteLength(text), truncated });
+      tryAudit("BROKER_REQUEST", { agentId: who, grantId: g.id, host: u.hostname, method: m, path: u.pathname.slice(0, 200), status, bytes: Buffer.byteLength(bodyOut), truncated });
       return { ok: status >= 200 && status < 300, status, headers: hdr, body: bodyOut, truncated };
     } catch (e) {
       stats.upstreamErrors++;
       const msg = scrub(e?.name === "AbortError" ? "TIMEOUT" : e?.message).slice(0, 120);
-      audit.append("BROKER_REQUEST_FAILED", { agentId: who, grantId: g.id, host: u.hostname, method: m, error: msg });
+      tryAudit("BROKER_REQUEST_FAILED", { agentId: who, grantId: g.id, host: u.hostname, method: m, error: msg });
       return { ok: false, reason: "UPSTREAM_ERROR", error: msg };
     } finally { clearTimeout(timer); inflight--; secret = null; }
   }

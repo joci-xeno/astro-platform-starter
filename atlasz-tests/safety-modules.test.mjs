@@ -43,7 +43,8 @@ test("vault: locked without key; wrong key / tampered entry / swapped entries ar
     assert.equal(locked.status().state, "LOCKED");
     assert.throws(() => locked.get("A", { purpose: "x" }), /VAULT_LOCKED/);
     const wrong = createSecretVault({ dir: d, keyB64: generateVaultKey(), ownerAuth: auth });
-    assert.throws(() => wrong.get("A", { purpose: "x" }), /TAMPERED_OR_WRONG_KEY/);
+    assert.equal(wrong.status().state, "LOCKED");      // M1: the key is verified at start, so a wrong key means LOCKED (it used to open and fail per entry)
+    assert.throws(() => wrong.get("A", { purpose: "x" }), /VAULT_LOCKED_NO_KEY|TAMPERED_OR_WRONG_KEY/);
     const f = path.join(d, "vault.enc.json"), s = JSON.parse(fs.readFileSync(f, "utf8"));
     [s.entries.A, s.entries.B] = [s.entries.B, s.entries.A];            // swap ciphertexts between names
     fs.writeFileSync(f, JSON.stringify(s));

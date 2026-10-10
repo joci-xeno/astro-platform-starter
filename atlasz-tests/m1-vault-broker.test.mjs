@@ -130,15 +130,15 @@ test("vault backup: owner approval bound to the chosen names; package is opaque;
     // restore into a different vault with its own key; approval is bound to the package id
     assert.throws(() => b.v.restoreBackup(ex.package, PASS), /OWNER_APPROVAL_REQUIRED/);
     assert.throws(() => b.v.restoreBackup(ex.package, PASS, { ownerApproval: b.ap("VAULT_RESTORE", "backup:other") }), /OWNER_APPROVAL_REQUIRED/);
-    const r = b.v.restoreBackup(ex.package, PASS, { ownerApproval: b.ap("VAULT_RESTORE", "backup:" + ex.id) });
+    const r = b.v.restoreBackup(ex.package, PASS, { ownerApproval: b.ap("VAULT_RESTORE", ex.restoreSubject) });
     assert.deepEqual(r.restored, ["ONE", "TWO"]); assert.equal(b.v.get("ONE", { purpose: "t" }), SECRET); assert.equal(b.v.get("TWO", { purpose: "t" }), "second-secret-ZZZ-999");
     assert.equal(b.v.has("THREE"), false);
     // conflict: refuses without overwrite and changes nothing; overwrite needs its own approval subject
     b.v.set("ONE", "local-changed-value", { ownerApproval: b.ap("VAULT_SET", "ONE") });
-    assert.throws(() => b.v.restoreBackup(ex.package, PASS, { ownerApproval: b.ap("VAULT_RESTORE", "backup:" + ex.id) }), /VAULT_RESTORE_CONFLICT:ONE,TWO/);
+    assert.throws(() => b.v.restoreBackup(ex.package, PASS, { ownerApproval: b.ap("VAULT_RESTORE", ex.restoreSubject) }), /VAULT_RESTORE_CONFLICT:ONE,TWO/);
     assert.equal(b.v.get("ONE", { purpose: "t" }), "local-changed-value");
-    assert.throws(() => b.v.restoreBackup(ex.package, PASS, { overwrite: true, ownerApproval: b.ap("VAULT_RESTORE", "backup:" + ex.id) }), /OWNER_APPROVAL_REQUIRED/);
-    const ow = b.v.restoreBackup(ex.package, PASS, { overwrite: true, ownerApproval: b.ap("VAULT_RESTORE", "backup:" + ex.id + ":overwrite") });
+    assert.throws(() => b.v.restoreBackup(ex.package, PASS, { overwrite: true, ownerApproval: b.ap("VAULT_RESTORE", ex.restoreSubject) }), /OWNER_APPROVAL_REQUIRED/);
+    const ow = b.v.restoreBackup(ex.package, PASS, { overwrite: true, ownerApproval: b.ap("VAULT_RESTORE", ex.restoreSubject + ":overwrite") });
     assert.deepEqual(ow.overwritten, ["ONE", "TWO"]); assert.equal(b.v.get("ONE", { purpose: "t" }), SECRET);
   } finally { rm(a.d); rm(b.d); }
 });
@@ -154,7 +154,7 @@ test("vault backup: any tampering, parameter swap or locked target is rejected a
       assert.throws(() => a.v.verifyBackup(JSON.stringify(mut(pkg)), PASS), /WRONG_PASSPHRASE_OR_TAMPERED/, label);
     for (const kdf of [{ ...pkg.kdf, N: 2 }, { ...pkg.kdf, r: 1 }, { ...pkg.kdf, N: 2 ** 24 }]) assert.throws(() => a.v.verifyBackup(JSON.stringify({ ...pkg, kdf }), PASS), /KDF_UNSUPPORTED/);
     for (const junk of ["", "{}", "[]", "null", "not json", JSON.stringify({ ...pkg, format: "X" }), JSON.stringify({ ...pkg, v: 2 })]) assert.throws(() => a.v.verifyBackup(junk, PASS), /VAULT_BACKUP_(UNREADABLE|INVALID)/);
-    b.v.lock(); assert.throws(() => b.v.restoreBackup(ex.package, PASS, { ownerApproval: b.ap("VAULT_RESTORE", "backup:" + ex.id) }), /VAULT_LOCKED_NO_KEY/);
+    b.v.lock(); assert.throws(() => b.v.restoreBackup(ex.package, PASS, { ownerApproval: b.ap("VAULT_RESTORE", ex.restoreSubject) }), /VAULT_LOCKED_NO_KEY/);
     assert.deepEqual(b.v.list(), []);
     const rejected = a.v.auditEntries().filter(e => e.event === "VAULT_BACKUP_REJECTED").length; assert.ok(rejected >= 5);
     a.v.revoke("ONE", { ownerApproval: a.ap("VAULT_REVOKE", "ONE") });
@@ -395,8 +395,8 @@ test("broker: construction needs a vault and works without a state dir (memory o
 
 // ---------------- additional hardening tests (mutation survivors turned into tests) ----------------
 import { createCipheriv, randomBytes, scryptSync } from "node:crypto";
-function craft(payloadObj, pass = PASS) {
-  const salt = randomBytes(16).toString("base64"), h = { format: "ATLASZ-VAULT-BACKUP", v: 1, id: randomBytes(12).toString("hex"), kdf: { N: 32768, r: 8, p: 1, salt } };
+function craft(payloadObj, pass = PASS, id = randomBytes(12).toString("hex")) {
+  const salt = randomBytes(16).toString("base64"), h = { format: "ATLASZ-VAULT-BACKUP", v: 1, id, kdf: { N: 32768, r: 8, p: 1, salt } };
   const k = scryptSync(pass, Buffer.from(salt, "base64"), 32, { N: 32768, r: 8, p: 1, maxmem: 128 * 1024 * 1024 }), iv = randomBytes(12), c = createCipheriv("aes-256-gcm", k, iv);
   c.setAAD(Buffer.from(JSON.stringify([h.format, h.v, h.id, h.kdf.N, h.kdf.r, h.kdf.p, h.kdf.salt])));
   const ct = Buffer.concat([c.update(Buffer.from(JSON.stringify(payloadObj))), c.final()]);
@@ -432,10 +432,10 @@ test("vault backup: a failed write during restore leaves the vault exactly as it
     const ex = a.v.exportBackup({ names: ["ONE"], passphrase: PASS, ownerApproval: a.ap("VAULT_EXPORT", nameDigest(["ONE"])) });
     b.v.set("KEEP", "keep-this-value", { ownerApproval: b.ap("VAULT_SET", "KEEP") });
     fs.mkdirSync(path.join(b.d, "vault.enc.json.tmp"));      // makes the atomic write fail
-    assert.throws(() => b.v.restoreBackup(ex.package, PASS, { ownerApproval: b.ap("VAULT_RESTORE", "backup:" + ex.id) }), /EISDIR|EPERM|EACCES/);
+    assert.throws(() => b.v.restoreBackup(ex.package, PASS, { ownerApproval: b.ap("VAULT_RESTORE", ex.restoreSubject) }), /EISDIR|EPERM|EACCES/);
     assert.deepEqual(b.v.list(), ["KEEP"]); assert.equal(b.v.has("ONE"), false);
     fs.rmdirSync(path.join(b.d, "vault.enc.json.tmp"));
-    assert.deepEqual(b.v.restoreBackup(ex.package, PASS, { ownerApproval: b.ap("VAULT_RESTORE", "backup:" + ex.id) }).restored, ["ONE"], "the approval was not the problem: a new one works");
+    assert.deepEqual(b.v.restoreBackup(ex.package, PASS, { ownerApproval: b.ap("VAULT_RESTORE", ex.restoreSubject) }).restored, ["ONE"], "the approval was not the problem: a new one works");
   } finally { rm(a.d); rm(b.d); }
 });
 
@@ -463,4 +463,183 @@ test("broker: a revoked credential cannot be used even though the grant still ex
     assert.equal(n.length, 0);
     assert.ok(t.br.auditEntries().some(e => e.event === "BROKER_DENIED" && e.data.reason === "CREDENTIAL_UNAVAILABLE"));
   } finally { rm(t.d); }
+});
+
+// ---------------- round-1 independent verification findings: regression tests ----------------
+test("vault: shutdown and revocation cannot be undone by a stale instance, an edited flag or an old file copy", () => {
+  const a = mk();
+  try {
+    const open = () => createSecretVault({ dir: a.d, keyB64: a.key, ownerAuth: a.o.auth });
+    a.v.set("API", SECRET, { ownerApproval: a.ap("VAULT_SET", "API") }); a.v.set("OTHER", "other-value-1234", { ownerApproval: a.ap("VAULT_SET", "OTHER") });
+    const old = fs.readFileSync(path.join(a.d, "vault.enc.json"), "utf8");
+    const stale = open();
+    // revocation by one instance, write by a stale one, then an old file copy
+    a.v.revoke("API", { ownerApproval: a.ap("VAULT_REVOKE", "API") });
+    stale.set("THIRD", "third-value-1234", { ownerApproval: a.ap("VAULT_SET", "THIRD") });
+    assert.equal(stale.has("API"), false, "the stale instance saw the revocation before writing");
+    assert.equal(open().has("API"), false); assert.deepEqual(open().list(), ["OTHER", "THIRD"]);
+    fs.writeFileSync(path.join(a.d, "vault.enc.json"), old);      // attacker restores an old copy that still has the secret
+    const r = open(); assert.equal(r.has("API"), false); assert.throws(() => r.get("API", { purpose: "t" }), /REVOKED/);
+    assert.equal(r.meta("API").reason, "REPLAYED_FROM_AUDIT");
+    // re-creating a revoked name stays possible and sticks
+    r.set("API", "new-api-value-9999", { ownerApproval: a.ap("VAULT_SET", "API") }); assert.equal(open().get("API", { purpose: "t" }), "new-api-value-9999");
+    // shutdown: edited flag, stale writer
+    const s2 = open();
+    a.v.emergencyShutdown({ ownerApproval: a.ap("VAULT_EMERGENCY_SHUTDOWN", "ALL") });
+    assert.equal(s2.status().state, "LOCKED", "the other instance locks as soon as it notices"); assert.throws(() => s2.set("X", "x-value-1234", { ownerApproval: a.ap("VAULT_SET", "X") }), /VAULT_LOCKED_NO_KEY/);
+    const f = path.join(a.d, "vault.enc.json"), doc = JSON.parse(fs.readFileSync(f, "utf8")); assert.ok(doc.shutdown); delete doc.shutdown; fs.writeFileSync(f, JSON.stringify(doc));
+    const t = open(); assert.equal(t.status().state, "LOCKED"); assert.equal(t.status().shutdown, true); assert.throws(() => t.get("OTHER", { purpose: "t" }), /VAULT_LOCKED_NO_KEY/);
+    t.unlock(a.key, { ownerApproval: a.ap("VAULT_RESUME", "ALL") }); assert.equal(open().status().state, "UNLOCKED", "an approved resume really clears it, also for later instances");
+  } finally { rm(a.d); }
+});
+
+test("vault: opening an existing vault with the wrong key means LOCKED, never a mixed-key file", () => {
+  const a = mk();
+  try {
+    a.v.set("API", SECRET, { ownerApproval: a.ap("VAULT_SET", "API") });
+    const before = fs.readFileSync(path.join(a.d, "vault.enc.json"), "utf8");
+    const w = createSecretVault({ dir: a.d, keyB64: generateVaultKey(), ownerAuth: a.o.auth });
+    assert.equal(w.status().state, "LOCKED"); assert.throws(() => w.set("NEW", "new-value-1234", { ownerApproval: a.ap("VAULT_SET", "NEW") }), /VAULT_LOCKED_NO_KEY/);
+    assert.equal(fs.readFileSync(path.join(a.d, "vault.enc.json"), "utf8"), before);
+    assert.ok(a.v.auditEntries().some(e => e.event === "VAULT_WRONG_KEY_DETECTED") || w.auditEntries().some(e => e.event === "VAULT_WRONG_KEY_DETECTED"));
+  } finally { rm(a.d); }
+});
+
+test("vault backup: the restore approval is bound to the package content, not only its id", () => {
+  const a = mk(), b = mk();
+  try {
+    a.v.set("API", SECRET, { ownerApproval: a.ap("VAULT_SET", "API") });
+    const ex = a.v.exportBackup({ names: ["API"], passphrase: PASS, ownerApproval: a.ap("VAULT_EXPORT", nameDigest(["API"])) });
+    const evil = { API: "ATTACKER-CHOSEN-VALUE" };
+    const forged = craft({ createdAt: "x", entries: evil, count: 1, manifestSha: manifest(evil) }, "attacker passphrase 7777", ex.id);
+    assert.equal(JSON.parse(forged.pkg).id, ex.id);
+    assert.throws(() => b.v.restoreBackup(forged.pkg, "attacker passphrase 7777", { ownerApproval: b.ap("VAULT_RESTORE", ex.restoreSubject) }), /OWNER_APPROVAL_REQUIRED/);
+    assert.equal(b.v.has("API"), false);
+    assert.match(ex.restoreSubject, /^backup:[0-9a-f]{24}:[0-9a-f]{32}$/);
+    assert.equal(b.v.verifyBackup(ex.package, PASS).restoreSubject, ex.restoreSubject);
+  } finally { rm(a.d); rm(b.d); }
+});
+
+test("vault: backup passphrase policy rejects weak and key-derived phrases; truncated authentication tags are refused", () => {
+  const key = generateVaultKey();
+  for (const p of ["1234567890123456", "abcdefghabcdefgh", "passwordpassword1", key.replace(/=+$/, ""), Buffer.from(key, "base64").toString("hex"), key + " ", "my pass " + key, "ALLUPPERCASELETTERS"]) assert.notEqual(checkBackupPassphrase(p, key), null, p.slice(0, 20));
+  assert.equal(checkBackupPassphrase("Tr0ub4dor&3 horse staple", key), null);
+  const a = mk();
+  try {
+    a.v.set("API", SECRET, { ownerApproval: a.ap("VAULT_SET", "API") });
+    const ex = a.v.exportBackup({ names: ["API"], passphrase: PASS, ownerApproval: a.ap("VAULT_EXPORT", nameDigest(["API"])) });
+    const pkg = JSON.parse(ex.package); for (const n of [4, 8, 12]) assert.throws(() => a.v.verifyBackup(JSON.stringify({ ...pkg, tag: Buffer.from(pkg.tag, "base64").subarray(0, n).toString("base64") }), PASS), /VAULT_BACKUP_INVALID/);
+    const f = path.join(a.d, "vault.enc.json"), doc = JSON.parse(fs.readFileSync(f, "utf8")); doc.entries.API.tag = Buffer.from(doc.entries.API.tag, "base64").subarray(0, 12).toString("base64"); fs.writeFileSync(f, JSON.stringify(doc));
+    assert.throws(() => createSecretVault({ dir: a.d, keyB64: a.key, ownerAuth: a.o.auth }).get("API", { purpose: "t" }), /VAULT_LOCKED_NO_KEY|TAMPERED/);
+  } finally { rm(a.d); }
+});
+
+test("broker: request() never throws, whatever the caller or the audit log does", async () => {
+  const sent = []; const t = mkb({ fetchImpl: fakeFetch(() => { sent.push(1); return { body: "ok" }; }) });
+  try {
+    t.addGrant();
+    const hostile = [null, undefined, 5, "str", [], () => {}, { agentId: { toString() { throw new Error("x"); } } }, { agentId: Object.create(null) }, { agentId: "S-01", grantId: "g1", method: { toString() { throw new Error("m"); } }, url: "https://api.example-data.com/v1/a" },
+      { agentId: "S-01", grantId: "g1", url: "https://api.example-data.com/v1/a", headers: new Proxy({}, { ownKeys() { throw new Error("p"); } }) }, { agentId: "S-01", grantId: ["g1"], url: "https://api.example-data.com/v1/a" },
+      new Proxy({}, { get() { throw new Error("g"); } })];
+    for (const h of hostile) { const r = await t.br.request(h); assert.equal(r.ok, false); assert.equal(typeof r.reason, "string"); assert.equal(JSON.stringify(r).includes(SECRET), false); }
+    assert.equal(sent.length, 0);
+    fs.appendFileSync(path.join(t.d, "broker", "broker-audit.jsonl"), '{"seq":99,"junk":true}\n');      // audit log tampered: a request must not go out unaudited
+    const r = await t.br.request({ agentId: "S-01", grantId: "g1", url: "https://api.example-data.com/v1/a" });
+    assert.equal(r.ok, false); assert.match(r.reason, /AUDIT_UNAVAILABLE|BROKER_ERROR/); assert.equal(sent.length, 0, "no unaudited request left the building");
+  } finally { rm(t.d); }
+});
+
+test("broker: denied requests are audited at a bounded rate and counted beyond it", async () => {
+  let t0 = Date.now(); const t = mkb({ now: () => t0 });
+  try {
+    t.addGrant();
+    for (let i = 0; i < 100; i++) await t.br.request({ agentId: "bad agent " + i, grantId: "g1", url: "x" });
+    const denied = () => t.br.auditEntries().filter(e => e.event === "BROKER_DENIED").length;
+    assert.equal(denied(), 30); assert.equal(t.br.summary().deniedNotAudited, 70); assert.equal(t.br.summary().denied, 100);
+    t0 += 61000; await t.br.request({ agentId: "bad", grantId: "g1", url: "x" });
+    assert.equal(t.br.auditEntries().find(e => e.event === "BROKER_DENIED_SUPPRESSED").data.count, 70);
+    assert.ok(t.br.auditEntries().length < 40);
+  } finally { rm(t.d); }
+});
+
+test("broker: encoded slashes/dots in the path are refused (the server could decode them out of the grant)", async () => {
+  const t = mkb();
+  try {
+    t.addGrant();
+    for (const u of ["https://api.example-data.com/v1/..%2fadmin", "https://api.example-data.com/v1/%2E%2E%2Fadmin", "https://api.example-data.com/v1/a%2Fb", "https://api.example-data.com/v1/a%5Cb", "https://api.example-data.com/v1/a%00b", "https://api.example-data.com/v1/a%2eb"])
+      assert.equal((await t.br.request({ agentId: "S-01", grantId: "g1", url: u })).reason, "PATH_NOT_ALLOWED", u);
+    assert.equal((await t.br.request({ agentId: "S-01", grantId: "g1", url: "https://api.example-data.com/v1/a%20b" })).ok, true, "ordinary encoding is fine");
+  } finally { rm(t.d); }
+});
+
+test("broker: a secret straddling the response cap is redacted before truncating", async () => {
+  const t = mkb({ maxResponseBytes: 15, fetchImpl: fakeFetch(() => ({ body: "XXXXXXXXXX" + SECRET + "tail" })) });
+  try {
+    t.addGrant();
+    const r = await t.br.request({ agentId: "S-01", grantId: "g1", url: "https://api.example-data.com/v1/a" });
+    assert.equal(r.body.length <= 15, true); assert.equal(r.truncated, true);
+    for (let i = 4; i <= SECRET.length; i += 4) assert.equal(r.body.includes(SECRET.slice(0, i)), false, "no secret prefix of length " + i);
+  } finally { rm(t.d); }
+});
+
+test("broker: a fetch that ignores the abort signal cannot wedge the broker", async () => {
+  const t = mkb({ timeoutMs: 40, maxInflight: 2, fetchImpl: () => new Promise(() => {}) });
+  try {
+    t.addGrant({ ...GRANT, maxPerMinute: 60 });
+    for (let i = 0; i < 4; i++) { const r = await t.br.request({ agentId: "S-01", grantId: "g1", url: "https://api.example-data.com/v1/a" }); assert.equal(r.reason, "UPSTREAM_ERROR"); assert.equal(r.error, "TIMEOUT"); }
+    assert.equal(t.br.summary().inflight, 0);
+  } finally { rm(t.d); }
+});
+
+test("broker: revocation holds even if the grants file cannot be written; re-granting a revoked id survives restart; old broader grants cannot be restored", async () => {
+  const t = mkb();
+  try {
+    t.addGrant({ ...GRANT, allowWrite: true, methods: ["GET", "DELETE"], pathPrefixes: ["/"] });
+    const f = path.join(t.d, "broker", "broker-grants.json"), broad = fs.readFileSync(f, "utf8");
+    const reload = () => createCredentialBroker({ ...t.opts });
+    const rq = (b, m = "GET") => b.request({ agentId: "S-01", grantId: "g1", url: "https://api.example-data.com/v1/a", method: m });
+    // narrow the same id, then try to restore the broad file
+    t.addGrant(); assert.equal((await rq(t.br, "DELETE")).reason, "METHOD_NOT_ALLOWED");
+    fs.writeFileSync(f, broad); const r1 = reload(); assert.equal(r1.listGrants().length, 0); assert.match(r1.summary().integrity, /ENTRIES_REJECTED:1/); assert.equal((await rq(r1, "DELETE")).reason, "NO_SUCH_GRANT");
+    // save failure during revoke: still revoked now and after restart
+    const t2 = mkb(); try {
+      t2.addGrant(); const f2 = path.join(t2.d, "broker", "broker-grants.json");
+      fs.rmSync(f2); fs.mkdirSync(f2 + ".tmp");      // save() will fail
+      assert.equal(t2.br.revokeGrant("g1", { ownerApproval: t2.ap("BROKER_REVOKE", "g1") }), true);
+      assert.equal((await rq(t2.br)).reason, "NO_SUCH_GRANT"); assert.match(t2.br.summary().integrity, /NOT_UPDATED/);
+      fs.rmdirSync(f2 + ".tmp");
+    } finally { rm(t2.d); }
+    // revoke then re-grant the same id: works now and after a restart
+    const t3 = mkb(); try {
+      t3.addGrant(); t3.br.revokeGrant("g1", { ownerApproval: t3.ap("BROKER_REVOKE", "g1") }); t3.addGrant();
+      assert.equal((await rq(t3.br)).ok, true);
+      const r3 = createCredentialBroker({ ...t3.opts }); assert.equal(r3.summary().integrity, "OK"); assert.equal((await rq(r3)).ok, true);
+    } finally { rm(t3.d); }
+  } finally { rm(t.d); }
+});
+
+test("broker: non-string agent ids are invalid; audit failures at grant/revoke time are handled safely", async () => {
+  const sent = []; const t = mkb({ fetchImpl: fakeFetch(() => { sent.push(1); return { body: "ok" }; }) });
+  try {
+    t.addGrant();
+    for (const agentId of [["S-01"], { toString: () => "S-01" }, 5]) assert.equal((await t.br.request({ agentId, grantId: "g1", url: "https://api.example-data.com/v1/a" })).reason, "AGENT_INVALID");
+    assert.equal(sent.length, 0);
+    const audit = path.join(t.d, "broker", "broker-audit.jsonl");
+    // a revoke whose audit write fails is still effective right now and is flagged
+    fs.appendFileSync(audit, '{"seq":99,"junk":true}\n');
+    assert.equal(t.br.revokeGrant("g1", { ownerApproval: t.ap("BROKER_REVOKE", "g1") }), true);
+    assert.equal(t.br.listGrants().length, 0); assert.equal(t.br.summary().integrity, "REVOCATION_NOT_RECORDED");
+    // a grant that cannot be recorded does not exist; an existing one is left as it was
+    const n2 = normaliseGrant({ ...GRANT, id: "g9" });
+    assert.throws(() => t.br.grant({ ...GRANT, id: "g9" }, { ownerApproval: t.ap("BROKER_GRANT", grantSubject(n2.grant)) }), /./);
+    assert.equal(t.br.listGrants().length, 0);
+  } finally { rm(t.d); }
+  const u = mkb();
+  try {
+    u.addGrant({ ...GRANT, id: "keep" });
+    fs.appendFileSync(path.join(u.d, "broker", "broker-audit.jsonl"), '{"seq":99,"junk":true}\n');
+    const changed = { ...GRANT, id: "keep", hosts: ["other.example-data.com"] }, n = normaliseGrant(changed);
+    assert.throws(() => u.br.grant(changed, { ownerApproval: u.ap("BROKER_GRANT", grantSubject(n.grant)) }), /./);
+    assert.deepEqual(u.br.listGrants().map(g => [g.id, g.hosts[0]]), [["keep", "api.example-data.com"]], "the previous grant is untouched");
+  } finally { rm(u.d); }
 });
