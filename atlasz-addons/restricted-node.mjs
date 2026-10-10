@@ -21,7 +21,8 @@ export function detectNodeRestrictions(nodeBin = process.execPath, { fresh = fal
   const env = baseEnv({});
   const permission = probe(nodeBin, ["--permission", "-e", "0"], env);
   const namespace = permission && !IS_WIN && process.platform === "linux" && probe("unshare", ["--user", "--map-root-user", "--net", "--pid", "--fork", "--kill-child", "true"]);
-  const r = { permission, namespace, platform: process.platform };
+  const pidNamespace = permission && !IS_WIN && process.platform === "linux" && probe("unshare", ["--user", "--map-root-user", "--pid", "--fork", "--kill-child", "true"]);      // PID namespace WITHOUT a network namespace: for plugins that were granted NETWORK
+  const r = { permission, namespace, pidNamespace, platform: process.platform };
   cache.set(nodeBin, r); return r;
 }
 export function baseEnv(extra = {}) {
@@ -43,6 +44,7 @@ export function restrictedNodeCommand({ nodeBin = process.execPath, script, scri
   if (wantNetBlock && requireNoNetwork && !c.namespace) return { ok: false, reason: "NETWORK_ISOLATION_UNAVAILABLE" };
   const args = ["--permission", ...[...new Set([script, ...readDirs])].map(d => "--allow-fs-read=" + norm(d)), ...[...new Set(writeDirs)].map(d => "--allow-fs-write=" + norm(d)), ...nodeFlags, script, ...scriptArgs];
   const useNs = wantNetBlock && c.namespace;
-  const out = useNs ? { cmd: "unshare", args: ["--user", "--map-root-user", "--net", "--pid", "--fork", "--kill-child", nodeBin, ...args] } : { cmd: nodeBin, args };
-  return { ok: true, ...out, env: baseEnv(env), level: useNs ? "PERMISSION+NETWORK_NAMESPACE" : "PERMISSION", networkBlocked: useNs, filesystemRestricted: true };
+  const usePid = !useNs && allowNetwork && Boolean(c.pidNamespace);      // network granted: the host stays reachable on the network, but its processes are still invisible (it cannot signal them)
+  const out = useNs ? { cmd: "unshare", args: ["--user", "--map-root-user", "--net", "--pid", "--fork", "--kill-child", nodeBin, ...args] } : usePid ? { cmd: "unshare", args: ["--user", "--map-root-user", "--pid", "--fork", "--kill-child", nodeBin, ...args] } : { cmd: nodeBin, args };
+  return { ok: true, ...out, env: baseEnv(env), level: useNs ? "PERMISSION+NETWORK_NAMESPACE" : usePid ? "PERMISSION+PID_NAMESPACE" : "PERMISSION", networkBlocked: useNs, filesystemRestricted: true };
 }

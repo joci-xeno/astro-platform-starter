@@ -125,6 +125,7 @@ export function createPluginManager({ roots = [], stateDir, ownerAuth, atlaszVer
   const enableSubject = id => { const p = scan().found.get(id); if (!p || p.manifest.kind === "THEME" || p.manifest.kind === "SKIN") return null; const h = dirHash(p.dir); return h ? id + "#" + h : null; };
   function disable(id) { load(); if (unreadable) return STATE_BAD; if (!own(S.enabled, id)) return { ok: true, already: true }; const snap = structuredClone(S); delete S.enabled[id]; if (S.theme === id) S.theme = null; return commit("PLUGIN_DISABLED", { id }, snap); }
   function resetQuarantine(id, opts) {
+    if (typeof id !== "string") return { ok: false, reason: "PLUGIN_ID_INVALID" };
     const { ownerApproval = null } = opts ?? {};
     load();
     if (unreadable) return STATE_BAD;

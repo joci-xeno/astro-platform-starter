@@ -45,6 +45,7 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
   // The file may have been damaged since this process loaded it: a write never replaces an unreadable file (the owner must repair or remove it first).
   let refusal = "PROFILE_STORE_UNREADABLE";
   const writable = () => { refusal = "PROFILE_STORE_UNREADABLE"; if (!file) return true; try { const j = JSON.parse(fs.readFileSync(file, "utf8")); if (!j || typeof j !== "object" || Array.isArray(j) || !j.tenants || typeof j.tenants !== "object" || Array.isArray(j.tenants)) return false;      // a parseable file without a tenants record is damaged, never 'empty'
+      for (const t of Object.values(j.tenants)) if (!t || typeof t !== "object" || Array.isArray(t) || !t.profiles || typeof t.profiles !== "object" || Array.isArray(t.profiles) || !t.assignments || typeof t.assignments !== "object" || Array.isArray(t.assignments)) return false;      // a tenant record of the wrong shape is damage: writing would silently not persist
       if (!markerAgrees(file, j.tenants)) { refusal = "PROFILE_STORE_ASSIGNMENTS_CHANGED_RECONCILE_REQUIRED"; return false; } d.tenants = j.tenants; return true; } catch (e) { return e?.code === "ENOENT" && markerKeys(file) === null; } };      // a missing store is only writable when it never existed: if a marker is left, deleting the store must not be undone by an unrelated write      // also adopts what another instance wrote since this one loaded: a stale instance never reverts it
   function save(tenantId, inp, how) {
     if (inp?.actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" };
@@ -60,6 +61,7 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
   const create = (tenantId, inp) => save(tenantId, inp, "SAVE");
   function rollback(tenantId, id, version, { actor } = {}) {
     if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" };
+    if (!writable()) return { ok: false, reason: refusal };      // refresh from disk BEFORE looking the profile up: a stale instance must not resurrect what another instance removed
     const p = own(peek(tenantId)?.profiles, id); if (!p) return { ok: false, reason: "PROFILE_NOT_FOUND" }; const v = p.versions.find(x => x.version === version); if (!v) return { ok: false, reason: "VERSION_NOT_FOUND" };
     if (hashOf(v.definition) !== v.hash) return { ok: false, reason: "STORED_VERSION_TAMPERED" };
     return save(tenantId, { ...clone(v.definition), actor: "OWNER" }, "ROLLBACK_TO_" + version);   // re-validated against today's grants, stored as a NEW version
@@ -89,7 +91,7 @@ export function createProfiles({ file = null, grantable = defaultGrantable, skil
   /** Agent -> profile assignment (owner only; the 30 ids are the fixed roster, a profile never creates one). A profile can only NARROW what the owner's tool matrix already allows. */
   /** The marker records that a store existed and how many assignments it held, so a deleted OR emptied store can be told from one that never had assignments (the gate fails closed on both). */
   const assignedMap = dd => Object.fromEntries(Object.entries(dd.tenants ?? {}).flatMap(([tn, t]) => Object.entries(t?.assignments ?? {}).filter(([, v]) => v != null).map(([a, v]) => [tn + "/" + a, stampOf(t, v)])).sort());
-  const mark = () => { if (file) { try { fs.writeFileSync(file + ".in-use", JSON.stringify(assignedMap(d)), { mode: 0o600 }); } catch { /* the gate then cannot tell a deleted store from a never-used one */ } } };
+  const mark = () => { if (file) { try { const t = file + ".in-use.tmp"; fs.writeFileSync(t, JSON.stringify(assignedMap(d)), { mode: 0o600 }); fs.renameSync(t, file + ".in-use"); } catch { /* the gate then cannot tell a deleted store from a never-used one */ } } };      // atomic: a reader never sees half a marker
   const markIfUsed = () => { if (file && (Object.keys(assignedMap(d)).length || fs.existsSync(file + ".in-use"))) mark(); };
   function assign(tenantId, agentId, profileId, { actor } = {}) {
     if (actor !== "OWNER") return { ok: false, reason: "ONLY_OWNER_MAY_EDIT_PROFILES" };

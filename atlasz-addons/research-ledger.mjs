@@ -47,7 +47,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   const store = createStore({ file, init: () => ({ questions: {}, findings: {}, contradictions: {}, events: [], seq: 0 }) }), S = store.data;   // unreadable file => STORE_UNREADABLE, never replaced
   let loadTamper = false;      // the file as read does not match its newest seal: no new event may re-seal it
   const reload = () => { if (!file) return; let d; try { d = JSON.parse(fs.readFileSync(file, "utf8")); } catch (e) { if (e.code === "ENOENT") return; throw new Error("STORE_UNREADABLE:" + file.split(/[\\/]/).pop()); } if (!d || typeof d !== "object" || Array.isArray(d) || ["questions", "findings", "contradictions"].some(k => d[k] !== undefined && (typeof d[k] !== "object" || d[k] === null || Array.isArray(d[k]))) || (d.events !== undefined && !Array.isArray(d.events))) throw new Error("STORE_UNREADABLE:" + file.split(/[\\/]/).pop());   // a wrong-shaped file is refused, never overwritten
-    for (const k of ["questions", "findings", "contradictions"]) S[k] = d[k] ?? {}; S.events = d.events ?? []; S.seq = d.seq ?? 0; stMemo = null; loadTamper = !stateOk(); };
+    for (const k of ["questions", "findings", "contradictions"]) S[k] = d[k] ?? {}; S.events = d.events ?? []; S.seq = d.seq ?? 0; stMemo = null; vcMemo = null; loadTamper = !stateOk(); };
   const log = (kind, d) => { try { blackBox?.record({ kind, ...d }); } catch { /* audit must not change behaviour */ } };
   const id = p => p + "-" + (++S.seq) + "-" + crypto.randomBytes(3).toString("hex");
   /** Append-only, hash-chained event log: every write is recorded with who/what/when; verifyChain() detects edits, deletions and reordering. */
@@ -62,7 +62,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   const stateOk = () => { const last = S.events.at(-1); if (!last) return [S.questions, S.findings, S.contradictions].every(o => Object.keys(o ?? {}).length === 0); return typeof last.st !== "string" || last.st === stNow(); };
   function event(type, by, d) {
     if (!anchorOk() || loadTamper) throw new Error("CHAIN_BROKEN");
-    stMemo = null;
+    stMemo = null; vcMemo = null;
     const prev = S.events.length ? S.events[S.events.length - 1].hash : "GENESIS", e = { n: S.events.length + 1, at: now(), type, by, ...d, st: stNow(), prev };
     e.hash = sha(prev + JSON.stringify({ ...e, hash: undefined })); S.events.push(e); log("RESEARCH_" + type, { by, ...d }); return e;
   }
@@ -76,6 +76,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   // Owner confirmations live in the hash-chained event log (not in a field of the evidence): a hand-edited store cannot create one without also forging the chain AND its head anchor.
   let confMemo = { key: "", set: new Set() };
   /** What the owner actually confirmed: the claim text, the relation, the retrieval date and the quote. Any later edit of one of them (outside the hash chain) voids the confirmation. */
+  let vcMemo = null; const vcOnce = () => { const key = S.events.length + ":" + (S.events.at(-1)?.hash ?? ""); if (vcMemo && vcMemo.key === key) return vcMemo.r; const r = verifyChain(); vcMemo = { key, r }; return r; };      // one chain walk per operation (reload() and event() reset it), not one per finding
   const bindOf = (f, e) => sha([f.claim, e.relation, e.retrievedAt ?? "", e.citation.quote, e.citation.memberId, e.citation.start, e.citation.end, e.citation.sha256].join("\u0000"));
   const findingSig = f => sha(JSON.stringify([f.tenantId, f.questionId, f.kind, f.topic ?? "", f.value ?? "", f.claim]));      // a structured encoding: no field can shift into its neighbour
   const questionSig = q => sha(JSON.stringify([q.tenantId, q.projectId, q.text]));
@@ -171,7 +172,7 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   /** Re-verify a finding's evidence NOW through the caller's permissions and compute its status. */
   function evaluate(f, w) {
     const q = S.questions[f.questionId], base = { id: f.id, questionId: f.questionId, claim: f.claim, kind: f.kind, topic: f.topic, value: f.value, createdBy: f.createdBy, createdAt: f.createdAt };
-    { const vc = verifyChain(), so = stateOk(); if (!vc.ok || !so) return { ...base, status: "CONFLICTED", confidence: "NONE", independentSources: 0, reasons: [!vc.ok ? "CHAIN_BROKEN:" + (vc.reason ?? "ENTRY_HASH_OR_LINK") : "STORE_ALTERED_OUTSIDE_LEDGER"], evidence: [], note: "The ledger's tamper seal does not match: nothing in it is trusted until the owner restores the files." }; }
+    { const vc = vcOnce(), so = stateOk(); if (!vc.ok || !so) return { ...base, status: "CONFLICTED", confidence: "NONE", independentSources: 0, reasons: [!vc.ok ? "CHAIN_BROKEN:" + (vc.reason ?? "ENTRY_HASH_OR_LINK") : "STORE_ALTERED_OUTSIDE_LEDGER"], evidence: [], note: "The ledger's tamper seal does not match: nothing in it is trusted until the owner restores the files." }; }
     if (f.kind === "ASSUMPTION") return { ...base, status: "ASSUMPTION", confidence: "NONE", reasons: ["AUTHOR_MARKED_ASSUMPTION"], evidence: [] };
     const ev = f.evidence.map(e => { const v = knowledge.verifyCitation(e.citation, w), age = ageDays(e.retrievedAt), aged = age != null && (age > freshnessDays || age < -1);   // a retrieval date in the future cannot be trusted as fresh
       return { id: e.id, relation: e.relation, title: e.citation.title, kind: e.citation.kind, url: e.citation.url, version: e.citation.version, quote: v.status === "SOURCE_UNAVAILABLE" && who(w).role !== "OWNER" ? "[withheld: source not readable by this role]" : e.citation.quote, retrievedAt: e.retrievedAt, verification: v.status, aged, ok: v.status === "OK" && !aged, memberId: e.citation.memberId, addedBy: e.addedBy, confirmed: confirmedSet().has(f.id + "|" + e.id + "|" + bindOf(f, e)) }; });
@@ -215,14 +216,18 @@ export function createResearchLedger({ file = null, knowledge, security = null, 
   const unresolved = (w, { projectId = null } = {}) => { reload(); return Object.values(S.questions).filter(q => q.tenantId === w?.tenantId && (!projectId || q.projectId === projectId)).filter(q => { try { access(q.projectId, w); return true; } catch { return false; } })
     .map(q => { const r = report(q.id, w); return { id: q.id, text: q.text, projectId: q.projectId, state: r.state, counts: { verified: r.verifiedFacts.length, conflicted: r.conflicted.length, unsupported: r.unsupported.length, assumptions: r.assumptions.length, outdated: r.outdated.length, quoteMatched: r.quoteMatched.length } }; }).filter(x => x.state !== "ANSWERED"); };
   function list(w, { projectId = null } = {}) { reload(); return Object.values(S.questions).filter(q => q.tenantId === w?.tenantId && (!projectId || q.projectId === projectId)).filter(q => { try { access(q.projectId, w); return true; } catch { return false; } }).map(q => ({ id: q.id, text: q.text, projectId: q.projectId, createdBy: q.createdBy, createdAt: q.createdAt })); }
-  function summary(w) { const l = list(w), u = unresolved(w); return { questions: l.length, unresolved: u.length, answered: l.length - u.length, events: S.events.length, chain: verifyChain(), method: "EXTRACTIVE_CITATIONS_OVER_KEYWORD_RETRIEVAL" }; }
-  const events = (w, { limit = 100 } = {}) => { reload(); if (who(w).forAgent) throw new Error("OWNER_ONLY"); return S.events.slice(-Math.min(limit, 500)).map(e => structuredClone(e)); };
+  function summary(w) { const l = list(w), u = unresolved(w); return { questions: l.length, unresolved: u.length, answered: l.length - u.length, events: w?.role === "OWNER" && !who(w).forAgent ? S.events.length : undefined, chain: w?.role === "OWNER" && !who(w).forAgent ? verifyChain() : { ok: verifyChain().ok }, method: "EXTRACTIVE_CITATIONS_OVER_KEYWORD_RETRIEVAL" }; }
+  const events = (w, { limit = 100 } = {}) => { reload(); if (who(w).forAgent || w?.role !== "OWNER") throw new Error("OWNER_ONLY"); return S.events.slice(-Math.min(limit, 500)).map(e => structuredClone(e)); };      // the event log has no tenant filter: it is the owner's audit view only
   /** Owner-only, explicit recovery for a store whose head anchor is missing or stale (crash between the two writes, or deleted anchor). It re-anchors ONLY when every event still links and hashes correctly and the seal matches; the action is recorded. */
-  function reanchor(w) {
+  function reanchor(w, { acceptEventsAfterHead = false } = {}) {
     reload(); if (who(w).forAgent || w?.role !== "OWNER") throw new Error("OWNER_ONLY"); if (!headFile) return { ok: true, events: S.events.length };
     let prev = "GENESIS"; for (const e of S.events) { const { hash, ...rest } = e; if (e.prev !== prev || sha(prev + JSON.stringify({ ...rest, hash: undefined })) !== hash) return { ok: false, reason: "CHAIN_BROKEN", brokenAt: e.n }; prev = hash; }
     if (!stateOk()) return { ok: false, reason: "STORE_ALTERED_OUTSIDE_LEDGER" };
     const before = readHead();
+    if (before && before.n > 0 && before.n <= S.events.length) {
+      if (S.events[before.n - 1].hash !== before.hash) return { ok: false, reason: "HEAD_DOES_NOT_MATCH_HISTORY", previousHead: before.n };      // history before the anchor was rewritten
+      if (before.n < S.events.length && !acceptEventsAfterHead) return { ok: false, reason: "EVENTS_AFTER_HEAD_NEED_REVIEW", previousHead: before.n, unanchoredEvents: S.events.slice(before.n).map(e => ({ n: e.n, type: e.type, by: e.by })) };      // a crash gap looks exactly like events appended by hand: the owner reviews them and re-calls with { acceptEventsAfterHead: true }
+    }
     if (before && before.n > S.events.length && S.events.length) return { ok: false, reason: "STORE_BEHIND_HEAD_ROLLBACK_SUSPECTED", previousHead: before.n, events: S.events.length };      // the anchor is AHEAD of the store: that is a rollback, not a crash; it is never blessed automatically
     if (!S.events.length) return { ok: false, reason: before && before.n > 0 ? "STORE_EMPTY_BUT_HEAD_REMAINS" : "NOTHING_TO_ANCHOR", previousHead: before ? before.n : null };      // nothing to re-anchor to: the owner must remove the stale anchor deliberately
     store.save(); if (!anchorOk()) return { ok: false, reason: "HEAD_NOT_WRITTEN", previousHead: before ? before.n : null };      // never report success unless the anchor now matches
