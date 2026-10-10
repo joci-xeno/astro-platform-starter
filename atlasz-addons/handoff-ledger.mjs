@@ -97,9 +97,17 @@ export function createHandoffLedger({ file = null, isStopped = () => false, now 
     if (status !== "FAILED" && status !== "CANCELLED") return { ok: false, reason: "STATUS_INVALID" }; if (!OPEN.has(k.status)) return { ok: false, reason: "BAD_STATE:" + k.status };
     const h = pending(k); if (h) h.status = "WITHDRAWN"; k.status = status; k.handoff = null; ev(peek(tenantId), id, status, agent, { reason: scrub(String(reason)).slice(0, 100) }); store.save(); return { ok: true, id, status };
   }
+  /** Coordinator-only recovery move (the ledger object is never given to agents): a stalled task goes to another roster agent. The earlier owners stay in `owners`, so none of them can later verify it. */
+  function reassign(tenantId, id, { to, reason = "" } = {}) {
+    const g = guard(); if (g) return g; const k = find(tenantId, id); if (!k) return { ok: false, reason: "TASK_NOT_FOUND" };
+    if (!rosterOk(to)) return { ok: false, reason: "AGENT_NOT_IN_ROSTER" }; if (to === k.owner) return { ok: false, reason: "REASSIGN_TO_SELF" }; if (k.owners.includes(to)) return { ok: false, reason: "REASSIGN_TO_PREVIOUS_OWNER" };
+    if (k.status !== "ASSIGNED" && k.status !== "IN_PROGRESS") return { ok: false, reason: "BAD_STATE:" + k.status };
+    const t = peek(tenantId); if (openOf(t, to) >= L.perAgentOpen) return { ok: false, reason: "RECEIVER_AT_CONCURRENCY_LIMIT" };
+    const from = k.owner; k.owner = to; k.owners.push(to); ev(t, id, "REASSIGNED", "COORDINATOR", { from, to, reason: scrub(String(reason)).slice(0, 100) }); store.save(); return { ok: true, id, owner: to };
+  }
   const get = (tenantId, id) => { const k = find(tenantId, id); return k ? { ok: true, task: clone(k) } : { ok: false, reason: "TASK_NOT_FOUND" }; };
   const list = (tenantId, { status = null } = {}) => Object.values(peek(tenantId)?.tasks ?? {}).filter(k => !status || k.status === status).map(k => ({ id: k.id, kind: k.kind, owner: k.owner, status: k.status, dependsOn: [...k.dependsOn], handoffs: k.handoffs.length, rejections: k.rejections }));
   const events = (tenantId, limit = 100) => clone((peek(tenantId)?.events ?? []).slice(-Math.max(1, Math.min(500, Number.isInteger(limit) ? limit : 100))));
   const load = tenantId => { const t = peek(tenantId), perAgent = {}; for (const k of Object.values(t?.tasks ?? {})) if (OPEN.has(k.status)) perAgent[k.owner] = (perAgent[k.owner] ?? 0) + 1; return { ok: true, open: Object.values(perAgent).reduce((a, b) => a + b, 0), perAgent, limits: { perAgentOpen: L.perAgentOpen, maxOpen: L.maxOpen } }; };
-  return { register, start, handoff, accept, rejectHandoff, complete, verify, close, get, list, events, load, limits: L };
+  return { register, start, handoff, accept, rejectHandoff, complete, verify, close, reassign, get, list, events, load, limits: L };
 }
