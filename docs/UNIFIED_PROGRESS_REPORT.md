@@ -20,6 +20,12 @@ Branch `atlasz-v73-integration`. Maintained per owner directive §10. **No count
 - **Requirement movement:** 23-point #1 (vault) and #3 (broker) advance but **remain PARTIAL**. No 85/150 classification changes.
 - **Not done / honest gaps:** no Control Center panel; idle lock off by default; no provider-side secret rotation; broker is not wired as an agent tool (agent-tool-policy denies unlisted tools); audit chains are unkeyed sha256 (tamper-evident, not tamper-proof); redaction covers common encodings only; a rolled-back audit log bricks the vault until recovery from a backup (fail-closed by design).
 
+### M2 — C01 code-edit / repair workflow (software development and repair, priority C)
+- **Implemented:** `atlasz-addons/code-edit-workflow.mjs`: propose (nothing written) -> review by a DIFFERENT agent (static code review; FAIL blocks) -> apply with a single-use owner approval bound to the exact change digest; byte-exact snapshot (modes, created folders) pinned in the audit chain; intent recorded before the approval is spent; writes tmp+rename with post-hash verification; sandboxed tests via the existing REPO_TEST_RUN gate; failing tests restore the snapshot only for files still holding this change's output (never over someone else's edits); owner rollback (plain or explicitly partial); crash recovery; withdraw/expiry/quotas; bounded repair chain (3 attempts); truth in a hash-chained audit log, record files treated as untrusted. Wired into `createRuntime` (status + `rt.codeEdit`); no agent tool exposes it.
+- **Tests:** `atlasz-tests/m2-code-edit-workflow.test.mjs` (29 tests incl. runtime hosting and a real restricted-launcher run). Independent verification: round 1 (9 findings) and round 2 (5 follow-ups) from a fresh worktree agent that never read the tests; all fixed with regression tests; mutation checks on the guards (survivors are redundant defence-in-depth or need real cross-process timing).
+- **Requirement movement:** C01 (85 registry) gains the missing edit workflow but stays PARTIAL (no model-driven authoring, no git/PR integration by design, no agent tool wiring, no Control Center panel). PKG150 SN02/S506/OP02/OP04/S502 advance partially. 23-point item on controlled code change advances partially. No classification changes.
+- **Known limits:** identities (author/reviewer) are asserted by the caller and must be bound to the authenticated agent when a tool is wired; audit chain is tamper-evident not tamper-proof (tail truncation by someone with write access to the state folder is not detected here); non-UTF-8 files are refused; rotating author ids can fill the global open-change cap until expiry; a local attacker racing the project folder between a path check and a rename is not defended beyond lstat checks.
+
 ## 3. Cross-package dependencies
 Vault + broker are prerequisites for: Global Business source adapters needing API keys (GB), provider connectivity diagnostics (E), chat integrations (G), PKG150 GR/MR web-research items, payment-adjacent workflows (still gated by Financial Firewall + owner approval).
 
@@ -30,9 +36,8 @@ Python sandbox `.so` escape (unresolved); Windows plugin isolation is permission
 Provider selection and credentials for any live integration; source allowlist for external discovery; SQLite FTS5 / local embedding / Ollama activation; malware-scanner choice; any spend, deployment, or Railway change (none performed). VERIFIED_WORKING promotion for any item.
 
 ## 6. Next milestones (dependency order)
-1. C01 code-edit / repair workflow (controlled file changes, independent review, tests, rollback).
-2. Memory: Markdown memory, `node:sqlite` FTS5 evaluation, local retrieval.
-3. Coordination: agent-to-agent messaging with loop limits, bounded temporary sub-agents inside the 30-agent cap, checkpointing.
-4. Model routing / evolution (offline, owner-approved policy).
-5. Malware/file-quarantine design.
-6. Control Center panels for vault/broker/approvals.
+1. Memory: Markdown memory, `node:sqlite` FTS5 evaluation, local retrieval.
+2. Coordination: agent-to-agent messaging with loop limits, bounded temporary sub-agents inside the 30-agent cap, checkpointing.
+3. Model routing / evolution (offline, owner-approved policy).
+4. Malware/file-quarantine design.
+5. Control Center panels for vault/broker/approvals.

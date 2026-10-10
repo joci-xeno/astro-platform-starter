@@ -157,7 +157,7 @@ test("a passing run reports PASSED_IN_SANDBOX (not 'verified'); the runner is to
     const r = await t.wf.apply(p.id, { ownerApproval: t.approve(p), testApproval: ta });
     assert.equal(r.status, "APPLIED_TESTS_PASSED_IN_SANDBOX"); assert.match(r.note, /not proof of correctness/);
     assert.equal(t.calls.length, 1); assert.equal(t.calls[0].name, "demo"); assert.equal(t.calls[0].testApproval, ta); assert.equal(t.calls[0].root, path.join(t.projectsRoot, "demo"));
-    assert.equal(t.wf.evidence(p.id).events.map(e => e.event).join(","), "CHANGE_PROPOSED,CHANGE_REVIEWED,CHANGE_APPLY_STARTED,CHANGE_APPLIED,CHANGE_TESTS_PASSED");
+    assert.equal(t.wf.evidence(p.id).events.map(e => e.event).join(","), "CHANGE_PROPOSED,CHANGE_REVIEWED,CHANGE_APPLY_STARTED,CHANGE_APPLY_APPROVED,CHANGE_APPLIED,CHANGE_TESTS_PASSED");
   } finally { rm(t.base); }
 });
 
@@ -479,4 +479,86 @@ test("round1 follow-up: a mid-write failure whose restore also fails is reported
     const r = await w.wf.apply(p.id, { ownerApproval: w.approve(p) });
     assert.equal(r.reason, "APPLY_FAILED_ROLLBACK_INCOMPLETE"); assert.equal(w.wf.status(p.id).status, "ROLLBACK_FAILED"); assert.equal(w.read("README.md"), "# one\n");
   } finally { rm(w.base); }
+});
+
+// ------------------------------- independent verification round 2 regressions -------------------------------
+test("round2/N1+N9: intent is recorded before the approval is spent; a withdraw cannot slip in; a denied/expired approval returns the change to REVIEWED", async () => {
+  const hold = {};
+  const t = setup();
+  try {
+    const { p } = t.reviewed([{ path: "README.md", op: "overwrite", content: "# x\n" }]);
+    // withdraw attempted while the apply is in flight (from inside the write loop)
+    const wf2 = createCodeEditWorkflow({ projectsRoot: t.projectsRoot, stateDir: t.stateDir, ownerAuth: t.auth, isKnownAgent: a => AGENTS.has(a), testRunner: async () => ({ ok: false, reason: "X" }), scratchRoot: t.base, onWrite: () => { hold.w = hold.wf.withdraw(p.id, { actorId: "E-01" }); } });
+    hold.wf = wf2;
+    const r = await wf2.apply(p.id, { ownerApproval: t.approve(p) });
+    assert.equal(r.ok, true); assert.match(hold.w.reason, /CHANGE_NOT_OPEN:APPLYING/); assert.equal(t.wf.status(p.id).status, "APPLIED_UNTESTED");
+  } finally { rm(t.base); }
+  const u = setup();
+  try {
+    const { p } = u.reviewed([{ path: "README.md", op: "overwrite", content: "# x\n" }]);
+    const expired = issueOwnerApproval({ privateKeyPem: kp.privateKeyPem, action: "CODE_EDIT_APPLY", subject: editSubject(p.id, p.digest), ttlMs: 60000, now: Date.now() - 120000 });
+    const r = await u.wf.apply(p.id, { ownerApproval: expired });
+    assert.match(r.reason, /OWNER_APPROVAL_REQUIRED:EXPIRED/); assert.equal(u.wf.status(p.id).status, "REVIEWED"); assert.equal(u.read("README.md"), "# demo\n");
+    assert.deepEqual(u.wf.evidence(p.id).events.map(e => e.event).slice(-2), ["CHANGE_APPLY_STARTED", "CHANGE_APPLY_ABORTED"]);
+    assert.equal((await u.wf.apply(p.id, { ownerApproval: u.approve(p) })).ok, true, "a good approval still works afterwards");
+  } finally { rm(u.base); }
+  // crash between 'intent recorded' and 'approval spent': nothing was written, the change is open again
+  const c = setup();
+  try {
+    const { p } = c.reviewed([{ path: "README.md", op: "overwrite", content: "# x\n" }]);
+    await c.wf.apply(p.id, { ownerApproval: c.approve(p) });
+    const af = path.join(c.stateDir, "code-edit-audit.jsonl"), lines = fs.readFileSync(af, "utf8").split("\n").filter(Boolean), k = lines.findIndex(l => l.includes("CHANGE_APPLY_APPROVED"));
+    fs.writeFileSync(af, lines.slice(0, k).join("\n") + "\n"); fs.writeFileSync(path.join(c.proj, "README.md"), "# demo\n");
+    assert.equal(c.wf.status(p.id).status, "APPLYING");
+    const r = c.wf.recover(p.id); assert.equal(r.status, "REVIEWED"); assert.equal(r.recovered, "NEVER_APPROVED");
+    assert.equal((await c.wf.apply(p.id, { ownerApproval: c.approve(p) })).ok, true);
+  } finally { rm(c.base); }
+});
+
+test("round2/N2: created-folder list is pinned: a hostile manifest cannot make a restore remove folders outside the change", async () => {
+  const t = setup(), outside = path.join(t.base, "outside"); fs.mkdirSync(path.join(outside, "victimdir"), { recursive: true });
+  try {
+    fs.mkdirSync(path.join(t.proj, "emptyold"));
+    const { p } = t.reviewed([{ path: "lib/deep/n.js", op: "create", content: "export const n = 1;\n" }]);
+    await t.wf.apply(p.id, { ownerApproval: t.approve(p) });
+    const mf = path.join(t.stateDir, "snapshots", p.id, "manifest.json"), man = JSON.parse(fs.readFileSync(mf, "utf8"));
+    fs.symlinkSync(outside, path.join(t.proj, "lnk"));
+    for (const evil of [["emptyold"], ["lnk/victimdir"], ["../outside/victimdir"], ["lib", "emptyold"]]) {
+      fs.writeFileSync(mf, JSON.stringify({ ...man, createdDirs: evil }));
+      assert.equal(t.wf.rollback(p.id, { ownerApproval: ap("CODE_EDIT_ROLLBACK", "edit:" + p.id) }).reason, "SNAPSHOT_UNUSABLE", JSON.stringify(evil));
+    }
+    assert.equal(fs.existsSync(path.join(outside, "victimdir")), true); assert.equal(fs.existsSync(path.join(t.proj, "emptyold")), true);
+    fs.writeFileSync(mf, JSON.stringify(man));
+    assert.equal(t.wf.rollback(p.id, { ownerApproval: ap("CODE_EDIT_ROLLBACK", "edit:" + p.id) }).ok, true); assert.equal(fs.existsSync(path.join(t.proj, "lib")), false);
+  } finally { rm(t.base); }
+});
+
+test("round2/N3: forged approvals are refused before any snapshot and the denial log is bounded", async () => {
+  const t = setup();
+  try {
+    const { p } = t.reviewed([{ path: "README.md", op: "overwrite", content: "# x\n" }]);
+    const before = t.wf.auditEntries().length, forged = { ...t.approve(p), signature: Buffer.alloc(64, 1).toString("base64") };
+    for (let i = 0; i < 200; i++) assert.match((await t.wf.apply(p.id, { ownerApproval: i % 2 ? forged : { nope: i } })).reason, /OWNER_APPROVAL_REQUIRED/);
+    assert.ok(t.wf.auditEntries().length - before <= 31, "denial entries are capped per minute: " + (t.wf.auditEntries().length - before));
+    assert.equal(fs.existsSync(path.join(t.stateDir, "snapshots", p.id)), false, "no snapshot is taken for an invalid approval");
+    assert.equal(t.read("README.md"), "# demo\n"); assert.equal(t.wf.status(p.id).status, "REVIEWED");
+  } finally { rm(t.base); }
+});
+
+test("round2/N8: after an interrupted apply plus someone else's edit, the owner can restore what is still ours (partial rollback) and leftover temp files are removed", async () => {
+  const t = setup();
+  try {
+    const { p } = t.reviewed([{ path: "README.md", op: "overwrite", content: "# one\n" }, { path: "src/calc.js", op: "overwrite", content: "export const z = 0;\n" }]);
+    await t.wf.apply(p.id, { ownerApproval: t.approve(p) });
+    const af = path.join(t.stateDir, "code-edit-audit.jsonl"), lines = fs.readFileSync(af, "utf8").split("\n").filter(Boolean), k = lines.findIndex(l => l.includes("CHANGE_APPLIED"));
+    fs.writeFileSync(af, lines.slice(0, k).join("\n") + "\n");      // crash after the writes
+    fs.writeFileSync(path.join(t.proj, "src", "calc.js"), "// third party rewrote this\n"); fs.writeFileSync(path.join(t.proj, "README.md.deadbeef.tmp"), "leftover"); fs.writeFileSync(path.join(t.proj, "README.md.mine.tmp"), "not ours"); fs.writeFileSync(path.join(t.proj, "README.md.x.deadbeef.tmp"), "not ours either");
+    const r = t.wf.recover(p.id); assert.equal(r.reason, "RECOVERY_INCOMPLETE"); assert.equal(t.wf.status(p.id).status, "ROLLBACK_FAILED");
+    assert.match(t.wf.rollback(p.id, { ownerApproval: ap("CODE_EDIT_ROLLBACK", "edit:" + p.id) }).reason, /CONFLICT_MODIFIED_SINCE/);
+    assert.match(t.wf.rollback(p.id, { partial: true, ownerApproval: ap("CODE_EDIT_ROLLBACK", "edit:" + p.id) }).reason, /OWNER_APPROVAL_REQUIRED/, "the plain approval does not cover a partial rollback");
+    const pr = t.wf.rollback(p.id, { partial: true, ownerApproval: ap("CODE_EDIT_ROLLBACK", "edit:" + p.id + ":partial") });
+    assert.equal(pr.ok, true); assert.deepEqual(pr.leftAlone, ["src/calc.js"]);
+    assert.equal(t.read("README.md"), "# demo\n"); assert.equal(t.read("src/calc.js"), "// third party rewrote this\n"); assert.equal(fs.existsSync(path.join(t.proj, "README.md.deadbeef.tmp")), false); assert.equal(fs.existsSync(path.join(t.proj, "README.md.mine.tmp")), true, "only our own temp-file pattern is cleaned"); assert.equal(fs.existsSync(path.join(t.proj, "README.md.x.deadbeef.tmp")), true);
+    assert.equal(t.wf.status(p.id).status, "ROLLED_BACK_BY_OWNER");
+  } finally { rm(t.base); }
 });
