@@ -37,7 +37,7 @@ export const PROTECTED_COMPONENTS = Object.freeze(["owner-auth", "approval-comma
   "enterprise-control-plane", "payment-confirmation-adapter", "money-pipeline-controller", "tax-accounting-engine", "backup-recovery", "update-center", "audit-chain",
   // V7.3 Owner Control + Safety System
   "owner-authority", "approval-gateway", "claim-distinctions", "control-chain", "financial-firewall", "money-state-guard", "agent-governor",
-  "recovery-points", "safe-mode-scope", "system-doctor", "owner-control-system", "owner-keystore", "safe-mode", "secret-vault", "tenant-isolation",
+  "recovery-points", "safe-mode-scope", "system-doctor", "owner-control-system", "owner-keystore", "safe-mode", "secret-vault", "credential-broker", "tenant-isolation",
   // V7.3 Brain (governance, security, verification, orchestration and their evidence)
   "governance", "security-brain", "verifier", "black-box", "orchestrator", "governed-dispatch", "central-brain", "brain-system", "disaster-recovery", "capability-graph", "owner-command"]);
 

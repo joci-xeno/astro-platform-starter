@@ -13,6 +13,8 @@ import { createWatchdog } from "../atlasz-addons/watchdog.mjs";
 import { runStartupSelfCheck } from "../atlasz-addons/startup-self-check.mjs";
 import { createFinancialLedger } from "../atlasz-addons/financial-ledger.mjs";
 import { createSecretVault } from "../atlasz-addons/secret-vault.mjs";
+import { createCredentialBroker } from "../atlasz-addons/credential-broker.mjs";
+import { roleOf as agentRoleOf } from "../atlasz-addons/agent-tool-policy.mjs";
 import { createApprovalRequests } from "../atlasz-addons/approval-requests.mjs";
 import { getDefaultOwnerAuth } from "../atlasz-addons/owner-auth.mjs";
 import { createBrainSystem } from "../atlasz-addons/brain/brain-system.mjs";
@@ -81,6 +83,8 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
   // ---- V7.3 safety layer: self-check -> safe mode -> durable queue -> watchdog (fixed topology 5 SEARCH + 25 EXECUTION) ----
   const ownerAuth = getDefaultOwnerAuth();
   const vault = createSecretVault({ dir: path.join(dataDir, "vault"), ownerAuth });
+  // Credential broker (M1): agents never get raw credentials. No grants exist until the owner signs them, and no agent tool is wired to it yet (agent-tool-policy denies unlisted tools).
+  const credentialBroker = createCredentialBroker({ vault, ownerAuth, stateDir: path.join(dataDir, "vault", "broker"), roleOf: agentRoleOf, isKnownAgent: id => (state?.agents ?? []).some(a => a.id === id) });
   const safeMode = createSafeMode({ statePath: path.join(dataDir, "safe-mode.json"), auditPath: path.join(dataDir, "safe-mode-audit.jsonl"), ownerAuth });
   const ledger = createFinancialLedger({ dir: path.join(dataDir, "ledger") });
   const bootedAt = new Date().toISOString();
@@ -415,7 +419,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
       agents: state.agents, blockers, sourceErrors: state.sourceErrors, emergency: emergencyStatus(), safeMode: safeMode.status(), pendingApprovals: approvalRequests.pending().length, queue: queue.stats(), watchdog: watchdog.status(),
       selfCheck: { level: selfCheck.level, problems: selfCheck.checks.filter(c => c.status !== "OK").map(c => ({ id: c.id, status: c.status, detail: c.detail })) },
       agentTools: { ...agentTools.stats(), status: "SANDBOX_ENFORCED_NOT_LIVE", signals: agentToolSignals.length, note: "Agents may call only tools allowed by the owner-approved table (deny by default); limits and approvals enforced in code." },
-      vault: vault.status(), internalAddons: addonSnapshot(),
+      vault: vault.status(), credentialBroker: credentialBroker.summary(), internalAddons: addonSnapshot(),
       brain: brainSafe(() => brain.summary()) ?? { state: "ERROR" }, models: brainSafe(() => modelGateway.summary()) ?? { state: "ERROR" }, voice: brainSafe(() => { const x = voice.summary({}); return { conversations: x.conversations, open: x.open, live: x.voice.live, providerMode: x.providerMode, blocker: x.voice.blocker, canApprove: false }; }) ?? { state: "ERROR" }, observations: brainSafe(() => { const x = observations.summary({ tenantId: KP_TENANT, role: "OWNER" }); return { total: x.total, expired: x.expired, deleted: x.deleted, rawMediaStored: false, chain: x.chain, method: x.method }; }) ?? { state: "ERROR" }, modality: brainSafe(() => { const m = modality.summary(); return { builtIn: m.builtIn.length, externalSlotsNotLive: m.external, note: m.note }; }) ?? { state: "ERROR" }, sandbox: brainSafe(() => { const x = sandbox.summary(); return { level: x.level, languages: x.languages, runs: x.runs, audit: x.audit, label: x.label }; }) ?? { state: "ERROR" }, research: brainSafe(() => research.summary({ tenantId: KP_TENANT, role: "OWNER" })) ?? { state: "ERROR" }, knowledge: brainSafe(() => ({ projects: knowledge.list({ tenantId: KP_TENANT }).length, documents: documents.summary().total, method: "KEYWORD_BM25_NOT_SEMANTIC" })) ?? { state: "ERROR" }, scheduler: brainSafe(() => scheduler.summary()) ?? { state: "ERROR" }, pcc: brainSafe(() => pcc.summary()) ?? { state: "ERROR" }, moneyEngine: brainSafe(() => moneyEngine.panel()) ?? { state: "ERROR" }, behavior: brainSafe(() => brain.behavior.summary()) ?? { state: "ERROR" }, inbox: brainSafe(() => ({ ...inbox.counts(), pipeline: inboxPipeline.summary() })) ?? { state: "ERROR" }, ownerControl: brainSafe(() => ownerControl.status()) ?? { state: "ERROR" }, ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
     };
   }
@@ -445,7 +449,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
     schedule(() => brainSafe(() => brain.behavior.scan()), 60000);          // behaviour anomaly scan over the tamper-evident Black Box (detect + recommend only)
   }
   function stop() { stopping = true; watchdog.stop(); for (const t of timers) clearTimeout(t); save(); }
-  return { tools, agentTools, agentToolSignals, modelGateway, knowledge, research, sandbox, modality, observations, voice, documents, pcc, scheduler, inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
+  return { credentialBroker, tools, agentTools, agentToolSignals, modelGateway, knowledge, research, sandbox, modality, observations, voice, documents, pcc, scheduler, inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
 }
 
 if (process.env.ATLASZ_TEST_MODE !== "1") {
