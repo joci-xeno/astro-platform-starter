@@ -19,7 +19,7 @@ const mk = async (stateDir, configDir, extra = {}) => {
   return c;
 };
 
-test("Master over HTTP: auth required; 14 managers with honest live status; automatic supervision starts without a click; queue + owner controls", async () => {
+test("Master over HTTP: auth required; 15 managers with honest live status; automatic supervision starts without a click; queue + owner controls", async () => {
   const base = tmp("ccm-"), stateDir = path.join(base, "s"), configDir = path.join(base, "c"); fs.mkdirSync(stateDir, { recursive: true });
   const c = await mk(stateDir, configDir, { masterTickMs: 1000 });
   try {
@@ -30,7 +30,7 @@ test("Master over HTTP: auth required; 14 managers with honest live status; auto
     const st = (await c.act({ op: "masterStatus" })).result; assert.ok(st.supervisions >= 1, "automatic supervision pass happened: " + st.supervisions);
     const lp = (await c.act({ op: "masterLoopStatus" })).result.loop; assert.equal(lp.state, "RUNNING"); assert.ok(lp.ticks >= 1 && lp.lastOkAt, JSON.stringify(lp)); assert.equal(st.managers.find(m => m.id === "MASTER_COORDINATOR").data.loop.state, "RUNNING");
     assert.equal(st.managers.find(m => m.id === "MASTER_COORDINATOR").data.liveness.state, "ALIVE");
-    assert.equal(st.managers.length, 14); assert.equal(st.hierarchy.agents.permanent, 30);
+    assert.equal(st.managers.length, 15); assert.equal(st.hierarchy.agents.permanent, 30);
     const by = Object.fromEntries(st.managers.map(m => [m.id, m]));
     // honest status without owner key / backups / running runtime: those are NOT shown as connected
     assert.equal(by.SECURITY_APPROVAL_MANAGER.status, "DEGRADED"); assert.equal(by.RUNTIME_SUPERVISOR.status, "DEGRADED"); assert.equal(by.RECOVERY_MAINTENANCE.status, "DEGRADED");

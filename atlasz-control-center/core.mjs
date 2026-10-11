@@ -37,6 +37,12 @@ import { createTickLoop } from "../atlasz-addons/tick-loop.mjs";
 import { createToolRegistry } from "../atlasz-addons/typed-tools.mjs";
 import { createModuleBroker } from "../atlasz-addons/module-broker.mjs";
 import { MANAGER_IDS } from "../atlasz-addons/master-coordinator.mjs";
+import { createBrainSystem } from "../atlasz-addons/brain/brain-system.mjs";
+import { createBrainMasterBridge } from "../atlasz-addons/brain-master-bridge.mjs";
+import { registerRuntime } from "../atlasz-addons/registrations/runtime.mjs";
+import { createScheduler } from "../atlasz-addons/scheduler.mjs";
+import { createCredentialBroker } from "../atlasz-addons/credential-broker.mjs";
+import { mapRecoverySources } from "../atlasz-addons/owner-control/recovery-source-map.mjs";
 import { registerSafety } from "../atlasz-addons/registrations/safety.mjs";
 import { createOwnerControlSystem } from "../atlasz-addons/owner-control/owner-control-system.mjs";
 import { createBlackBox } from "../atlasz-addons/brain/black-box.mjs";
@@ -221,7 +227,7 @@ export function createControlCenterCore({ ollamaFetch = null, cloudFetch = null,
     return store.decide({ id, decision: "APPROVED", approval: sign(passphrase, req.action, req.subject), reason });
   }
   // ---- owner key ----
-  function provisionOwnerKey({ passphrase }) { const r = createOwnerKeystore(configDir, passphrase); ocCache = null; return { publicKeyB64: r.publicKeyB64, next: "The Control Center passes this public key to the runtime it starts. Back up the key file offline." }; }
+  function provisionOwnerKey({ passphrase }) { const r = createOwnerKeystore(configDir, passphrase); ocCache = null; brokerCache = null; toolsCache = null; schedCache = null; credBroker = null; brainCache = null; bridgeCache = null; return { publicKeyB64: r.publicKeyB64, next: "The Control Center passes this public key to the runtime it starts. Back up the key file offline." }; }
 
   // ---- owner controls ----
   function setEmergency({ mode, passphrase, reason = "Control Center", confirm = null }) {
@@ -649,39 +655,54 @@ export function createControlCenterCore({ ollamaFetch = null, cloudFetch = null,
   let masterLoop = null;
   // UNIFIED OWNER CONTROL IN THE RUNTIME PATH (DEF-003): owner authority -> kill switch -> safe mode -> security brain -> financial firewall (NO-SPEND default) -> owner approval -> black box,
   // plus the 5+25 agent governor. The Master asks this chain before every dispatch, resume, reassignment and any model spend. Kill switch / safe mode are read fresh from their state files on each call.
-  let ocCache = null;
+  let ocCache = null, ocBlackBox = null;
   const ownerControl = () => (ocCache ??= (() => {
-    const bb = createBlackBox({ filePath: path.join(stateDir, "brain", "blackbox.jsonl") }), sm = { gate: o => safeMode().gate(o), status: () => safeMode().status() };
+    const bb = (ocBlackBox = createBlackBox({ filePath: path.join(ccBrainDir, "control-blackbox.jsonl") })), sm = { gate: o => safeMode().gate(o), status: () => safeMode().status() };
     const sec = createSecurityBrain({ ownerAuth: ownerAuth(), safeMode: sm, blackBox: bb });
-    return createOwnerControlSystem({ dir: path.join(stateDir, "owner-control"), ownerAuth: ownerAuth(), gate: x => emergency().gate(x), emergencyStatus: () => emergency().status(), safeMode: sm, security: sec, blackBox: bb, verifier: createVerifier({}),
-      roster: AGENT_ROSTER.map(id => ({ id, team: id.startsWith("SEARCH") ? "SEARCH" : "EXECUTION" })), tools: Object.keys(BUILTIN_TOOLS), sources: {} });
+    return createOwnerControlSystem({ dir: path.join(ccBrainDir, "owner-control"), ownerAuth: ownerAuth(), gate: x => emergency().gate(x), emergencyStatus: () => emergency().status(), safeMode: sm, security: sec, blackBox: bb, verifier: createVerifier({}),
+      roster: AGENT_ROSTER.map(id => ({ id, team: id.startsWith("SEARCH") ? "SEARCH" : "EXECUTION" })), tools: Object.keys(BUILTIN_TOOLS), sources: mapRecoverySources({ dataDir: stateDir, appDir: path.resolve(HERE, "..") }).sources });
   })());
   const masterGuard = ({ kind, agentId, spendUsd = 0, params = {} }) => {
     const a = ownerControl().agents;
     return kind === "MODEL_SPEND" ? a.act(agentId, "SPEND", { external: true, spendUsd, params }) : a.act(agentId, "INTERNAL_COMPUTE", { params, tool: params.tool });
   };
   const controlStatus = () => { const s = ownerControl().status(); return { attached: true, decisions: s.decisions, controlledPaths: s.controlledPaths, financialFirewall: s.financialFirewall, killSwitch: s.killSwitch, safeMode: s.safeMode?.mode ?? s.safeMode }; };
-  const agentsPanel = createAgentsPanel({ controlGuard: masterGuard, controlStatus, loop: () => masterLoop, stateDir, ownerAuth: () => ownerAuth(), sign: (p, a, s) => sign(p, a, s), isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL", approvals: { request: q => approvalStore().request(q), outcome: id => approvalStore().outcome(id) }, memory: () => { try { return memoryPanel.agentMemory(); } catch { return null; } }, models: { complete: a => modelRegPanel.action({ op: "ask", agentId: a.agentId, prompt: a.prompt, capability: a.capability, maxCostUsd: a.maxCostUsd }), assignmentOf: () => null },
+  const agentsPanel = createAgentsPanel({ brainWorkflow: a => brainWorkflow(a), brainWorkflows: () => brainWorkflows(), controlGuard: masterGuard, controlStatus, loop: () => masterLoop, stateDir, ownerAuth: () => ownerAuth(), sign: (p, a, s) => sign(p, a, s), isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL", approvals: { request: q => approvalStore().request(q), outcome: id => approvalStore().outcome(id) }, memory: () => { try { return memoryPanel.agentMemory(); } catch { return null; } }, models: { complete: a => modelRegPanel.action({ op: "ask", agentId: a.agentId, prompt: a.prompt, capability: a.capability, maxCostUsd: a.maxCostUsd }), assignmentOf: () => null },
     // Master Coordinator wiring: live model/cost view, pending-approval count, and real health probes for the managers that live in the host (nothing here grants authority; they only report).
     modelView: () => modelRegPanel.view(), approvalsPending: () => { let n = 0; try { n += approvalStore().pending().length; } catch { /* store unavailable: counted as 0 */ } return n; },
     hostProbes: {
+      BRAIN_MANAGER: async () => { const b = brainSystem(), sm = b.summary(), h = b.health(); const ok = sm.orchestrator === "READY" && sm.blackBox.chain && sm.governanceAudit; return { ok, detail: ok ? "orchestrator READY, black box chain intact, governance audit intact; topology " + sm.topology.search + "+" + sm.topology.execution : "brain degraded: orchestrator " + sm.orchestrator + ", blackBox chain " + sm.blackBox.chain + ", governance audit " + sm.governanceAudit, data: { plans: sm.plans, capabilityGraph: sm.capabilityGraph } }; },
       SECURITY_APPROVAL_MANAGER: async () => { const k = keystoreStatus(configDir), a = ownerAuth().status().state; return { ok: !!k.provisioned && a === "LIVE", detail: k.provisioned ? "owner key provisioned, owner auth " + a : "no owner key provisioned: every approval-gated action stays blocked", data: { ownerAuthState: a } }; },
-      TASK_SCHEDULER: async () => { const sc = schedules(); return { ok: sc.state === "CONNECTED", detail: sc.state === "CONNECTED" ? sc.jobs.length + " schedule(s) recorded" : "scheduler state: " + sc.state, data: { jobs: sc.jobs.length } }; },
+      TASK_SCHEDULER: async () => { ensureStandingSchedules(); const sm = scheduler().summary(), bad = (sm.byState.FAILED ?? 0) + (sm.byState.PAUSED_BY_FAILURES ?? 0), ml = masterLoop?.status?.() ?? null; const ok = sm.total > 0 && bad === 0 && (!ml || ml.state !== "ESCALATED"); return { ok, detail: ok ? sm.total + " schedule(s), none failed; delivery AT_LEAST_ONCE; driven by the Master loop" : sm.total === 0 ? "no schedules" : bad + " schedule(s) failed or paused by failures", data: { jobs: sm.total, byState: sm.byState, nextDue: sm.nextDue } }; },
       RUNTIME_SUPERVISOR: async () => { const alive = !!child && childExit == null; return { ok: alive, detail: alive ? "runtime supervisor child process running" : "runtime supervisor not running (start it from the Control Center)", data: { running: alive } }; },
       RECOVERY_MAINTENANCE: async () => { const bk = backups(), d = drills().at(-1) ?? null; return { ok: bk.items.length > 0 && !bk.items.some(b => !b.ok) && d?.ok === true, detail: !bk.items.length ? "no backup exists" : bk.items.some(b => !b.ok) ? "a backup is corrupt" : d?.ok ? "backup verified, restore drill passed" : "restore drill not yet passed", data: { backups: bk.items.length } }; }
     } });
+  // BRAIN (Phase 4): one Brain System for the Control Center process (its own directory: the runtime process owns <state>/brain), governed by the same control chain; the bridge carries the owner workflow through the Master.
+  let brainCache = null, bridgeCache = null;
+  const brainSystem = () => (brainCache ??= createBrainSystem({ dir: path.join(ccBrainDir, "brain"), ownerAuth: ownerAuth(), roster: AGENT_ROSTER.map(id => ({ id, team: id.startsWith("SEARCH") ? "SEARCH" : "EXECUTION" })), gate: x => emergency().gate(x), safeMode: { gate: o => safeMode().gate(o), status: () => safeMode().status() }, chain: ownerControl().chain }));
+  const brainBridge = () => (bridgeCache ??= createBrainMasterBridge({ master: agentsPanel.masterRef(), brain: brainSystem(), dir: path.join(ccBrainDir, "bridge") }));
+  const brainWorkflow = a => brainBridge().runWorkflow(a), brainWorkflows = () => brainBridge().workflows();
   // MODULE BROKER (Phase 2/3): modules register a spec + typed capabilities; every call goes through the typed-tool registry -> unified control chain. Built lazily so start-up cost is nil.
-  let brokerCache = null;
+  let brokerCache = null, toolsCache = null, schedCache = null, credBroker = null;
+  const toolRegistry = () => (toolsCache ??= (() => { const oc = ownerControl(); return createToolRegistry({ chain: oc.chain, blackBox: ocBlackBox }); })());
+  const scheduler = () => (schedCache ??= createScheduler({ file: path.join(stateDir, "scheduler", "schedules.json"), tools: toolRegistry(), gate: x => emergency().gate(x), blackBox: (ownerControl(), ocBlackBox) }));
+  // The credential broker is the ONLY path from an agent to a vault secret: grant-bound (host, method, agent/role, expiry), spend-free, audited, with the vault read through the same sealed vault the owner manages.
+  const credentialBroker = () => (credBroker ??= createCredentialBroker({ vault: { has: n => { try { return !!vaultOrNull()?.has(n); } catch { return false; } }, get: (n, o) => vaultOrNull().get(n, o) }, ownerAuth: ownerAuth(), fetchImpl, gate: x => emergency().gate(x), stateDir: path.join(stateDir, "credential-broker"), isKnownAgent: id => AGENT_ROSTER.includes(id) }));
   const moduleBroker = () => (brokerCache ??= (() => {
-    const oc = ownerControl(), tools = createToolRegistry({ chain: oc.chain, blackBox: oc.blackBox ?? null });
-    const b = createModuleBroker({ tools, managers: MANAGER_IDS, audit: (e, d) => { try { agentsPanel.loopEvent("MODULE:" + e, d); } catch { /* audit is best-effort here; the control chain audits the decision itself */ } } });
-    const ctx = { ownerControl, stateDir, appDir: path.resolve(HERE, ".."), credentialBroker: null };
-    registerSafety(b, ctx); return b;
+    const b = createModuleBroker({ tools: toolRegistry(), managers: MANAGER_IDS, audit: (e, d) => { try { agentsPanel.loopEvent("MODULE:" + e, d); } catch { /* audit is best-effort here; the control chain audits the decision itself */ } } });
+    const ctx = { backups: () => backups(), backupNow: a => backupNow(a), drill: () => drill(), lastDrill: () => drills().at(-1) ?? null, ownerControl, stateDir, appDir: path.resolve(HERE, ".."), credentialBroker, scheduler, superviseNow: () => agentsPanel.superviseNow() };
+    registerSafety(b, ctx); registerRuntime(b, ctx); return b;
   })());
   const modules = async ({ health = false } = {}) => { const b = moduleBroker(); if (health) await b.healthAll(); return { summary: b.summary(), catalog: b.catalog() }; };
   const superviseMaster = () => agentsPanel.superviseNow();
   // Master supervision loop (DEF-002): one tick at a time, stuck ticks detected, bounded restarts, ESCALATED when it keeps failing; every change is in the Master audit chain.
-  const startMasterLoop = (intervalMs = 60000) => { masterLoop ??= createTickLoop({ run: () => agentsPanel.superviseNow(), intervalMs, onEvent: (t, d) => agentsPanel.loopEvent(t, d) }); return masterLoop.start(); };
+  // Standing schedules the system registers for itself (idempotent by name). They only call registered tools, so every run is gated by the control chain.
+  const STANDING = [{ name: "State backup: daily", kind: "INTERVAL", spec: { everyMs: 86400000 }, tool: "state_backup.create" }, { name: "State backup: restore drill", kind: "INTERVAL", spec: { everyMs: 86400000 }, tool: "state_backup.drill" }, { name: "Master: module health sweep", kind: "INTERVAL", spec: { everyMs: 900000 }, tool: "master_runtime.module_health" }, { name: "Recovery: verify latest backups", kind: "INTERVAL", spec: { everyMs: 21600000 }, tool: "recovery_points.verify" }];
+  const ensureStandingSchedules = () => { moduleBroker(); const have = new Set(scheduler().list().map(j => j.name)); for (const s of STANDING) if (!have.has(s.name)) scheduler().create({ ...s, createdBy: "MASTER" });
+    // first run: a system with no backup at all must not wait a day for its first restore point and drill
+    if (!backups().items.length) for (const [n, tool, delay] of [["State backup: first restore point", "state_backup.create", 5000], ["State backup: first restore drill", "state_backup.drill", 15000]]) if (!have.has(n)) scheduler().create({ name: n, kind: "ONCE", spec: { at: new Date(Date.now() + delay).toISOString() }, tool, createdBy: "MASTER" }); };
+  const runDueSchedules = async () => { try { ensureStandingSchedules(); return await scheduler().tick(); } catch (e) { agentsPanel.loopEvent("SCHEDULER_TICK_FAILED", { error: String(e?.message ?? e).slice(0, 160) }); return null; } };
+  const startMasterLoop = (intervalMs = 60000) => { masterLoop ??= createTickLoop({ run: async () => { const r = await agentsPanel.superviseNow(); await runDueSchedules(); return r; }, intervalMs, onEvent: (t, d) => agentsPanel.loopEvent(t, d) }); return masterLoop.start(); };
   const stopMasterLoop = () => { const r = masterLoop?.stop() ?? null; agentsPanel.close(); return r; }, masterLoopStatus = () => masterLoop?.status() ?? null;
   const stoppedNow = () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL";
   const vaultPanel = createVaultPanel({ stateDir, ownerAuth: () => ownerAuth(), sign: (p, a, s) => sign(p, a, s), isStopped: stoppedNow });
@@ -698,6 +719,6 @@ export function createControlCenterCore({ ollamaFetch = null, cloudFetch = null,
   const tradingPanel = createTradingPanel({ stateDir, ownerAuth: () => ownerAuth(), sign: (p, a, s) => sign(p, a, s), isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL" });
   const trading = () => tradingPanel.view(), tradingCandles = q => tradingPanel.candles(q ?? {}), tradingAction = b => tradingPanel.action(b ?? {}), tradingTick = () => tradingPanel.tick({ candlesPerStrategy: 1 });
   const ops = createOpsViews({ stateDir, status, finance, approvals, tradingView: trading, memoryView: memory, ledgerEntries: () => createFinancialLedger({ dir: path.join(stateDir, "ledger") }).entries() });
-  return { trading, tradingCandles, tradingAction, tradingTick, agentsActivity: ops.agents, agentActivityOne: ops.agent, operations: ops.operations, revenueDashboard: ops.revenue, memory, memoryAction, modelRegistry, modelRegistryAction, security, securityAction, agents30, agents30Action, superviseMaster, startMasterLoop, stopMasterLoop, masterLoopStatus, moduleBroker, modules, vaultView, vaultAction, chatProviders, chatProvidersAction, prototypes, prototypeActions, pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, workbench, workbenchAction, a11yAudit, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => pluginView(), mcp, mcpActions, repos, repoActions, theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { trading, tradingCandles, tradingAction, tradingTick, agentsActivity: ops.agents, agentActivityOne: ops.agent, operations: ops.operations, revenueDashboard: ops.revenue, memory, memoryAction, modelRegistry, modelRegistryAction, security, securityAction, agents30, agents30Action, superviseMaster, startMasterLoop, stopMasterLoop, masterLoopStatus, brainSystem, brainWorkflow, brainWorkflows, runDueSchedules, moduleBroker, modules, scheduler, credentialBroker, vaultView, vaultAction, chatProviders, chatProvidersAction, prototypes, prototypeActions, pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, workbench, workbenchAction, a11yAudit, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => pluginView(), mcp, mcpActions, repos, repoActions, theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }

@@ -13,7 +13,7 @@ import { createAuditChain } from "./audit-chain.mjs";
 import { executorSkill } from "./agent-executors.mjs";
 
 export const MASTER_LIMITS = Object.freeze({ maxQueue: 500, maxJobsKept: 1000, stallMs: 15 * 60_000, deadlineWarnDays: 7, maxPriority: 9, autoResumeMax: 3, maxFindings: 200 });
-export const MANAGER_IDS = Object.freeze(["MASTER_COORDINATOR", "WORKFORCE_MANAGER", "SEARCH_AGENT_MANAGER", "EXECUTION_AGENT_MANAGER", "CAMPAIGN_MANAGER", "GLOBAL_BUSINESS_INTELLIGENCE", "AI_MODEL_MANAGER", "SECURITY_APPROVAL_MANAGER", "MEMORY_KNOWLEDGE_MANAGER", "FINANCIAL_REVENUE_MANAGER", "RUNTIME_SUPERVISOR", "TASK_SCHEDULER", "QUALITY_ASSURANCE", "RECOVERY_MAINTENANCE"]);
+export const MANAGER_IDS = Object.freeze(["MASTER_COORDINATOR", "WORKFORCE_MANAGER", "SEARCH_AGENT_MANAGER", "EXECUTION_AGENT_MANAGER", "CAMPAIGN_MANAGER", "GLOBAL_BUSINESS_INTELLIGENCE", "AI_MODEL_MANAGER", "SECURITY_APPROVAL_MANAGER", "MEMORY_KNOWLEDGE_MANAGER", "FINANCIAL_REVENUE_MANAGER", "RUNTIME_SUPERVISOR", "TASK_SCHEDULER", "QUALITY_ASSURANCE", "RECOVERY_MAINTENANCE", "BRAIN_MANAGER"]);
 const R = (reason, extra = {}) => ({ ok: false, reason, ...extra });
 const sha = t => crypto.createHash("sha256").update(t).digest("hex");
 const TERMINAL_TASK = new Set(["VERIFIED", "DEAD_LETTER", "REJECTED_FINAL", "REASSIGNED"]);
@@ -146,6 +146,7 @@ export function createMasterCoordinator({ dir, workforce, models = null, campaig
     RUNTIME_SUPERVISOR: { title: "Runtime Supervisor (separate process)", implementation: ["atlasz-runtime/supervisor-safe.mjs", "atlasz-runtime/supervisor.js"], agents: "runtime screening pipeline", permissions: "own process", tests: ["runtime supervisor tests"] },
     TASK_SCHEDULER: { title: "Task Scheduler", implementation: ["atlasz-addons/scheduler.mjs"], agents: "none", permissions: "registered typed tools only; external effects stop at AWAITING_APPROVAL", tests: ["scheduler*.test.mjs"] },
     QUALITY_ASSURANCE: { title: "Quality Assurance and Independent Checker", implementation: ["atlasz-addons/agent-coordination.mjs (assignVerifier)", "atlasz-addons/agent-workforce.mjs (checkTask)"], agents: "independent SEARCH/EXECUTION checker", permissions: "recompute + compare; maker never checks own work", tests: ["agent-workforce.test.mjs"] },
+    BRAIN_MANAGER: { title: "Brain Manager (Central/Planning/Governance/Security Brain, Memory Fabric, Verifier, Orchestrator)", implementation: ["atlasz-addons/brain/brain-system.mjs", "atlasz-addons/brain-master-bridge.mjs"], agents: "none (advises the Master; creates no agents)", permissions: "decision briefs and governance only: the Brain cannot spend, sign, send or grant authority", tests: ["brain-master-workflow.test.mjs", "control-center-brain.test.mjs"] },
     RECOVERY_MAINTENANCE: { title: "Recovery and Maintenance Manager", implementation: ["atlasz-addons/backup-recovery.mjs", "atlasz-addons/recovery.mjs"], agents: "none", permissions: "restore into non-empty target needs owner approval", tests: ["backup-recovery*.test.mjs"] }
   };
   async function managers() {

@@ -11,7 +11,7 @@ import { createMasterCoordinator } from "../atlasz-addons/master-coordinator.mjs
 import { createCampaignManager } from "../atlasz-addons/campaign-manager.mjs";
 import { createGlobalBusinessIntelligence } from "../atlasz-addons/global-business-intelligence.mjs";
 
-export function createAgentsPanel({ stateDir, ownerAuth, sign, isStopped = () => false, approvals = null, memory = null, models = null, discoveryTransport = null, modelView = null, approvalsPending = null, hostProbes = {}, loop = () => null, controlGuard = null, controlStatus = null, nowFn = () => new Date().toISOString() } = {}) {
+export function createAgentsPanel({ stateDir, ownerAuth, sign, isStopped = () => false, approvals = null, memory = null, models = null, discoveryTransport = null, modelView = null, approvalsPending = null, hostProbes = {}, brainWorkflow = null, brainWorkflows = null, loop = () => null, controlGuard = null, controlStatus = null, nowFn = () => new Date().toISOString() } = {}) {
   const dir = path.join(stateDir, "workforce");
   const auth = { verifyApproval: (...a) => { try { return ownerAuth().verifyApproval(...a); } catch { return { allowed: false, reason: "NO_OWNER_KEY" }; } }, verifyRecorded: (...a) => { try { return ownerAuth().verifyRecorded(...a); } catch { return false; } } };
   let wf = null, openError = null, master = null, campaigns = null, gbi = null;
@@ -93,6 +93,8 @@ export function createAgentsPanel({ stateDir, ownerAuth, sign, isStopped = () =>
       case "masterLoopStatus": return { ok: true, loop: loop()?.status() ?? null };
       case "masterLoopReset": { const l = loop(); if (!l) return { ok: false, reason: "NO_LOOP" }; open(); master?.recordEvent("RESET_BY_OWNER", {}); return { ok: true, loop: l.reset() }; }
       case "masterStatus": { open(); return { ok: true, ...(await refreshMaster()) }; }
+      case "brainWorkflow": { if (typeof brainWorkflow !== "function") return { ok: false, reason: "BRAIN_NOT_CONNECTED" }; open(); const r = await brainWorkflow({ requestedBy: "OWNER", request: a.request, planId: a.planId, stepId: a.stepId, priority: Number.isInteger(a.priority) ? a.priority : 9 }); await refreshMaster(); return r; }
+      case "brainWorkflows": return { ok: true, workflows: typeof brainWorkflows === "function" ? brainWorkflows() : [] };
       case "masterSupervise": { open(); const r = await master.supervise({ autoRecover: a.autoRecover !== false }); await refreshMaster(); return r; }
       case "masterEnqueue": return master.enqueue({ planId: a.planId, stepId: a.stepId, priority: Number.isInteger(a.priority) ? a.priority : 5, preferredAgent: a.preferredAgent ?? null, note: a.note });
       case "masterDispatch": { const r = await master.dispatch({ max: 5 }); await refreshMaster(); return r; }
@@ -121,5 +123,5 @@ export function createAgentsPanel({ stateDir, ownerAuth, sign, isStopped = () =>
   }
   const loopEvent = (type, data) => { try { open(); master?.recordEvent(type, data); } catch { /* audit unavailable: the loop status still shows the state */ } };
   const superviseNow = async () => { open(); if (!master) return null; const r = await master.supervise(); await refreshMaster(); return r; };
-  return { view, action, workforce: open, superviseNow, loopEvent, close: () => { try { master?.close(); } catch { /* already closed */ } } };
+  return { view, action, workforce: open, masterRef: () => { open(); return master; }, superviseNow, loopEvent, close: () => { try { master?.close(); } catch { /* already closed */ } } };
 }

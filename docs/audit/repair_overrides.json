@@ -1,5 +1,5 @@
 {
- "gate": "gate 2007/2007 at batch-2 commit (see git log)",
+ "gate": "gate 2014/2014 at batch-4 commit (see git log)",
  "modules": {},
  "defects": [
   {
@@ -42,9 +42,9 @@
    "owner": "Claude Code",
    "reproduction_evidence": "integration_matrix: scheduler unreachable",
    "proposed_fix": "Master TASK_SCHEDULER manager drives scheduled jobs through typed tools",
-   "test": "to add",
-   "status": "OPEN",
-   "verification_result": "not yet verified"
+   "test": "module-broker.test.mjs",
+   "status": "TESTED",
+   "verification_result": "module-broker.test.mjs: scheduler module registered under TASK_SCHEDULER; standing schedules run real tools through the control chain; PAUSE_ALL halts runNow/tick; restart keeps jobs without duplicates; driven by the Master loop"
   },
   {
    "defect_id": "DEF-005",
@@ -53,9 +53,9 @@
    "owner": "Claude Code",
    "reproduction_evidence": "RECOVERY_MAINTENANCE probe DEGRADED in sandbox",
    "proposed_fix": "Probe real backup/drill state; provide recover action with owner approval",
-   "test": "to add",
-   "status": "OPEN",
-   "verification_result": "not yet verified"
+   "test": "module-broker.test.mjs",
+   "status": "TESTED",
+   "verification_result": "module-broker.test.mjs: recovery sources mapped from real directories (APPLICATION_VERSION on a fresh machine; others honestly NOT_CONFIGURED), state-backup module, first backup + restore drill scheduled when none exists, RECOVERY_MAINTENANCE CONNECTED from real drill; restore over live state still needs signed owner approval"
   },
   {
    "defect_id": "DEF-006",
@@ -64,9 +64,9 @@
    "owner": "Claude Code",
    "reproduction_evidence": "integration_matrix: credential-broker unreachable",
    "proposed_fix": "Broker issues scoped, short-lived credential handles to adapters; no secret in logs",
-   "test": "to add",
-   "status": "OPEN",
-   "verification_result": "not yet verified"
+   "test": "module-broker.test.mjs",
+   "status": "INTEGRATED",
+   "verification_result": "credential-broker built with the sealed vault, owner auth, emergency gate and roster in core.credentialBroker(); registered as module (self-test + grants/summary); provider-adapter routing of agent HTTP calls through the broker is still to be done"
   },
   {
    "defect_id": "DEF-007",
@@ -119,9 +119,9 @@
    "owner": "Claude Code",
    "reproduction_evidence": "brain/* unreachable (15 of 22)",
    "proposed_fix": "Brain bridge under the Master",
-   "test": "brain-master integration test",
-   "status": "OPEN",
-   "verification_result": "not yet verified"
+   "test": "brain-master-workflow.test.mjs",
+   "status": "TESTED",
+   "verification_result": "Brain System instantiated in the Control Center (own dir, same control chain), BRAIN_MANAGER 15th manager CONNECTED, brain-master bridge workflow OWNER->MASTER->BRAIN->MANAGER->AGENT->TOOL->VERIFIER->MASTER->CONTROL CENTER tested; remaining brain library modules still need broker registration (Batch 5)"
   },
   {
    "defect_id": "DEF-012",
@@ -174,9 +174,9 @@
    "owner": "Claude Code",
    "reproduction_evidence": "system_audit_2026-10-11.json",
    "proposed_fix": "Real probes + owner-side setup instructions",
-   "test": "to add",
-   "status": "OPEN",
-   "verification_result": "not yet verified"
+   "test": "module-broker.test.mjs",
+   "status": "PARTIALLY_FIXED",
+   "verification_result": "Task Scheduler and Recovery managers now CONNECTED from real work (test); Security manager stays DEGRADED until the owner provisions the key (OWNER_BLOCKED); Runtime Supervisor stays DEGRADED until the runtime child is started (correct, honest)"
   },
   {
    "defect_id": "DEF-017",
