@@ -364,6 +364,15 @@ views.modelreg = async () => {
     h("h3", {}, "Per-agent assignment (exactly 30 permanent agents)"),
     table(["Agent", "Primary", "Fallbacks", "Capability"], x.agents.map(id => { const a = x.assignments[id]; return [id, a ? a.primary : "role default", a ? a.fallbacks.join(", ") || "-" : "-", a ? a.capability : "-"]; })),
     note("Assignments are made per agent through the API (op setAssignment / setRoleDefault); an unknown agent id is refused, so the roster can never grow."),
+    h("h3", {}, "Routing, egress and connection test"),
+    note((x.routing?.state ?? "") + " - " + (x.routing?.note ?? "") + " Registered in gateway: " + ((x.routing?.registeredInGateway ?? []).join(", ") || "none") + ". LIVE: " + ((x.routing?.live ?? []).join(", ") || "none") + "."),
+    table(["Provider", "Action needed", "Hosts", ""], (x.egressProposals ?? []).map(p => [p.providerId, p.action, (p.hosts ?? []).join(", ") || "-",
+      p.action === "NONE" ? "" : h("button", { class: "btn primary", onclick: signed("Apply egress policy for " + p.providerId, { op: "egressApply", providerId: p.providerId }, "Signs " + p.action + " for exactly this provider's hosts. Without it every request to the provider is blocked.") }, "Apply (sign)")])),
+    table(["Gateway model", "State"], (x.gatewayHealth ?? []).map(g => [g.id, g.state])),
+    h("div", { class: "row" }, h("button", { class: "btn", onclick: () => act("Test connections", { op: "probe" }) }, "Test connections (probe)")),
+    (() => { const ag = h("input", { placeholder: "Agent id", style: "width:20%;padding:8px" }), q = h("input", { placeholder: "Ask a question (no-spend)", style: "width:45%;padding:8px" }), out = h("div", {});
+      const go = async () => { try { const r = await call({ op: "ask", agentId: ag.value, prompt: q.value }); out.replaceChildren(!r.ok ? note("Not answered: " + r.reason, "bad") : r.quarantined ? note("Answer quarantined by the security screen.", "bad") : note("[" + r.modelId + (r.live ? ", LIVE" : "") + ", untrusted text] " + r.output)); } catch (e) { toast("Ask failed: " + e.message, "bad"); } };
+      return h("div", {}, h("div", { class: "row" }, ag, q, h("button", { class: "btn", onclick: go }, "Ask")), out); })(),
     h("h3", {}, "Snapshots and rollback"),
     table(["Revision", ""], x.snapshots.map(s => [String(s.revision), h("button", { class: "btn danger", onclick: signed("Roll back to revision " + s.revision, { op: "rollback", revision: s.revision }, "Signs MODEL_REGISTRY_ROLLBACK for this exact snapshot. Cloud or paid models come back DISABLED.") }, "Roll back")]))];
 };

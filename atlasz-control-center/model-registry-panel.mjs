@@ -4,18 +4,38 @@
 // bound to the exact subject, like the other owner actions.
 import path from "node:path";
 import { createModelRegistry } from "../atlasz-addons/model-registry.mjs";
+import { createModelRoutingBridge, createOllamaAdapter } from "../atlasz-addons/model-routing-bridge.mjs";
+import { createModelGateway } from "../atlasz-addons/model-gateway.mjs";
+import { createProviderResilience } from "../atlasz-addons/provider-resilience.mjs";
+import { createModelIntelligence } from "../atlasz-addons/brain/model-intelligence.mjs";
+import { createCapabilityGraph } from "../atlasz-addons/brain/capability-graph.mjs";
+import { createProviderEgress } from "../atlasz-addons/provider-egress.mjs";
+import { createEgressPolicy } from "../atlasz-addons/egress-policy.mjs";
 
-export function createModelRegistryPanel({ stateDir, ownerAuth, sign, liveStatus = () => false, hasCredential = () => false } = {}) {
+export function createModelRegistryPanel({ stateDir, ownerAuth, sign, liveStatus = () => false, hasCredential = () => false, isStopped = () => false, adapters = null, ollamaFetch = null } = {}) {
   const dir = path.join(stateDir, "models");
-  const auth = { verifyApproval: (...a) => { try { return ownerAuth().verifyApproval(...a); } catch { return { allowed: false, reason: "NO_OWNER_KEY" }; } } };
-  let reg = null; const open = () => (reg ??= createModelRegistry({ dir, ownerAuth: auth, liveStatus, hasCredential }));
+  const auth = { verifyApproval: (...a) => { try { return ownerAuth().verifyApproval(...a); } catch { return { allowed: false, reason: "NO_OWNER_KEY" }; } },
+    verifyRecorded: (...a) => { try { return ownerAuth().verifyRecorded(...a); } catch { return false; } } };
+  const gate = () => (isStopped() ? { allowed: false, reason: "OWNER_STOP_OR_SAFE_MODE" } : { allowed: true });
+  let reg = null, stack = null;
+  const open = () => (reg ??= createModelRegistry({ dir, ownerAuth: auth, liveStatus: id => liveStatus(id) || (stack?.bridge.liveStatus(id) ?? false), hasCredential, gate }));
+  /** The connected chain: registry -> egress policy -> gateway/resilience (probe = LIVE) -> billing guard. The only adapter shipped is the loopback Ollama one; cloud providers have none until the owner adds one. */
+  function chain() {
+    if (stack) return stack; const r = open();
+    const egress = createEgressPolicy({ ownerAuth: auth, stateDir: path.join(stateDir, "models", "egress"), isStopped });
+    const pe = createProviderEgress({ registry: r, egress, gate, dir: path.join(stateDir, "models", "provider-egress") });
+    const gw = createModelGateway({ resilience: createProviderResilience({ gate, clock: () => Date.now(), timeoutMs: 60000 }), models: createModelIntelligence({ graph: createCapabilityGraph(), clockMs: () => Date.now() }) });
+    const bridge = createModelRoutingBridge({ registry: r, gateway: gw, providerEgress: pe, adapters: adapters ?? { "ollama-local": createOllamaAdapter({ fetchImpl: ollamaFetch }) } });
+    return (stack = { egress, pe, gw, bridge });
+  }
   const need = (v, w) => { if (typeof v !== "string" || !v) throw new Error(w + "_REQUIRED"); return v; };
   function view() {
     const r = open(), st = r.status();
-    return { state: "CONNECTED", status: st, providers: r.listProviders(), models: r.listModels(), assignments: r.assignments(), roleDefaults: r.roleDefaults(), agents: r.agents(), snapshots: r.snapshots().slice(-10),
+    const c = chain(); c.bridge.syncGateway();
+    return { state: "CONNECTED", routing: c.bridge.status(), egressProposals: c.pe.proposals().map(({ policy, ...p }) => ({ ...p, hosts: policy?.hosts ?? [] })), gatewayHealth: c.gw.health(), status: st, providers: r.listProviders(), models: r.listModels(), assignments: r.assignments(), roleDefaults: r.roleDefaults(), agents: r.agents(), snapshots: r.snapshots().slice(-10),
       note: "Configuration only. A model is LIVE only after the gateway's own passing probe; no provider adapter is attached to this app, so nothing here is LIVE. Enabling a cloud or paid model needs your signed approval; enabling a free local model changes configuration only and downloads nothing." };
   }
-  function action({ op, ...a } = {}) {
+  async function action({ op, ...a } = {}) {
     const r = open();
     switch (op) {
       case "seed": return { ok: true, added: r.seedDefaults() };
@@ -32,6 +52,10 @@ export function createModelRegistryPanel({ stateDir, ownerAuth, sign, liveStatus
       case "setAssignment": return r.setAssignment(need(a.agentId, "AGENT_ID"), { primary: a.primary, fallbacks: a.fallbacks ?? [], capability: a.capability ?? "text" });
       case "clearAssignment": return r.clearAssignment(need(a.agentId, "AGENT_ID"));
       case "setRoleDefault": return r.setRoleDefault(a.role, a.models ?? []);
+      case "probe": return { ok: true, results: await chain().bridge.probeAll() };
+      case "ask": { need(a.prompt, "PROMPT"); return chain().bridge.complete({ agentId: need(a.agentId, "AGENT_ID"), prompt: a.prompt, capability: a.capability ?? "text", maxCostUsd: Number(a.maxCostUsd ?? 0) }); }
+      case "egressApply": { const id = need(a.providerId, "PROVIDER_ID"), p = chain().pe.proposals().find(x => x.providerId === id); if (!p || p.action === "NONE") return { ok: false, reason: "NOTHING_TO_APPLY" };
+        need(a.passphrase, "PASSPHRASE"); return chain().pe.applyProposal(id, { ownerApproval: sign(a.passphrase, p.action, p.subject) }); }
       case "resolve": return r.resolve({ agentId: a.agentId, capability: a.capability ?? "text", maxCostUsd: Number(a.maxCostUsd ?? 0) });
       default: throw new Error("UNKNOWN_MODEL_REGISTRY_OP");
     }

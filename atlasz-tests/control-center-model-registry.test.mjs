@@ -44,3 +44,24 @@ test("model registry panel: token required; starts empty and honest; seed adds d
     assert.equal((await c.act({ op: "nope" })).status, 400);
   } finally { await c.close(); }
 });
+
+test("connected chain over real HTTP: egress approval -> probe -> LIVE -> an agent question is answered by the loopback adapter; nothing leaves 127.0.0.1", async () => {
+  const urls = []; const ollamaFetch = async (u, init) => { urls.push(u); return u.endsWith("/api/version") ? { ok: true, text: async () => '{"version":"0.5.1"}' } : { ok: true, text: async () => '{"message":{"content":"Szia from the local model"},"eval_count":5}' }; };
+  const c = await boot({ ollamaFetch });
+  try {
+    await c.key(); await c.act({ op: "seed" });
+    assert.equal((await c.act({ op: "addModel", model: { id: "llama-local", providerId: "ollama-local", version: "1.0.0", costClass: "FREE", capabilities: ["text"] } })).result.ok, true);
+    assert.equal((await c.act({ op: "enable", id: "llama-local" })).result.ok, true);
+    let a = await c.act({ op: "ask", agentId: "EXECUTION-3", prompt: "hello" }); assert.equal(a.result.reason, "NO_ELIGIBLE_MODEL", "no policy, no probe -> nothing is called"); assert.equal(urls.length, 0);
+    assert.equal((await c.act({ op: "probe" })).result.results["llama-local"], "FAIL", "without an owner-approved egress policy even the probe is blocked");
+    let v = await c.view(); assert.equal(v.egressProposals.find(p => p.providerId === "ollama-local").action, "EGRESS_POLICY_SET");
+    assert.equal((await c.act({ op: "egressApply", providerId: "ollama-local", passphrase: "wrong passphrase" })).status, 400);
+    assert.equal((await c.act({ op: "egressApply", providerId: "ollama-local", passphrase: PW })).result.ok, true);
+    assert.equal((await c.act({ op: "probe" })).result.results["llama-local"], "PASS");
+    v = await c.view(); assert.equal(v.status.live, 1); assert.equal(v.models.find(m => m.id === "llama-local").status, "LIVE");
+    a = await c.act({ op: "ask", agentId: "EXECUTION-3", prompt: "hello" }); assert.equal(a.result.ok, true); assert.equal(a.result.output, "Szia from the local model"); assert.equal(a.result.untrusted, true);
+    assert.ok(urls.every(u => u.startsWith("http://127.0.0.1:11434/")), urls.join());
+    assert.equal((await c.act({ op: "disable", id: "llama-local" })).result.ok, true);
+    assert.equal((await c.act({ op: "ask", agentId: "EXECUTION-3", prompt: "again" })).result.reason, "NO_ELIGIBLE_MODEL");
+  } finally { await c.close?.(); rm(c.base); }
+});
