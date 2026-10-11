@@ -142,12 +142,12 @@ test("input validation: weights, criteria, author range, problem size", async ()
 });
 
 test("adapter errors, bad shapes, missing family and timeouts are failures, never success", async () => {
-  const r = await solveMultiSolution(base({ timeoutMs: 50, model: fake({ "author:1": () => { throw new Error("provider down sk-abcdefghijklmnopqrstuvwxyz0123"); }, "author:2": { text: SOL[2] }, "author:3": () => new Promise(() => {}) }) }));
+  const r = await solveMultiSolution(base({ timeoutMs: 50, model: fake({ "author:1": () => { throw new Error("provider down sk-"+"abcdefghijklmnopqrstuvwxyz0123"); }, "author:2": { text: SOL[2] }, "author:3": () => new Promise(() => {}) }) }));
   assert.deepEqual(r.candidates.map(c => c.reason), ["MODEL_ERROR", "MODEL_FAMILY_MISSING_OR_INVALID", "MODEL_TIMEOUT"]);
   assert.equal(r.outcome, "INSUFFICIENT_DISTINCT_CANDIDATES"); assert.equal(JSON.stringify(r).includes("sk-abcdef"), false);
 });
 
 test("secrets in candidate text are redacted before anyone sees them", async () => {
   const r = await solveMultiSolution(base({ model: fake({ "author:1": { text: SOL[1] + " Use key AKIA" + "ABCDEFGHIJKLMNOP for backups.", family: "alpha" } }) }));
-  assert.equal(r.candidates[0].secretRedacted, true); assert.equal(JSON.stringify(r).includes("AKIAABCDEFGHIJKLMNOP"), false);
+  assert.equal(r.candidates[0].secretRedacted, true); assert.equal(JSON.stringify(r).includes(("AK"+"IAABCDEFGHIJKLMNOP")), false);
 });

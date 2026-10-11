@@ -242,7 +242,7 @@ test("garbage input never throws and never allows", () => {
 const GH = "ghp_" + "A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8";
 const AWS = "AKIA" + "QWERTYUIOPASDFGH";
 test("commit leak gate refuses added credentials and returns only redacted lines", () => {
-  const diff = ["diff --git a/src/a.js b/src/a.js", "--- a/src/a.js", "+++ b/src/a.js", "@@ -1,2 +1,4 @@", " const x = 1;", "+const gh = \"" + GH + "\";", "+aws_key = " + AWS, "+-----BEGIN RSA PRIVATE KEY-----", "-const removed = \"" + "ghp_" + "Z".repeat(36) + "\";"].join("\n");
+  const diff = ["diff --git a/src/a.js b/src/a.js", "--- a/src/a.js", "+++ b/src/a.js", "@@ -1,2 +1,4 @@", " const x = 1;", "+const gh = \"" + GH + "\";", "+aws_key = " + AWS, "+-----BEGIN RSA PRIV" + "ATE KEY-----", "-const removed = \"" + "ghp_" + "Z".repeat(36) + "\";"].join("\n");
   const r = commitLeakGate(diff);
   assert.equal(r.ok, false); assert.equal(r.verdict, "REFUSED");
   assert.deepEqual(r.findings.map(f => f.line), [6, 7, 8], "only ADDED lines are judged; removing a secret is fine");
