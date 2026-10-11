@@ -186,7 +186,7 @@ function openSqlite(file) {
   const sqlite = typeof process.getBuiltinModule === "function" ? process.getBuiltinModule("node:sqlite") : null;      // synchronous and built in (Node >= 22.3); undefined where the runtime lacks it
   if (!sqlite?.DatabaseSync) throw new Error("NODE_SQLITE_UNAVAILABLE");
   const { DatabaseSync } = sqlite;
-  const open = () => new DatabaseSync(file);
+  const open = () => { const d = new DatabaseSync(file); try { d.exec("PRAGMA busy_timeout = 5000"); } catch { /* older engine: keep default */ } return d; };      // wait for another process instead of failing at once with "database is locked"
   let db = open();
   const check = d => { const r = d.prepare("PRAGMA quick_check").all(); return r.length === 1 && Object.values(r[0])[0] === "ok"; };
   let rebuiltFromDamage = false, inBatch = false;

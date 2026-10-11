@@ -1,0 +1,151 @@
+namespaced_id,description,baseline_class,status,new_modules,tests,connected,live,existing_modules,blocker_or_next_action
+PKG150-S01,Autonomous computer operation,EXTERNAL_BLOCKER,EXTERNAL_BLOCKER,,,NO,NO,computer-use-fabric,sandbox computer-use provider; policy layer only today
+PKG150-S02,Intelligent multi-application workflow builder,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"workflow-engine,tool-bridge,connector-catalog",app connectors; multi-app builder UI
+PKG150-S03,Automated software debugging,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"self-healing-loop,repo-analyzer,code-sandbox",code edit/repair workflow absent (C01)
+PKG150-S04,Self-healing workflow recovery,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"self-healing-loop,recovery,stall-replanner,dead-letter-queue,durable-queue",no live fault injection beyond tests
+PKG150-S05,Advanced document interpretation,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"doc-extractors,document-center",OCR/scanned docs (provider); layout understanding
+PKG150-S06,Digital form completion assistant,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,form-assistant,form-assistant.test.mjs,NO,NO,-,plans only; never submits; wire into runtime + Control Center; typed form-fill tool; needs computer-use or connector
+PKG150-S07,Model and task cost optimization,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"cost-model-router,effort-allocation,budget-consumption-governor,model-gateway",real cost data needs live providers
+PKG150-S08,Long-running task checkpointing and continuation,COVERED_BY_VERIFIED_85,COVERED_BY_VERIFIED_85,,,NO,NO,"checkpoint-engine,task-ledger,progress-ledger,scheduler",-
+PKG150-S09,Automated software test generation,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,test-intelligence,w2-test-intelligence.test.mjs,NO,NO,regression-eval-suite,wire into runtime + Control Center; test generator; needs code model
+PKG150-S10,Codebase dependency and architecture mapping,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"repo-analyzer,brain/capability-graph",dependency/architecture graph for external repos
+PKG150-S11,Scientific computation and simulation assistant,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"analyst,code-sandbox",simulation libraries; Python sandbox escape unresolved
+PKG150-S12,Data quality and integrity checking,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,analyst,integrity checks on external data sources
+PKG150-S13,Browser-based task execution,EXTERNAL_BLOCKER,EXTERNAL_BLOCKER,,,NO,NO,"computer-use-fabric,page-ingest",browser provider; page-ingest works on supplied pages only
+PKG150-S14,Automated action and evidence logging,COVERED_BY_VERIFIED_85,COVERED_BY_VERIFIED_85,,,NO,NO,"audit-chain,evidence-record,observability-black-box,brain/black-box",-
+PKG150-S15,Goal decomposition and verified execution,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"master-planner-orchestrator,brain/planning-brain,brain/verifier",M04 is PARTIAL; verified-execution loop on live work unproven
+PKG150-AS01,Strategic planning engine,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"master-planner-orchestrator,brain/planning-brain,general-intelligence-extensions",live reasoning model (G04 blocked)
+PKG150-AS02,Independent AI judge and second-opinion verification,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"business/judge,qa-reviewer,anti-collusion-guard,provider-resilience",genuinely independent live provider route
+PKG150-AS03,Complex multi-solution problem solver,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,multi-solution,w3-multi-solution.test.mjs,NO,NO,-,wire into runtime + Control Center; multi-solution generator + comparator; live model
+PKG150-AS04,Research hypothesis verification,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,research-ledger,live sources; M08 not independently clean
+PKG150-AS05,Security architecture auditor,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"brain/security-brain,docs/audit/independent_probes.mjs",automated architecture auditor is not a product module; R6 rounds were run by hand with sub-agents
+PKG150-AS06,Large-scale software architecture refactoring,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,architecture-assessor,w2-architecture-assessor.test.mjs,NO,NO,-,wire into runtime + Control Center; code edit workflow absent
+PKG150-AS07,Risk and scenario analysis,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"digital-twin,brain/simulation-lab","scenario library, calibrated inputs"
+PKG150-AS08,Financial forecasting and sensitivity analysis,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"business/finance-intelligence,profit-accounting-engine,market-intelligence-engine",forecast methodology; verified revenue history absent
+PKG150-AS09,Mathematical proof and calculation verification,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"analyst,code-sandbox",formal proof tooling absent; numeric re-calculation only
+PKG150-AS10,Structured multi-agent debate,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,debate-protocol,w3-debate-protocol.test.mjs,NO,NO,-,wire into runtime + Control Center; debate protocol on top of judge/anti-collusion; live models
+PKG150-AS11,Long-term research project coordination,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"research-ledger,project-memory,knowledge-projects",multi-week project coordination layer
+PKG150-AS12,Cross-document contradiction detection,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"research-ledger,evidence-record",cross-document (not only cross-claim) detection
+PKG150-AS13,System-wide root-cause investigation,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"owner-control/system-doctor,brain/black-box,brain/brain-health",automated causal analysis
+PKG150-AS14,Evidence-backed decision packages,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"business/judge,evidence-record,master-brief",decision-package generator
+PKG150-AS15,Complexity-based AI model escalation,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"effort-allocation,brain/model-intelligence",escalation to a stronger live model
+PKG150-OP01,Large development project management,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"project-memory,task-ledger,progress-ledger,master-planner-orchestrator",dev-project dashboard
+PKG150-OP02,Multi-file code transformation,MISSING,NOT_STARTED,,,NO,NO,-,multi-file transform with tests; code model
+PKG150-OP03,Software architecture review,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"repo-analyzer,code-review",architecture review output
+PKG150-OP04,Independent AI code review,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"code-review,qa-reviewer,business/judge",P07 PARTIAL; independent live reviewer
+PKG150-OP05,Automated regression analysis,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"regression-eval-suite,tracing-evals",automatic regression analysis/diffing
+PKG150-OP06,Comprehensive technical documentation,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,doc-sync,w2-doc-sync.test.mjs,NO,NO,-,wire into runtime + Control Center; documentation generator (docs here are produced by repo scripts)
+PKG150-OP07,Requirement-to-implementation traceability,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"completion-registry,docs/build_registry.py,docs/audit/item_audit.py","offline scripts today, not a runtime module"
+PKG150-OP08,Change-impact analysis,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"brain/capability-graph,repo-analyzer","change-impact on code, not only registry"
+PKG150-OP09,Complex contract analysis,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,contract-analysis,contract-analysis.test.mjs,NO,NO,doc-extractors,"clause finder, not legal advice; wire into runtime + Control Center; clause analysis; legal review dependency"
+PKG150-OP10,Long-term development task memory,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"project-memory,brain/memory-fabric",long-horizon retrieval
+PKG150-OP11,Secure migration planning,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,migration-planner,w2-migration-planner.test.mjs,NO,NO,"backup-recovery,update-center",wire into runtime + Control Center; data-migration planner
+PKG150-OP12,System diagnostic investigation,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"owner-control/system-doctor,watchdog,brain/brain-health",-
+PKG150-OP13,Evidence-based quality assurance management,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"qa-reviewer,business/qa-factory,regression-eval-suite",-
+PKG150-OP14,Large-scale research synthesis,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"research-ledger,knowledge-projects",live sources
+PKG150-OP15,Complex multi-agent task delegation,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"master-planner-orchestrator,agent-tool-broker,handoff-ledger,execution-factory,team-lead-workflows",-
+PKG150-SN01,Daily software development agent,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,campaign-manager,w3-campaign-manager.test.mjs,NO,NO,-,wire into runtime + Control Center; code edit workflow absent
+PKG150-SN02,Automated debugging and repair cycles,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"self-healing-loop,code-sandbox",code repair cycle absent
+PKG150-SN03,Professional document generation,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"business/artifact-registry,prototype-builder,render",docx/pdf generation not in product
+PKG150-SN04,Spreadsheet automation,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"analyst,doc-extractors",xlsx writing not in product (csv export only)
+PKG150-SN05,User interface quality inspection,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,a11y-audit,A13 PARTIAL heuristic
+PKG150-SN06,Website development assistant,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"prototype-builder,render",-
+PKG150-SN07,Code review assistant,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,code-review,duplicate of OP04
+PKG150-SN08,Technical task specification generator,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,master-planner-orchestrator,spec generator
+PKG150-SN09,Data import and format transformation,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"analyst,doc-extractors,chunker",more formats
+PKG150-SN10,Multilingual administration,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"preferences,master-brief,universal-inbox",translation needs a live model
+PKG150-SN11,Form and report generation,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"business/finance-intelligence,master-brief,delivery-engine",-
+PKG150-SN12,API integration testing,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"connector-catalog,mcp-client",live provider probes
+PKG150-SN13,Data visualization generation,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"analyst,render",-
+PKG150-SN14,Independent subtask execution,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"execution-factory,agent-tool-broker",-
+PKG150-SN15,Release and installation quality checklist,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"update-center,startup-self-check",-
+PKG150-HK01,Fast incoming-message classification,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"universal-inbox,business/inbox-pipeline",rule based; no live model
+PKG150-HK02,Automatic document tagging,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"modality-fabric,document-center,notes-organizer",-
+PKG150-HK03,High-volume structured data extraction,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"doc-extractors,chunker,analyst",-
+PKG150-HK04,Fast task routing,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"brain/model-intelligence,agent-tool-broker,effort-allocation",-
+PKG150-HK05,Conversation history compression,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"context-manager,conversation",summarizing model
+PKG150-HK06,Customer service triage,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"universal-inbox,business/communication-center",-
+PKG150-HK07,Duplicate record detection,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"opportunity-qualification-engine,business/crm,universal-inbox",-
+PKG150-HK08,Task urgency classification,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"universal-inbox,personal-command-center",-
+PKG150-HK09,Fast multilingual translation,EXTERNAL_BLOCKER,IMPLEMENTED_TESTED_NOT_CONNECTED,translation-feedback,translation-feedback.test.mjs,NO,NO,-,wire into runtime + Control Center; live translation model
+PKG150-HK10,Automated data cleaning,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,analyst,-
+PKG150-HK11,Short response drafting,PARTIAL,IMPLEMENTED_TESTED_NOT_CONNECTED,translation-feedback,translation-feedback.test.mjs,NO,NO,business/communication-center,wire into runtime + Control Center; live model
+PKG150-HK12,Large-scale feedback analysis,EXTERNAL_BLOCKER,IMPLEMENTED_TESTED_NOT_CONNECTED,translation-feedback,translation-feedback.test.mjs,NO,NO,-,wire into runtime + Control Center; feedback data + live model
+PKG150-HK13,Cost-efficient lightweight agent processing,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"cost-model-router,agent-tool-broker",-
+PKG150-HK14,Lightweight browser assistance,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,browser-extension-guard,browser-extension-guard.test.mjs,NO,NO,-,wire into runtime + Control Center; browser extension (M01)
+PKG150-HK15,Background data quality monitoring,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,data-quality,w2-data-quality.test.mjs,NO,NO,"scheduler,analyst",wire into runtime + Control Center; monitor job
+PKG150-MR01,Browser-integrated AI assistant,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,browser-extension-guard browser-extension,browser-extension-guard.test.mjs,NO,NO,-,MV3 extension source + static guard; not loaded in a browser; wire into runtime + Control Center; browser extension (M01) not built
+PKG150-MR02,"Selected-text explanation, translation and analysis",MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,browser-extension-guard translation-feedback,browser-extension-guard.test.mjs translation-feedback.test.mjs,NO,NO,-,wire into runtime + Control Center; M01; live model
+PKG150-MR03,Webpage summarization,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,page-ingest,summarization needs live model
+PKG150-MR04,YouTube video transcript analysis,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"transcript-actions,voice-session",no transcript fetching; supplied transcripts only
+PKG150-MR05,Citation-backed PDF question answering,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"knowledge-projects,research-ledger,doc-extractors",-
+PKG150-MR06,Multi-model response comparison,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"provider-resilience,model-gateway,text-compare",live providers
+PKG150-MR07,Cross-website product and service comparison,COVERED_BY_VERIFIED_85,COVERED_BY_VERIFIED_85,,,NO,NO,"page-ingest,text-compare",supplied pages only
+PKG150-MR08,Email drafting and summarization,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"business/communication-center,universal-inbox",connector + live model; sending stays approval gated
+PKG150-MR09,Social media writing assistance,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,social-drafts,social-drafts.test.mjs,NO,NO,-,"drafts only, never posted; wire into runtime + Control Center; publishing is owner-approved"
+PKG150-MR10,Permission-controlled screen understanding,EXTERNAL_BLOCKER,EXTERNAL_BLOCKER,,,NO,NO,"observation-memory,computer-use-fabric",screen capture provider; consent gate exists
+PKG150-MR11,Personal web research collection,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"knowledge-projects,page-ingest,research-ledger",-
+PKG150-MR12,Website content change monitoring,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"tech-watch,page-ingest,text-compare,scheduler",snapshots supplied; fetching needs source allowlist
+PKG150-MR13,Universal AI quick-command panel,PARTIAL,IMPLEMENTED_TESTED_NOT_CONNECTED,browser-extension-guard,browser-extension-guard.test.mjs,NO,NO,"workbench,brain/owner-command",wire into runtime + Control Center; palette UI
+PKG150-MR14,Reading and learning assistant,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"tutor,spaced-repetition",-
+PKG150-MR15,One-click web source capture into Knowledge Projects,PARTIAL,IMPLEMENTED_TESTED_NOT_CONNECTED,browser-extension-guard,browser-extension-guard.test.mjs,NO,NO,"page-ingest,knowledge-projects",wire into runtime + Control Center; browser capture needs M01
+PKG150-GR01,Real-time internet research,EXTERNAL_BLOCKER,EXTERNAL_BLOCKER,,,NO,NO,-,source allowlist + search provider
+PKG150-GR02,Public X/social media monitoring,EXTERNAL_BLOCKER,EXTERNAL_BLOCKER,,,NO,NO,-,social data access
+PKG150-GR03,Emerging trend detection,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,market-intelligence-engine,offline signals only
+PKG150-GR04,Market demand signal analysis,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"market-intelligence-engine,tech-watch",live data
+PKG150-GR05,Source reliability comparison,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"research-ledger,brain/search-pipeline",-
+PKG150-GR06,Image-based web research,EXTERNAL_BLOCKER,EXTERNAL_BLOCKER,,,NO,NO,-,vision provider
+PKG150-GR07,Social media video analysis,EXTERNAL_BLOCKER,EXTERNAL_BLOCKER,,,NO,NO,-,video provider
+PKG150-GR08,Isolated computation assistant,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,code-sandbox,-
+PKG150-GR09,Current-events monitoring,EXTERNAL_BLOCKER,EXTERNAL_BLOCKER,,,NO,NO,-,live feeds
+PKG150-GR10,Competitor and public market research,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"market-intelligence-engine,tech-watch",live data
+PKG150-GR11,Traceable web research citation chains,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,research-ledger,-
+PKG150-GR12,Public community feedback analysis,EXTERNAL_BLOCKER,EXTERNAL_BLOCKER,,,NO,NO,-,data + live model
+PKG150-GR13,Approved AI image generation workflows,EXTERNAL_BLOCKER,EXTERNAL_BLOCKER,,,NO,NO,-,image provider; paid
+PKG150-GR14,Voice and video assistance,EXTERNAL_BLOCKER,EXTERNAL_BLOCKER,,,NO,NO,voice-session,STT/TTS/video providers
+PKG150-GR15,Dynamic tool loading,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"plugin-manager,typed-tools,skill-registry,tool-fabric",-
+PKG150-GE01,Very-large-context document processing,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"chunker,knowledge-projects,context-manager",-
+PKG150-GE02,Parallel sub-agent coordination,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"master-planner-orchestrator,execution-factory,agent-tool-broker",-
+PKG150-GE03,Long-task context continuity,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"checkpoint-engine,project-memory,scheduler",-
+PKG150-GE04,Multimodal tool responses,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,modality-fabric,-
+PKG150-GE05,Complex tool chaining,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"workflow-engine,typed-tools,agent-tool-broker",-
+PKG150-GE06,Geographic and map-assisted research,EXTERNAL_BLOCKER,EXTERNAL_BLOCKER,,,NO,NO,-,mapping provider
+PKG150-GE07,Advanced PDF and visual document processing,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,doc-extractors,no OCR; visual docs blocked
+PKG150-GE08,Isolated image computation,EXTERNAL_BLOCKER,EXTERNAL_BLOCKER,,,NO,NO,-,vision/imaging provider
+PKG150-GE09,Adaptive reasoning effort,COVERED_BY_VERIFIED_85,COVERED_BY_VERIFIED_85,,,NO,NO,"effort-allocation,brain/model-intelligence",-
+PKG150-GE10,Large-context caching,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,context-manager,provider caching
+PKG150-GE11,Batch task processing,COVERED_BY_VERIFIED_85,COVERED_BY_VERIFIED_85,,,NO,NO,"workflow-engine,workbench",-
+PKG150-GE12,Permission-controlled computer interface operation,EXTERNAL_BLOCKER,EXTERNAL_BLOCKER,,,NO,NO,computer-use-fabric,provider
+PKG150-GE13,Adaptive image and video processing quality,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"detail-level,modality-fabric",image/video part blocked
+PKG150-GE14,Long-running agent session management,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"scheduler,durable-queue,conversation",-
+PKG150-GE15,Alternative software solution testing,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,alt-solution-harness,alt-solution-harness.test.mjs,NO,NO,-,harness runs injected alternatives in a sandbox; no live model; wire into runtime + Control Center; alternative-solution test harness
+PKG150-O501,Independent architecture assessment,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,architecture-assessor,w2-architecture-assessor.test.mjs,NO,NO,-,wire into runtime + Control Center; automated assessor; done by hand in R6
+PKG150-O502,Long-running development campaigns,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,campaign-manager,w3-campaign-manager.test.mjs,NO,NO,project-memory,wire into runtime + Control Center; campaign manager
+PKG150-O503,Independent security verification,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"docs/audit/independent_probes.mjs,brain/security-brain",probe script exists; independent verification stays a manual/owner process
+PKG150-O504,Multi-perspective critical decision analysis,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,decision-analysis,w3-decision-analysis.test.mjs,NO,NO,-,wire into runtime + Control Center; decision analysis
+PKG150-O505,Requirement verification and evidence mapping,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"completion-registry,evidence-record",-
+PKG150-O506,Technical design improvement,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,architecture-assessor,w2-architecture-assessor.test.mjs,NO,NO,-,wire into runtime + Control Center; -
+PKG150-O507,Complex data migration planning,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,migration-planner,w2-migration-planner.test.mjs,NO,NO,-,wire into runtime + Control Center; data-migration planner
+PKG150-O508,Multi-agent disagreement resolution,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,debate-protocol,w3-debate-protocol.test.mjs,NO,NO,business/judge,wire into runtime + Control Center; -
+PKG150-O509,Architecture change simulation,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"digital-twin,brain/simulation-lab",-
+PKG150-O510,Multi-document contract analysis,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,contract-analysis,contract-analysis.test.mjs,NO,NO,-,wire into runtime + Control Center; legal review dependency
+PKG150-O511,Deep root-cause analysis,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"owner-control/system-doctor,brain/black-box",-
+PKG150-O512,Research evidence quality assessment,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,research-ledger,-
+PKG150-O513,Risk-based test prioritization,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,test-intelligence,w2-test-intelligence.test.mjs,NO,NO,-,wire into runtime + Control Center; -
+PKG150-O514,Interrupted project recovery,COVERED_BY_VERIFIED_85,COVERED_BY_VERIFIED_85,,,NO,NO,"recovery,checkpoint-engine,task-ledger",-
+PKG150-O515,Independent final acceptance review,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"business/judge,qa-reviewer",owner confirmation is required for VERIFIED_WORKING
+PKG150-S501,Continuous code maintenance,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,campaign-manager,w3-campaign-manager.test.mjs,NO,NO,-,wire into runtime + Control Center; code edit workflow absent
+PKG150-S502,Automated test coverage expansion,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,test-intelligence,w2-test-intelligence.test.mjs,NO,NO,-,wire into runtime + Control Center; -
+PKG150-S503,Secure API integration development,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"connector-catalog,tool-fabric",-
+PKG150-S504,Functional user interface development,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"prototype-builder,a11y-audit",-
+PKG150-S505,Multi-format document processing workflows,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"doc-extractors,document-center,workflow-engine",-
+PKG150-S506,Issue-to-fix automation,MISSING,NOT_STARTED,,,NO,NO,-,-
+PKG150-S507,Code quality monitoring,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"code-review,repo-analyzer",-
+PKG150-S508,Automatic documentation synchronization,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,doc-sync,w2-doc-sync.test.mjs,NO,NO,-,wire into runtime + Control Center; docs are generated offline by repo scripts
+PKG150-S509,Bidirectional data synchronization checks,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,data-quality,w2-data-quality.test.mjs,NO,NO,-,wire into runtime + Control Center; cross-device sync (A12 PARTIAL)
+PKG150-S510,Task dependency management,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"master-planner-orchestrator,task-ledger,handoff-ledger",-
+PKG150-S511,Automated UI testing,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,a11y-audit,static analysis only; no browser E2E
+PKG150-S512,Safe software release preparation,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,update-center,-
+PKG150-S513,Reusable data processing templates,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"workflow-engine,skill-registry",-
+PKG150-S514,Hungarian-English interface verification,MISSING,IMPLEMENTED_TESTED_NOT_CONNECTED,doc-sync,w2-doc-sync.test.mjs,NO,NO,preferences,HU/EN interface verifier; wire into runtime + Control Center; UI string verifier
+PKG150-S515,Module completion and handover validation,PARTIAL,PARTIAL_PRE_EXISTING,,,NO,NO,"completion-registry,startup-self-check,internal-integration-hub",-
