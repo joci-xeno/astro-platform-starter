@@ -57,3 +57,14 @@ Status words follow the standing semantics (IMPLEMENTED ≠ CONNECTED ≠ TESTED
 | Payment package intake (Stripe handoff) | IMPLEMENTED, TESTED | `docs/STRIPE_HANDOFF.md`; no package received |
 | Campaign Manager | NOT CONNECTED | it is a development-campaign layer (tokens/time budget, no money); mapping commercial plans onto it is deferred |
 | Global Business Intelligence | MISSING | no such module exists in the repo; ranking + coverage views are the first part |
+
+## Master Coordinator and management layer (2026-10-11 priority directive)
+
+Computed by `scripts/system-audit.mjs` -> `docs/audit/system_audit_2026-10-11.{json,md}`.
+
+- Master Coordinator = `agent-coordination.mjs` (ledger/handoff/verifier) + `master-coordinator.mjs` (queue, dispatch, suspend/resume/reassign, supervision, manager probes, hash-chained audit). One coordinator; the workforce only accepts `via:"MASTER"` with the one-shot Master token. Starts automatically with the Control Center (`masterTickMs`, default 60 s).
+- Managers: 14 responsibilities, each with a LIVE probe (CONNECTED / DEGRADED / NOT_CONNECTED). In a fresh sandbox: SECURITY_APPROVAL, RUNTIME_SUPERVISOR, TASK_SCHEDULER, RECOVERY_MAINTENANCE are DEGRADED (no owner key, no runtime process, no schedules, no backup/drill) - reported as such, not faked.
+- Campaign Manager: connected through `planCampaign` / `syncCampaign` (same ledger, tokens+time budgets only, DONE only after independent verifier ACCEPT).
+- Global Business Intelligence: `global-business-intelligence.mjs`, read-only, evidence classes kept apart, no currency conversion, `proposalsSent` always 0.
+- Models: 14 providers registered, 13 adapters implemented, 0 credentials, 0 authenticated live tests, 0 production ready, 0 model records until the owner seeds/discovers them. Spend cap guards every billed call.
+- Tests: master-coordinator (8), control-center-master (1, HTTP incl. automatic supervision), master-security-probe (2). Full gate 1997/1997.

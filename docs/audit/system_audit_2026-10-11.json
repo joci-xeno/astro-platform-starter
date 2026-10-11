@@ -1,0 +1,462 @@
+{
+ "generatedAt": "2026-10-11T22:21:16.143Z",
+ "date": "2026-10-11",
+ "agents": {
+  "total": 30,
+  "search": 5,
+  "execution": 25
+ },
+ "managerProbes": [
+  {
+   "id": "MASTER_COORDINATOR",
+   "status": "CONNECTED",
+   "health": "coordination audit true, master audit true"
+  },
+  {
+   "id": "WORKFORCE_MANAGER",
+   "status": "CONNECTED",
+   "health": "registry integrity true, agents 30"
+  },
+  {
+   "id": "SEARCH_AGENT_MANAGER",
+   "status": "CONNECTED",
+   "health": "5 SEARCH agents"
+  },
+  {
+   "id": "EXECUTION_AGENT_MANAGER",
+   "status": "CONNECTED",
+   "health": "25 EXECUTION agents"
+  },
+  {
+   "id": "CAMPAIGN_MANAGER",
+   "status": "CONNECTED",
+   "health": "campaign audit true, 0 campaign(s), state FRESH"
+  },
+  {
+   "id": "GLOBAL_BUSINESS_INTELLIGENCE",
+   "status": "CONNECTED",
+   "health": "funnel over 0 opportunities; 0 source(s) seen"
+  },
+  {
+   "id": "AI_MODEL_MANAGER",
+   "status": "CONNECTED",
+   "health": "0 model(s) LIVE of 0 registered; providers 0"
+  },
+  {
+   "id": "SECURITY_APPROVAL_MANAGER",
+   "status": "DEGRADED",
+   "health": "no owner key provisioned: every approval-gated action stays blocked"
+  },
+  {
+   "id": "MEMORY_KNOWLEDGE_MANAGER",
+   "status": "CONNECTED",
+   "health": "agent-memory access audit true"
+  },
+  {
+   "id": "FINANCIAL_REVENUE_MANAGER",
+   "status": "CONNECTED",
+   "health": "ledger chain true"
+  },
+  {
+   "id": "RUNTIME_SUPERVISOR",
+   "status": "DEGRADED",
+   "health": "runtime supervisor not running (start it from the Control Center)"
+  },
+  {
+   "id": "TASK_SCHEDULER",
+   "status": "DEGRADED",
+   "health": "scheduler state: NOT_CONNECTED"
+  },
+  {
+   "id": "QUALITY_ASSURANCE",
+   "status": "CONNECTED",
+   "health": "independent verifier assignment via coordinator; 0 check record(s)"
+  },
+  {
+   "id": "RECOVERY_MAINTENANCE",
+   "status": "DEGRADED",
+   "health": "no backup exists"
+  }
+ ],
+ "components": [
+  {
+   "name": "Master Coordinator",
+   "area": "1",
+   "status": "VERIFIED_WORKING",
+   "liveProbe": {
+    "status": "CONNECTED",
+    "health": "coordination audit true, master audit true"
+   },
+   "implementation": [
+    "atlasz-addons/master-coordinator.mjs",
+    "atlasz-addons/agent-coordination.mjs"
+   ],
+   "tests": [
+    "atlasz-tests/master-coordinator.test.mjs",
+    "atlasz-tests/master-security-probe.test.mjs",
+    "atlasz-tests/control-center-master.test.mjs"
+   ],
+   "missingFiles": [],
+   "reason": null,
+   "dependsOn": [
+    "WORKFORCE_MANAGER",
+    "OWNER APPROVALS"
+   ]
+  },
+  {
+   "name": "Workforce Manager (30 agents)",
+   "area": "3",
+   "status": "VERIFIED_WORKING",
+   "liveProbe": {
+    "status": "CONNECTED",
+    "health": "registry integrity true, agents 30"
+   },
+   "implementation": [
+    "atlasz-addons/agent-workforce.mjs",
+    "atlasz-addons/agent-registry.mjs"
+   ],
+   "tests": [
+    "atlasz-tests/agent-workforce.test.mjs",
+    "atlasz-tests/control-center-agents30.test.mjs"
+   ],
+   "missingFiles": [],
+   "reason": null,
+   "dependsOn": [
+    "MASTER_COORDINATOR"
+   ]
+  },
+  {
+   "name": "SEARCH Agent Manager",
+   "area": "3",
+   "status": "VERIFIED_WORKING",
+   "liveProbe": {
+    "status": "CONNECTED",
+    "health": "5 SEARCH agents"
+   },
+   "implementation": [
+    "atlasz-addons/agent-workforce.mjs"
+   ],
+   "tests": [
+    "atlasz-tests/agent-workforce.test.mjs",
+    "atlasz-tests/global-discovery-workforce.test.mjs"
+   ],
+   "missingFiles": [],
+   "reason": null,
+   "dependsOn": []
+  },
+  {
+   "name": "EXECUTION Agent Manager",
+   "area": "5",
+   "status": "VERIFIED_WORKING",
+   "liveProbe": {
+    "status": "CONNECTED",
+    "health": "25 EXECUTION agents"
+   },
+   "implementation": [
+    "atlasz-addons/agent-workforce.mjs",
+    "atlasz-addons/agent-executors.mjs"
+   ],
+   "tests": [
+    "atlasz-tests/agent-workforce.test.mjs",
+    "atlasz-tests/master-coordinator.test.mjs"
+   ],
+   "missingFiles": [],
+   "reason": null,
+   "dependsOn": []
+  },
+  {
+   "name": "Campaign Manager",
+   "area": "10",
+   "status": "VERIFIED_WORKING",
+   "liveProbe": {
+    "status": "CONNECTED",
+    "health": "campaign audit true, 0 campaign(s), state FRESH"
+   },
+   "implementation": [
+    "atlasz-addons/campaign-manager.mjs",
+    "atlasz-addons/master-coordinator.mjs"
+   ],
+   "tests": [
+    "atlasz-tests/master-coordinator.test.mjs"
+   ],
+   "missingFiles": [],
+   "reason": null,
+   "dependsOn": []
+  },
+  {
+   "name": "Global Business Intelligence",
+   "area": "11",
+   "status": "VERIFIED_WORKING",
+   "liveProbe": {
+    "status": "CONNECTED",
+    "health": "funnel over 0 opportunities; 0 source(s) seen"
+   },
+   "implementation": [
+    "atlasz-addons/global-business-intelligence.mjs"
+   ],
+   "tests": [
+    "atlasz-tests/master-coordinator.test.mjs",
+    "atlasz-tests/control-center-master.test.mjs"
+   ],
+   "missingFiles": [],
+   "reason": "Read-only analytics over real pipeline data; shows zero real opportunities until a connector source is approved and run.",
+   "dependsOn": []
+  },
+  {
+   "name": "AI Model Manager + Provider Router",
+   "area": "6",
+   "status": "PARTIAL",
+   "liveProbe": {
+    "status": "CONNECTED",
+    "health": "0 model(s) LIVE of 0 registered; providers 0"
+   },
+   "implementation": [
+    "atlasz-addons/model-registry.mjs",
+    "atlasz-addons/model-routing-bridge.mjs",
+    "atlasz-addons/provider-adapters.mjs"
+   ],
+   "tests": [
+    "atlasz-tests/model-registry.test.mjs",
+    "atlasz-tests/control-center-model-registry.test.mjs"
+   ],
+   "missingFiles": [],
+   "reason": "No provider has passed an authenticated live test (no vault credential + owner-approved egress yet): 0 providers LIVE.",
+   "dependsOn": [
+    "SECURITY_APPROVAL_MANAGER"
+   ]
+  },
+  {
+   "name": "Security and Approval Manager",
+   "area": "7,8",
+   "status": "PARTIAL",
+   "liveProbe": {
+    "status": "DEGRADED",
+    "health": "no owner key provisioned: every approval-gated action stays blocked"
+   },
+   "implementation": [
+    "atlasz-addons/owner-auth.mjs",
+    "atlasz-addons/egress-policy.mjs",
+    "atlasz-addons/api-key-vault.mjs"
+   ],
+   "tests": [
+    "atlasz-tests/owner-auth.test.mjs"
+   ],
+   "missingFiles": [
+    "atlasz-addons/api-key-vault.mjs"
+   ],
+   "reason": "Probe fresh install: no owner key provisioned here (this is the audit sandbox, not the owner's installation).",
+   "dependsOn": []
+  },
+  {
+   "name": "Memory and Knowledge Manager",
+   "area": "9",
+   "status": "VERIFIED_WORKING",
+   "liveProbe": {
+    "status": "CONNECTED",
+    "health": "agent-memory access audit true"
+   },
+   "implementation": [
+    "atlasz-addons/memory-store.mjs",
+    "atlasz-addons/agent-memory.mjs"
+   ],
+   "tests": [
+    "atlasz-tests/m5-memory-integration.test.mjs"
+   ],
+   "missingFiles": [],
+   "reason": null,
+   "dependsOn": []
+  },
+  {
+   "name": "Financial and Revenue Manager (ledger)",
+   "area": "12",
+   "status": "VERIFIED_WORKING",
+   "liveProbe": {
+    "status": "CONNECTED",
+    "health": "ledger chain true"
+   },
+   "implementation": [
+    "atlasz-addons/financial-ledger.mjs",
+    "atlasz-addons/revenue-persistence.mjs"
+   ],
+   "tests": [
+    "atlasz-tests/financial-ledger.test.mjs"
+   ],
+   "missingFiles": [],
+   "reason": null,
+   "dependsOn": []
+  },
+  {
+   "name": "Stripe payment intake gate",
+   "area": "13",
+   "status": "EXTERNAL_BLOCKER",
+   "liveProbe": "no live probe (library verified by tests only)",
+   "implementation": [
+    "atlasz-addons/payment-package-intake.mjs",
+    "docs/STRIPE_HANDOFF.md"
+   ],
+   "tests": [
+    "atlasz-tests/payment-package-intake.test.mjs"
+   ],
+   "missingFiles": [],
+   "reason": "Intake gate tested; Astra's Stripe package not received; Stripe->KOHO payout NOT connected; no real charge/payout is possible.",
+   "dependsOn": []
+  },
+  {
+   "name": "Runtime Supervisor",
+   "area": "16",
+   "status": "PARTIAL",
+   "liveProbe": {
+    "status": "DEGRADED",
+    "health": "runtime supervisor not running (start it from the Control Center)"
+   },
+   "implementation": [
+    "atlasz-runtime/supervisor-safe.mjs"
+   ],
+   "tests": [],
+   "missingFiles": [],
+   "reason": "Child process is started by the owner from the Control Center; not running in the audit sandbox.",
+   "dependsOn": []
+  },
+  {
+   "name": "Task Scheduler",
+   "area": "16",
+   "status": "PARTIAL",
+   "liveProbe": {
+    "status": "DEGRADED",
+    "health": "scheduler state: NOT_CONNECTED"
+   },
+   "implementation": [
+    "atlasz-addons/scheduler.mjs"
+   ],
+   "tests": [],
+   "missingFiles": [],
+   "reason": "Engine tested; no schedules recorded in the sandbox.",
+   "dependsOn": []
+  },
+  {
+   "name": "Quality Assurance / Independent Checker",
+   "area": "5",
+   "status": "VERIFIED_WORKING",
+   "liveProbe": {
+    "status": "CONNECTED",
+    "health": "independent verifier assignment via coordinator; 0 check record(s)"
+   },
+   "implementation": [
+    "atlasz-addons/agent-coordination.mjs",
+    "atlasz-addons/agent-workforce.mjs"
+   ],
+   "tests": [
+    "atlasz-tests/agent-workforce.test.mjs"
+   ],
+   "missingFiles": [],
+   "reason": null,
+   "dependsOn": []
+  },
+  {
+   "name": "Recovery and Maintenance Manager",
+   "area": "16",
+   "status": "PARTIAL",
+   "liveProbe": {
+    "status": "DEGRADED",
+    "health": "no backup exists"
+   },
+   "implementation": [
+    "atlasz-addons/backup-recovery.mjs"
+   ],
+   "tests": [],
+   "missingFiles": [],
+   "reason": "Backup/restore engine tested; no backup or passed restore drill in the sandbox.",
+   "dependsOn": []
+  },
+  {
+   "name": "Global Discovery Engine",
+   "area": "4",
+   "status": "PARTIAL",
+   "liveProbe": "no live probe (library verified by tests only)",
+   "implementation": [
+    "atlasz-addons/global-discovery.mjs"
+   ],
+   "tests": [
+    "atlasz-tests/global-discovery.test.mjs",
+    "atlasz-tests/control-center-discovery.test.mjs"
+   ],
+   "missingFiles": [],
+   "reason": "0 sources genuinely CONNECTED: the three first hosts await the owner's signed approval; only operator-captured (labelled) data exists.",
+   "dependsOn": []
+  },
+  {
+   "name": "Windows Electron desktop app",
+   "area": "15",
+   "status": "EXTERNAL_BLOCKER",
+   "liveProbe": "no live probe (library verified by tests only)",
+   "implementation": [],
+   "tests": [],
+   "missingFiles": [],
+   "reason": "Never run on Windows; installer workflow is manual-only and has not been run. NOT claimed verified.",
+   "dependsOn": []
+  },
+  {
+   "name": "Original 85 / 23-point / additional 150 programme",
+   "area": "19-21",
+   "status": "PARTIAL",
+   "liveProbe": "no live probe (library verified by tests only)",
+   "implementation": [
+    "docs/audit/pkg150_status.csv",
+    "docs/audit/item_audit.csv"
+   ],
+   "tests": [],
+   "missingFiles": [],
+   "reason": "150 package tally {\"EXTERNAL_BLOCKER\":14,\"PARTIAL_PRE_EXISTING\":95,\"IMPLEMENTED_TESTED_NOT_CONNECTED\":32,\"COVERED_BY_VERIFIED_85\":6,\"NOT_STARTED\":2,\"MISSING\":1}; see docs/audit/ for the 85 and 23-point classifications (not all are connected or live).",
+   "dependsOn": []
+  }
+ ],
+ "tally": {
+  "VERIFIED_WORKING": 9,
+  "PARTIAL": 7,
+  "EXTERNAL_BLOCKER": 2
+ },
+ "models": {
+  "providersRegistered": 14,
+  "modelRecords": 0,
+  "adapterImplemented": 13,
+  "credentialsConfigured": 0,
+  "authenticatedLiveTestPassed": 0,
+  "productionReady": 0,
+  "note": "Record count is not usability: only providers with adapter + credential + owner-approved egress + a passed authenticated live test are LIVE."
+ },
+ "pkg150": {
+  "EXTERNAL_BLOCKER": 14,
+  "PARTIAL_PRE_EXISTING": 95,
+  "IMPLEMENTED_TESTED_NOT_CONNECTED": 32,
+  "COVERED_BY_VERIFIED_85": 6,
+  "NOT_STARTED": 2,
+  "MISSING": 1
+ },
+ "hierarchy": {
+  "owner": "OWNER (signatures: host approvals, spend caps, plan gates, enabling paid models)",
+  "master": "MASTER COORDINATOR = agent-coordination.mjs + master-coordinator.mjs (one coordinator)",
+  "managementLayer": [
+   "WORKFORCE_MANAGER",
+   "SEARCH_AGENT_MANAGER",
+   "EXECUTION_AGENT_MANAGER",
+   "CAMPAIGN_MANAGER",
+   "GLOBAL_BUSINESS_INTELLIGENCE",
+   "AI_MODEL_MANAGER",
+   "SECURITY_APPROVAL_MANAGER",
+   "MEMORY_KNOWLEDGE_MANAGER",
+   "FINANCIAL_REVENUE_MANAGER",
+   "RUNTIME_SUPERVISOR",
+   "TASK_SCHEDULER",
+   "QUALITY_ASSURANCE",
+   "RECOVERY_MAINTENANCE"
+  ],
+  "agents": {
+   "search": 5,
+   "execution": 25,
+   "permanent": 30,
+   "temporarySubagents": "bounded, only through the coordinator, never counted"
+  },
+  "below": "VERIFICATION, EVIDENCE, MEMORY, RESULTS"
+ },
+ "discoveryNote": "See Control Center discovery panel for source states."
+}

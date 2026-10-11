@@ -42,6 +42,10 @@ const sourceById = id => SOURCE_CATALOGUE.find(x => x.id === id) ?? null;
 export function createWorkforce({ dir, registry, ledger = null, revenue = null, memory = null, models = null, approvals = null, tools = null, executors = BUILTIN_EXECUTORS, simulatedModelIds = [], isStopped = () => false, evidenceKnown = null, now = () => new Date().toISOString(), sleep = ms => new Promise(r => setTimeout(r, ms)), clock = () => Date.now() } = {}) {
   if (!dir) throw new Error("DIR_REQUIRED"); if (!registry || typeof registry.list !== "function") throw new Error("REGISTRY_REQUIRED");
   fs.mkdirSync(path.join(dir, "artifacts"), { recursive: true, mode: 0o700 });
+  // The Master Coordinator facade is the only holder of this one-shot capability: it may dispatch PLAN_STEP work (never OWNER_DIRECTED) and suspend/reassign tasks. API callers cannot claim it.
+  const MASTER_TOKEN = crypto.randomBytes(16).toString("hex"); let masterBound = false;
+  const bindMaster = () => { if (masterBound) return null; masterBound = true; return MASTER_TOKEN; };
+  const isMaster = tok => masterBound && typeof tok === "string" && tok.length === MASTER_TOKEN.length && crypto.timingSafeEqual(Buffer.from(tok), Buffer.from(MASTER_TOKEN));
   const stopped = () => { try { return Boolean(isStopped()); } catch { return true; } };
   const coordinator = createCoordinator({ dir: path.join(dir, "coordination"), isStopped: stopped, nowFn: clock, toolsOf: () => [], ledgerLimits: { maxTasks: 1000 } });
   const money = ledger ?? createFinancialLedger({ dir: path.join(dir, "ledger") });
@@ -180,14 +184,15 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
     return { opportunity: { title: r.title, sourceRef: r.sourceRef, description: d?.originalText || r.sourceExcerpt, jurisdiction: d?.jurisdiction ?? undefined, currency: d?.currency ?? undefined, valueAmount: d?.valueAmount ?? undefined, valueKind: d?.valueKind ?? undefined, deadline: d?.deadline ?? undefined, publishedAt: d?.publishedAt ?? undefined, buyer: d?.buyer ?? undefined, language: d?.language ?? undefined, kindHint: d?.kindHint ?? undefined, tags: d?.tags, assessedAt: d?.assessedAt ?? t.createdAt, retrieval: d?.retrieval, sourceId: d?.sourceId } };
   }
   function executorFor(name) { return Object.hasOwn(executors, name) ? executors[name] : null; }
-  async function executeTask(agentId, { executor, input, authorization = null, opportunityId = null, via = "API" } = {}) {
+  async function executeTask(agentId, { executor, input, authorization = null, opportunityId = null, via = "API", masterToken = null } = {}) {
+    const asMaster = isMaster(masterToken);
     const g = gate(agentId, "EXECUTION"); if (g) return g; const ex = executorFor(executor); if (!ex) return R("UNKNOWN_EXECUTOR");
     // "authorized digital task": an owner-directed request from the Control Center, or a step of an accepted plan that needs no owner approval.
     if (!authorization || typeof authorization !== "object") return R("AUTHORIZATION_REQUIRED");
     let authRef;
     if (authorization.type === "OWNER_DIRECTED") { if (via !== "OWNER_PANEL") return R("OWNER_DIRECTED_ONLY_FROM_OWNER_PANEL"); authRef = "owner-directed"; }
     else if (authorization.type === "PLAN_STEP") {
-      if (via !== "OWNER_PANEL") return R("PLAN_STEP_ONLY_FROM_OWNER_PANEL");
+      if (via !== "OWNER_PANEL" && !asMaster) return R("PLAN_STEP_ONLY_FROM_OWNER_PANEL");
       const plan = Object.hasOwn(S.plans, authorization.planId) ? S.plans[authorization.planId] : null, step = plan?.steps.find(s => s.id === authorization.stepId);
       if (!plan || !step) return R("PLAN_STEP_NOT_FOUND"); if (step.requiresOwnerApproval) return R("STEP_REQUIRES_OWNER_APPROVAL_NOT_AN_EXECUTION_STEP"); if (step.executor !== executor) return R("STEP_EXECUTOR_MISMATCH");
       const open = unmetGates(plan, step); if (open.length) return R("PLAN_STEP_WAITING_FOR_OWNER_APPROVAL", { waitingFor: open });
@@ -205,7 +210,7 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
     const inputSha = sha(canon(input)), taskId = "exec-" + idPart(agentId + executor + inputSha + authRef + clock()), h = coordinator.connect(agentId);
     const reg = h.register({ id: taskId, kind: "execute." + executor, payload: { inputSha, authRef } }); if (!reg.ok) return R("COORDINATOR_REFUSED:" + reg.reason);
     const st = h.start(taskId); if (!st.ok) return R("COORDINATOR_REFUSED:" + st.reason);
-    const task = { taskId, workflow: "C", kind: "execute." + executor, executor, agentId, status: "RUNNING", attempts: [], provenance: "REAL_LOCAL_TOOL", opportunityId, authorization: authRef, inputSha, input, createdAt: now(), updatedAt: now(), costUsd: 0 };
+    const task = { taskId, workflow: "C", kind: "execute." + executor, executor, agentId, status: "RUNNING", attempts: [], provenance: "REAL_LOCAL_TOOL", opportunityId, authorization: authRef, authz: authorization.type === "PLAN_STEP" ? { type: "PLAN_STEP", planId: authorization.planId, stepId: authorization.stepId } : { type: "OWNER_DIRECTED" }, dispatchedBy: asMaster ? "MASTER" : "OWNER_PANEL", inputSha, input, createdAt: now(), updatedAt: now(), costUsd: 0 };
     rememberTask(task); save(); ev("TASK_STARTED", { taskId, agentId, kind: task.kind, workflow: "C", authorization: authRef });
     return runWithRetries(task, h, ex);
   }
@@ -214,6 +219,7 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
     const prof = registry.get(task.agentId), max = prof.limits.maxRetries + 1, backoff = prof.retry.backoffMs, codes = [];
     for (let n = 1; n <= max; n++) {
       if (stopped()) { touch(task, { status: "INTERRUPTED" }); ev("TASK_PAUSED_BY_OWNER_STOP", { taskId: task.taskId }); return R("OWNER_STOP_OR_SAFE_MODE_ACTIVE", { taskId: task.taskId, status: "INTERRUPTED" }); }
+      if (task.suspendRequested) { task.suspendRequested = false; touch(task, { status: "SUSPENDED", suspendedFrom: "INTERRUPTED", suspendReason: task.suspendReason ?? "MASTER" }); ev("TASK_SUSPENDED", { taskId: task.taskId, agentId: task.agentId, reason: task.suspendReason ?? null }); return R("TASK_SUSPENDED", { taskId: task.taskId, status: "SUSPENDED" }); }
       const cp = h.checkpoint(task.taskId, { attempt: n, inputSha: task.inputSha, phase: "BEFORE_ATTEMPT" }); if (!cp.ok) return failTask(task, h, Object.assign(new Error(cp.reason), { code: "CHECKPOINT_REFUSED" }));
       if (n > 1) { const back = h.resume(task.taskId); if (!back.ok || back.state?.inputSha !== task.inputSha) return failTask(task, h, Object.assign(new Error("CHECKPOINT_RESTORE_MISMATCH"), { code: "CHECKPOINT_RESTORE_MISMATCH" })); }
       const t0 = clock();
@@ -223,7 +229,7 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
         task.attempts.push({ n, at: now(), ok: true, ms: clock() - t0 }); touch(task, { provenance: out.provenance ?? "REAL_LOCAL_TOOL", resultSha256: art.resultSha256 });
         ev("ARTIFACT_WRITTEN", { taskId: task.taskId, agentId: task.agentId, files: art.manifest.files.length, resultSha256: art.resultSha256 });
         const c = h.complete(task.taskId, art.resultSha256); if (!c.ok) return failTask(task, h, Object.assign(new Error(c.reason), { code: c.reason }));
-        touch(task, { status: "SUBMITTED", checker: coordinator.verifierOf(task.taskId) }); ev("TASK_SUBMITTED", { taskId: task.taskId, agentId: task.agentId, checker: task.checker });
+        task.suspendRequested = false; touch(task, { status: "SUBMITTED", checker: coordinator.verifierOf(task.taskId) }); ev("TASK_SUBMITTED", { taskId: task.taskId, agentId: task.agentId, checker: task.checker });
         return { ok: true, taskId: task.taskId, status: "SUBMITTED_AWAITING_INDEPENDENT_CHECK", checker: task.checker, provenance: task.provenance, attempts: task.attempts.length };
       } catch (e) {
         const code = String(e?.code ?? "EXECUTOR_ERROR").slice(0, 40); task.attempts.push({ n, at: now(), ok: false, code, detail: scrub(String(e?.detail ?? e?.message ?? "")).slice(0, 120) }); touch(task, {});
@@ -340,6 +346,29 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
     if (t.workflow === "A") return R("REWORK_OF_OPPORTUNITY_RECORDS_NOT_SUPPORTED_RECORD_A_NEW_ONE");
     const g = gate(t.agentId, "EXECUTION"); if (g) return g; const ex = executorFor(t.executor); if (!ex) return R("UNKNOWN_EXECUTOR");
     touch(t, { status: "RUNNING" }); ev("TASK_REWORK_STARTED", { taskId, agentId: t.agentId }); return runWithRetries(t, coordinator.connect(t.agentId), ex);
+  }
+  // ---- Master controls: suspend / resume / reassign (all need the Master capability; the owner panel reaches them through the Master) ----
+  const SUSPENDABLE = ["SUBMITTED", "INTERRUPTED", "REJECTED_REWORK_ALLOWED", "BLOCKED"];
+  function suspendTask(taskId, { reason = "MASTER", masterToken = null } = {}) {
+    if (!isMaster(masterToken)) return R("MASTER_CAPABILITY_REQUIRED"); const t = Object.hasOwn(S.tasks, taskId) ? S.tasks[taskId] : null; if (!t) return R("UNKNOWN_TASK");
+    if (t.status === "RUNNING") { t.suspendRequested = true; t.suspendReason = clean(reason, 80); touch(t, {}); ev("TASK_SUSPEND_REQUESTED", { taskId, agentId: t.agentId }); return { ok: true, taskId, status: "RUNNING", suspendRequested: true, note: "The attempt in flight finishes; no further attempt starts." }; }
+    if (!SUSPENDABLE.includes(t.status)) return R("TASK_NOT_SUSPENDABLE", { status: t.status });
+    touch(t, { status: "SUSPENDED", suspendedFrom: t.status, suspendReason: clean(reason, 80) }); ev("TASK_SUSPENDED", { taskId, agentId: t.agentId, reason: t.suspendReason }); return { ok: true, taskId, status: "SUSPENDED", suspendedFrom: t.suspendedFrom };
+  }
+  function unsuspendTask(taskId, { masterToken = null } = {}) {
+    if (!isMaster(masterToken)) return R("MASTER_CAPABILITY_REQUIRED"); if (stopped()) return R("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const t = Object.hasOwn(S.tasks, taskId) ? S.tasks[taskId] : null; if (!t || t.status !== "SUSPENDED") return R("TASK_NOT_SUSPENDED", { status: t?.status });
+    const back = SUSPENDABLE.includes(t.suspendedFrom) ? t.suspendedFrom : "INTERRUPTED"; touch(t, { status: back, suspendedFrom: undefined, suspendReason: undefined }); ev("TASK_UNSUSPENDED", { taskId, agentId: t.agentId, status: back }); return { ok: true, taskId, status: back };
+  }
+  /** A stuck execution task is closed as REASSIGNED and the same authorised step runs again under another agent of the team (never the previous owner, never its checker). Owner-directed tasks are reassigned only by the owner. */
+  async function reassignTask(taskId, toAgent, { masterToken = null, ownerPanel = false } = {}) {
+    if (!isMaster(masterToken)) return R("MASTER_CAPABILITY_REQUIRED"); const t = Object.hasOwn(S.tasks, taskId) ? S.tasks[taskId] : null; if (!t) return R("UNKNOWN_TASK");
+    if (t.workflow !== "C") return R("ONLY_EXECUTION_TASKS_ARE_REASSIGNABLE"); if (!["SUSPENDED", "INTERRUPTED", "BLOCKED"].includes(t.status)) return R("TASK_NOT_REASSIGNABLE", { status: t.status });
+    if (t.authz?.type !== "PLAN_STEP" && ownerPanel !== true) return R("OWNER_DIRECTED_TASK_NEEDS_THE_OWNER"); if (toAgent === t.agentId || toAgent === t.checker) return R("REASSIGN_TARGET_NOT_INDEPENDENT");
+    const from = t.agentId; try { coordinator.abandon(taskId, "REASSIGNED_TO_" + toAgent); } catch { /* ledger may have closed it */ }
+    touch(t, { status: "REASSIGNED", reassignedTo: toAgent }); ev("TASK_REASSIGNED", { taskId, from, to: toAgent });
+    const r = await executeTask(toAgent, { executor: t.executor, input: t.input, authorization: t.authz, opportunityId: t.opportunityId, via: ownerPanel ? "OWNER_PANEL" : "MASTER", masterToken });
+    if (r.ok && r.taskId && S.tasks[r.taskId]) { S.tasks[r.taskId].reassignedFrom = taskId; save(); }
+    return r.ok ? { ...r, reassignedFrom: taskId, from, to: toAgent } : { ...r, reassignedFrom: taskId, note: "The old task stays REASSIGNED; the owner can retry." };
   }
   /** Restart recovery for tasks that were interrupted (process death or owner stop): continue within limits from the last checkpoint. */
   async function resumeTask(taskId) {
@@ -556,5 +585,8 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
   }
   const getTask = id => (Object.hasOwn(S.tasks, id) ? structuredClone({ ...S.tasks[id], input: undefined }) : null);
   const verify = () => ({ ok: eventsOk() && registry.verify().ok, events: eventsOk(), registry: registry.verify() });
-  return { rankPipeline, discoverOpportunity, supplyOwnerInput, discoverBatch, advanceLifecycle, assignExecution, lifecycleOf: id => (Object.hasOwn(S.opps, id) ? lifecycleOf(S.opps[id]) : null), planOpportunity, executeTask, checkTask, reworkTask, resumeTask, recordOutcome, agentViews, systemView, getTask, verify, coordinator, ledger: money, registry, listOpportunities: () => Object.values(S.opps).map(o => ({ ...o })), listTasks: () => Object.values(S.tasks).map(t => ({ ...t, input: undefined })) };
+  return { selectAgent: (team, { skill = null, exclude = [], only = null } = {}) => { const load = id => Object.values(S.tasks).filter(t => t.agentId === id && ["RUNNING", "SUBMITTED", "INTERRUPTED", "SUSPENDED"].includes(t.status)).length; return ROSTER.filter(id => roleOf(id) === team && !exclude.includes(id) && (only === null || only === id) && registry.isUsable(id) && capacity(id) > 0 && (!skill || registry.get(id).capabilityProfile.skills.includes(skill))).sort((a, b) => load(a) - load(b) || (a < b ? -1 : 1))[0] ?? null; },
+    planStep: (planId, stepId) => { const plan = Object.hasOwn(S.plans, planId) ? S.plans[planId] : null, st = plan?.steps.find(x => x.id === stepId); return st ? { planId, stepId, opportunityId: plan.opportunityId, executor: st.executor ?? null, requiresOwnerApproval: Boolean(st.requiresOwnerApproval), gate: st.gate ?? null, unmetGates: unmetGates(plan, st), skill: st.executor ? executorSkill(st.executor) ?? st.executor : null } : null; },
+    planSteps: planId => { const plan = Object.hasOwn(S.plans, planId) ? S.plans[planId] : null; return plan ? plan.steps.map(st => ({ id: st.id, executor: st.executor ?? null, requiresOwnerApproval: Boolean(st.requiresOwnerApproval), dependsOn: st.dependsOn ?? [], skill: st.executor ? executorSkill(st.executor) ?? st.executor : null })) : null; },
+    bindMaster, suspendTask, unsuspendTask, reassignTask, rankPipeline, discoverOpportunity, supplyOwnerInput, discoverBatch, advanceLifecycle, assignExecution, lifecycleOf: id => (Object.hasOwn(S.opps, id) ? lifecycleOf(S.opps[id]) : null), planOpportunity, executeTask, checkTask, reworkTask, resumeTask, recordOutcome, agentViews, systemView, getTask, verify, coordinator, ledger: money, registry, listOpportunities: () => Object.values(S.opps).map(o => ({ ...o })), listTasks: () => Object.values(S.tasks).map(t => ({ ...t, input: undefined })) };
 }

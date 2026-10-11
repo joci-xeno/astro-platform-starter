@@ -7,14 +7,25 @@ import { createWorkforce } from "../atlasz-addons/agent-workforce.mjs";
 import { createDiscoveryEngine, toOpportunityInput } from "../atlasz-addons/global-discovery.mjs";
 import { createEgressPolicy, normaliseEgressPolicy, policySubject } from "../atlasz-addons/egress-policy.mjs";
 import { createPinnedTransport } from "../atlasz-addons/provider-adapters.mjs";
+import { createMasterCoordinator } from "../atlasz-addons/master-coordinator.mjs";
+import { createCampaignManager } from "../atlasz-addons/campaign-manager.mjs";
+import { createGlobalBusinessIntelligence } from "../atlasz-addons/global-business-intelligence.mjs";
 
-export function createAgentsPanel({ stateDir, ownerAuth, sign, isStopped = () => false, approvals = null, memory = null, models = null, discoveryTransport = null } = {}) {
+export function createAgentsPanel({ stateDir, ownerAuth, sign, isStopped = () => false, approvals = null, memory = null, models = null, discoveryTransport = null, modelView = null, approvalsPending = null, hostProbes = {}, nowFn = () => new Date().toISOString() } = {}) {
   const dir = path.join(stateDir, "workforce");
   const auth = { verifyApproval: (...a) => { try { return ownerAuth().verifyApproval(...a); } catch { return { allowed: false, reason: "NO_OWNER_KEY" }; } }, verifyRecorded: (...a) => { try { return ownerAuth().verifyRecorded(...a); } catch { return false; } } };
-  let wf = null, openError = null;
+  let wf = null, openError = null, master = null, campaigns = null, gbi = null;
   const open = () => {
     if (wf) return wf;
-    try { const registry = createAgentRegistry({ dir: path.join(dir, "registry"), ownerAuth: auth, isStopped }); wf = createWorkforce({ dir, registry, approvals, memory: memory?.() ?? null, models, isStopped, evidenceKnown: (h, r) => { try { return discovery()?.hasEvidence(h, r) === true; } catch { return false; } } }); openError = null; }
+    try { const registry = createAgentRegistry({ dir: path.join(dir, "registry"), ownerAuth: auth, isStopped }); wf = createWorkforce({ dir, registry, approvals, memory: memory?.() ?? null, models, isStopped, evidenceKnown: (h, r) => { try { return discovery()?.hasEvidence(h, r) === true; } catch { return false; } } });
+      campaigns = createCampaignManager({ dir: path.join(dir, "campaigns"), coordinator: wf.coordinator, ownerAuth: auth, isStopped });
+      gbi = createGlobalBusinessIntelligence({ workforce: wf, discovery: null, models });
+      master = createMasterCoordinator({ dir: path.join(dir, "master"), workforce: wf, campaigns, isStopped, approvalsPending, models: typeof modelView === "function" ? modelView : null,
+        probes: { CAMPAIGN_MANAGER: async () => { const a = campaigns.auditVerify(); return { ok: a.ok === true, detail: "campaign audit " + a.ok + ", " + campaigns.list().length + " campaign(s), state " + campaigns.loadedFrom() }; },
+          GLOBAL_BUSINESS_INTELLIGENCE: async () => { gbi = createGlobalBusinessIntelligence({ workforce: wf, discovery: discovery(), models }); return gbi.health(); },
+          AI_MODEL_MANAGER: typeof modelView === "function" ? async () => { const v = await modelView(); return { ok: v?.state === "CONNECTED", detail: v?.state === "CONNECTED" ? (v.status?.live ?? 0) + " model(s) LIVE of " + (v.status?.models ?? 0) + " registered; providers " + v.providerLadder.length : "MODEL_REGISTRY_" + (v?.state ?? "UNAVAILABLE") }; } : undefined,
+          MEMORY_KNOWLEDGE_MANAGER: async () => { const m = memory?.(); if (!m) return { ok: false, reason: "MEMORY_GATEWAY_NOT_CONNECTED" }; const a = m.auditVerify(); return { ok: a.ok === true, detail: "agent-memory access audit " + a.ok }; },
+          ...hostProbes } }); openError = null; }
     catch (e) { openError = String(e?.message ?? e).slice(0, 120); wf = null; }
     return wf;
   };
@@ -32,7 +43,8 @@ export function createAgentsPanel({ stateDir, ownerAuth, sign, isStopped = () =>
     const d = discovery(), dv = d ? { state: "CONNECTED", sources: d.sources(), coverage: d.coverage(), runs: d.runLog().slice(-40).reverse().map(e => ({ at: e.at, event: e.event, sourceId: e.data?.sourceId ?? null, agentId: e.data?.agentId ?? null, retrieval: e.data?.retrieval ?? null, items: e.data?.items ?? null, code: e.data?.code ?? null })), integrity: d.verify(), catalogueEvidence: d.catalogueEvidence } : { state: "ERROR", error: engError ?? "DISCOVERY_UNAVAILABLE" };
     const blockers = dv.sources ? dv.sources.filter(x => /^BLOCKED|NEEDS_OWNER|NO_ADAPTER/.test(x.state)).map(x => ({ sourceId: x.id, state: x.state, reason: x.blocker })) : [];
     const hostRequests = dv.sources ? ["remoteok", "find-a-tender-uk", "hn-algolia"].map(id => { const sv = dv.sources.find(z => z.id === id), pol = d.proposedPolicy(id); return { sourceId: id, hosts: sv.hosts, methods: pol.methods, ports: pol.ports, pathPrefixes: pol.pathPrefixes, maxBodyBytes: pol.maxBodyBytes, action: "EGRESS_POLICY_SET", state: sv.state }; }) : [];
-    return { state: "CONNECTED", hostRequests, discovery: dv, discoveryBlockers: blockers, registry: reg, agents, system: sys, stopped: Boolean(isStopped()),
+    let masterView = null; try { masterView = w && master ? masterSnapshot() : null; } catch { masterView = null; }
+    return { state: "CONNECTED", master: masterView, hostRequests, discovery: dv, discoveryBlockers: blockers, registry: reg, agents, system: sys, stopped: Boolean(isStopped()),
       memoryGateway: memory ? "CONNECTED" : "NOT_CONNECTED", modelGateway: models ? "CONNECTED_NO_PAID_USAGE" : "NOT_CONNECTED",
       dependencies: [
         { name: "Neural embedding model", state: "BLOCKED", note: "Stays BLOCKED until the owner approves and a local model is operational; agent memory is lexical only." },
@@ -42,6 +54,9 @@ export function createAgentsPanel({ stateDir, ownerAuth, sign, isStopped = () =>
         { name: "Campaign Manager / Global Business Intelligence", state: "NOT_CONNECTED", note: "Opportunities enter via the discovery engine (owner-approved hosts or labelled operator captures) or the owner; nothing is sent externally." }],
       note: "Estimated opportunity values are never revenue. Verified revenue comes only from the ledger (PAID with external evidence). Simulated results are listed separately." };
   }
+  let masterCache = null;
+  function masterSnapshot() { return masterCache ?? { note: "No supervision pass has run yet in this process.", queue: master.jobs().slice(-60).reverse(), verify: master.verify() }; }
+  async function refreshMaster() { const st = await master.status(); masterCache = { ...st, queue: st.queue }; return masterCache; }
   async function action(a) {
     const w = open(); if (!w) return { ok: false, reason: "WORKFORCE_UNAVAILABLE", detail: openError };
     switch (a.op) {
@@ -75,6 +90,20 @@ export function createAgentsPanel({ stateDir, ownerAuth, sign, isStopped = () =>
       case "ownerInput": return w.supplyOwnerInput(need(a.opportunityId, "OPPORTUNITY_ID"), { requiredSkills: a.requiredSkills, note: a.note }, "OWNER_PANEL");
       case "advance": return w.advanceLifecycle(need(a.opportunityId, "OPPORTUNITY_ID"), need(a.stage, "STAGE"), { evidence: a.evidence ?? null });
       case "assignExecution": return w.assignExecution(need(a.planId, "PLAN_ID"));
+      case "masterStatus": { open(); return { ok: true, ...(await refreshMaster()) }; }
+      case "masterSupervise": { open(); const r = await master.supervise({ autoRecover: a.autoRecover !== false }); await refreshMaster(); return r; }
+      case "masterEnqueue": return master.enqueue({ planId: a.planId, stepId: a.stepId, priority: Number.isInteger(a.priority) ? a.priority : 5, preferredAgent: a.preferredAgent ?? null, note: a.note });
+      case "masterDispatch": { const r = await master.dispatch({ max: 5 }); await refreshMaster(); return r; }
+      case "masterVerify": { const r = await master.verifyPending(); await refreshMaster(); return r; }
+      case "masterSuspend": { const r = await master.suspend(need(a.taskId, "TASK_ID"), String(a.reason ?? "owner").slice(0, 80)); await refreshMaster(); return r; }
+      case "masterResume": { const r = await master.resume(need(a.taskId, "TASK_ID")); await refreshMaster(); return r; }
+      case "masterReassign": { const r = await master.reassign(need(a.taskId, "TASK_ID"), a.toAgent ?? undefined, { ownerPanel: true }); await refreshMaster(); return r; }
+      case "masterCancel": { const r = await master.cancel(need(a.jobId, "JOB_ID")); await refreshMaster(); return r; }
+      case "masterPrioritize": return master.prioritize(need(a.jobId, "JOB_ID"), a.priority);
+      case "masterPlanCampaign": return master.planCampaign({ planId: need(a.planId, "PLAN_ID") });
+      case "masterSyncCampaign": return await master.syncCampaign(need(a.planId, "PLAN_ID"));
+      case "masterSelectModel": return await master.selectModel({ agentId: need(a.agentId, "AGENT_ID"), capability: a.capability ?? "text", maxCostUsd: Number(a.maxCostUsd ?? 0) });
+      case "gbiReport": { open(); gbi = createGlobalBusinessIntelligence({ workforce: wf, discovery: discovery(), models }); return { ok: true, report: gbi.report() }; }
       case "discover": return w.discoverOpportunity(need(a.agentId, "AGENT_ID"), a.input);
       case "plan": return await w.planOpportunity(need(a.opportunityId, "OPPORTUNITY_ID"));
       case "execute": return await w.executeTask(need(a.agentId, "AGENT_ID"), { executor: a.executor, input: a.input, authorization: { type: "OWNER_DIRECTED" }, via: "OWNER_PANEL" });
@@ -88,5 +117,6 @@ export function createAgentsPanel({ stateDir, ownerAuth, sign, isStopped = () =>
       default: throw new Error("UNKNOWN_AGENTS_OP");
     }
   }
-  return { view, action, workforce: open };
+  const superviseNow = async () => { open(); if (!master) return null; const r = await master.supervise(); await refreshMaster(); return r; };
+  return { view, action, workforce: open, superviseNow };
 }

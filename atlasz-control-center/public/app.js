@@ -402,6 +402,25 @@ views.security = async () => {
     table(["Key id", "Components", ""], (x.trustAnchors?.list ?? []).map(a => [a.keyId, a.components.join(", "), h("button", { class: "btn danger", onclick: signed("Remove trust anchor " + a.keyId, { op: "anchorRemove", keyId: a.keyId }, "Signs RELEASE_TRUST_ANCHOR_REMOVE for exactly this key.") }, "Remove (sign)")])),
     h("div", { class: "row" }, h("button", { class: "btn", onclick: async () => { const r = await ask({ title: "Trust a publisher key", text: "Only packages signed by this Ed25519 key, for the listed components, will verify. Signs RELEASE_TRUST_ANCHOR_ADD bound to this exact key and component list.", fields: [{ name: "publicKeyB64", label: "Public key (base64 SPKI)" }, { name: "components", label: "Components, comma separated (or *)" }, PASS], ok: "Sign and add" }); if (r) act("Add trust anchor", { op: "anchorAdd", publicKeyB64: r.publicKeyB64, components: r.components, passphrase: r.passphrase }); } }, "Add trust anchor (sign)"))];
 };
+
+// Master Coordinator section: hierarchy, manager matrix (live probes), supervision findings, job queue with owner controls. Nothing here is decorative: every button is an audited Master operation.
+function masterSection(m, call, act, form) {
+  if (!m) return [h("h3", {}, "Master Coordinator"), note("The Master Coordinator is not available in this process.", "bad")];
+  const hi = m.hierarchy, rep = m.lastReport;
+  const supervise = async () => { try { await call({ op: "masterSupervise" }); toast("Supervision pass done", "ok"); render(); } catch (e) { toast("Supervision failed: " + e.message, "bad"); } };
+  return [h("h3", {}, "Master Coordinator (one coordinator; management layer reports to it)"),
+    m.stopped ? note("Emergency stop or safe mode is active: the Master dispatches nothing.", "bad") : null,
+    note(hi ? hi.owner + "  ->  " + hi.master + "  ->  management layer (" + hi.managementLayer.length + " managers)  ->  " + hi.agents.search + " SEARCH + " + hi.agents.execution + " EXECUTION  ->  " + hi.below : "No hierarchy reported."),
+    h("div", { class: "grid" }, card("Supervision passes", String(m.supervisions ?? 0), rep ? "last " + rep.at : "none yet in this process"), card("Findings", String(rep?.findings?.length ?? 0), "stalled, overloaded, providers, approvals, spend"), card("Queued/active jobs", String((m.queue ?? []).filter(j => ["QUEUED", "WAITING_APPROVAL", "DISPATCHING", "DISPATCHED"].includes(j.state)).length), "Master queue"), card("Audit chain", m.audit?.ok ? "intact" : "BROKEN", "hash-chained, head-pinned")),
+    h("div", {}, h("button", { class: "btn", onclick: supervise }, "Run supervision now"), " ", h("button", { class: "btn", onclick: async () => { try { await call({ op: "masterVerify" }); toast("Verification pass done", "ok"); render(); } catch (e) { toast(e.message, "bad"); } } }, "Verify submitted work")),
+    h("h4", {}, "Managers (live health probes, not interface presence)"), table(["Manager", "Status", "Health", "Missing dependencies"], (m.managers ?? []).map(g => [g.title, pill(g.status), g.health ?? "-", (g.missingDependencies ?? []).join("; ") || "-"])),
+    h("h4", {}, "Supervision findings"), table(["Severity", "Code", "Subject", "Detail"], (rep?.findings ?? []).map(f => [f.severity, f.code, f.subject, f.detail ?? ""])),
+    h("h4", {}, "Master job queue"), table(["Job", "Plan/step", "Priority", "State", "Agent", ""], (m.queue ?? []).map(j => [j.id, (j.planId ?? "-") + "/" + (j.stepId ?? "-"), String(j.priority), pill(j.state), j.agentId ?? j.preferredAgent ?? "-", h("span", {},
+      ["QUEUED", "WAITING_APPROVAL", "DISPATCHED"].includes(j.state) ? h("button", { class: "btn", onclick: () => act("Cancel job", { op: "masterCancel", jobId: j.id }) }, "Cancel") : "",
+      j.taskId ? h("button", { class: "btn", onclick: () => act("Suspend task", { op: "masterSuspend", taskId: j.taskId, reason: "owner suspend" }) }, "Suspend") : "",
+      j.taskId ? h("button", { class: "btn", onclick: () => act("Resume task", { op: "masterResume", taskId: j.taskId }) }, "Resume") : "",
+      j.taskId ? h("button", { class: "btn", onclick: form("Reassign task", [{ name: "toAgent", label: "New agent id" }], r => ({ op: "masterReassign", taskId: j.taskId, toAgent: r.toAgent }), "Reassign") }, "Reassign") : "")]))];
+}
 views.agents30 = async () => {
   const x = await api("/api/agents30");
   if (x.state !== "CONNECTED") return [h("h2", {}, "30 Agents"), note("The workforce could not be read: " + (x.error ?? "unknown error") + ". Nothing was changed.", "bad")];
@@ -437,6 +456,7 @@ views.agents30 = async () => {
       src.state === "READY_APPROVED_HOST" ? h("button", { class: "btn", onclick: form("Run " + src.name, [AG], r => ({ op: "discoverySourceRun", sourceId: src.id, agentId: r.agentId })) }, "Run") : ""])) : null,
     h("h3", {}, "Discovery activity (genuine log)"), table(["When", "Event", "Source", "Agent", "Retrieval", "Items", "Code"], (x.discovery.runs ?? []).map(r => [r.at, r.event, r.sourceId ?? "-", r.agentId ?? "-", r.retrieval ?? "-", String(r.items ?? "-"), r.code ?? "-"])),
     h("h3", {}, "External blockers and unavailable sources"), table(["Source", "State", "Reason"], (x.discoveryBlockers ?? []).map(b => [b.sourceId, b.state, b.reason ?? "-"])),
+    ...masterSection(x.master, call, act, form),
     h("h3", {}, "Qualified opportunities: lifecycle, origin and decisions (estimates are not revenue)"), table(["Opportunity", "Lifecycle", "Retrieval", "Source", "Currency", "Deadline", "Eligible", "Blockers", "Scam level", ""], s.pipeline.filter(o => o.discovery).map(o => [o.title, pill(o.lifecycle), o.retrieval, o.discovery.sourceId, o.discovery.currency ?? "-", o.discovery.deadline ?? "-", String(o.eligible), (o.blockers ?? []).join(", ") || "-", String(o.discovery.fraudLevel ?? "-"),
       o.status === "NEEDS_OWNER_INPUT" ? h("button", { class: "btn", onclick: form("Owner input: skills needed", [{ name: "skills", label: "Required skills, comma separated (e.g. plan.implementation_plan)" }], r => ({ op: "ownerInput", opportunityId: o.id, requiredSkills: r.skills.split(",").map(z => z.trim()).filter(Boolean) })) }, "Provide skills") : o.status === "VERIFIED_QUALIFIED" ? h("button", { class: "btn", onclick: () => act("Plan", { op: "plan", opportunityId: o.id }) }, "Plan") : ""])),
     h("h3", {}, "Priority ranking (evidence-weighted checklist, not a revenue forecast; unknowns score 0)"), table(["Opportunity", "Score /100", "Lifecycle", "Unknown / open points"], s.ranking.map(r => [r.title, r.score === null ? "ineligible" : String(r.score), r.lifecycle ?? "-", r.score === null ? r.reason : (r.unknown.join(", ") || "-")])),
