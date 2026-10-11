@@ -31,7 +31,8 @@ export function createAgentsPanel({ stateDir, ownerAuth, sign, isStopped = () =>
     const sys = w.systemView(), agents = w.agentViews(), reg = w.registry.summary();
     const d = discovery(), dv = d ? { state: "CONNECTED", sources: d.sources(), coverage: d.coverage(), runs: d.runLog().slice(-40).reverse().map(e => ({ at: e.at, event: e.event, sourceId: e.data?.sourceId ?? null, agentId: e.data?.agentId ?? null, retrieval: e.data?.retrieval ?? null, items: e.data?.items ?? null, code: e.data?.code ?? null })), integrity: d.verify(), catalogueEvidence: d.catalogueEvidence } : { state: "ERROR", error: engError ?? "DISCOVERY_UNAVAILABLE" };
     const blockers = dv.sources ? dv.sources.filter(x => /^BLOCKED|NEEDS_OWNER|NO_ADAPTER/.test(x.state)).map(x => ({ sourceId: x.id, state: x.state, reason: x.blocker })) : [];
-    return { state: "CONNECTED", discovery: dv, discoveryBlockers: blockers, registry: reg, agents, system: sys, stopped: Boolean(isStopped()),
+    const hostRequests = dv.sources ? ["remoteok", "find-a-tender-uk", "hn-algolia"].map(id => { const sv = dv.sources.find(z => z.id === id), pol = d.proposedPolicy(id); return { sourceId: id, hosts: sv.hosts, methods: pol.methods, ports: pol.ports, pathPrefixes: pol.pathPrefixes, maxBodyBytes: pol.maxBodyBytes, action: "EGRESS_POLICY_SET", state: sv.state }; }) : [];
+    return { state: "CONNECTED", hostRequests, discovery: dv, discoveryBlockers: blockers, registry: reg, agents, system: sys, stopped: Boolean(isStopped()),
       memoryGateway: memory ? "CONNECTED" : "NOT_CONNECTED", modelGateway: models ? "CONNECTED_NO_PAID_USAGE" : "NOT_CONNECTED",
       dependencies: [
         { name: "Neural embedding model", state: "BLOCKED", note: "Stays BLOCKED until the owner approves and a local model is operational; agent memory is lexical only." },
@@ -64,7 +65,12 @@ export function createAgentsPanel({ stateDir, ownerAuth, sign, isStopped = () =>
       case "discoveryApproveHost": {
         const d = discovery(); if (!d) return { ok: false, reason: "DISCOVERY_UNAVAILABLE", detail: engError }; const pol = d.proposedPolicy(need(a.sourceId, "SOURCE_ID")); if (!pol || pol.ok === false) return pol ?? { ok: false, reason: "UNKNOWN_SOURCE" };
         const norm = normaliseEgressPolicy(pol).policy; if (!a.passphrase) return { ok: true, needsSignature: true, proposedPolicy: norm, action: "EGRESS_POLICY_SET" };
-        return d._egress.setPolicy(pol, { ownerApproval: sign(a.passphrase, "EGRESS_POLICY_SET", policySubject(norm)) });
+        try { const r = d._egress.setPolicy(pol, { ownerApproval: sign(a.passphrase, "EGRESS_POLICY_SET", policySubject(norm)) }); return { ok: true, providerId: r.providerId }; } catch (e) { return { ok: false, reason: String(e?.message ?? e).slice(0, 80) }; }
+      }
+      case "discoveryApproveHosts": {
+        const d = discovery(); if (!d) return { ok: false, reason: "DISCOVERY_UNAVAILABLE", detail: engError }; const ids = Array.isArray(a.sourceIds) ? a.sourceIds.slice(0, 5) : []; if (!ids.length) return { ok: false, reason: "SOURCE_IDS_REQUIRED" }; if (!a.passphrase) return { ok: false, reason: "PASSPHRASE_REQUIRED" };
+        const out = []; for (const id of ids) { const pol = d.proposedPolicy(id); if (!pol || pol.ok === false) { out.push({ sourceId: id, ok: false, reason: "UNKNOWN_SOURCE" }); continue; } try { const r = d._egress.setPolicy(pol, { ownerApproval: sign(a.passphrase, "EGRESS_POLICY_SET", policySubject(normaliseEgressPolicy(pol).policy)) }); out.push({ sourceId: id, ok: Boolean(r?.providerId), reason: null }); } catch (e) { out.push({ sourceId: id, ok: false, reason: String(e?.message ?? e).slice(0, 80) }); } }
+        return { ok: out.every(x => x.ok), results: out };
       }
       case "ownerInput": return w.supplyOwnerInput(need(a.opportunityId, "OPPORTUNITY_ID"), { requiredSkills: a.requiredSkills, note: a.note }, "OWNER_PANEL");
       case "advance": return w.advanceLifecycle(need(a.opportunityId, "OPPORTUNITY_ID"), need(a.stage, "STAGE"), { evidence: a.evidence ?? null });

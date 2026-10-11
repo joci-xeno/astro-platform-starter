@@ -45,3 +45,19 @@ test("global discovery over HTTP: nothing connected without owner host approval;
     v = await c.view(); assert.equal(v.system.discoverySummary.operatorToolRetrieved, items.length); assert.ok(v.system.deliverables.some(x => x.status === "VERIFIED")); assert.equal(v.system.integrity.events, true); assert.equal(v.discovery.integrity.ok, true);
   } finally { await c.stop(); rm(base); }
 });
+
+test("the three first hosts: the request is shown exactly, a wrong passphrase or no owner key approves nothing, the owner's signature makes them READY (and still not 'connected')", async () => {
+  const base = tmp("cc30h-"), stateDir = path.join(base, "s"), configDir = path.join(base, "c"); fs.mkdirSync(stateDir, { recursive: true });
+  const c = await mk(base, stateDir, configDir);
+  try {
+    let v = await c.view(); assert.deepEqual(v.hostRequests.map(r => r.sourceId), ["remoteok", "find-a-tender-uk", "hn-algolia"]);
+    assert.deepEqual(v.hostRequests.map(r => r.hosts[0]), ["remoteok.com", "www.find-tender.service.gov.uk", "hn.algolia.com"]);
+    assert.ok(v.hostRequests.every(r => r.methods.join() === "GET" && r.ports.join() === "443" && r.state === "NEEDS_OWNER_HOST_APPROVAL"));
+    const ids = v.hostRequests.map(r => r.sourceId);
+    const noKey = await c.act({ op: "discoveryApproveHosts", sourceIds: ids, passphrase: PW }); assert.notEqual(noKey.result?.ok, true); assert.ok((await c.view()).hostRequests.every(r => r.state === "NEEDS_OWNER_HOST_APPROVAL"));
+    assert.equal((await c.post("/api/owner-key", { passphrase: PW })).status, 200);
+    const bad = await c.act({ op: "discoveryApproveHosts", sourceIds: ids, passphrase: "wrong wrong wrong" }); assert.notEqual(bad.result?.ok, true); assert.ok((await c.view()).hostRequests.every(r => r.state === "NEEDS_OWNER_HOST_APPROVAL"));
+    const ok = await c.act({ op: "discoveryApproveHosts", sourceIds: ids, passphrase: PW }); assert.equal(ok.result?.ok, true, JSON.stringify(ok));
+    v = await c.view(); assert.ok(v.hostRequests.every(r => r.state === "READY_APPROVED_HOST")); assert.ok(v.discovery.sources.every(s => s.genuinelyConnected === false));
+  } finally { await c.stop(); rm(base); }
+});

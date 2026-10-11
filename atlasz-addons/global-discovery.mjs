@@ -21,12 +21,12 @@ const S = (id, name, kind, regions, languages, hosts, access, o = {}) => Object.
 export const SOURCE_CATALOGUE = Object.freeze([
   S("find-a-tender-uk", "Find a Tender (UK)", "TENDER", ["Europe"], ["en"], ["www.find-tender.service.gov.uk"], "PUBLIC", { jurisdiction: "GB", currencyHint: "GBP", format: "OCDS_JSON", url: "https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages", notes: "Public procurement notices; bidding needs a supplier registration (owner action)." }),
   S("contracts-finder-uk", "Contracts Finder (UK)", "TENDER", ["Europe"], ["en"], ["www.contractsfinder.service.gov.uk"], "PUBLIC", { jurisdiction: "GB", currencyHint: "GBP", format: "OCDS_JSON", url: "https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search", notes: "Lower-value public contracts." }),
-  S("ted-eu", "TED - Tenders Electronic Daily (EU)", "TENDER", ["Europe"], ["en", "fr", "de", "es", "it", "pl", "nl", "pt", "el", "sv", "cs", "hu", "ro", "bg", "da", "fi", "sk", "hr", "lt", "lv", "sl", "et", "ga", "mt"], ["api.ted.europa.eu"], "PUBLIC", { jurisdiction: "EU", format: null, notes: "Notices are published in the buyer's language; keep original text." }),
-  S("canadabuys", "CanadaBuys (Canada)", "TENDER", ["North America"], ["en", "fr"], ["canadabuys.canada.ca"], "PUBLIC", { jurisdiction: "CA", currencyHint: "CAD", format: null, notes: "Open-data tender notices." }),
+  S("ted-eu", "TED - Tenders Electronic Daily (EU)", "TENDER", ["Europe"], ["en", "fr", "de", "es", "it", "pl", "nl", "pt", "el", "sv", "cs", "hu", "ro", "bg", "da", "fi", "sk", "hr", "lt", "lv", "sl", "et", "ga", "mt"], ["api.ted.europa.eu"], "PUBLIC", { jurisdiction: "EU", format: null, notes: "NO_ADAPTER: the TED v3 search API is a POST query; this engine is GET-only by owner policy (EGRESS methods [GET]). Needs a reviewed POST extension and a separate owner approval. Notices are published in the buyer's language; keep original text." }),
+  S("canadabuys", "CanadaBuys (Canada)", "TENDER", ["North America"], ["en", "fr"], ["canadabuys.canada.ca"], "PUBLIC", { jurisdiction: "CA", currencyHint: "CAD", format: null, notes: "NO_ADAPTER: open-data CSV column layout not yet verified from a real file (the operator fetch tool returned binary); parser not written to avoid guessing." }),
   S("sam-gov", "SAM.gov (United States federal)", "TENDER", ["North America"], ["en"], ["api.sam.gov"], "KEY_REQUIRED", { jurisdiction: "US", currencyHint: "USD", blockedReason: "Needs a free API key tied to an account registration: owner action." }),
   S("austender", "AusTender (Australia)", "TENDER", ["Oceania"], ["en"], ["www.tenders.gov.au"], "PUBLIC", { jurisdiction: "AU", currencyHint: "AUD", format: "RSS", notes: "Federal approaches to market." }),
   S("nz-gets", "GETS (New Zealand)", "TENDER", ["Oceania"], ["en"], ["www.gets.govt.nz"], "PUBLIC", { jurisdiction: "NZ", currencyHint: "NZD", format: "RSS", notes: "Government electronic tenders service." }),
-  S("world-bank-procurement", "World Bank procurement notices", "TENDER", ["Africa", "Asia", "South America", "Middle East", "Europe"], ["en", "fr", "es"], ["search.worldbank.org"], "PUBLIC", { jurisdiction: "GLOBAL", format: null, notes: "Notices for bank-financed projects in many countries; eligibility rules per notice." }),
+  S("world-bank-procurement", "World Bank procurement notices", "TENDER", ["Africa", "Asia", "South America", "Middle East", "Europe"], ["en", "fr", "es"], ["search.worldbank.org"], "PUBLIC", { jurisdiction: "GLOBAL", format: "WB_JSON", url: "https://search.worldbank.org/api/v2/procnotices?format=json&rows=50&srt=noticedate&order=desc", notes: "Only consulting (CS) and non-consulting (NC) notices are kept; goods and works are skipped. Notices for bank-financed projects in many countries; eligibility rules per notice." }),
   S("ungm", "UN Global Marketplace", "TENDER", ["Africa", "Asia", "South America", "Middle East", "Europe", "North America", "Oceania"], ["en", "fr", "es"], ["www.ungm.org"], "LOGIN_REQUIRED", { blockedReason: "Vendor registration is required for most notices: owner action." }),
   S("etenders-za", "eTenders (South Africa)", "TENDER", ["Africa"], ["en"], ["www.etenders.gov.za"], "PUBLIC", { jurisdiction: "ZA", currencyHint: "ZAR", format: null, notes: "No parser yet: NO_ADAPTER." }),
   S("etimad-sa", "Etimad (Saudi Arabia)", "TENDER", ["Middle East"], ["ar", "en"], ["tenders.etimad.sa"], "LOGIN_REQUIRED", { jurisdiction: "SA", currencyHint: "SAR", blockedReason: "Registration and local commercial registration are typically required: owner action." }),
@@ -88,6 +88,16 @@ export const PARSERS = Object.freeze({
       const link = g("link") ?? (m[0].match(/<link[^>\n]{0,400}?href="([^"]{1,500})"/i)?.[1] ?? null); if (!link || !g("title")) continue;
       items.push(base(src, { url: link, title: g("title"), description: g("description") ?? g("summary") ?? g("content"), publishedAt: isoOrNull(g("pubDate") ?? g("published") ?? g("updated")), kindHint: src.kind })); }
     return { ok: true, items };
+  },
+  WB_JSON(src, text) {
+    let j; try { j = JSON.parse(text); } catch { return R("PARSE_ERROR"); } const list = Array.isArray(j?.procnotices) ? j.procnotices : []; if (!list.length && !Array.isArray(j?.procnotices)) return R("PARSE_ERROR");
+    const items = []; let skipped = 0;
+    for (const r of list.slice(0, DISCOVERY_LIMITS.maxItems)) {
+      if (!r || typeof r !== "object" || !/^OP\d{5,12}$/.test(String(r.id ?? "")) || !r.bid_description) continue;
+      if (!/invitation|request|expression|call for/i.test(String(r.notice_type ?? "")) || /award|amend|cancel|extension|addend/i.test(String(r.notice_type ?? "")) || !/^(CS|NC)$/.test(String(r.procurement_group ?? ""))) { skipped++; continue; }
+      items.push(base(src, { url: "https://projects.worldbank.org/en/projects-operations/procurement-detail/" + r.id, title: r.bid_description, description: [r.project_name, r.notice_type, r.procurement_method_name, stripTags(r.notice_text)].filter(Boolean).join(" | "), language: /french/i.test(r.notice_lang_name ?? "") ? "fr" : /spanish/i.test(r.notice_lang_name ?? "") ? "es" : "en", publishedAt: isoOrNull(r.noticedate), deadline: isoOrNull(r.submission_deadline_date), jurisdiction: "WB", buyer: r.contact_organization ?? null, tags: [r.project_ctry_name, r.procurement_group].filter(Boolean), kindHint: "TENDER" }));
+    }
+    return { ok: true, items, skipped };
   },
   ALGOLIA_HN_JSON(src, text) {
     let j; try { j = JSON.parse(text); } catch { return R("PARSE_ERROR"); } const items = [];

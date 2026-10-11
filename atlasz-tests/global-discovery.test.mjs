@@ -92,3 +92,15 @@ test("hardening: hostile markup is linear-time; malformed rows do not throw; use
     assert.equal(c.ok, true); assert.equal(e.hasEvidence(c.evidenceSha256, "OPERATOR_TOOL"), true); assert.equal(e.hasEvidence(c.evidenceSha256, "CONNECTOR"), false); assert.equal(e.hasEvidence("a".repeat(64), "OPERATOR_TOOL"), false);
   } finally { (await import("../atlasz-tests/helpers.mjs")).rm(d); }
 });
+
+test("World Bank parser (shape taken from a real response): only open consulting/non-consulting invitations; awards and goods skipped; unknown shape refused", () => {
+  const src = SOURCE_CATALOGUE.find(s => s.id === "world-bank-procurement");
+  const j = { procnotices: [
+    { id: "OP00468538", notice_type: "Invitation for Bids", noticedate: "29-Sep-2026", notice_lang_name: "English", submission_deadline_date: "2026-10-31T00:00:00Z", project_ctry_name: "Somalia", project_name: "Food Systems Resilience", bid_description: "Vehicles", procurement_group: "GO", contact_organization: "Ministry" },
+    { id: "OP00471868", notice_type: "Contract Award", noticedate: "29-Sep-2026", project_ctry_name: "Rwanda", bid_description: "Feasibility studies", procurement_group: "CS" },
+    { id: "OP00471999", notice_type: "Request for Expression of Interest", noticedate: "29-Sep-2026", submission_deadline_date: "2026-11-15T00:00:00Z", project_ctry_name: "Kenya", project_name: "Digital Public Services", bid_description: "Consultancy to develop a data platform and APIs", procurement_group: "CS", notice_text: "<p>Develop <b>software</b></p>" }] };
+  const r = PARSERS.WB_JSON(src, JSON.stringify(j)); assert.equal(r.ok, true); assert.equal(r.items.length, 1); assert.equal(r.skipped, 2);
+  assert.equal(r.items[0].url, "https://projects.worldbank.org/en/projects-operations/procurement-detail/OP00471999"); assert.equal(r.items[0].deadline, "2026-11-15T00:00:00.000Z"); assert.ok(r.items[0].tags.includes("Kenya"));
+  assert.equal(PARSERS.WB_JSON(src, "{}").reason, "PARSE_ERROR"); assert.equal(PARSERS.WB_JSON(src, "nope").reason, "PARSE_ERROR");
+  assert.equal(SOURCE_CATALOGUE.find(s => s.id === "ted-eu").format, null);
+});

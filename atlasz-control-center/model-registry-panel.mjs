@@ -52,12 +52,14 @@ export function createModelRegistryPanel({ stateDir, ownerAuth, sign, liveStatus
   function view() {
     const r = open(), st = r.status();
     const c = chain(); c.bridge.syncGateway();
-    return { state: "CONNECTED", routing: c.bridge.status(), egressProposals: c.pe.proposals().map(({ policy, ...p }) => ({ ...p, hosts: policy?.hosts ?? [] })), gatewayHealth: c.gw.health(), status: st, providers: r.listProviders(), models: r.listModels(), assignments: r.assignments(), roleDefaults: r.roleDefaults(), agents: r.agents(), snapshots: r.snapshots().slice(-10),
+    const ladder = r.listProviders().map(p => { const live = r.listModels().some(m => m.providerId === p.id && m.live === true), adapter = adapterFor(r, p.id) !== null; return { id: p.id, name: p.displayName ?? p.id, kind: p.kind, registered: true, adapterImplemented: adapter, credentialsConfigured: p.credentialConfigured === true, authenticatedLiveTestPassed: live, productionReady: false, stage: live ? "LIVE_PROBE_PASSED" : p.credentialConfigured === true ? "CREDENTIALS_CONFIGURED" : adapter ? "ADAPTER_IMPLEMENTED" : "REGISTERED", note: "productionReady stays false until you confirm it; a provider is never LIVE without its own passing probe." }; });
+    return { state: "CONNECTED", usage: r.billing.usage(), providerLadder: ladder, routing: c.bridge.status(), egressProposals: c.pe.proposals().map(({ policy, ...p }) => ({ ...p, hosts: policy?.hosts ?? [] })), gatewayHealth: c.gw.health(), status: st, providers: r.listProviders(), models: r.listModels(), assignments: r.assignments(), roleDefaults: r.roleDefaults(), agents: r.agents(), snapshots: r.snapshots().slice(-10),
       note: "Configuration only. A model is LIVE only after the gateway's own passing probe; no provider adapter is attached to this app, so nothing here is LIVE. Enabling a cloud or paid model needs your signed approval; enabling a free local model changes configuration only and downloads nothing." };
   }
   async function action({ op, ...a } = {}) {
     const r = open();
     switch (op) {
+      case "setSpendCap": { const usd = Number(a.usd); if (!Number.isFinite(usd)) return { ok: false, reason: "SPEND_CAP_INVALID" }; need(a.passphrase, "PASSPHRASE"); return r.billing.setSpendCap(usd, { approval: sign(a.passphrase, "MODEL_SPEND_CAP_SET", r.billing.spendCapSubject(usd)) }); }
       case "seed": return { ok: true, added: r.seedDefaults() };
       case "addProvider": return r.addProvider(a.provider ?? {});
       case "addModel": return r.addModel(a.model ?? {});

@@ -39,3 +39,21 @@ Status words follow the standing semantics (IMPLEMENTED ≠ CONNECTED ≠ TESTED
 | Memory write (project-scoped per opportunity) | IMPLEMENTED | retrieval by executors still not wired; neural retrieval BLOCKED |
 | Control Center: sources, regions, activity, blockers, lifecycle, deliverables | IMPLEMENTED, TESTED | 30 Agents view |
 | Outbound proposals / applications / messages | NOT DONE by design | drafts only: "PROPOSAL DRAFT - NOT SENT" |
+
+## Batch 2 (2026-10-11): host approval request, World Bank adapter, memory retrieval, costs/usage, payment intake
+
+| Item | Status | Evidence / blocker |
+|---|---|---|
+| First three hosts (remoteok.com, www.find-tender.service.gov.uk, hn.algolia.com; HTTPS 443 GET only) | PREPARED; **awaiting owner signature** | Control Center → 30 Agents → "Approval request"; one passphrase signs three exact `EGRESS_POLICY_SET` subjects; verified by test that wrong passphrase / no key approves nothing |
+| World Bank procurement adapter (WB_JSON) | IMPLEMENTED, TESTED on a fixture shaped from a real response | not CONNECTED until host approval + a logged run; only CS/NC open notices kept |
+| TED (EU) | NO_ADAPTER | search API is POST; engine is GET-only by policy |
+| CanadaBuys | NO_ADAPTER | open-data CSV layout not verified from a real file |
+| SAM.gov, Freelancer | BLOCKED (API key) / NOT CONFIGURED | key in vault + owner approval needed |
+| Execution agents retrieve project memory | IMPLEMENTED, TESTED | coordinator-level `contextForProject`; same-opportunity notes only; fenced as data; stored in task input so the checker recomputes identically |
+| Forged retrieval labels | FIXED | checker requires the evidence hash in the discovery log (`hasEvidence`) |
+| Costs/Usage + owner-signed monthly cap | IMPLEMENTED, TESTED | `billing.usage()`, `setSpendCap` (`MODEL_SPEND_CAP_SET`, exact amount bound; tampered cap fails closed). No paid call has ever been made. |
+| Provider readiness ladder | IMPLEMENTED | registered / adapter / credentials / live test / production; productionReady always false until owner confirms |
+| Opportunity ranking | IMPLEMENTED, TESTED | evidence-weighted checklist; unknowns score 0; not a forecast |
+| Payment package intake (Stripe handoff) | IMPLEMENTED, TESTED | `docs/STRIPE_HANDOFF.md`; no package received |
+| Campaign Manager | NOT CONNECTED | it is a development-campaign layer (tokens/time budget, no money); mapping commercial plans onto it is deferred |
+| Global Business Intelligence | MISSING | no such module exists in the repo; ranking + coverage views are the first part |

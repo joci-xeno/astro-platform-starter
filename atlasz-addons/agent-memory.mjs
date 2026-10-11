@@ -105,7 +105,8 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
     const proj = t.filter(x => x.startsWith("proj-")); if (proj.length) { const g = grants(id); if (g !== "*" && !proj.some(x => g.has(x.slice(5)))) return false; }
     return true;
   };
-  const readerFor = id => ({ id, clearance: clearanceOf(id), allow: r => canSeeNote(id, r) });
+  // extraProject: set ONLY by the coordinator-level contextForProject (never by an agent handle): lets this one task read notes of exactly that one project.
+  const readerFor = (id, extraProject = null) => ({ id, clearance: clearanceOf(id), allow: r => canSeeNote(id, r) || (extraProject !== null && tagsOf(r).filter(x => x.startsWith("proj-")).every(x => x === "proj-" + extraProject) && tagsOf(r).some(x => x === "proj-" + extraProject) && !tagsOf(r).some(x => x.startsWith("agent-") && x !== "agent-" + id)) });
   const OWNER = Object.freeze({ id: "OWNER", clearance: "CONFIDENTIAL", allow: () => true });
 
   function check(agentId, op) {
@@ -143,9 +144,9 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
     a.notes++; a.days[day()] = (a.days[day()] ?? 0) + 1; a.ops.remember++; a.lastAt = nowFn(); log("MEMORY_REMEMBERED", { agent: agentId, id: w.id, scope, kind, classification, project: scope === "project" ? project : undefined }); save();
     return { ok: true, id: w.id, scope, kind, provenance: "UNVERIFIED_AGENT_NOTE" };
   }
-  async function recall(agentId, { query, limit = 5, taskId = null } = {}) {
+  async function recall(agentId, { query, limit = 5, taskId = null, extraProject = null } = {}) {
     const c = check(agentId, "read"); if (c) return c; const a = A(agentId);
-    const args = { query, reader: readerFor(agentId), limit: Math.max(1, Math.min(10, Number.isInteger(limit) ? limit : 5)) };
+    const args = { query, reader: readerFor(agentId, extraProject), limit: Math.max(1, Math.min(10, Number.isInteger(limit) ? limit : 5)) };
     const r = typeof store.searchAsync === "function" ? await store.searchAsync(args) : store.search(args);
     a.ops.recall++; a.lastAt = nowFn();
     if (!r.ok) { logLimited("MEMORY_RECALL_FAILED", agentId, { agent: agentId, reason: r.reason }); save(); return r; }
@@ -154,10 +155,10 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
     return { ok: true, untrusted: true, backend: r.backend, retrieval: r.retrieval, semantic: r.semantic, results: out };
   }
   /** The memory block a task puts in front of an agent: bounded, fenced, labelled as data. Only for a task the agent takes part in (when a participation check is wired). */
-  async function contextFor(agentId, { taskId, query, maxChars = LIMITS.contextChars } = {}) {
+  async function contextFor(agentId, { taskId, query, maxChars = LIMITS.contextChars, extraProject = null, coordinatorChecked = false } = {}) {
     if (typeof taskId !== "string" || !TASK.test(taskId)) return fail("TASK_REQUIRED");
-    { let ok = false; try { ok = typeof isParticipant === "function" && isParticipant(taskId, agentId) === true; } catch { ok = false; } if (!ok) { logLimited("MEMORY_CONTEXT_REFUSED", agentId, { agent: agentId, task: taskId }); save(); return fail("NOT_A_PARTICIPANT_OF_TASK"); } }
-    const r = await recall(agentId, { query, limit: LIMITS.contextNotes, taskId }); if (!r.ok) return r;
+    { let ok = coordinatorChecked === true; try { ok = ok || (typeof isParticipant === "function" && isParticipant(taskId, agentId) === true); } catch { ok = false; } if (!ok) { logLimited("MEMORY_CONTEXT_REFUSED", agentId, { agent: agentId, task: taskId }); save(); return fail("NOT_A_PARTICIPANT_OF_TASK"); } }
+    const r = await recall(agentId, { query, limit: LIMITS.contextNotes, taskId, extraProject }); if (!r.ok) return r;
     const budget = Math.max(200, Math.min(LIMITS.contextChars, Number.isInteger(maxChars) ? maxChars : LIMITS.contextChars)); let used = 0; const parts = [], ids = [];
     for (const x of r.results) { const piece = "[" + x.id + "] " + x.title + "\n" + x.passage; if (used + piece.length > budget) break; parts.push(piece); ids.push(x.id); used += piece.length; }
     A(agentId).ops.context++; save();
@@ -232,11 +233,15 @@ export function createAgentMemory({ store, tenantId = "JOCI", dir, ownerAuth = n
     const v = store.verify(), st = store.status();
     return { ok: true, tenantId, store: { backend: st.backend, notes: st.notes, quarantined: st.quarantined, trashed: st.trashed, consistent: v.consistent, externallyEdited: v.externallyEdited, classificationMismatch: v.classificationMismatch, unreadable: v.unreadable, auditOk: v.auditOk }, accessAuditOk: auditNow().ok, agentStateLoadedFrom: loadedFrom, refusedWrites: S.refused, recentErrors: S.errors.slice(-10), pendingForgetRequests: Object.keys(S.forgets).length };
   }
+  // The agent-facing handle forwards ONLY these options: extraProject / coordinatorChecked are coordinator-internal and can never be supplied by an agent.
+  const pickPublic = o => { const x = o && typeof o === "object" ? o : {}; const out = {}; for (const k of ["query", "limit", "taskId", "maxChars"]) if (Object.hasOwn(x, k)) out[k] = x[k]; return out; };
   const handles = new Map();
   function forAgent(agentId) {
     if (!rosterOk(agentId)) return null; if (handles.has(agentId)) return handles.get(agentId);
-    const h = Object.freeze({ id: agentId, tenantId, remember: o => remember(agentId, o ?? {}), recall: o => recall(agentId, o ?? {}), contextFor: o => contextFor(agentId, o ?? {}), read: id => read(agentId, id), list: o => list(agentId, o ?? {}), requestForget: (id, why) => requestForget(agentId, id, why), activity: () => activity(agentId) });
+    const h = Object.freeze({ id: agentId, tenantId, remember: o => remember(agentId, o ?? {}), recall: o => recall(agentId, pickPublic(o)), contextFor: o => contextFor(agentId, pickPublic(o)), read: id => read(agentId, id), list: o => list(agentId, o ?? {}), requestForget: (id, why) => requestForget(agentId, id, why), activity: () => activity(agentId) });
     handles.set(agentId, h); return h;
   }
-  return { forAgent, recordVerifiedWork, owner, diagnose, flush: flushSuppressed, auditVerify: () => auditNow(), tenantId, policy: P, limits: LIMITS };
+  /** Coordinator-level: context for a task that belongs to ONE project. Participation is still checked; only that project's notes are added to what the agent may already see. */
+  function contextForProject(agentId, { taskId, query, project, maxChars } = {}) { if (typeof project !== "string" || !PROJECT.test(project)) return Promise.resolve(fail("PROJECT_INVALID")); return contextFor(agentId, { taskId, query, maxChars, extraProject: project, coordinatorChecked: true }); }
+  return { contextForProject, forAgent, recordVerifiedWork, owner, diagnose, flush: flushSuppressed, auditVerify: () => auditNow(), tenantId, policy: P, limits: LIMITS };
 }

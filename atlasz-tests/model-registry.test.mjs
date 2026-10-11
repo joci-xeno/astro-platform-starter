@@ -200,3 +200,27 @@ test("a hand-edited model that claims to be a free local model but points at a c
     assert.match(r2.resolve({ agentId: ROSTER[0] }).reason ?? "", /REGISTRY_UNTRUSTED|^$/);
   } finally { t.done(); }
 });
+
+test("costs/usage and the owner-signed monthly spending cap: usage is read from the billing guard; the cap needs the exact signature; reached/tampered caps block paid calls", () => {
+  const t = mk({ now: () => "2026-10-11T20:00:00.000Z" }); try {
+    const b = t.reg.billing; assert.equal(b.usage().totalUsd, 0); assert.equal(b.usage().cap.usd, null);
+    b.begin("req-20261011-0001", "gpt-x"); b.settle("req-20261011-0001", { ok: true, costUsd: 0.4 }); b.begin("req-20261011-0002", "gpt-x"); b.settle("req-20261011-0002", { ok: false, costUsd: 0.1 });
+    let u = b.usage(); assert.equal(u.totalUsd, 0.5); assert.equal(u.billedRequests, 2); assert.equal(u.failedButBilled, 1); assert.equal(u.byModel["gpt-x"], 0.5);
+    assert.equal(b.setSpendCap(1).reason.startsWith("OWNER_APPROVAL_REQUIRED"), true, "unsigned"); assert.equal(b.setSpendCap(1, { approval: ap("MODEL_SPEND_CAP_SET", b.spendCapSubject(2)) }).ok, false, "signature bound to the exact amount");
+    assert.equal(b.setSpendCap(-1).reason, "SPEND_CAP_INVALID"); assert.equal(b.setSpendCap(1, { approval: ap("MODEL_SPEND_CAP_SET", b.spendCapSubject(1)) }).ok, true);
+    assert.equal(b.usage().cap.remainingUsd, 0.5); assert.equal(b.begin("req-20261011-0003", "gpt-x").ok, true); b.settle("req-20261011-0003", { ok: true, costUsd: 0.6 });
+    assert.equal(b.begin("req-20261011-0004", "gpt-x").reason, "SPEND_CAP_REACHED");
+    fs.writeFileSync(path.join(t.dir, "spend-cap.json"), JSON.stringify({ usd: 1e6, approval: "forged", period: "MONTH" })); assert.equal(b.spendCap().valid, false); assert.equal(b.begin("req-20261011-0005", "llama-local").reason, "SPEND_CAP_REACHED", "a tampered cap fails closed");
+    const reopened = t.open({ now: () => "2026-10-11T20:00:00.000Z" }); assert.equal(reopened.billing.usage().totalUsd, 1.1);
+  } finally { t.done(); }
+});
+
+test("spend cap: open requests reserve against the cap (no parallel overshoot); a deleted cap file after being set fails closed; the signature binds the exact amount", () => {
+  const t = mk({ now: () => "2026-10-11T20:00:00.000Z" }); try {
+    const b = t.reg.billing; assert.equal(b.setSpendCap(1, { approval: ap("MODEL_SPEND_CAP_SET", b.spendCapSubject(1)) }).ok, true);
+    assert.equal(b.begin("req-20261011-1001", "gpt-x", { estimateUsd: 0.6 }).ok, true); assert.equal(b.begin("req-20261011-1002", "gpt-x", { estimateUsd: 0.6 }).reason, "SPEND_CAP_REACHED", "0.6 reserved + 0.6 > 1");
+    assert.equal(b.begin("req-20261011-1003", "gpt-x", { estimateUsd: 0.3 }).ok, true); assert.equal(b.begin("req-20261011-1004", "gpt-x").ok, true, "no estimate = reserve the whole remainder (0.1)"); assert.equal(b.begin("req-20261011-1006", "gpt-x").reason, "SPEND_CAP_REACHED", "nothing left to reserve");
+    assert.equal(b.setSpendCap(1.004, { approval: ap("MODEL_SPEND_CAP_SET", b.spendCapSubject(1)) }).ok, false, "1.004 is not 1");
+    fs.rmSync(path.join(t.dir, "spend-cap.json")); assert.equal(b.spendCap().valid, false); assert.equal(b.spendCap().reason, "SPEND_CAP_FILE_MISSING_AFTER_BEING_SET"); assert.equal(b.begin("req-20261011-1005", "llama-local").reason, "SPEND_CAP_REACHED");
+  } finally { t.done(); }
+});

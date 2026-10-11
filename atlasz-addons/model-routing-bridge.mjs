@@ -108,7 +108,7 @@ export function createModelRoutingBridge({ registry, gateway, providerEgress, ad
     for (const c of plan.candidates) {
       const m = registry.getModel(c.id); if (!m) continue;
       const paid = needsApproval(m);
-      if (paid) { const b = registry.billing.begin(rk, c.id); if (!b.ok) { stats.billedBlocked++; tried.push({ id: c.id, reason: b.reason }); if (b.reason === "DUPLICATE_BILLING_BLOCKED") return R("DUPLICATE_BILLING_BLOCKED", { requestKey: rk, tried }); continue; } }
+      if (paid) { const b = registry.billing.begin(rk, c.id, { estimateUsd: c.estimateUsd }); if (!b.ok) { stats.billedBlocked++; tried.push({ id: c.id, reason: b.reason }); if (b.reason === "DUPLICATE_BILLING_BLOCKED") return R("DUPLICATE_BILLING_BLOCKED", { requestKey: rk, tried }); continue; } }
       const r = await guarded(m, prompt);
       if (!r.ok) {
         // A paid request that may already have reached the provider is NOT a zero-cost failure: it is booked at its worst-case estimate and blocks failover under this key.

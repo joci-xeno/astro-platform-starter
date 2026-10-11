@@ -195,6 +195,10 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
     } else return R("AUTHORIZATION_TYPE_INVALID");
     if (!registry.get(agentId).capabilityProfile.skills.includes(executorSkill(executor) ?? executor)) return R("AGENT_LACKS_SKILL");
     if (OPP_EXECUTORS.has(executor) && (input === undefined || input === null) && opportunityId) { const snap = oppSnapshot(opportunityId); if (!snap) return R("UNKNOWN_OPPORTUNITY"); input = snap; }
+    if (OPP_EXECUTORS.has(executor) && opportunityId && input && typeof input === "object" && input.priorWork === undefined) {
+      // Reuse approved memory of THIS opportunity's project only (coordinator-level grant; participation checked). Retrieved text is data and is stored in the task input so the checker recomputes identically.
+      try { const proj = String(opportunityId).replace(/[^a-z0-9]/gi, "").toLowerCase().slice(0, 23), tid = "pre-" + opportunityId.replace(/[^A-Za-z0-9]/g, "").slice(0, 20); const m = memory?.contextForProject ? await memory.contextForProject(agentId, { taskId: tid, query: (S.opps[opportunityId]?.title ?? "") + " " + executor, project: proj, maxChars: 1500 }) : null; if (m?.ok && m.ids.length) input = { ...input, priorWork: { ids: m.ids.slice(0, 10), text: m.text.slice(0, 3900) } }; } catch { /* memory is a second line of support */ }
+    }
     const bad = ex.validate?.(input); if (bad) return R(bad);
     if (opportunityId && !Object.hasOwn(S.opps, opportunityId)) return R("UNKNOWN_OPPORTUNITY");
     if (capacity(agentId) <= 0) return R("AGENT_AT_CONCURRENCY_LIMIT");
@@ -328,7 +332,7 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
     // memory of VERIFIED work is written by the coordinator hook when a memory gateway is connected (see setOnVerified below)
   }
   coordinator.setOnVerified(({ id, verifier }) => {
-    try { const t = S.tasks[id]; if (!t || !memory) return; const summary = "Task " + id + " (" + t.kind + ") by " + t.agentId + " was accepted by independent checker " + verifier + "; provenance " + t.provenance + ". Result hash " + String(t.resultSha256).slice(0, 16) + "."; const project = t.opportunityId && t.provenance !== "SIMULATED" ? String(t.opportunityId).replace(/[^a-z0-9]/gi, "").toLowerCase().slice(0, 23) : null; memory.recordVerifiedWork({ taskId: id, owner: t.agentId, verifier, summary, project: project && /^[a-z0-9][a-z0-9_.]{0,22}$/.test(project) ? project : null }); } catch { /* memory is a second line of support */ }
+    try { const t = S.tasks[id]; if (!t || !memory) return; const summary = "Task " + id + " (" + t.kind + (t.executor ? ", " + t.executor : "") + ")" + (t.opportunityId && S.opps[t.opportunityId] && t.provenance !== "SIMULATED" ? " for the opportunity titled: " + String(S.opps[t.opportunityId].title).slice(0, 120).replace(/[^\p{L}\p{N} .,_-]/gu, " ") : "") + " by " + t.agentId + " was accepted by independent checker " + verifier + "; provenance " + t.provenance + ". Result hash " + String(t.resultSha256).slice(0, 16) + "."; const project = t.opportunityId && t.provenance !== "SIMULATED" ? String(t.opportunityId).replace(/[^a-z0-9]/gi, "").toLowerCase().slice(0, 23) : null; memory.recordVerifiedWork({ taskId: id, owner: t.agentId, verifier, summary, project: project && /^[a-z0-9][a-z0-9_.]{0,22}$/.test(project) ? project : null }); } catch { /* memory is a second line of support */ }
   });
   /** After a REJECT the owner reworks (bounded): the same task, a fresh attempt series. */
   async function reworkTask(taskId) {
@@ -491,6 +495,24 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
     plan.assignments = assignments; save(); ev("EXECUTION_ASSIGNED", { planId, steps: assignments.length }); return { ok: true, assignments };
   }
 
+  /** Transparent, deterministic prioritisation. Only components with evidence score; every unknown is listed and scores 0 (never guessed). No earnings are inferred. */
+  function rankPipeline() {
+    const have = new Set(registry.list().flatMap(a => a.team === "EXECUTION" && a.status === "REGISTERED_READY" ? a.capabilityProfile.skills : []));
+    const rows = Object.values(S.opps).map(o => {
+      if (!o.derived.eligible) return { opportunityId: o.id, title: o.title, score: null, reason: "INELIGIBLE:" + o.derived.blockers.join(",") };
+      const d = o.derived.discovery, unknown = [], c = {};
+      c.sourceEvidence = o.retrieval === "CONNECTOR" ? 20 : o.retrieval === "OPERATOR_TOOL" ? 12 : o.retrieval === "OWNER_OR_MANUAL" ? 8 : 0;
+      const skills = o.ownerInput?.requiredSkills ?? d?.requirements?.skills ?? []; if (!skills.length) { unknown.push("DELIVERABILITY_NO_SKILL_MATCH"); c.deliverability = 0; } else c.deliverability = Math.round(25 * skills.filter(x => have.has(x)).length / skills.length);
+      c.deadline = !d ? 5 : d.deadlineState === "OPEN" ? ((Date.parse(d.deadline) - Date.parse(now())) / 864e5 >= 7 ? 15 : 8) : d.deadlineState === "UNKNOWN" ? 5 : 0; if (d?.deadlineState === "UNKNOWN") unknown.push("DEADLINE_UNKNOWN");
+      c.geography = !d ? 5 : d.geoRestrictions?.length ? 0 : d.internationalEligibility === "SOURCE_STATES_OPEN" ? 15 : 5; unknown.push(...(d && !d.geoRestrictions?.length && d.internationalEligibility !== "SOURCE_STATES_OPEN" ? ["GEOGRAPHIC_ELIGIBILITY_UNKNOWN_NOT_ASSUMED"] : []), ...(d?.geoRestrictions?.length ? ["GEOGRAPHIC_RESTRICTION_FOUND"] : []));
+      c.valueKnown = o.derived.sourceValue || o.derived.expectedNetUsd !== null ? 10 : 0; if (!c.valueKnown) unknown.push("VALUE_UNKNOWN"); if (o.derived.economics === "UNKNOWN") unknown.push("MARGIN_UNKNOWN");
+      c.scamRisk = !d ? 8 : d.fraud?.level === "NONE" ? 15 : d.fraud?.level === "LOW" ? 8 : 0;
+      const score = Object.values(c).reduce((a, b) => a + b, 0);
+      return { opportunityId: o.id, title: o.title, score, components: c, unknown: [...new Set(unknown)], maxScore: 100, lifecycle: lifecycleOf(o), basis: "Evidence-weighted checklist, not a revenue forecast." };
+    });
+    return rows.sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+  }
+
   // ====================================================================== Views (real data only)
   const taskOf = id => Object.values(S.tasks).filter(t => t.agentId === id).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
   function agentViews() {
@@ -518,6 +540,7 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
       makerChecker: ts.flatMap(t => (t.checks ?? []).map(c => ({ taskId: t.taskId, maker: t.agentId, checker: c.checker, decision: c.decision, at: c.at, reasons: c.reasons }))).slice(-40).reverse(),
       pipeline: opps.map(o => ({ id: o.id, title: o.title, status: o.status, lifecycle: lifecycleOf(o), stages: (o.stages ?? []).map(x => x.stage), retrieval: o.retrieval, discoveredBy: o.discoveredBy, verifiedBy: o.verifiedBy ?? null, eligible: o.derived.eligible, blockers: o.derived.blockers, economics: o.derived.economics, expectedNetUsd: o.derived.expectedNetUsd, unknownFields: o.derived.unknownFields, planId: o.planId ?? null, kind: "ESTIMATE_NOT_REVENUE",
         discovery: o.derived.discovery ? { sourceId: o.derived.discovery.sourceId, listingKind: o.derived.discovery.listingKind, jurisdiction: o.derived.discovery.jurisdiction, currency: o.derived.discovery.currency, language: o.derived.discovery.language, publishedAt: o.derived.discovery.publishedAt, deadline: o.derived.discovery.deadline, deadlineState: o.derived.discovery.deadlineState, fraudLevel: o.derived.discovery.fraud.level, fraud: o.derived.discovery.fraud.indicators, geoRestrictions: o.derived.discovery.geoRestrictions, internationalEligibility: o.derived.discovery.internationalEligibility, sourceValue: o.derived.sourceValue } : null })),
+      ranking: rankPipeline(),
       discoverySummary: { connectorRetrieved: opps.filter(o => o.retrieval === "CONNECTOR").length, operatorToolRetrieved: opps.filter(o => o.retrieval === "OPERATOR_TOOL").length, fixtures: opps.filter(o => o.retrieval === "FIXTURE").length, ownerOrManual: opps.filter(o => o.retrieval === "OWNER_OR_MANUAL").length, verified: opps.filter(o => /^VERIFIED|PLANNED|NEEDS|DECLINED/.test(o.status)).length, qualified: opps.filter(o => o.status === "VERIFIED_QUALIFIED" || o.status === "PLANNED").length, byLifecycle: Object.fromEntries([...new Set(opps.map(lifecycleOf))].map(k => [k, opps.filter(o => lifecycleOf(o) === k).length])) },
       deliverables: ts.filter(t => t.workflow === "C" && t.opportunityId).map(t => ({ taskId: t.taskId, opportunityId: t.opportunityId, executor: t.executor, agentId: t.agentId, status: t.status, checker: t.checker ?? null, provenance: t.provenance, resultSha256: t.resultSha256 ?? null })),
       plans: Object.values(S.plans).map(p => ({ planId: p.planId, opportunityId: p.opportunityId, steps: p.steps.map(s => ({ id: s.id, title: s.title, status: s.status, gate: s.gate })), approvals: p.requiredApprovals })),
@@ -533,5 +556,5 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
   }
   const getTask = id => (Object.hasOwn(S.tasks, id) ? structuredClone({ ...S.tasks[id], input: undefined }) : null);
   const verify = () => ({ ok: eventsOk() && registry.verify().ok, events: eventsOk(), registry: registry.verify() });
-  return { discoverOpportunity, supplyOwnerInput, discoverBatch, advanceLifecycle, assignExecution, lifecycleOf: id => (Object.hasOwn(S.opps, id) ? lifecycleOf(S.opps[id]) : null), planOpportunity, executeTask, checkTask, reworkTask, resumeTask, recordOutcome, agentViews, systemView, getTask, verify, coordinator, ledger: money, registry, listOpportunities: () => Object.values(S.opps).map(o => ({ ...o })), listTasks: () => Object.values(S.tasks).map(t => ({ ...t, input: undefined })) };
+  return { rankPipeline, discoverOpportunity, supplyOwnerInput, discoverBatch, advanceLifecycle, assignExecution, lifecycleOf: id => (Object.hasOwn(S.opps, id) ? lifecycleOf(S.opps[id]) : null), planOpportunity, executeTask, checkTask, reworkTask, resumeTask, recordOutcome, agentViews, systemView, getTask, verify, coordinator, ledger: money, registry, listOpportunities: () => Object.values(S.opps).map(o => ({ ...o })), listTasks: () => Object.values(S.tasks).map(t => ({ ...t, input: undefined })) };
 }

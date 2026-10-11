@@ -58,7 +58,7 @@ export const SEED_PROVIDERS = Object.freeze([
 export function createModelRegistry({ dir, ownerAuth = null, gate = emergencyGate, now = () => new Date().toISOString(), liveStatus = () => false, hasCredential = () => false, roster = ROSTER } = {}) {
   if (!dir) throw new Error("DIR_REQUIRED");
   fs.mkdirSync(path.join(dir, "snapshots"), { recursive: true });
-  const FILE = path.join(dir, "registry.json"), audit = createAuditChain({ filePath: path.join(dir, "registry-audit.jsonl") }), BILL = path.join(dir, "billing.json");
+  const FILE = path.join(dir, "registry.json"), audit = createAuditChain({ filePath: path.join(dir, "registry-audit.jsonl") }), BILL = path.join(dir, "billing.json"), CAPF = path.join(dir, "spend-cap.json");
   const agentSet = new Set(roster);
   if (agentSet.size !== 30) throw new Error("ROSTER_MUST_BE_EXACTLY_30");
   const fresh = () => ({ schemaVersion: SCHEMA_VERSION, revision: 0, providers: {}, models: {}, assignments: {}, roleDefaults: { SEARCH: [], EXECUTION: [] } });
@@ -243,13 +243,36 @@ export function createModelRegistry({ dir, ownerAuth = null, gate = emergencyGat
   function readBill() { try { const b = JSON.parse(fs.readFileSync(BILL, "utf8")); return b && typeof b.keys === "object" && b.keys ? b : { keys: {} }; } catch { return { keys: {} }; } }
   function writeBill(b) { const ks = Object.keys(b.keys); if (ks.length > LIMITS.maxBillingKeys) { let over = ks.length - LIMITS.maxBillingKeys; for (const k of ks) { if (over <= 0) break; if (b.keys[k].state !== "OPEN") { delete b.keys[k]; over--; } } } const t = BILL + ".tmp"; fs.writeFileSync(t, JSON.stringify(b), { mode: 0o600 }); fs.renameSync(t, BILL); }
   const KEY = k => "k:" + k;
+  const spendCapSubject = usd => `spendcap:${Number(usd).toString()}:MONTH`;
+  /** The aggregate monthly cap is owner-signed data. Absent = no aggregate cap (per-request budgets still apply, default 0). Present but unsigned/tampered = treated as a cap of 0 (fail closed). */
+  const capWasSet = () => { try { return audit.entries().some(e => e.event === "SPEND_CAP_SET"); } catch { return false; } };
+  function readCap() {
+    let d; try { d = JSON.parse(fs.readFileSync(CAPF, "utf8")); } catch (e) { return e?.code === "ENOENT" ? (capWasSet() ? { set: true, usd: 0, valid: false, reason: "SPEND_CAP_FILE_MISSING_AFTER_BEING_SET" } : { set: false }) : { set: true, usd: 0, valid: false, reason: "SPEND_CAP_FILE_UNREADABLE" }; }
+    let ok = false; try { ok = Boolean(d && Number.isFinite(d.usd) && d.usd >= 0 && ownerAuth && typeof ownerAuth.verifyRecorded === "function" && ownerAuth.verifyRecorded(d.approval, { action: "MODEL_SPEND_CAP_SET", subject: spendCapSubject(d.usd) })); } catch { ok = false; }
+    return ok ? { set: true, usd: d.usd, valid: true, at: d.at } : { set: true, usd: 0, valid: false, reason: "SPEND_CAP_SIGNATURE_INVALID" };
+  }
+  const monthOf = b => String(b.attempts?.at(-1)?.at ?? "").slice(0, 7);
+  function usage() {
+    const b = readBill(), month = now().slice(0, 7), byModel = {}; let total = 0, open = 0, requests = 0, failedBilled = 0;
+    for (const k of Object.values(b.keys)) { if (monthOf(k) !== month) continue; if (k.state === "OPEN") { open++; continue; } if (!(k.costUsd > 0)) continue; requests++; if (k.state === "FAILED_BILLED") failedBilled++; total += k.costUsd; const m = k.attempts.at(-1).model; byModel[m] = +((byModel[m] ?? 0) + k.costUsd).toFixed(8); }
+    const cap = readCap(); return { month, billedRequests: requests, failedButBilled: failedBilled, openRequests: open, totalUsd: +total.toFixed(8), byModel, cap: cap.set ? { usd: cap.usd, valid: cap.valid, reason: cap.reason ?? null, remainingUsd: Math.max(0, +(cap.usd - total).toFixed(8)) } : { usd: null, note: "NO_AGGREGATE_CAP_SET: per-request budgets (default 0) still block unauthorised spend" }, basis: "Booked by the billing guard; unknown actual cost is booked at the estimate (upper bound)." };
+  }
   const billing = {
-    begin(requestKey, modelId) {
+    usage,
+    spendCap: () => readCap(),
+    spendCapSubject,
+    setSpendCap(usd, { approval = null } = {}) {
+      if (!(Number.isFinite(usd) && usd >= 0 && usd <= 1e6)) return refuse("SPEND_CAP_INVALID"); const g = gate({ external: false }); if (g && g.allowed === false) return refuse("OWNER_STOP_OR_SAFE_MODE");
+      const v = verifyOwner(approval, "MODEL_SPEND_CAP_SET", spendCapSubject(usd)); if (!v.ok) { audit.append("SPEND_CAP_DENIED", { usd, reason: v.reason }); return refuse("OWNER_APPROVAL_REQUIRED:" + v.reason); }
+      fs.writeFileSync(CAPF, JSON.stringify({ usd, period: "MONTH", approval, at: now() }), { mode: 0o600 }); audit.append("SPEND_CAP_SET", { usd }); return { ok: true, usd };
+    },
+    begin(requestKey, modelId, { estimateUsd = null } = {}) {
       if (typeof requestKey !== "string" || !/^[\w:.-]{8,100}$/.test(requestKey)) return refuse("REQUEST_KEY_INVALID"); if (typeof modelId !== "string" || !Object.hasOwn(state.models, modelId)) return refuse("UNKNOWN_MODEL");
-      const b = readBill(), k = Object.hasOwn(b.keys, KEY(requestKey)) ? b.keys[KEY(requestKey)] : undefined;
+      let capReserve = null; const b = readBill(), k = Object.hasOwn(b.keys, KEY(requestKey)) ? b.keys[KEY(requestKey)] : undefined;
       if (!k && Object.keys(b.keys).length >= LIMITS.maxBillingKeys && !Object.values(b.keys).some(v => v.state !== "OPEN")) return refuse("BILLING_TABLE_FULL");
+      { const cap = readCap(); if (cap.set) { const u = usage(), reserved = Object.values(b.keys).reduce((a, v) => a + (v.state === "OPEN" && monthOf(v) === u.month ? (v.attempts.at(-1).reserveUsd ?? 0) : 0), 0), want = Number.isFinite(estimateUsd) && estimateUsd >= 0 ? estimateUsd : Math.max(0, cap.usd - u.totalUsd - reserved); if (!cap.valid || u.totalUsd + reserved + want > cap.usd + 1e-12 || u.totalUsd >= cap.usd || (!(Number.isFinite(estimateUsd) && estimateUsd >= 0) && want <= 1e-12)) return refuse("SPEND_CAP_REACHED", { capUsd: cap.usd, spentUsd: u.totalUsd, reservedUsd: reserved, valid: cap.valid }); capReserve = want; } }
       if (k && !(k.state === "FAILED_NO_COST")) return refuse("DUPLICATE_BILLING_BLOCKED", { existing: { model: k.attempts.at(-1).model, state: k.state } });
-      b.keys[KEY(requestKey)] = { state: "OPEN", attempts: [...(k?.attempts ?? []), { model: modelId, at: now() }], costUsd: 0 }; writeBill(b); audit.append("BILLING_BEGIN", { requestKey, modelId }); return { ok: true, attempt: b.keys[KEY(requestKey)].attempts.length };
+      b.keys[KEY(requestKey)] = { state: "OPEN", attempts: [...(k?.attempts ?? []), { model: modelId, at: now(), ...(capReserve !== null ? { reserveUsd: capReserve } : {}) }], costUsd: 0 }; writeBill(b); audit.append("BILLING_BEGIN", { requestKey, modelId }); return { ok: true, attempt: b.keys[KEY(requestKey)].attempts.length };
     },
     settle(requestKey, { ok, costUsd = 0 } = {}) {
       const b = readBill(), k = typeof requestKey === "string" && Object.hasOwn(b.keys, KEY(requestKey)) ? b.keys[KEY(requestKey)] : undefined; if (!k || k.state !== "OPEN") return refuse("NOT_OPEN"); if (!(Number.isFinite(costUsd) && costUsd >= 0)) return refuse("COST_INVALID");

@@ -90,3 +90,15 @@ test("cloud provider over real HTTP: vault credential + owner-signed enable + si
     assert.ok(calls.every(x => x.u.startsWith("https://api.deepseek.com/")), "nothing else was contacted");
   } finally { if (prev === undefined) delete process.env.ATLASZ_VAULT_KEY; else process.env.ATLASZ_VAULT_KEY = prev; await c.close?.(); rm(c.base); }
 });
+
+test("costs/usage, the spending cap and the provider readiness ladder over HTTP: nothing is production-ready or LIVE; the cap needs the owner's passphrase", async () => {
+  const c = await boot();
+  try {
+    await c.act({ op: "seed" }); let v = await c.view(); assert.equal(v.usage.totalUsd, 0); assert.equal(v.usage.cap.usd, null);
+    for (const id of ["openai", "anthropic", "google", "xai", "deepseek", "mistral", "openrouter", "minimax", "glm", "perplexity", "huggingface", "ollama-local"]) { const p = v.providerLadder.find(x => x.id === id); assert.ok(p, "missing provider " + id); assert.equal(p.productionReady, false); assert.equal(p.authenticatedLiveTestPassed, false); }
+    assert.ok(v.providerLadder.every(p => p.registered === true && p.stage !== "LIVE_PROBE_PASSED"));
+    assert.equal((await c.act({ op: "setSpendCap", usd: 5, passphrase: PW })).status, 400, "no owner key yet");
+    await c.key(); assert.equal((await c.act({ op: "setSpendCap", usd: 5, passphrase: "wrong passphrase" })).status, 400);
+    const ok = await c.act({ op: "setSpendCap", usd: 5, passphrase: PW }); assert.equal(ok.result.ok, true, JSON.stringify(ok)); v = await c.view(); assert.equal(v.usage.cap.usd, 5); assert.equal(v.usage.cap.valid, true);
+  } finally { await c.close?.(); rm(c.base); }
+});
