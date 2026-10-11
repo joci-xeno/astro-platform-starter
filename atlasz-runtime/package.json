@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node supervisor.js",
     "start:canonical": "node supervisor-safe.mjs",
-    "test": "node --test \"../atlasz-tests/*.test.mjs\""
+    "test": "node --test --test-concurrency=2 \"../atlasz-tests/*.test.mjs\"",
+    "test:serial": "node --test --test-concurrency=1 \"../atlasz-tests/*.test.mjs\"",
+    "test:fast": "node ../scripts/test-impacted.mjs --jobs 2"
   },
   "engines": {
     "node": ">=20"

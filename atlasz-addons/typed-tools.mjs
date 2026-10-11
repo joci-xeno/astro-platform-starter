@@ -73,7 +73,7 @@ export function parseStructured(schema, text) {
   const r = validate(schema, v); return { ...r, value: r.ok ? v : null };
 }
 
-const sleepFail = (ms) => new Promise((_, rej) => setTimeout(() => rej(new Error("TOOL_TIMEOUT")), ms));
+const sleepFail = (ms, h) => new Promise((_, rej) => { h.t = setTimeout(() => rej(new Error("TOOL_TIMEOUT")), ms); });      // h.t is cleared when the handler settles (a pending timer kept the process alive for the whole timeout)
 
 /**
  * createToolRegistry({ chain, authority?, blackBox?, now? })
@@ -112,9 +112,10 @@ export function createToolRegistry({ chain, blackBox = null, now = () => new Dat
     let d;
     try { d = chain.evaluate({ actor, operation: t.operation, params: args, spendUsd: t.spendUsd, ownerApproval }); } catch (e) { return done("DENIED", { reason: "CHAIN_ERROR_FAIL_CLOSED" }); }
     if (!d?.allowed) return done(d?.verdict === "REQUIRE_APPROVAL" ? "REQUIRES_APPROVAL" : "DENIED", { reason: d?.reason ?? "NOT_ALLOWED", layer: d?.layer ?? null });
-    let out;
-    try { out = await Promise.race([Promise.resolve().then(() => t.handler(structuredClone(args))), sleepFail(t.timeoutMs)]); }
+    let out; const th = {};
+    try { out = await Promise.race([Promise.resolve().then(() => t.handler(structuredClone(args))), sleepFail(t.timeoutMs, th)]); }
     catch (e) { return done(e.message === "TOOL_TIMEOUT" ? "TIMEOUT" : "HANDLER_ERROR", { error: String(e.message).slice(0, 200) }); }
+    finally { clearTimeout(th.t); }
     if (t.output) { const o = validate(t.output, out); if (!o.ok) return done("OUTPUT_INVALID", { errors: o.errors }); }
     return done("OK", { result: out });
   }
