@@ -7,6 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import { extractBuffer, EXTRACTORS } from "./doc-extractors.mjs";
+import { prescan } from "./quarantine.mjs";
 
 export const CLASSIFICATIONS = Object.freeze(["PUBLIC", "PERSONAL", "CONFIDENTIAL", "SECRET"]);
 export const DOC_TYPES = Object.freeze(["GENERIC", "INVOICE", "RECEIPT", "CONTRACT", "JOB_DOCUMENT", "RESEARCH", "SPREADSHEET", "RECORD"]);
@@ -21,7 +22,7 @@ export function stripHtml(h) { return h.replace(/<script[\s\S]*?<\/script>/gi, "
 /** Amount candidates are UNVERIFIED hints for a human/QA; they never become revenue/cost on their own. */
 export function candidateAmounts(text) { return [...text.matchAll(/(?:total|amount|sum|due|összesen|végösszeg)\D{0,15}\$?\s?(\d{1,3}(?:[ ,]\d{3})*(?:\.\d{1,2})?)/gi)].slice(0, 5).map(m => ({ raw: m[0].trim().slice(0, 60), value: Number(m[1].replace(/[ ,]/g, "")), status: "UNVERIFIED_CANDIDATE" })); }
 
-export function createDocumentCenter({ dir, extractors = {}, media = null, security = null, graph = null, tenantGraphId = null, now = () => new Date().toISOString() } = {}) {
+export function createDocumentCenter({ dir, extractors = {}, media = null, security = null, quarantine = null, graph = null, tenantGraphId = null, now = () => new Date().toISOString() } = {}) {
   if (!dir) throw new Error("DIR_REQUIRED");
   fs.mkdirSync(path.join(dir, "files"), { recursive: true });
   const indexFile = path.join(dir, "index.json");
@@ -36,6 +37,12 @@ export function createDocumentCenter({ dir, extractors = {}, media = null, secur
     if (!DOC_TYPES.includes(type)) throw new Error("BAD_DOC_TYPE"); if (!CLASSIFICATIONS.includes(classification)) throw new Error("BAD_CLASSIFICATION");
     const st = fs.statSync(filePath); if (st.size > MAX_BYTES) throw new Error("FILE_TOO_LARGE");
     const buf = fs.readFileSync(filePath), ext = path.extname(name ?? filePath).toLowerCase(), hash = sha(buf);
+    // Quarantine pre-scan (when a quarantine is attached): a blocking structural finding (executable disguised as a document, archive bomb, path traversal, ...) is held in quarantine and NEVER stored, extracted or indexed here.
+    if (quarantine) {
+      const ps = prescan(buf, name ?? filePath);
+      if (ps.blocking) { let q = null; try { q = await quarantine.quarantineBuffer(buf, { name: path.basename(name ?? filePath), reason: "Blocked on document ingest: " + ps.findings.filter(f => f.severity === "BLOCK").map(f => f.code).slice(0, 4).join(", "), source: "document-center" }); } catch { /* still refused */ }
+        throw Object.assign(new Error("QUARANTINED_ON_INGEST"), { sha256: hash, findings: ps.findings.map(f => f.code).slice(0, 10), quarantined: Boolean(q?.ok) }); }
+    }
     const dup = Object.values(docs).find(d => d.sha256 === hash && d.tenantId === tenantId); if (dup) return { ...pub(dup), duplicate: true };
     const base = path.basename(name ?? filePath), prev = Object.values(docs).filter(d => d.tenantId === tenantId && d.name === base && !d.supersededBy).sort((a, b) => (b.version ?? 1) - (a.version ?? 1))[0] ?? null;
     const id = randomUUID(), stored = path.join(dir, "files", id + (BINARY_KNOWN.has(ext) || TEXT_EXT.has(ext) ? ext : ".bin"));

@@ -353,6 +353,14 @@ export function inspectArchive(buf, { name = "archive", limits = {} } = {}) {
   return { verdict, format: t.archive ? t.type : "TAR_ARCHIVE", findings: ctx.findings, entries: ctx.count, totalUncompressed: ctx.totalUncompressed, nestingDepth: ctx.maxDepthSeen };
 }
 
+/** Pure pre-scan used by intake paths (document ingest, inbox, downloads): { blocking, findings } from the name, the sniffed type and the archive structure. No I/O. */
+export function prescan(buf, name = "unnamed", { limits = {} } = {}) {
+  const b = Buffer.isBuffer(buf) ? buf : Buffer.from(buf ?? []), L = { ...LIMITS, ...limits };
+  const tf = typeFindings(b, name), arch = tf.type.archive || looksLikeTar(b) ? inspectArchive(b, { name, limits: L }) : null;
+  const findings = [...nameFindings(name), ...tf.findings, ...(arch?.findings ?? [])].slice(0, 200);
+  return { blocking: findings.some(f => f.severity === "BLOCK"), findings, type: tf.type.type, archive: arch ? arch.verdict : null };
+}
+
 // ------------------------------------------------------------------ quarantine store
 export const releaseSubject = (sha256, destPath) => "quarantine-release:" + sha256 + ":" + sha(path.resolve(String(destPath))).slice(0, 16);
 export const deleteSubject = sha256 => "quarantine-delete:" + sha256;

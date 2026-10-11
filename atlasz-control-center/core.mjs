@@ -31,6 +31,8 @@ import { createApprovalRequests } from "../atlasz-addons/approval-requests.mjs";
 import { createObservationMemory } from "../atlasz-addons/observation-memory.mjs";
 import { createMemoryPanel } from "./memory-panel.mjs";
 import { createModelRegistryPanel } from "./model-registry-panel.mjs";
+import { createSecurityCenterPanel } from "./security-center-panel.mjs";
+import { createReleaseVerifier } from "../atlasz-addons/release-signing.mjs";
 import { createTradingPanel } from "./trading-panel.mjs";
 import { createOpsViews } from "./ops-views.mjs";
 import { createModalityFabric } from "../atlasz-addons/modality-fabric.mjs";
@@ -79,7 +81,11 @@ export function createControlCenterCore({ ollamaFetch = null, a11yWorkerUrl = nu
   const lkg = () => createLkgRegistry({ file: path.join(backupRoot, "lkg-registry.jsonl") });
   let updateCenter = null;
   // Real local adapters (offline hash-verified packages in <state>/updates/inbox) unless the caller injects its own or disables them.
-  const localAdapters = !updateAdapters && localUpdates ? createLocalUpdateAdapters({ inboxDir: path.join(stateDir, "updates", "inbox") }) : null;
+  // Release signature verifier (trust anchors are owner-signed, kept in <state>/updates/release-signing). Built lazily; with no owner key it fails closed ("VERIFIER_UNAVAILABLE").
+  let relV = null;
+  const releaseVerifier = () => (relV ??= createReleaseVerifier({ ownerAuth: ownerAuth(), stateDir: path.join(stateDir, "updates", "release-signing"), isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL" }));
+  const releaseVerifierProxy = { verifyBundle: (...a) => { try { return releaseVerifier().verifyBundle(...a); } catch { return { ok: false, reasons: ["VERIFIER_UNAVAILABLE"] }; } } };
+  const localAdapters = !updateAdapters && localUpdates ? createLocalUpdateAdapters({ inboxDir: path.join(stateDir, "updates", "inbox"), releaseVerifier: releaseVerifierProxy }) : null;
   const adapters = updateAdapters ?? localAdapters?.adapters ?? {};
   const packDir = path.join(configDir, "extension-pack");
   function ensureComponents(center) {
@@ -302,7 +308,7 @@ export function createControlCenterCore({ ollamaFetch = null, a11yWorkerUrl = nu
     return layer.handle(text, { ownerApproval: approval });
   }
   // ---- Documents / Inbox / Voice / Connectors / Tech Watch (read-mostly views over the durable modules) ----
-  const modalityFabric = createModalityFabric(), docCenter = () => createDocumentCenter({ dir: path.join(stateDir, "documents"), media: modalityFabric });
+  const modalityFabric = createModalityFabric(), secPanel = createSecurityCenterPanel({ stateDir, releaseVerifier: () => releaseVerifier(), ownerAuth: () => ownerAuth(), sign: (p, a, su) => sign(p, a, su), isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL" }), docCenter = () => createDocumentCenter({ dir: path.join(stateDir, "documents"), media: modalityFabric, quarantine: secPanel.quarantine() });
   const documents = () => { const d = docCenter(); return { summary: d.summary(), items: d.list({ tenantId: "JOCI", role: "OWNER" }).slice(0, 100) }; };
   // Multimodal view: built-in capability, provider slots (all external), and the media documents the Document Center already holds (metadata only).
   const media = () => { try { const d = docCenter().list({ tenantId: "JOCI", role: "OWNER" }).filter(x => x.extraction?.status === "METADATA_ONLY"); return { state: "CONNECTED", ...modalityFabric.summary(), documents: d.map(x => ({ id: x.id, name: x.name, ingestedAt: x.ingestedAt, classification: x.classification, ...x.extraction.meta })) }; } catch (e) { return { state: "UNREADABLE", error: String(e.message) }; } };
@@ -620,10 +626,12 @@ export function createControlCenterCore({ ollamaFetch = null, a11yWorkerUrl = nu
   const modelRegPanel = createModelRegistryPanel({ stateDir, ownerAuth: () => ownerAuth(), sign: (p, ac, su) => sign(p, ac, su), isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL", ollamaFetch });
   const modelRegistry = () => { try { return modelRegPanel.view(); } catch (e) { return { state: "ERROR", error: String(e?.message ?? e).slice(0, 200) }; } };
   const modelRegistryAction = b => modelRegPanel.action(b ?? {});
+  const security = () => { try { return secPanel.view(); } catch (e) { return { state: "ERROR", error: String(e?.message ?? e).slice(0, 200) }; } };
+  const securityAction = b => secPanel.action(b ?? {});
   // M6: trading research / simulated paper trading panel, live agent activity, operations and revenue dashboards (all read from real sources; nothing is invented).
   const tradingPanel = createTradingPanel({ stateDir, ownerAuth: () => ownerAuth(), sign: (p, a, s) => sign(p, a, s), isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL" });
   const trading = () => tradingPanel.view(), tradingCandles = q => tradingPanel.candles(q ?? {}), tradingAction = b => tradingPanel.action(b ?? {}), tradingTick = () => tradingPanel.tick({ candlesPerStrategy: 1 });
   const ops = createOpsViews({ stateDir, status, finance, approvals, tradingView: trading, memoryView: memory, ledgerEntries: () => createFinancialLedger({ dir: path.join(stateDir, "ledger") }).entries() });
-  return { trading, tradingCandles, tradingAction, tradingTick, agentsActivity: ops.agents, agentActivityOne: ops.agent, operations: ops.operations, revenueDashboard: ops.revenue, memory, memoryAction, modelRegistry, modelRegistryAction, prototypes, prototypeActions, pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, workbench, workbenchAction, a11yAudit, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => pluginView(), mcp, mcpActions, repos, repoActions, theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { trading, tradingCandles, tradingAction, tradingTick, agentsActivity: ops.agents, agentActivityOne: ops.agent, operations: ops.operations, revenueDashboard: ops.revenue, memory, memoryAction, modelRegistry, modelRegistryAction, security, securityAction, prototypes, prototypeActions, pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, workbench, workbenchAction, a11yAudit, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => pluginView(), mcp, mcpActions, repos, repoActions, theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }

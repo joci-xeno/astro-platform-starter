@@ -9,6 +9,9 @@ import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { restrictedNodeCommand } from "./restricted-node.mjs";
 import { parseVersion } from "./update-center.mjs";
+import { prescan } from "./quarantine.mjs";
+
+export const SIGNATURE_FILE = "release-signature.json";
 
 // Detector for the quarantined legacy policy marker. Built from parts so this scanner is not itself a carrier of the marker.
 const LEGACY_MARKER = new RegExp("atlasz-" + "competition", "i");
@@ -59,7 +62,10 @@ export function validatePackage(pkgDir) {
   return { ok: problems.length === 0, manifest: m, problems };
 }
 
-export function createLocalUpdateAdapters({ inboxDir, nodeBin = process.execPath, selftestTimeoutMs = 60000 } = {}) {
+// releaseVerifier (release-signing.mjs, optional): a package that carries release-signature.json is verified (Ed25519 envelope over the payload, trusted key for this component, no replay/downgrade, bytes equal the signed set)
+// BEFORE anything is staged; a present-but-failing signature is always refused. requireSignature=true also refuses unsigned packages. Unsigned packages without the requirement are staged but labelled UNSIGNED in the evidence.
+// prescan: every payload file passes the quarantine structural pre-scan (disguised executables, archive traps); a blocking finding refuses staging.
+export function createLocalUpdateAdapters({ inboxDir, nodeBin = process.execPath, selftestTimeoutMs = 60000, releaseVerifier = null, requireSignature = false, structuralPrescan = true } = {}) {
   if (!inboxDir) throw new Error("INBOX_DIR_REQUIRED");
   let lastScan = { at: null, valid: [], rejected: [] };
   const scan = () => {
@@ -80,6 +86,20 @@ export function createLocalUpdateAdapters({ inboxDir, nodeBin = process.execPath
     const pkg = find(update.componentId, update.version);                       // re-validated (hashes) at staging time, not trusted from detection
     if (!pkg) return { ok: false, evidence: "PACKAGE_NOT_FOUND_OR_INVALID" };
     const payload = path.join(pkg.dir, "payload"), written = {};
+    let signature = { state: "UNSIGNED_NOT_REQUIRED" };
+    const sigFile = path.join(pkg.dir, SIGNATURE_FILE);
+    if (fs.existsSync(sigFile)) {
+      if (!releaseVerifier || typeof releaseVerifier.verifyBundle !== "function") return { ok: false, evidence: "SIGNATURE_PRESENT_BUT_NO_VERIFIER_CONFIGURED" };
+      let env; try { env = JSON.parse(fs.readFileSync(sigFile, "utf8")); } catch { return { ok: false, evidence: "SIGNATURE_FILE_UNREADABLE" }; }
+      const r = releaseVerifier.verifyBundle(env, { bundleDir: payload });
+      if (!r.ok) return { ok: false, evidence: "SIGNATURE_REFUSED:" + r.reasons.slice(0, 4).join(",") };
+      if (env.manifest?.component !== update.componentId || env.manifest?.version !== update.version) return { ok: false, evidence: "SIGNATURE_FOR_DIFFERENT_COMPONENT_OR_VERSION" };
+      signature = { state: "SIGNATURE_VALID_CONTENT_MATCHES", keyId: r.keyId, digest: r.digest };
+    } else if (requireSignature) return { ok: false, evidence: "SIGNATURE_REQUIRED_BUT_MISSING" };
+    if (structuralPrescan) for (const rel of Object.keys(pkg.manifest.files)) {
+      const ps = prescan(fs.readFileSync(path.join(payload, rel)), rel);
+      if (ps.blocking) return { ok: false, evidence: "STRUCTURAL_PRESCAN_BLOCKED:" + rel + ":" + ps.findings.filter(f => f.severity === "BLOCK").map(f => f.code).slice(0, 3).join(",") };
+    }
     for (const rel of Object.keys(pkg.manifest.files)) {
       const dst = path.join(stagingDir, rel);
       if (!inside(stagingDir, dst)) return { ok: false, evidence: "PATH_ESCAPE:" + rel };
@@ -89,7 +109,7 @@ export function createLocalUpdateAdapters({ inboxDir, nodeBin = process.execPath
     for (const rel of pkg.manifest.remove ?? []) { const dst = path.join(stagingDir, rel); if (inside(stagingDir, dst) && fs.existsSync(dst)) { fs.rmSync(dst); removed++; } }
     const all = {}; for (const f of walk(stagingDir)) if (f.rel !== INSTALL_MANIFEST) all[f.rel] = sha(fs.readFileSync(f.abs));
     fs.writeFileSync(path.join(stagingDir, INSTALL_MANIFEST), JSON.stringify({ componentId: update.componentId, version: update.version, files: all }, null, 1));
-    return { ok: true, evidence: { files: Object.keys(written).length, removed, installManifest: true } };
+    return { ok: true, evidence: { files: Object.keys(written).length, removed, installManifest: true, signature } };
   }
   function verifyInstallManifest(dir) {
     const f = path.join(dir, INSTALL_MANIFEST); if (!fs.existsSync(f)) return { ok: false, why: "NO_INSTALL_MANIFEST" };
