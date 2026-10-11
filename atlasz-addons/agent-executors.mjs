@@ -12,6 +12,7 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import { restrictedNodeCommand } from "./restricted-node.mjs";
 import { containsSecret } from "./secret-patterns.mjs";
+import { inferRequirements, assessListing } from "./global-discovery.mjs";
 
 export const EXEC_LIMITS = Object.freeze({ maxCsvChars: 200_000, maxRows: 5000, maxCols: 60, maxTextChars: 100_000, maxSourceChars: 40_000, maxTestMs: 20_000, maxSummarySentences: 10 });
 const sha = b => crypto.createHash("sha256").update(b).digest("hex");
@@ -100,5 +101,51 @@ const moduleWithTests = {
     finally { fs.rmSync(d, { recursive: true, force: true }); }
   }
 };
-export const BUILTIN_EXECUTORS = Object.freeze({ csv_to_json: csvToJson, extract_summary: extractSummary, module_with_tests: moduleWithTests });
-export const executorSkill = id => ({ csv_to_json: "data.csv_to_json", extract_summary: "doc.extract_summary", module_with_tests: "code.module_with_tests" })[id] ?? null;
+
+// ---- Opportunity deliverables (deterministic, recomputed by the checker). Both are DRAFTS prepared from the recorded source text only: no invented credentials, prices, references or dates.
+const OPP_KEYS = ["title", "sourceRef", "description", "jurisdiction", "currency", "valueAmount", "valueKind", "deadline", "publishedAt", "buyer", "language", "kindHint", "tags", "assessedAt", "retrieval", "sourceId"];
+const oppValidate = input => {
+  const o = input?.opportunity; if (!o || typeof o !== "object") return "OPPORTUNITY_REQUIRED"; if (typeof o.title !== "string" || !o.title.trim()) return "TITLE_REQUIRED"; if (typeof o.description !== "string" || o.description.trim().length < 10) return "DESCRIPTION_REQUIRED";
+  if (o.description.length > EXEC_LIMITS.maxTextChars) return "DESCRIPTION_TOO_LARGE"; if (containsSecret(JSON.stringify(o))) return "SECRET_IN_INPUT"; if (!Number.isFinite(Date.parse(o.assessedAt))) return "ASSESSED_AT_REQUIRED";
+  if (Object.keys(o).some(k => !OPP_KEYS.includes(k))) return "UNKNOWN_FIELD"; return null;
+};
+const sentencesOf = t => String(t).replace(/\s+/g, " ").trim().split(/(?<=[.!?;])\s+/).filter(x => x.length > 12);
+const MODAL = /\b(shall|must|should|require[sd]?|provide|deliver|develop|implement|support|ensure|produce|prepare|evaluate|analy[sz]e|design|build|integrate|test|report)\b/i;
+function analyse(o) {
+  const text = o.title + " . " + o.description, req = inferRequirements(text), a = assessListing({ title: o.title, description: o.description, tags: o.tags, deadline: o.deadline, kindHint: o.kindHint }, o.assessedAt);
+  const sents = sentencesOf(o.description), reqs = (sents.filter(x => MODAL.test(x)).length ? sents.filter(x => MODAL.test(x)) : sents).slice(0, 12);
+  const days = o.deadline ? Math.floor((Date.parse(o.deadline) - Date.parse(o.assessedAt)) / 86400000) : null;
+  return { req, a, reqs, days };
+}
+const implementationPlan = {
+  id: "implementation_plan", description: "Draft technical implementation plan derived only from the recorded opportunity text (requirements quoted, phases, risks, open questions). A plan is not a commitment.",
+  validate: oppValidate,
+  run(input) {
+    const o = input.opportunity, { req, a, reqs, days } = analyse(o);
+    const phases = [
+      { phase: "1 Clarify scope", activities: ["Confirm the requirements below with the buyer through the owner (no contact is made by ATLASZ)", "Resolve every open question"], produces: ["confirmed requirement list"] },
+      { phase: "2 Design", activities: ["Choose the approach for the requirements ATLASZ can cover", "Write acceptance criteria per requirement"], produces: ["design note", "acceptance criteria"] },
+      { phase: "3 Build", activities: req.skills.length ? req.skills.map(k => "Use ATLASZ capability " + k) : ["No ATLASZ executor matched the text: the owner must decide whether to proceed"], produces: ["deliverable artifacts with hashes"] },
+      { phase: "4 Independent quality check", activities: ["A different agent recomputes or re-runs every deliverable", "Record accept/reject with evidence"], produces: ["maker-checker record"] },
+      { phase: "5 Delivery", activities: ["Owner reviews and delivers; ATLASZ does not send anything outside"], produces: ["delivery record (owner-supplied evidence)"] }];
+    const risks = [...(a.fraud.level !== "NONE" ? ["Scam indicators: " + a.fraud.indicators.join(", ")] : []), ...(a.geoRestrictions.length ? ["Geographic or registration restrictions found in the text: " + a.geoRestrictions.join(" | ")] : ["Geographic eligibility is UNKNOWN: it is not assumed"]), ...req.unsupported.map(u => "Outside ATLASZ capability: " + u), ...(days !== null && days < 7 ? ["Deadline in " + days + " day(s) at assessment time"] : []), ...(req.skills.length === 0 ? ["No capability match on the source text"] : []), "Capability coverage beyond the matched skills is UNASSESSED"];
+    const openQuestions = ["Is the owner eligible to bid (jurisdiction, registration, insurance)?", "What price and timeline will the owner commit to?", ...(o.deadline ? [] : ["What is the submission deadline?"]), "Which parts of the requirement are in scope?", ...(o.currency ? ["Payment currency is " + o.currency + "; how will payment be received and verified?"] : ["Payment currency and method are not stated"])];
+    const doc = { status: "DRAFT_NOT_A_COMMITMENT", source: { ref: o.sourceRef, buyer: o.buyer ?? null, publishedAt: o.publishedAt ?? null, deadline: o.deadline ?? null, language: o.language ?? null, retrieval: o.retrieval ?? null }, requirementsQuotedFromSource: reqs, matchedCapabilities: req.skills, unsupported: req.unsupported, phases, risks, openQuestions, estimates: { hours: null, cost: null, margin: null, note: "NOT ESTIMATED: there is no evidence-based basis in the source text." }, basis: req.basis };
+    const md = ["# Implementation plan (DRAFT - not a commitment)", "", "Source: " + o.sourceRef, "Title: " + o.title, "", "## Requirements quoted from the source", ...reqs.map(x => "- " + x), "", "## Matched ATLASZ capabilities", ...(req.skills.length ? req.skills.map(x => "- " + x) : ["- none"]), "", "## Phases", ...phases.flatMap(p => ["### " + p.phase, ...p.activities.map(x => "- " + x), "Produces: " + p.produces.join(", "), ""]), "## Risks", ...risks.map(x => "- " + x), "", "## Open questions for the owner", ...openQuestions.map(x => "- " + x), "", "Estimates: NOT ESTIMATED (no basis)."].join("\n");
+    return { files: { "implementation_plan.json": JSON.stringify(doc, null, 1), "implementation_plan.md": md }, meta: { requirements: reqs.length, matched: req.skills.length, risks: risks.length } };
+  }
+};
+const proposalDraft = {
+  id: "proposal_draft", description: "Owner-reviewable proposal DRAFT. Never sent by ATLASZ; every credential, price and date is a placeholder for the owner to supply.",
+  validate: oppValidate,
+  run(input) {
+    const o = input.opportunity, { req, a, reqs } = analyse(o);
+    const md = ["# PROPOSAL DRAFT - NOT SENT - requires the owner's review and approval", "", "> ATLASZ prepared this from the published notice only. Nothing here has been sent to anyone. Placeholders in [brackets] must be completed by the owner.", "", "## Reference", "- Notice: " + o.title, "- Source: " + o.sourceRef, ...(o.buyer ? ["- Buyer: " + o.buyer] : []), ...(o.deadline ? ["- Published deadline: " + o.deadline] : ["- Deadline: [OWNER TO CONFIRM]"]), "",
+      "## Our understanding of the requirement (quoted from the notice)", ...reqs.map(x => "> " + x), "", "## Proposed approach", ...(req.skills.length ? req.skills.map(x => "- Deliver the part covered by capability " + x + " with an independent quality check") : ["- [OWNER TO DECIDE: no ATLASZ capability matched the notice text]"]), "",
+      "## Deliverables", "- [OWNER TO CONFIRM against the confirmed scope]", "", "## Timeline", "- [OWNER TO SET]", "", "## Price", "- [OWNER TO SET]" + (o.valueAmount != null ? " (buyer-published figure: " + o.valueAmount + " " + (o.currency ?? "?") + ", " + (o.valueKind ?? "unspecified kind") + "; this is not a quote and not our income)" : ""), "",
+      "## Qualifications and references", "- [OWNER TO PROVIDE: legal entity, registrations, insurance, references. ATLASZ does not invent credentials, clients or a portfolio.]", "", "## Eligibility and compliance checklist for the owner", ...(a.geoRestrictions.length ? a.geoRestrictions.map(x => "- Check: " + x) : ["- Geographic eligibility not stated: verify before bidding"]), "- Supplier registration or account requirements of the portal: verify", ...(a.fraud.level !== "NONE" ? ["- SCAM INDICATORS PRESENT: " + a.fraud.indicators.join(", ") + " - do not proceed without verification"] : []), "", "## Assumptions and exclusions", "- Only the requirements quoted above are assumed; everything else is out of scope until confirmed."].join("\n");
+    return { files: { "proposal_draft.md": md, "proposal_draft.json": JSON.stringify({ status: "DRAFT_NOT_SENT", sourceRef: o.sourceRef, placeholders: (md.match(/\[OWNER[^\]]*\]/g) ?? []).length, sentToAnyone: false }, null, 1) }, meta: { draft: true, sent: false } };
+  }
+};
+export const BUILTIN_EXECUTORS = Object.freeze({ csv_to_json: csvToJson, extract_summary: extractSummary, module_with_tests: moduleWithTests, implementation_plan: implementationPlan, proposal_draft: proposalDraft });
+export const executorSkill = id => ({ csv_to_json: "data.csv_to_json", extract_summary: "doc.extract_summary", module_with_tests: "code.module_with_tests", implementation_plan: "plan.implementation_plan", proposal_draft: "doc.proposal_draft" })[id] ?? null;

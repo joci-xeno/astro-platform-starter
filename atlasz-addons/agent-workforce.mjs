@@ -22,6 +22,7 @@ import { containsSecret, scrub } from "./secret-patterns.mjs";
 import { BUILTIN_EXECUTORS, executorSkill } from "./agent-executors.mjs";
 import { ROSTER } from "./agent-registry.mjs";
 import { roleOf } from "./agent-tool-policy.mjs";
+import { SOURCE_CATALOGUE, assessListing, convertAmount, hostOf, canonicalUrl } from "./global-discovery.mjs";
 
 export const WF_LIMITS = Object.freeze({ maxTasks: 3000, maxOpportunities: 1000, maxPlans: 500, maxEvents: 200, maxText: 2000, maxTitle: 200, artifactBytes: 2 * 1024 * 1024, maxReworks: 2, escalations: 200 });
 const sha = t => crypto.createHash("sha256").update(t).digest("hex");
@@ -34,9 +35,11 @@ const numValid = v => isBlank(v) || (typeof v === "number" && Number.isFinite(v)
 const numOrNull = v => (isBlank(v) ? null : Number(v));
 const NUM_CAP = { estimatedValueUsd: 1e12, winProbability: 1, estimatedHours: 1e5, estimatedCostsUsd: 1e12, daysToCash: 3650 };
 const idPart = t => sha(t).slice(0, 10);
-const SOURCE_TYPES = ["OWNER_PROVIDED", "DOCUMENT_CENTER", "MANUAL_ENTRY"];
+const SOURCE_TYPES = ["OWNER_PROVIDED", "DOCUMENT_CENTER", "MANUAL_ENTRY", "PUBLIC_SOURCE"];
+const RETRIEVALS = ["CONNECTOR", "OPERATOR_TOOL", "FIXTURE"], STAGES_AFTER_PLAN = ["PROPOSED", "CONTRACTED", "IN_PROGRESS", "QUALITY_CHECKED", "DELIVERED", "PAYMENT_PENDING", "PAID"];
+const sourceById = id => SOURCE_CATALOGUE.find(x => x.id === id) ?? null;
 
-export function createWorkforce({ dir, registry, ledger = null, revenue = null, memory = null, models = null, approvals = null, tools = null, executors = BUILTIN_EXECUTORS, simulatedModelIds = [], isStopped = () => false, now = () => new Date().toISOString(), sleep = ms => new Promise(r => setTimeout(r, ms)), clock = () => Date.now() } = {}) {
+export function createWorkforce({ dir, registry, ledger = null, revenue = null, memory = null, models = null, approvals = null, tools = null, executors = BUILTIN_EXECUTORS, simulatedModelIds = [], isStopped = () => false, evidenceKnown = null, now = () => new Date().toISOString(), sleep = ms => new Promise(r => setTimeout(r, ms)), clock = () => Date.now() } = {}) {
   if (!dir) throw new Error("DIR_REQUIRED"); if (!registry || typeof registry.list !== "function") throw new Error("REGISTRY_REQUIRED");
   fs.mkdirSync(path.join(dir, "artifacts"), { recursive: true, mode: 0o700 });
   const stopped = () => { try { return Boolean(isStopped()); } catch { return true; } };
@@ -108,6 +111,11 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
     const title = clean(inp.title, WF_LIMITS.maxTitle); if (!title) return "TITLE_REQUIRED";
     if (!SOURCE_TYPES.includes(inp.sourceType)) return "SOURCE_TYPE_INVALID"; if (!clean(inp.sourceRef, 300)) return "SOURCE_REF_REQUIRED";
     const ex = clean(inp.sourceExcerpt, WF_LIMITS.maxText); if (ex.length < 10) return "SOURCE_EXCERPT_REQUIRED"; if (containsSecret(ex) || scrub(ex) !== ex) return "SECRET_IN_SOURCE";
+    if (inp.sourceType === "PUBLIC_SOURCE") {
+      const d = inp.discovery; if (!d || typeof d !== "object") return "DISCOVERY_META_REQUIRED"; const src = sourceById(d.sourceId); if (!src) return "SOURCE_UNKNOWN"; if (!RETRIEVALS.includes(d.retrieval)) return "RETRIEVAL_LABEL_REQUIRED";
+      const h = hostOf(inp.sourceRef); if (!h || !src.hosts.map(x => x.replace(/^www\./, "")).includes(h.replace(/^www\./, ""))) return "SOURCE_URL_NOT_ON_SOURCE_HOST"; if (!/^https:\/\//.test(String(inp.sourceRef)) || !canonicalUrl(inp.sourceRef)) return "SOURCE_URL_MUST_BE_HTTPS";
+      if (typeof d.originalText === "string" && (containsSecret(d.originalText) || scrub(d.originalText) !== d.originalText)) return "SECRET_IN_SOURCE";
+    } else if (inp.discovery !== undefined && inp.discovery !== null) return "DISCOVERY_META_ONLY_FOR_PUBLIC_SOURCE";
     for (const k of Object.keys(NUM_CAP)) { if (!numValid(inp[k])) return "NUMBER_INVALID:" + k; const v = numOrNull(inp[k]); if (v !== null && (v < 0 || v > NUM_CAP[k])) return "NUMBER_INVALID:" + k; }
     for (const k of ["title", "sourceRef"]) { const t = clean(inp[k], 300); if (containsSecret(t) || scrub(t) !== t) return "SECRET_IN_" + k.toUpperCase(); }
     
@@ -118,15 +126,22 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
     title: clean(inp.title, WF_LIMITS.maxTitle), sourceType: inp.sourceType, sourceRef: clean(inp.sourceRef, 300), sourceExcerpt: clean(inp.sourceExcerpt, WF_LIMITS.maxText),
     estimatedValueUsd: numOrNull(inp.estimatedValueUsd), winProbability: numOrNull(inp.winProbability), estimatedHours: numOrNull(inp.estimatedHours), estimatedCostsUsd: numOrNull(inp.estimatedCostsUsd), daysToCash: numOrNull(inp.daysToCash),
     remoteDeliverable: inp.remoteDeliverable !== false, upfrontSpendRequired: inp.upfrontSpendRequired === true, requiresUnheldLicense: inp.requiresUnheldLicense === true, illegalOrDeceptive: inp.illegalOrDeceptive === true, requiresPhysicalPresence: inp.requiresPhysicalPresence === true,
-    requiredSkills: [...new Set(inp.requiredSkills ?? [])], recurring: inp.recurring === true
+    requiredSkills: [...new Set(inp.requiredSkills ?? [])], recurring: inp.recurring === true,
+    discovery: inp.sourceType === "PUBLIC_SOURCE" ? { sourceId: inp.discovery.sourceId, retrieval: inp.discovery.retrieval, runId: clean(inp.discovery.runId, 40) || null, evidenceSha256: /^[0-9a-f]{64}$/.test(inp.discovery.evidenceSha256 ?? "") ? inp.discovery.evidenceSha256 : null, jurisdiction: clean(inp.discovery.jurisdiction, 12) || null, currency: /^[A-Z]{3}$/.test(inp.discovery.currency ?? "") ? inp.discovery.currency : null,
+      valueAmount: Number.isFinite(inp.discovery.valueAmount) ? inp.discovery.valueAmount : null, valueKind: clean(inp.discovery.valueKind, 40) || null, language: clean(inp.discovery.language, 12) || null, publishedAt: Number.isFinite(Date.parse(inp.discovery.publishedAt)) ? new Date(inp.discovery.publishedAt).toISOString() : null,
+      deadline: Number.isFinite(Date.parse(inp.discovery.deadline)) ? new Date(inp.discovery.deadline).toISOString() : null, buyer: clean(inp.discovery.buyer, 200) || null, kindHint: clean(inp.discovery.kindHint, 30) || null, geoOpen: inp.discovery.geoOpen === true ? true : null, tags: (inp.discovery.tags ?? []).slice(0, 20).map(t => clean(t, 40)),
+      originalText: clean(inp.discovery.originalText, 4000), translatedSummary: null, translationNote: "No translation was performed: the original text is kept as published.", assessedAt: now() } : null
   });
   /** Pure derivation used by BOTH the maker and the checker (the checker recomputes it from the stored raw input, not from the maker's result). */
   function deriveOpportunity(raw) {
+    const dsc = raw.discovery ? assessListing({ title: raw.title, description: raw.discovery.originalText || raw.sourceExcerpt, tags: raw.discovery.tags, deadline: raw.discovery.deadline, kindHint: raw.discovery.kindHint, geoOpen: raw.discovery.geoOpen }, raw.discovery.assessedAt) : null;
     const q = qualifyOpportunity({ ...raw, sourceEvidence: raw.sourceExcerpt, sourceUrl: raw.sourceType === "DOCUMENT_CENTER" ? null : raw.sourceRef,
       estimatedValueUsd: raw.estimatedValueUsd ?? 0, winProbability: raw.winProbability ?? 0, estimatedHours: raw.estimatedHours ?? 24, estimatedCostsUsd: raw.estimatedCostsUsd ?? 0 }).qualification;
-    const known = raw.estimatedValueUsd !== null && raw.winProbability !== null;
-    return { eligible: q.eligible && known, blockers: known ? q.blockers : [...q.blockers, "ECONOMICS_UNKNOWN_VALUE_OR_PROBABILITY"], expectedNetUsd: known ? q.expectedNetUsd : null, expectedNetPerHour: known ? q.expectedNetPerHour : null, unknownFields: ["estimatedValueUsd", "winProbability", "estimatedHours", "daysToCash"].filter(k => raw[k] === null),
-      kind: "ESTIMATE_NOT_REVENUE" };
+    const known = raw.estimatedValueUsd !== null && raw.winProbability !== null, blockers = [...q.blockers, ...(dsc?.hardBlockers ?? [])];
+    const sv = raw.discovery && raw.discovery.valueAmount !== null ? { amount: raw.discovery.valueAmount, currency: raw.discovery.currency, kind: raw.discovery.valueKind, usd: null, note: "Source-published figure in the source currency; not ATLASZ income. No exchange rate was supplied, so no USD figure exists." } : null;
+    return { eligible: blockers.length === 0, blockers, economics: known ? "KNOWN_OWNER_ESTIMATE" : "UNKNOWN", expectedNetUsd: known ? q.expectedNetUsd : null, expectedNetPerHour: known ? q.expectedNetPerHour : null,
+      unknownFields: ["estimatedValueUsd", "winProbability", "estimatedHours", "daysToCash"].filter(k => raw[k] === null), kind: "ESTIMATE_NOT_REVENUE", sourceValue: sv,
+      discovery: dsc ? { listingKind: dsc.listingKind, fraud: dsc.fraud, deadlineState: dsc.deadlineState, geoRestrictions: dsc.geoRestrictions, internationalEligibility: dsc.internationalEligibility, requirements: dsc.requirements, jurisdiction: raw.discovery.jurisdiction, currency: raw.discovery.currency, language: raw.discovery.language, publishedAt: raw.discovery.publishedAt, deadline: raw.discovery.deadline, retrieval: raw.discovery.retrieval, sourceId: raw.discovery.sourceId } : null };
   }
   function discoverOpportunity(agentId, input) {
     const g = gate(agentId, "SEARCH"); if (g) return g; const bad = validateOpportunityInput(input); if (bad) return R(bad);
@@ -137,14 +152,14 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
     const oppId = "opp-" + fp.slice(0, 12), taskId = "disc-" + fp.slice(0, 12), h = coordinator.connect(agentId);
     const reg = h.register({ id: taskId, kind: "search.discover", payload: { fp } }); if (!reg.ok) return R("COORDINATOR_REFUSED:" + reg.reason);
     const st = h.start(taskId); if (!st.ok) return R("COORDINATOR_REFUSED:" + st.reason);
-    const task = { taskId, workflow: "A", kind: "search.discover", agentId, status: "RUNNING", attempts: [], provenance: "REAL_LOCAL_TOOL", opportunityId: oppId, input: raw, createdAt: now(), updatedAt: now() }; rememberTask(task); save();
+    const task = { taskId, workflow: "A", kind: "search.discover", agentId, status: "RUNNING", attempts: [], provenance: raw.discovery?.retrieval === "FIXTURE" ? "SIMULATED" : "REAL_LOCAL_TOOL", opportunityId: oppId, input: raw, createdAt: now(), updatedAt: now() }; rememberTask(task); save();
     ev("TASK_STARTED", { taskId, agentId, kind: task.kind, workflow: "A" });
     const derived = deriveOpportunity(raw), record = { id: oppId, fingerprint: fp, raw, derived, discoveredBy: agentId, valueIsRevenue: false, sourceEvidence: { type: raw.sourceType, ref: raw.sourceRef, excerptSha256: sha(raw.sourceExcerpt) } };
     let art; try { art = writeArtifact(taskId, { "opportunity.json": JSON.stringify(record, null, 1) }, { executor: "opportunity.record", agentId, provenance: "REAL_LOCAL_TOOL" }); } catch (e) { return failTask(task, h, e); }
-    S.opps[oppId] = { id: oppId, fingerprint: fp, title: raw.title, status: "AWAITING_CHECK", discoveredBy: agentId, taskId, derived, createdAt: now(), updatedAt: now() };
+    S.opps[oppId] = { id: oppId, fingerprint: fp, title: raw.title, retrieval: raw.discovery?.retrieval ?? "OWNER_OR_MANUAL", stages: [], status: "AWAITING_CHECK", discoveredBy: agentId, taskId, derived, createdAt: now(), updatedAt: now() };
     h.checkpoint(taskId, { phase: "RECORDED", resultSha256: art.resultSha256 });
     const c = h.complete(taskId, art.resultSha256); if (!c.ok) return failTask(task, h, Object.assign(new Error(c.reason), { code: c.reason }));
-    touch(task, { status: "SUBMITTED", resultSha256: art.resultSha256, checker: coordinator.verifierOf(taskId), provenance: "REAL_LOCAL_TOOL" });
+    touch(task, { status: "SUBMITTED", resultSha256: art.resultSha256, checker: coordinator.verifierOf(taskId) });
     ev("OPPORTUNITY_RECORDED", { opportunityId: oppId, taskId, agentId, eligible: derived.eligible }); ev("TASK_SUBMITTED", { taskId, agentId, checker: task.checker });
     return { ok: true, taskId, opportunityId: oppId, status: "SUBMITTED_AWAITING_INDEPENDENT_CHECK", checker: task.checker, eligibleByQualification: derived.eligible, blockers: derived.blockers };
   }
@@ -158,6 +173,12 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
   }
 
   // ====================================================================== Workflow C (+F)
+  const OPP_EXECUTORS = new Set(["implementation_plan", "proposal_draft"]);
+  /** The recorded opportunity, as the data an opportunity deliverable is allowed to see (no secrets, only stored fields). */
+  function oppSnapshot(oppId) {
+    const o = Object.hasOwn(S.opps, oppId) ? S.opps[oppId] : null, t = o ? S.tasks[o.taskId] : null; if (!t) return null; const r = t.input, d = r.discovery;
+    return { opportunity: { title: r.title, sourceRef: r.sourceRef, description: d?.originalText || r.sourceExcerpt, jurisdiction: d?.jurisdiction ?? undefined, currency: d?.currency ?? undefined, valueAmount: d?.valueAmount ?? undefined, valueKind: d?.valueKind ?? undefined, deadline: d?.deadline ?? undefined, publishedAt: d?.publishedAt ?? undefined, buyer: d?.buyer ?? undefined, language: d?.language ?? undefined, kindHint: d?.kindHint ?? undefined, tags: d?.tags, assessedAt: d?.assessedAt ?? t.createdAt, retrieval: d?.retrieval, sourceId: d?.sourceId } };
+  }
   function executorFor(name) { return Object.hasOwn(executors, name) ? executors[name] : null; }
   async function executeTask(agentId, { executor, input, authorization = null, opportunityId = null, via = "API" } = {}) {
     const g = gate(agentId, "EXECUTION"); if (g) return g; const ex = executorFor(executor); if (!ex) return R("UNKNOWN_EXECUTOR");
@@ -173,6 +194,7 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
       authRef = "plan:" + plan.planId + ":" + step.id; opportunityId = plan.opportunityId;
     } else return R("AUTHORIZATION_TYPE_INVALID");
     if (!registry.get(agentId).capabilityProfile.skills.includes(executorSkill(executor) ?? executor)) return R("AGENT_LACKS_SKILL");
+    if (OPP_EXECUTORS.has(executor) && (input === undefined || input === null) && opportunityId) { const snap = oppSnapshot(opportunityId); if (!snap) return R("UNKNOWN_OPPORTUNITY"); input = snap; }
     const bad = ex.validate?.(input); if (bad) return R(bad);
     if (opportunityId && !Object.hasOwn(S.opps, opportunityId)) return R("UNKNOWN_OPPORTUNITY");
     if (capacity(agentId) <= 0) return R("AGENT_AT_CONCURRENCY_LIMIT");
@@ -280,6 +302,7 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
     if (canon(rec.derived) !== canon(deriveOpportunity(t.input))) out.push("QUALIFICATION_NOT_REPRODUCIBLE");
     if (rec.valueIsRevenue !== false) out.push("VALUE_MARKED_AS_REVENUE");
     if (rec.discoveredBy !== t.agentId) out.push("MAKER_IDENTITY_MISMATCH");
+    const dsc = t.input.discovery; if (dsc) { const src = sourceById(dsc.sourceId), h = hostOf(t.input.sourceRef); if (!src || !h || !src.hosts.map(x => x.replace(/^www\./, "")).includes(h.replace(/^www\./, ""))) out.push("SOURCE_HOST_MISMATCH"); if (dsc.retrieval === "CONNECTOR" && !dsc.evidenceSha256) out.push("CONNECTOR_RETRIEVAL_WITHOUT_EVIDENCE_HASH"); if ((dsc.retrieval === "CONNECTOR" || dsc.retrieval === "OPERATOR_TOOL") && !(typeof evidenceKnown === "function" && (() => { try { return evidenceKnown(dsc.evidenceSha256, dsc.retrieval) === true; } catch { return false; } })())) out.push("RETRIEVAL_LABEL_NOT_BACKED_BY_DISCOVERY_LOG"); if (!dsc.originalText) out.push("ORIGINAL_TEXT_MISSING"); }
     return out;
   }
   async function checkExecution(t, art, ex, evidence) {
@@ -296,7 +319,7 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
     if (t.workflow === "A") {
       const o = S.opps[t.opportunityId]; if (!o) return; const d = o.derived;
       o.status = d.eligible ? "VERIFIED_QUALIFIED" : "VERIFIED_NOT_ELIGIBLE"; o.verifiedBy = t.verifiedBy; o.updatedAt = now(); save();
-      if (d.eligible && revenue) {
+      if (d.eligible && revenue && o.retrieval !== "FIXTURE") {
         const searchAgent = t.agentId, r = revenue.track({ id: o.id, searchAgent, status: "OPEN_QUALIFIED", eligibility: "ELIGIBLE", expectedNetUsd: d.expectedNetUsd, paymentProbability: S.tasks[t.taskId].input.winProbability, feasibility: null, daysToRevenue: S.tasks[t.taskId].input.daysToCash });
         if (!r.ok) ev("PIPELINE_TRACK_REFUSED", { opportunityId: o.id, reason: r.reason });
       }
@@ -305,7 +328,7 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
     // memory of VERIFIED work is written by the coordinator hook when a memory gateway is connected (see setOnVerified below)
   }
   coordinator.setOnVerified(({ id, verifier }) => {
-    try { const t = S.tasks[id]; if (!t || !memory) return; const summary = "Task " + id + " (" + t.kind + ") by " + t.agentId + " was accepted by independent checker " + verifier + "; provenance " + t.provenance + ". Result hash " + String(t.resultSha256).slice(0, 16) + "."; memory.recordVerifiedWork({ taskId: id, owner: t.agentId, verifier, summary }); } catch { /* memory is a second line of support */ }
+    try { const t = S.tasks[id]; if (!t || !memory) return; const summary = "Task " + id + " (" + t.kind + ") by " + t.agentId + " was accepted by independent checker " + verifier + "; provenance " + t.provenance + ". Result hash " + String(t.resultSha256).slice(0, 16) + "."; const project = t.opportunityId && t.provenance !== "SIMULATED" ? String(t.opportunityId).replace(/[^a-z0-9]/gi, "").toLowerCase().slice(0, 23) : null; memory.recordVerifiedWork({ taskId: id, owner: t.agentId, verifier, summary, project: project && /^[a-z0-9][a-z0-9_.]{0,22}$/.test(project) ? project : null }); } catch { /* memory is a second line of support */ }
   });
   /** After a REJECT the owner reworks (bounded): the same task, a fresh attempt series. */
   async function reworkTask(taskId) {
@@ -336,12 +359,15 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
   }
   const researchDoc = opp => {
     const raw = S.tasks[opp.taskId].input, have = new Set(registry.list().flatMap(a => a.team === "EXECUTION" && a.status === "REGISTERED_READY" ? a.capabilityProfile.skills : []));
-    const matched = raw.requiredSkills.filter(s => have.has(s)), unmatched = raw.requiredSkills.filter(s => !have.has(s));
-    return { opportunityId: opp.id, requiredSkills: raw.requiredSkills, matchedSkills: matched, unmatchedSkills: unmatched, dataGaps: opp.derived.unknownFields, risks: [...(raw.upfrontSpendRequired ? ["UPFRONT_SPEND_REQUIRED"] : []), ...(unmatched.length ? ["SKILLS_NOT_AVAILABLE:" + unmatched.join(",")] : []), ...(raw.sourceType === "MANUAL_ENTRY" ? ["SOURCE_IS_MANUAL_ENTRY_UNVERIFIED_BY_DOCUMENT"] : [])], basis: "Derived only from the recorded opportunity and the current agent skills. No external research was performed." };
+    const reqSkills = opp.ownerInput?.requiredSkills ?? raw.requiredSkills, matched = reqSkills.filter(s => have.has(s)), unmatched = reqSkills.filter(s => !have.has(s)), dd = opp.derived.discovery, unsupported = opp.ownerInput ? [] : (dd?.requirements.unsupported ?? []);
+    return { opportunityId: opp.id, requiredSkills: reqSkills, matchedSkills: matched, unmatchedSkills: unmatched, unsupported, dataGaps: opp.derived.unknownFields,
+      risks: [...(raw.upfrontSpendRequired ? ["UPFRONT_SPEND_REQUIRED"] : []), ...(unmatched.length ? ["SKILLS_NOT_AVAILABLE:" + unmatched.join(",")] : []), ...unsupported.map(u => "OUTSIDE_CAPABILITY:" + u), ...(raw.sourceType === "MANUAL_ENTRY" ? ["SOURCE_IS_MANUAL_ENTRY_UNVERIFIED_BY_DOCUMENT"] : []),
+        ...(dd ? ["GEOGRAPHIC_ELIGIBILITY_" + dd.internationalEligibility, "CAPABILITY_COVERAGE_IS_KEYWORD_BASED_AND_UNASSESSED_BEYOND_THE_MATCHED_SKILLS", ...(dd.fraud.level !== "NONE" ? ["SCAM_INDICATORS_" + dd.fraud.level] : [])] : [])],
+      basis: "Derived only from the recorded opportunity and the current agent skills. No external research was performed." };
   };
   const evaluationDoc = (opp, res) => {
     const n = res.requiredSkills.length || 1, coverage = res.matchedSkills.length / n, penalty = res.risks.length * 0.1, feasibility = Math.max(0, Math.min(1, +(coverage - penalty).toFixed(3)));
-    return { opportunityId: opp.id, skillCoverage: +coverage.toFixed(3), feasibility, recommendation: !opp.derived.eligible ? "DECLINE" : res.requiredSkills.length === 0 ? "NEEDS_OWNER_INPUT" : feasibility >= 0.5 ? "PROCEED_TO_PLAN" : "NEEDS_OWNER_INPUT", reasons: res.risks.slice(), unknowns: opp.derived.unknownFields };
+    return { opportunityId: opp.id, skillCoverage: +coverage.toFixed(3), feasibility, recommendation: !opp.derived.eligible ? "DECLINE" : res.requiredSkills.length === 0 || res.unsupported.length ? "NEEDS_OWNER_INPUT" : feasibility >= 0.5 ? "PROCEED_TO_PLAN" : "NEEDS_OWNER_INPUT", reasons: res.risks.slice(), unknowns: opp.derived.unknownFields };
   };
   function checkAnalysis(t, art) {
     const out = []; let doc; try { doc = JSON.parse(art.files["analysis.json"].toString("utf8")); } catch { return ["ANALYSIS_UNREADABLE"]; }
@@ -368,8 +394,9 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
     // Plan: internal digital steps are executable by agents; every external communication, binding commitment or spend is an owner-approval gate and has NO executor.
     const raw = S.tasks[opp.taskId].input, skillSteps = res.matchedSkills.map((s, i) => ({ id: "BUILD" + (i + 1), title: "Deliver: " + s, requires: [s], dependsOn: ["PROPOSAL"], executor: SKILL_OF_EXECUTOR[s] ?? null }));
     const steps = [
-      { id: "PROPOSAL", title: "Prepare a proposal draft (internal, nothing is sent)", requires: [], dependsOn: [] },
-      { id: "SEND", title: "Send the proposal to the prospect", requires: [], dependsOn: ["PROPOSAL"], gate: "EXTERNAL_COMMUNICATION" },
+      { id: "PROPOSAL", title: "Prepare a proposal draft (internal, nothing is sent)", requires: [], dependsOn: [], executor: "proposal_draft" },
+      { id: "TECHPLAN", title: "Prepare the technical implementation plan (internal)", requires: [], dependsOn: [], executor: "implementation_plan" },
+      { id: "SEND", title: "Send the proposal to the prospect", requires: [], dependsOn: ["PROPOSAL", "TECHPLAN"], gate: "EXTERNAL_COMMUNICATION" },
       { id: "AGREE", title: "Accept terms / sign an agreement", requires: [], dependsOn: ["SEND"], gate: "BINDING_COMMITMENT" },
       ...skillSteps.map(s => ({ ...s, dependsOn: ["AGREE"] })),
       { id: "INVOICE", title: "Issue the invoice to the customer", requires: [], dependsOn: skillSteps.length ? skillSteps.map(s => s.id) : ["AGREE"], gate: "EXTERNAL_COMMUNICATION" },
@@ -414,6 +441,56 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
     return { ok: true, recorded: written.length, note: "Revenue counts as verified only for stage PAID with external evidence; everything else is pipeline." };
   }
 
+  // ====================================================================== Lifecycle, batch discovery, work packages (owner priority directive)
+  /** DISCOVERED > VERIFIED > QUALIFIED > PLANNED > APPROVAL_REQUIRED > PROPOSED > CONTRACTED > IN_PROGRESS > QUALITY_CHECKED > DELIVERED > PAYMENT_PENDING > PAID. Each stage past PLANNED exists only because evidence was recorded. */
+  function lifecycleOf(o) {
+    const st = o.stages ?? [], last = st.at(-1)?.stage;
+    if (last) return last; const plan = o.planId ? S.plans[o.planId] : null;
+    if (plan) { const open = plan.requiredApprovals.some(a => { try { return !(approvals?.outcome?.(a.requestId)?.decision === "APPROVED"); } catch { return true; } }); return open ? "APPROVAL_REQUIRED" : "PLANNED"; }
+    if (o.status === "VERIFIED_QUALIFIED") return "QUALIFIED"; if (o.status === "VERIFIED_NOT_ELIGIBLE") return "VERIFIED"; return "DISCOVERED";
+  }
+  const evOkStage = e => Boolean(e && typeof e === "object" && typeof e.source === "string" && e.source && typeof e.reference === "string" && e.reference && Number.isFinite(Date.parse(e.verifiedAt)));
+  const gateApproved = (plan, gateStep) => { const a = plan.requiredApprovals.find(x => x.stepId === gateStep); try { return Boolean(a?.requestId && approvals?.outcome?.(a.requestId)?.decision === "APPROVED"); } catch { return false; } };
+  function advanceLifecycle(opportunityId, stage, { evidence = null } = {}) {
+    if (stopped()) return R("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const o = Object.hasOwn(S.opps, opportunityId) ? S.opps[opportunityId] : null; if (!o) return R("UNKNOWN_OPPORTUNITY");
+    if (!STAGES_AFTER_PLAN.includes(stage)) return R("STAGE_NOT_ADVANCEABLE_BY_EVIDENCE"); if (o.retrieval === "FIXTURE") return R("FIXTURE_OPPORTUNITIES_CANNOT_ENTER_THE_COMMERCIAL_PIPELINE");
+    const plan = o.planId ? S.plans[o.planId] : null; if (!plan) return R("OPPORTUNITY_NOT_PLANNED"); const have = new Set((o.stages ?? []).map(x => x.stage)), idx = STAGES_AFTER_PLAN.indexOf(stage);
+    if (have.has(stage)) return R("STAGE_ALREADY_RECORDED"); if (idx > 0 && !have.has(STAGES_AFTER_PLAN[idx - 1]) && !(stage === "QUALITY_CHECKED" && have.has("IN_PROGRESS"))) return R("PREVIOUS_STAGE_MISSING", { needs: STAGES_AFTER_PLAN[idx - 1] });
+    const mine = Object.values(S.tasks).filter(t => t.opportunityId === opportunityId && t.workflow === "C");
+    if (stage === "PROPOSED") { if (!gateApproved(plan, "SEND")) return R("OWNER_APPROVAL_FOR_SEND_NOT_GRANTED"); if (!evOkStage(evidence)) return R("EVIDENCE_REQUIRED_OF_THE_SENDING"); }
+    if (stage === "CONTRACTED") { if (!gateApproved(plan, "AGREE")) return R("OWNER_APPROVAL_FOR_AGREEMENT_NOT_GRANTED"); if (!evOkStage(evidence)) return R("EVIDENCE_REQUIRED_OF_THE_AGREEMENT"); }
+    if (stage === "QUALITY_CHECKED" && !mine.some(t => t.status === "VERIFIED" && !/^(implementation_plan|proposal_draft)$/.test(t.executor))) return R("NO_INDEPENDENTLY_VERIFIED_DELIVERABLE");
+    if (stage === "DELIVERED" && !evOkStage(evidence)) return R("EVIDENCE_REQUIRED_OF_THE_DELIVERY");
+    if (stage === "PAYMENT_PENDING") { if (!gateApproved(plan, "INVOICE")) return R("OWNER_APPROVAL_FOR_INVOICE_NOT_GRANTED"); if (!evOkStage(evidence)) return R("EVIDENCE_REQUIRED_OF_THE_INVOICE"); }
+    if (stage === "PAID" && !mine.some(t => t.outcome?.revenueStage === "PAID")) return R("NO_PAID_RECEIPT_RECORDED_IN_THE_LEDGER");
+    (o.stages ??= []).push({ stage, at: now(), evidence: evidence ? { source: clean(evidence.source, 80), reference: clean(evidence.reference, 160), verifiedAt: evidence.verifiedAt } : { source: "workforce", reference: mine.filter(t => t.status === "VERIFIED").map(t => t.taskId).join(",").slice(0, 160) || "n/a", verifiedAt: now() } });
+    o.updatedAt = now(); save(); ev("LIFECYCLE_ADVANCED", { opportunityId, stage }); return { ok: true, stage };
+  }
+  /** The owner states which agent skills the work needs when the keyword inference found none. Recorded as an OWNER assertion (never as a verified fact); only from the owner panel. */
+  function supplyOwnerInput(opportunityId, { requiredSkills, note = "" } = {}, via = "API") {
+    if (stopped()) return R("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); if (via !== "OWNER_PANEL") return R("OWNER_INPUT_ONLY_FROM_OWNER_PANEL");
+    const o = Object.hasOwn(S.opps, opportunityId) ? S.opps[opportunityId] : null; if (!o) return R("UNKNOWN_OPPORTUNITY"); if (o.status !== "NEEDS_OWNER_INPUT") return R("OPPORTUNITY_NOT_AWAITING_OWNER_INPUT", { status: o.status }); if (!o.derived.eligible) return R("OPPORTUNITY_NOT_ELIGIBLE");
+    if (!Array.isArray(requiredSkills) || !requiredSkills.length || requiredSkills.length > 10 || !requiredSkills.every(x => typeof x === "string" && /^[a-z][a-z0-9._-]{1,48}$/.test(x))) return R("REQUIRED_SKILLS_INVALID");
+    o.ownerInput = { requiredSkills: [...new Set(requiredSkills)], note: clean(note, 300), at: now(), by: "OWNER_PANEL", kind: "OWNER_ASSERTION_NOT_VERIFIED_FACT" }; o.status = "VERIFIED_QUALIFIED"; o.updatedAt = now(); save(); ev("OWNER_INPUT_RECORDED", { opportunityId }); return { ok: true, status: o.status };
+  }
+  /** Dynamic assignment: each item goes to the least-loaded usable SEARCH agent; the coordinator names an independent checker; the check runs immediately. Duplicates are dropped before any agent is used. */
+  async function discoverBatch(items, { toInput, maxItems = 10 } = {}) {
+    const out = [], list = (Array.isArray(items) ? items : []).slice(0, maxItems);
+    for (const it of list) {
+      const conv = toInput(it); if (!conv.ok) { out.push({ ok: false, title: it?.title, reason: conv.reason }); continue; }
+      const agent = pickAgent("SEARCH"); if (!agent) { out.push({ ok: false, title: it.title, reason: "NO_AVAILABLE_SEARCH_AGENT" }); continue; }
+      const d = discoverOpportunity(agent, conv.input); if (!d.ok) { out.push({ ok: false, title: it.title, reason: d.reason }); continue; }
+      const c = await checkTask(d.taskId); out.push({ ok: true, opportunityId: d.opportunityId, title: it.title, discoveredBy: agent, checkedBy: c.checker ?? null, decision: c.decision ?? c.reason, lifecycle: lifecycleOf(S.opps[d.opportunityId]), eligible: S.opps[d.opportunityId].derived.eligible, blockers: S.opps[d.opportunityId].derived.blockers });
+    }
+    return out;
+  }
+  /** Execution hand-off: which execution agent would take which internal step, with the models/tools actually available. Nothing runs here. */
+  function assignExecution(planId) {
+    const plan = Object.hasOwn(S.plans, planId) ? S.plans[planId] : null; if (!plan) return R("UNKNOWN_PLAN"); const taken = [], assignments = [];
+    for (const st of plan.steps.filter(x => x.executor && !x.requiresOwnerApproval)) { const ag = pickAgent("EXECUTION", taken) ?? pickAgent("EXECUTION"); if (!ag) { assignments.push({ stepId: st.id, executor: st.executor, agentId: null, blocker: "NO_AVAILABLE_EXECUTION_AGENT" }); continue; } taken.push(ag); assignments.push({ stepId: st.id, executor: st.executor, agentId: ag, skill: executorSkill(st.executor), models: models ? "MODEL_GATEWAY_CONNECTED_NO_PAID_USAGE" : "NONE (local deterministic tools only)" }); }
+    plan.assignments = assignments; save(); ev("EXECUTION_ASSIGNED", { planId, steps: assignments.length }); return { ok: true, assignments };
+  }
+
   // ====================================================================== Views (real data only)
   const taskOf = id => Object.values(S.tasks).filter(t => t.agentId === id).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
   function agentViews() {
@@ -439,7 +516,10 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
       queues: { running: by("RUNNING").length, awaitingCheck: by("SUBMITTED").length, interrupted: by("INTERRUPTED").length, reworkAllowed: by("REJECTED_REWORK_ALLOWED").length, deadLetter: by("DEAD_LETTER").length, blocked: by("BLOCKED").length },
       delegation: coordinator.ledger.list("JOCI", {}).slice(-30).map(k => ({ id: k.id, kind: k.kind, owner: k.owner, status: k.status, owners: k.owners })),
       makerChecker: ts.flatMap(t => (t.checks ?? []).map(c => ({ taskId: t.taskId, maker: t.agentId, checker: c.checker, decision: c.decision, at: c.at, reasons: c.reasons }))).slice(-40).reverse(),
-      pipeline: opps.map(o => ({ id: o.id, title: o.title, status: o.status, discoveredBy: o.discoveredBy, verifiedBy: o.verifiedBy ?? null, eligible: o.derived.eligible, expectedNetUsd: o.derived.expectedNetUsd, unknownFields: o.derived.unknownFields, planId: o.planId ?? null, kind: "ESTIMATE_NOT_REVENUE" })),
+      pipeline: opps.map(o => ({ id: o.id, title: o.title, status: o.status, lifecycle: lifecycleOf(o), stages: (o.stages ?? []).map(x => x.stage), retrieval: o.retrieval, discoveredBy: o.discoveredBy, verifiedBy: o.verifiedBy ?? null, eligible: o.derived.eligible, blockers: o.derived.blockers, economics: o.derived.economics, expectedNetUsd: o.derived.expectedNetUsd, unknownFields: o.derived.unknownFields, planId: o.planId ?? null, kind: "ESTIMATE_NOT_REVENUE",
+        discovery: o.derived.discovery ? { sourceId: o.derived.discovery.sourceId, listingKind: o.derived.discovery.listingKind, jurisdiction: o.derived.discovery.jurisdiction, currency: o.derived.discovery.currency, language: o.derived.discovery.language, publishedAt: o.derived.discovery.publishedAt, deadline: o.derived.discovery.deadline, deadlineState: o.derived.discovery.deadlineState, fraudLevel: o.derived.discovery.fraud.level, fraud: o.derived.discovery.fraud.indicators, geoRestrictions: o.derived.discovery.geoRestrictions, internationalEligibility: o.derived.discovery.internationalEligibility, sourceValue: o.derived.sourceValue } : null })),
+      discoverySummary: { connectorRetrieved: opps.filter(o => o.retrieval === "CONNECTOR").length, operatorToolRetrieved: opps.filter(o => o.retrieval === "OPERATOR_TOOL").length, fixtures: opps.filter(o => o.retrieval === "FIXTURE").length, ownerOrManual: opps.filter(o => o.retrieval === "OWNER_OR_MANUAL").length, verified: opps.filter(o => /^VERIFIED|PLANNED|NEEDS|DECLINED/.test(o.status)).length, qualified: opps.filter(o => o.status === "VERIFIED_QUALIFIED" || o.status === "PLANNED").length, byLifecycle: Object.fromEntries([...new Set(opps.map(lifecycleOf))].map(k => [k, opps.filter(o => lifecycleOf(o) === k).length])) },
+      deliverables: ts.filter(t => t.workflow === "C" && t.opportunityId).map(t => ({ taskId: t.taskId, opportunityId: t.opportunityId, executor: t.executor, agentId: t.agentId, status: t.status, checker: t.checker ?? null, provenance: t.provenance, resultSha256: t.resultSha256 ?? null })),
       plans: Object.values(S.plans).map(p => ({ planId: p.planId, opportunityId: p.opportunityId, steps: p.steps.map(s => ({ id: s.id, title: s.title, status: s.status, gate: s.gate })), approvals: p.requiredApprovals })),
       execution: ts.filter(t => t.workflow === "C").slice(-30).reverse().map(t => ({ taskId: t.taskId, executor: t.executor, agentId: t.agentId, status: t.status, provenance: t.provenance, checker: t.checker ?? null, attempts: t.attempts.length, opportunityId: t.opportunityId })),
       verifiedRevenue: { verifiedReceivedUsd: led.revenue.verifiedReceivedUsd, paymentRecords: led.revenue.paymentRecords, source: led.revenue.source, kind: "VERIFIED_RECEIPTS_ONLY" },
@@ -453,5 +533,5 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
   }
   const getTask = id => (Object.hasOwn(S.tasks, id) ? structuredClone({ ...S.tasks[id], input: undefined }) : null);
   const verify = () => ({ ok: eventsOk() && registry.verify().ok, events: eventsOk(), registry: registry.verify() });
-  return { discoverOpportunity, planOpportunity, executeTask, checkTask, reworkTask, resumeTask, recordOutcome, agentViews, systemView, getTask, verify, coordinator, ledger: money, registry, listOpportunities: () => Object.values(S.opps).map(o => ({ ...o })), listTasks: () => Object.values(S.tasks).map(t => ({ ...t, input: undefined })) };
+  return { discoverOpportunity, supplyOwnerInput, discoverBatch, advanceLifecycle, assignExecution, lifecycleOf: id => (Object.hasOwn(S.opps, id) ? lifecycleOf(S.opps[id]) : null), planOpportunity, executeTask, checkTask, reworkTask, resumeTask, recordOutcome, agentViews, systemView, getTask, verify, coordinator, ledger: money, registry, listOpportunities: () => Object.values(S.opps).map(o => ({ ...o })), listTasks: () => Object.values(S.tasks).map(t => ({ ...t, input: undefined })) };
 }

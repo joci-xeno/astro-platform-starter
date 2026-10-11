@@ -1,0 +1,96 @@
+{
+ "label": "OPERATOR-RETRIEVED PUBLIC LISTINGS (not retrieved by an ATLASZ connector)",
+ "retrievedAt": "2026-10-11T19:50:00Z",
+ "tool": "Claude WebFetch (operator tool outside the ATLASZ runtime)",
+ "note": "Excerpts are limited to what the fetch tool returned (short quotes). Nothing was fabricated; descriptions that were not retrieved are absent. Used for the Phase 5b demonstration; these are real public notices/listings as of the retrieval time and may have changed or expired since.",
+ "sources": {
+  "find-a-tender-uk": [
+   {
+    "url": "https://www.find-tender.service.gov.uk/Notice/095865-2026?origin=SearchResults&p=1",
+    "title": "Going Global Partnerships Programme; Country Level Evaluations",
+    "description": "Provide a programme of country evaluations over the next two and half years of GGP.",
+    "language": "en",
+    "publishedAt": "2026-10-09T18:56:00+01:00",
+    "deadline": "2026-10-26T21:55:00+00:00",
+    "currency": "GBP",
+    "valueAmount": 200000,
+    "valueKind": "BUYER_PUBLISHED_ESTIMATE",
+    "jurisdiction": "GB",
+    "buyer": "British Council",
+    "kindHint": "TENDER"
+   },
+   {
+    "url": "https://www.find-tender.service.gov.uk/Notice/095874-2026?origin=SearchResults&p=1",
+    "title": "Decadal scale net sediment budget and geomorphic change analysis of SSSI dune systems in England",
+    "description": "Decadal scale net sediment budget and geomorphic change analysis of SSSI dune systems in England.",
+    "language": "en",
+    "publishedAt": "2026-10-10T08:12:00+01:00",
+    "deadline": "2026-10-26T12:00:00+00:00",
+    "currency": "GBP",
+    "valueAmount": 50000,
+    "valueKind": "BUYER_PUBLISHED_ESTIMATE",
+    "jurisdiction": "GB",
+    "buyer": "Natural England",
+    "kindHint": "TENDER"
+   },
+   {
+    "url": "https://www.find-tender.service.gov.uk/Notice/095873-2026?origin=SearchResults&p=1",
+    "title": "Malaysia Penang Centre Regear and Refit",
+    "description": "The British Council currently occupies Wisma Great Eastern, Penang - No. 25, Lebuh Light, 10200 Level 3A, Suite 3A.1.",
+    "language": "en",
+    "publishedAt": "2026-10-10T02:34:00+01:00",
+    "deadline": "2026-10-23T16:30:00+01:00",
+    "currency": "GBP",
+    "valueAmount": 80000,
+    "valueKind": "BUYER_PUBLISHED_ESTIMATE",
+    "jurisdiction": "GB",
+    "buyer": "British Council",
+    "kindHint": "TENDER"
+   }
+  ],
+  "remoteok": [
+   {
+    "url": "https://remoteOK.com/remote-jobs/remote-platform-and-integration-engineer-security-telemetry-redmimicry-1137465",
+    "title": "Platform and Integration Engineer Security Telemetry - RedMimicry",
+    "description": "",
+    "language": "en",
+    "publishedAt": "2026-10-05T13:00:02+00:00",
+    "tags": [
+     "golang",
+     "infosec",
+     "engineer",
+     "part time"
+    ],
+    "buyer": "RedMimicry",
+    "kindHint": "JOB_BOARD"
+   },
+   {
+    "url": "https://remoteOK.com/remote-jobs/remote-senior-react-full-stack-developer-lemon-io-1137475",
+    "title": "Senior React Full stack Developer - Lemon.io",
+    "description": "No more hunting for clients or negotiating rates.",
+    "language": "en",
+    "publishedAt": "2026-10-09T13:09:18+00:00",
+    "currency": "USD",
+    "valueAmount": 200000,
+    "valueKind": "SALARY_RANGE_NOT_PROJECT_VALUE",
+    "tags": [
+     "dev",
+     "engineer",
+     "remote",
+     "python",
+     "aws",
+     "gcp",
+     "javascript",
+     "react",
+     "node",
+     "ruby",
+     "typescript",
+     "full time",
+     "full stack"
+    ],
+    "buyer": "Lemon.io",
+    "kindHint": "JOB_BOARD"
+   }
+  ]
+ }
+}

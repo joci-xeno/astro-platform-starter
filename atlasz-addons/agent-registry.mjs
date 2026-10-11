@@ -22,7 +22,7 @@ const DEFAULT_RETRY = Object.freeze({ backoffMs: [0, 500, 2000], retryableCodes:
 const NAME_RE = /^[\p{L}\p{N} ._-]{1,40}$/u, sha = t => crypto.createHash("sha256").update(t).digest("hex");
 const SKILLS = Object.freeze({
   SEARCH: ["opportunity.discovery", "opportunity.research", "opportunity.evaluation", "source.provenance"],
-  EXECUTION: ["data.csv_to_json", "doc.extract_summary", "code.module_with_tests", "quality.verification"]
+  EXECUTION: ["data.csv_to_json", "doc.extract_summary", "code.module_with_tests", "plan.implementation_plan", "doc.proposal_draft", "quality.verification"]
 });
 const ids = new Set(ROSTER);
 

@@ -182,13 +182,13 @@ test("MED-4/5: module tests must import the module and may not exit the process;
   } finally { rm(d); }
 });
 
-test("MED-6: unknown values stay unknown (never 0), caps apply, secrets in title/sourceRef refused, unknown economics are not 'eligible'", async () => {
+test("MED-6: unknown values stay unknown (never 0), caps apply, secrets in title/sourceRef refused, unknown economics are labelled UNKNOWN, not zero", async () => {
   const d = tmp("wf-"); try {
     const wf = open(d), bad = (o, why) => assert.equal(wf.discoverOpportunity("SEARCH-1", opp({ title: "t" + Math.random(), sourceRef: "r" + Math.random(), ...o })).reason, why);
     bad({ estimatedValueUsd: false }, "NUMBER_INVALID:estimatedValueUsd"); bad({ estimatedValueUsd: [5] }, "NUMBER_INVALID:estimatedValueUsd"); bad({ estimatedValueUsd: "1e308" }, "NUMBER_INVALID:estimatedValueUsd"); bad({ winProbability: 1.5 }, "NUMBER_INVALID:winProbability");
     bad({ title: "sk-ant-api03-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" }, "SECRET_IN_TITLE"); bad({ sourceRef: "sk-ant-api03-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" }, "SECRET_IN_SOURCEREF");
-    const r = wf.discoverOpportunity("SEARCH-1", opp({ title: "unknown value", sourceRef: "u1", estimatedValueUsd: " ", winProbability: null })); assert.equal(r.ok, true); assert.equal(r.eligibleByQualification, false);
-    const o = wf.listOpportunities()[0]; assert.equal(o.derived.expectedNetUsd, null); assert.ok(o.derived.unknownFields.includes("estimatedValueUsd"));
+    const r = wf.discoverOpportunity("SEARCH-1", opp({ title: "unknown value", sourceRef: "u1", estimatedValueUsd: " ", winProbability: null })); assert.equal(r.ok, true); assert.equal(r.eligibleByQualification, true);
+    const o = wf.listOpportunities()[0]; assert.equal(o.derived.economics, "UNKNOWN"); assert.equal(o.derived.expectedNetUsd, null); assert.ok(o.derived.unknownFields.includes("estimatedValueUsd"));
   } finally { rm(d); }
 });
 
