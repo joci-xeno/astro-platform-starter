@@ -28,6 +28,8 @@ test("Master over HTTP: auth required; 14 managers with honest live status; auto
     // automatic start: the timer in the server runs a supervision pass with nobody clicking
     for (let i = 0; i < 40 && !((await c.act({ op: "masterStatus" })).result?.supervisions >= 1); i++) await new Promise(r => setTimeout(r, 150));
     const st = (await c.act({ op: "masterStatus" })).result; assert.ok(st.supervisions >= 1, "automatic supervision pass happened: " + st.supervisions);
+    const lp = (await c.act({ op: "masterLoopStatus" })).result.loop; assert.equal(lp.state, "RUNNING"); assert.ok(lp.ticks >= 1 && lp.lastOkAt, JSON.stringify(lp)); assert.equal(st.managers.find(m => m.id === "MASTER_COORDINATOR").data.loop.state, "RUNNING");
+    assert.equal(st.managers.find(m => m.id === "MASTER_COORDINATOR").data.liveness.state, "ALIVE");
     assert.equal(st.managers.length, 14); assert.equal(st.hierarchy.agents.permanent, 30);
     const by = Object.fromEntries(st.managers.map(m => [m.id, m]));
     // honest status without owner key / backups / running runtime: those are NOT shown as connected

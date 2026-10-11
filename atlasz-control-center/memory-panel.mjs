@@ -13,8 +13,13 @@ export function createMemoryPanel({ stateDir, ownerAuth, sign, fetchImpl = globa
   let store = null, am = null;
   // The owner key may be provisioned (or replaced) while this process runs: look it up at every use, and treat "no key" as "not approved", never as an error that hides the panel.
   const auth = { verifyApproval: (...a) => { try { return ownerAuth().verifyApproval(...a); } catch { return { allowed: false, reason: "NO_OWNER_KEY" }; } } };
+  // The activation record can change outside this panel (restore, manual file change, the Master's early probe having opened the store first): the open store is dropped when the record's signature changes.
+  const cfgSig = () => { try { const st = fs.statSync(cfgFile); return st.size + ":" + st.mtimeMs; } catch { return "absent"; } };
+  let openSig = null;
   const open = () => {
+    if (store && openSig !== cfgSig()) reset();
     if (store) return;
+    openSig = cfgSig();
     store = createMemoryStore({ dir: storeDir, ownerAuth: auth, semanticProvider: loadActivatedProvider({ configFile: cfgFile, fetchImpl }) });
     am = createAgentMemory({ store, dir: accDir, ownerAuth: auth });
   };

@@ -64,6 +64,7 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
   let recovery = { coordinator: null, interrupted: 0 };
   try { recovery.coordinator = coordinator.recover(); } catch (e) { recovery.coordinator = { ok: false, error: String(e?.message ?? e).slice(0, 80) }; }
   for (const t of Object.values(S.tasks)) if (t.status === "RUNNING") { t.status = "INTERRUPTED"; t.updatedAt = now(); recovery.interrupted++; ev("TASK_INTERRUPTED_BY_RESTART", { taskId: t.taskId, agentId: t.agentId }); }
+  for (const t of Object.values(S.tasks)) if (t.status === "REASSIGNING") { compensateReassign(t, "RESTART_DURING_REASSIGNMENT"); recovery.interrupted++; }
   if (recovery.interrupted) save();
 
   // ---- gates ----
@@ -359,17 +360,38 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
     if (!isMaster(masterToken)) return R("MASTER_CAPABILITY_REQUIRED"); if (stopped()) return R("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const t = Object.hasOwn(S.tasks, taskId) ? S.tasks[taskId] : null; if (!t || t.status !== "SUSPENDED") return R("TASK_NOT_SUSPENDED", { status: t?.status });
     const back = SUSPENDABLE.includes(t.suspendedFrom) ? t.suspendedFrom : "INTERRUPTED"; touch(t, { status: back, suspendedFrom: undefined, suspendReason: undefined }); ev("TASK_UNSUSPENDED", { taskId, agentId: t.agentId, status: back }); return { ok: true, taskId, status: back };
   }
-  /** A stuck execution task is closed as REASSIGNED and the same authorised step runs again under another agent of the team (never the previous owner, never its checker). Owner-directed tasks are reassigned only by the owner. */
+  /** A stuck execution task is handed to another agent of the team (never the previous owner, never its checker). Owner-directed tasks are reassigned only by the owner.
+   *  COMPENSATING TRANSACTION (DEF-001): 1 PREPARE (validate everything the replacement needs; old task keeps its status, only an intent is recorded) -> 2 HOLD (old task REASSIGNING, ledger entry released so the same work can be registered)
+   *  -> 3 RUN the replacement -> 4a COMMIT (old task REASSIGNED) or 4b COMPENSATE (old task restored to its previous status with the failure recorded). A crash between 2 and 4 is compensated at the next open. */
   async function reassignTask(taskId, toAgent, { masterToken = null, ownerPanel = false } = {}) {
     if (!isMaster(masterToken)) return R("MASTER_CAPABILITY_REQUIRED"); const t = Object.hasOwn(S.tasks, taskId) ? S.tasks[taskId] : null; if (!t) return R("UNKNOWN_TASK");
     if (t.workflow !== "C") return R("ONLY_EXECUTION_TASKS_ARE_REASSIGNABLE"); if (!["SUSPENDED", "INTERRUPTED", "BLOCKED"].includes(t.status)) return R("TASK_NOT_REASSIGNABLE", { status: t.status });
     if (t.authz?.type !== "PLAN_STEP" && ownerPanel !== true) return R("OWNER_DIRECTED_TASK_NEEDS_THE_OWNER"); if (toAgent === t.agentId || toAgent === t.checker) return R("REASSIGN_TARGET_NOT_INDEPENDENT");
-    const from = t.agentId; try { coordinator.abandon(taskId, "REASSIGNED_TO_" + toAgent); } catch { /* ledger may have closed it */ }
-    touch(t, { status: "REASSIGNED", reassignedTo: toAgent }); ev("TASK_REASSIGNED", { taskId, from, to: toAgent });
-    const r = await executeTask(toAgent, { executor: t.executor, input: t.input, authorization: t.authz, opportunityId: t.opportunityId, via: ownerPanel ? "OWNER_PANEL" : "MASTER", masterToken });
-    if (r.ok && r.taskId && S.tasks[r.taskId]) { S.tasks[r.taskId].reassignedFrom = taskId; save(); }
-    return r.ok ? { ...r, reassignedFrom: taskId, from, to: toAgent } : { ...r, reassignedFrom: taskId, note: "The old task stays REASSIGNED; the owner can retry." };
+    // 1 PREPARE: everything that can be checked without side effects is checked while the old task is untouched
+    const g = gate(toAgent, "EXECUTION"); if (g) return { ...g, reassignAborted: "BEFORE_ANY_CHANGE" };
+    if (!executorFor(t.executor)) return R("UNKNOWN_EXECUTOR", { reassignAborted: "BEFORE_ANY_CHANGE" });
+    if (!registry.get(toAgent).capabilityProfile.skills.includes(executorSkill(t.executor) ?? t.executor)) return R("AGENT_LACKS_SKILL", { reassignAborted: "BEFORE_ANY_CHANGE" });
+    if (capacity(toAgent) <= 0) return R("AGENT_AT_CONCURRENCY_LIMIT", { reassignAborted: "BEFORE_ANY_CHANGE" });
+    const from = t.agentId, prev = t.status, prevMeta = { suspendedFrom: t.suspendedFrom, suspendReason: t.suspendReason, blocker: t.blocker };
+    // 2 HOLD
+    t.reassignIntent = { to: toAgent, from, prevStatus: prev, prevMeta, at: now() }; touch(t, { status: "REASSIGNING" }); ev("REASSIGN_PREPARED", { taskId, from, to: toAgent, prevStatus: prev });
+    try { coordinator.abandon(taskId, "REASSIGNING_TO_" + toAgent); } catch { /* the ledger may have closed it already */ }
+    // 3 RUN
+    let r; try { r = await executeTask(toAgent, { executor: t.executor, input: t.input, authorization: t.authz, opportunityId: t.opportunityId, via: ownerPanel ? "OWNER_PANEL" : "MASTER", masterToken }); } catch (e) { r = R("REASSIGN_EXECUTION_THREW", { detail: scrub(String(e?.message ?? e)).slice(0, 80) }); }
+    if (r.ok && r.taskId && S.tasks[r.taskId]) {
+      // 4a COMMIT
+      S.tasks[r.taskId].reassignedFrom = taskId; delete t.reassignIntent; touch(t, { status: "REASSIGNED", reassignedTo: toAgent }); ev("TASK_REASSIGNED", { taskId, from, to: toAgent, newTaskId: r.taskId });
+      return { ...r, reassignedFrom: taskId, from, to: toAgent };
+    }
+    // 4b COMPENSATE: the old task is NOT lost: it returns to the status it had and the failure is recorded
+    compensateReassign(t, r.reason ?? "REASSIGN_FAILED"); save(); return { ...r, ok: false, reassignedFrom: taskId, rolledBack: true, restoredStatus: t.status, note: "The replacement did not start; the original task was restored (" + t.status + "). The owner can retry." };
   }
+  function compensateReassign(t, reason) {
+    const it = t.reassignIntent ?? {}; const back = ["SUSPENDED", "INTERRUPTED", "BLOCKED"].includes(it.prevStatus) ? it.prevStatus : "INTERRUPTED";
+    delete t.reassignIntent; Object.assign(t, { status: back, ...(it.prevMeta ?? {}), reassignFailure: { at: now(), reason: scrub(String(reason)).slice(0, 80), attemptedTo: it.to ?? null }, ledgerReleased: true, updatedAt: now() });   // no touch(): also runs during open, before touch exists; callers save()
+    ev("REASSIGN_ROLLED_BACK", { taskId: t.taskId, restored: back, reason: scrub(String(reason)).slice(0, 80) });
+  }
+
   /** Restart recovery for tasks that were interrupted (process death or owner stop): continue within limits from the last checkpoint. */
   async function resumeTask(taskId) {
     const t = Object.hasOwn(S.tasks, taskId) ? S.tasks[taskId] : null; if (!t || t.status !== "INTERRUPTED") return R("TASK_NOT_INTERRUPTED", { status: t?.status });

@@ -11,7 +11,7 @@ import { createMasterCoordinator } from "../atlasz-addons/master-coordinator.mjs
 import { createCampaignManager } from "../atlasz-addons/campaign-manager.mjs";
 import { createGlobalBusinessIntelligence } from "../atlasz-addons/global-business-intelligence.mjs";
 
-export function createAgentsPanel({ stateDir, ownerAuth, sign, isStopped = () => false, approvals = null, memory = null, models = null, discoveryTransport = null, modelView = null, approvalsPending = null, hostProbes = {}, nowFn = () => new Date().toISOString() } = {}) {
+export function createAgentsPanel({ stateDir, ownerAuth, sign, isStopped = () => false, approvals = null, memory = null, models = null, discoveryTransport = null, modelView = null, approvalsPending = null, hostProbes = {}, loop = () => null, controlGuard = null, controlStatus = null, nowFn = () => new Date().toISOString() } = {}) {
   const dir = path.join(stateDir, "workforce");
   const auth = { verifyApproval: (...a) => { try { return ownerAuth().verifyApproval(...a); } catch { return { allowed: false, reason: "NO_OWNER_KEY" }; } }, verifyRecorded: (...a) => { try { return ownerAuth().verifyRecorded(...a); } catch { return false; } } };
   let wf = null, openError = null, master = null, campaigns = null, gbi = null;
@@ -20,7 +20,7 @@ export function createAgentsPanel({ stateDir, ownerAuth, sign, isStopped = () =>
     try { const registry = createAgentRegistry({ dir: path.join(dir, "registry"), ownerAuth: auth, isStopped }); wf = createWorkforce({ dir, registry, approvals, memory: memory?.() ?? null, models, isStopped, evidenceKnown: (h, r) => { try { return discovery()?.hasEvidence(h, r) === true; } catch { return false; } } });
       campaigns = createCampaignManager({ dir: path.join(dir, "campaigns"), coordinator: wf.coordinator, ownerAuth: auth, isStopped });
       gbi = createGlobalBusinessIntelligence({ workforce: wf, discovery: null, models });
-      master = createMasterCoordinator({ dir: path.join(dir, "master"), workforce: wf, campaigns, isStopped, approvalsPending, models: typeof modelView === "function" ? modelView : null,
+      master = createMasterCoordinator({ controlGuard, loopStatus: () => loop()?.status() ?? null, dir: path.join(dir, "master"), workforce: wf, campaigns, isStopped, approvalsPending, models: typeof modelView === "function" ? modelView : null,
         probes: { CAMPAIGN_MANAGER: async () => { const a = campaigns.auditVerify(); return { ok: a.ok === true, detail: "campaign audit " + a.ok + ", " + campaigns.list().length + " campaign(s), state " + campaigns.loadedFrom() }; },
           GLOBAL_BUSINESS_INTELLIGENCE: async () => { gbi = createGlobalBusinessIntelligence({ workforce: wf, discovery: discovery(), models }); return gbi.health(); },
           AI_MODEL_MANAGER: typeof modelView === "function" ? async () => { const v = await modelView(); return { ok: v?.state === "CONNECTED", detail: v?.state === "CONNECTED" ? (v.status?.live ?? 0) + " model(s) LIVE of " + (v.status?.models ?? 0) + " registered; providers " + v.providerLadder.length : "MODEL_REGISTRY_" + (v?.state ?? "UNAVAILABLE") }; } : undefined,
@@ -55,7 +55,7 @@ export function createAgentsPanel({ stateDir, ownerAuth, sign, isStopped = () =>
       note: "Estimated opportunity values are never revenue. Verified revenue comes only from the ledger (PAID with external evidence). Simulated results are listed separately." };
   }
   let masterCache = null;
-  function masterSnapshot() { return masterCache ?? { note: "No supervision pass has run yet in this process.", queue: master.jobs().slice(-60).reverse(), verify: master.verify() }; }
+  function masterSnapshot() { const base = masterCache ?? { note: "No supervision pass has run yet in this process.", queue: master.jobs().slice(-60).reverse(), verify: master.verify() }; return { ...base, controlChainStatus: (() => { try { return controlStatus?.() ?? null; } catch { return null; } })(), loop: loop()?.status() ?? null, liveness: master.liveness() }; }
   async function refreshMaster() { const st = await master.status(); masterCache = { ...st, queue: st.queue }; return masterCache; }
   async function action(a) {
     const w = open(); if (!w) return { ok: false, reason: "WORKFORCE_UNAVAILABLE", detail: openError };
@@ -90,6 +90,8 @@ export function createAgentsPanel({ stateDir, ownerAuth, sign, isStopped = () =>
       case "ownerInput": return w.supplyOwnerInput(need(a.opportunityId, "OPPORTUNITY_ID"), { requiredSkills: a.requiredSkills, note: a.note }, "OWNER_PANEL");
       case "advance": return w.advanceLifecycle(need(a.opportunityId, "OPPORTUNITY_ID"), need(a.stage, "STAGE"), { evidence: a.evidence ?? null });
       case "assignExecution": return w.assignExecution(need(a.planId, "PLAN_ID"));
+      case "masterLoopStatus": return { ok: true, loop: loop()?.status() ?? null };
+      case "masterLoopReset": { const l = loop(); if (!l) return { ok: false, reason: "NO_LOOP" }; open(); master?.recordEvent("RESET_BY_OWNER", {}); return { ok: true, loop: l.reset() }; }
       case "masterStatus": { open(); return { ok: true, ...(await refreshMaster()) }; }
       case "masterSupervise": { open(); const r = await master.supervise({ autoRecover: a.autoRecover !== false }); await refreshMaster(); return r; }
       case "masterEnqueue": return master.enqueue({ planId: a.planId, stepId: a.stepId, priority: Number.isInteger(a.priority) ? a.priority : 5, preferredAgent: a.preferredAgent ?? null, note: a.note });
@@ -117,6 +119,7 @@ export function createAgentsPanel({ stateDir, ownerAuth, sign, isStopped = () =>
       default: throw new Error("UNKNOWN_AGENTS_OP");
     }
   }
+  const loopEvent = (type, data) => { try { open(); master?.recordEvent(type, data); } catch { /* audit unavailable: the loop status still shows the state */ } };
   const superviseNow = async () => { open(); if (!master) return null; const r = await master.supervise(); await refreshMaster(); return r; };
-  return { view, action, workforce: open, superviseNow };
+  return { view, action, workforce: open, superviseNow, loopEvent, close: () => { try { master?.close(); } catch { /* already closed */ } } };
 }

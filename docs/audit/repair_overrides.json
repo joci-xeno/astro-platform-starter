@@ -1,5 +1,5 @@
 {
- "gate": "gate 1998/1998 at 8a38d9a",
+ "gate": "gate 2007/2007 at batch-2 commit (see git log)",
  "modules": {},
  "defects": [
   {
@@ -9,9 +9,9 @@
    "owner": "Claude Code",
    "reproduction_evidence": "atlasz-addons/agent-workforce.mjs reassignTask: touch(t,{status:'REASSIGNED'}) precedes executeTask; a failing replacement leaves the original closed",
    "proposed_fix": "Compensating transaction: create/commit replacement first or restore the original status on failure",
-   "test": "master-coordinator.test.mjs (to extend)",
-   "status": "OPEN",
-   "verification_result": "not yet verified"
+   "test": "master-coordinator.test.mjs",
+   "status": "TESTED",
+   "verification_result": "atlasz-tests/master-coordinator.test.mjs \"DEF-001 transactional reassign\" (failing replacement restores original; crash mid-reassign compensated on restart)"
   },
   {
    "defect_id": "DEF-002",
@@ -20,9 +20,9 @@
    "owner": "Claude Code",
    "reproduction_evidence": "Master tick runs in a timer inside server.mjs; a stuck tick is not detected",
    "proposed_fix": "Heartbeat + stale detection + instance lock",
-   "test": "to add",
-   "status": "OPEN",
-   "verification_result": "not yet verified"
+   "test": "tick-loop.test.mjs; control-center-master.test.mjs",
+   "status": "TESTED",
+   "verification_result": "atlasz-tests/tick-loop.test.mjs (3) + master-coordinator process lock/heartbeat + control-center-master.test.mjs: stuck tick detected, bounded restarts, ESCALATED, no duplicate Master"
   },
   {
    "defect_id": "DEF-003",
@@ -31,9 +31,9 @@
    "owner": "Claude Code",
    "reproduction_evidence": "integration_matrix: owner-control/* unreachable (9 of 12)",
    "proposed_fix": "Wire as mandatory gates in Master dispatch and ledger/money operations",
-   "test": "to add",
-   "status": "OPEN",
-   "verification_result": "not yet verified"
+   "test": "master-coordinator.test.mjs",
+   "status": "TESTED",
+   "verification_result": "atlasz-tests/master-coordinator.test.mjs control-chain test: dispatch/resume/reassign/model spend pass through owner authority -> kill switch -> safe mode -> security brain -> financial firewall; Control Center builds the chain via ownerControl()"
   },
   {
    "defect_id": "DEF-004",

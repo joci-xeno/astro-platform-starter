@@ -18,10 +18,19 @@ const R = (reason, extra = {}) => ({ ok: false, reason, ...extra });
 const sha = t => crypto.createHash("sha256").update(t).digest("hex");
 const TERMINAL_TASK = new Set(["VERIFIED", "DEAD_LETTER", "REJECTED_FINAL", "REASSIGNED"]);
 
-export function createMasterCoordinator({ dir, workforce, models = null, campaigns = null, probes = {}, approvalsPending = null, isStopped = () => false, now = () => new Date().toISOString(), clock = () => Date.now(), limits = {} } = {}) {
+export function createMasterCoordinator({ dir, workforce, models = null, campaigns = null, probes = {}, loopStatus = null, processLock = true, controlGuard = null, approvalsPending = null, isStopped = () => false, now = () => new Date().toISOString(), clock = () => Date.now(), limits = {} } = {}) {
   if (!dir) throw new Error("DIR_REQUIRED"); if (!workforce || typeof workforce.bindMaster !== "function") throw new Error("WORKFORCE_REQUIRED");
   const L = { ...MASTER_LIMITS, ...limits }; fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-  const token = workforce.bindMaster(); if (!token) throw new Error("MASTER_ALREADY_BOUND_TO_THIS_WORKFORCE");
+  // single instance across PROCESSES (DEF-002): a live lock owned by another process refuses a second Master on the same state; a dead owner is taken over and audited
+  const LOCK = path.join(dir, "master.lock"), HB = path.join(dir, "master.heartbeat.json"), instanceId = crypto.randomBytes(8).toString("hex"); let lockTaken = null;
+  const pidAlive = pid => { if (!Number.isInteger(pid) || pid <= 0) return false; try { process.kill(pid, 0); return true; } catch (e) { return e?.code === "EPERM"; } };
+  if (processLock) {
+    let held = null; try { held = JSON.parse(fs.readFileSync(LOCK, "utf8")); } catch { /* no lock or unreadable: treated as free */ }
+    if (held && held.pid !== process.pid && pidAlive(held.pid)) throw new Error("MASTER_ALREADY_RUNNING_IN_PID_" + held.pid);
+    if (held && held.pid !== process.pid) lockTaken = { previousPid: held.pid, previousInstance: held.instanceId };
+    fs.writeFileSync(LOCK, JSON.stringify({ pid: process.pid, instanceId, at: now() }), { mode: 0o600 });
+  }
+  const token = workforce.bindMaster(); if (!token) { if (processLock) try { fs.rmSync(LOCK, { force: true }); } catch { /* ignore */ } throw new Error("MASTER_ALREADY_BOUND_TO_THIS_WORKFORCE"); }
   const audit = createAuditChain({ filePath: path.join(dir, "master-audit.jsonl"), headPinFile: path.join(dir, "master-audit.headpin.json"), now });
   const FILE = path.join(dir, "master.json"); let S = { v: 1, jobs: {}, seq: 0, lastReport: null, supervisions: 0, startedAt: now() }, damaged = null;
   const stopped = () => { try { return Boolean(isStopped()); } catch { return true; } };
@@ -37,9 +46,21 @@ export function createMasterCoordinator({ dir, workforce, models = null, campaig
   const recovered = { jobs: 0 };
   for (const j of Object.values(S.jobs)) if (j.state === "DISPATCHING") { j.state = "QUEUED"; j.note = "RECOVERED_AFTER_RESTART_NOT_DISPATCHED"; recovered.jobs++; }
   if (recovered.jobs) { save(); log("MASTER_RECOVERED", recovered); }
-  log("MASTER_STARTED", { at: now(), damaged });
+  log("MASTER_STARTED", { at: now(), damaged, instanceId, pid: process.pid, lockTakenOver: lockTaken });
+  const beat = (extra = {}) => { try { fs.writeFileSync(HB, JSON.stringify({ pid: process.pid, instanceId, at: now(), atMs: clock(), supervisions: S.supervisions, ...extra }), { mode: 0o600 }); } catch { /* reported by liveness() as NEVER/STALE */ } };
+  beat({ phase: "STARTED" });
+  /** Liveness as seen from OUTSIDE the tick: a Master whose heartbeat is older than maxAgeMs is STALE even if its object still exists. */
+  function liveness(maxAgeMs = 3 * 60_000) { let hb = null; try { hb = JSON.parse(fs.readFileSync(HB, "utf8")); } catch { return { state: "NEVER", instanceId }; } const age = clock() - (hb.atMs ?? 0); return { state: age <= maxAgeMs ? "ALIVE" : "STALE", ageMs: age, pid: hb.pid, instanceId: hb.instanceId, ownInstance: hb.instanceId === instanceId, supervisions: hb.supervisions }; }
+  function close() { if (processLock) { try { const held = JSON.parse(fs.readFileSync(LOCK, "utf8")); if (held.instanceId === instanceId) fs.rmSync(LOCK, { force: true }); } catch { /* already gone */ } } log("MASTER_CLOSED", { instanceId }); }
 
   const tasks = () => workforce.listTasks();
+  /** Every consequential Master step passes the unified owner-control chain (owner authority -> kill switch -> safe mode -> security brain -> financial firewall -> owner approval -> black box).
+   *  The chain can only make a decision stricter. A guard that throws, or answers anything but an explicit allow, BLOCKS (fail closed). With no guard attached the Master says so in status() ("NOT_ATTACHED"). */
+  const ctl = (kind, agentId, { spendUsd = 0, params = {} } = {}) => {
+    if (typeof controlGuard !== "function") return { allowed: true, guarded: false };
+    try { const d = controlGuard({ kind, agentId, spendUsd, params }); if (d && d.allowed === true) return { allowed: true, guarded: true, verdict: d.verdict, correlationId: d.correlationId ?? null }; return { allowed: false, guarded: true, verdict: d?.verdict ?? "BLOCK", reason: String(d?.layer ?? "CHAIN") + ":" + String(d?.reason ?? "NOT_ALLOWED").slice(0, 80), approvalRequired: d?.approvalRequired ?? null }; }
+    catch (e) { return { allowed: false, guarded: true, verdict: "BLOCK", reason: "GUARD_ERROR_FAIL_CLOSED:" + String(e?.message ?? e).slice(0, 60) }; }
+  };
   const taskById = id => tasks().find(t => t.taskId === id) ?? null;
   const live = t => ["RUNNING", "SUBMITTED", "INTERRUPTED", "SUSPENDED"].includes(t.status);
 
@@ -69,7 +90,8 @@ export function createMasterCoordinator({ dir, workforce, models = null, campaig
       if (out.length >= max) break; const st = workforce.planStep(j.planId, j.stepId); if (!st) { setJob(j, "FAILED", { note: "PLAN_STEP_VANISHED" }); continue; }
       if (st.unmetGates.length) { if (j.state !== "WAITING_APPROVAL") setJob(j, "WAITING_APPROVAL", { waitingFor: st.unmetGates }); continue; }
       const agent = (j.preferredAgent && workforce.selectAgent("EXECUTION", { skill: st.skill, only: j.preferredAgent })) || workforce.selectAgent("EXECUTION", { skill: st.skill }); if (!agent) { j.note = "NO_AVAILABLE_EXECUTION_AGENT"; continue; }
-      setJob(j, "DISPATCHING"); log("JOB_DISPATCHING", { id: j.id, agent });
+      const gc = ctl("DISPATCH", agent, { params: { planId: j.planId, stepId: j.stepId, tool: st.executor } }); if (!gc.allowed) { j.note = "CONTROL_CHAIN_" + gc.verdict + ":" + gc.reason; log("DISPATCH_BLOCKED_BY_CONTROL_CHAIN", { id: j.id, agent, verdict: gc.verdict, reason: gc.reason }); if (/KILL_SWITCH|EMERGENCY|SAFE_MODE/.test(gc.reason)) break; continue; }
+      setJob(j, "DISPATCHING"); log("JOB_DISPATCHING", { id: j.id, agent, controlChain: gc.guarded ? gc.verdict : "NOT_ATTACHED" });
       const r = await workforce.executeTask(agent, { executor: st.executor, authorization: { type: "PLAN_STEP", planId: j.planId, stepId: j.stepId }, via: "MASTER", masterToken: token });
       if (r.ok) { setJob(j, "DISPATCHED", { taskId: r.taskId, agentId: agent }); log("JOB_DISPATCHED", { id: j.id, agent, taskId: r.taskId }); out.push({ jobId: j.id, taskId: r.taskId, agentId: agent }); }
       else if (/OWNER_STOP/.test(r.reason ?? "")) { setJob(j, "QUEUED", { note: r.reason }); break; }
@@ -89,10 +111,10 @@ export function createMasterCoordinator({ dir, workforce, models = null, campaig
   }
   // ============================================================ task control (all audited)
   function suspend(taskId, reason = "OWNER_OR_MASTER") { if (damaged) return R(damaged); const r = workforce.suspendTask(taskId, { reason, masterToken: token }); log(r.ok ? "TASK_SUSPENDED_BY_MASTER" : "TASK_SUSPEND_REFUSED", { taskId, reason: String(reason).slice(0, 80), result: r.ok ? r.status : r.reason }); const j = Object.values(S.jobs).find(x => x.taskId === taskId); if (r.ok && j && r.status === "SUSPENDED") setJob(j, "SUSPENDED"); return r; }
-  function resume(taskId) { if (damaged) return R(damaged); const r = workforce.unsuspendTask(taskId, { masterToken: token }); log(r.ok ? "TASK_RESUMED_BY_MASTER" : "TASK_RESUME_REFUSED", { taskId, result: r.ok ? r.status : r.reason }); const j = Object.values(S.jobs).find(x => x.taskId === taskId); if (r.ok && j) setJob(j, "DISPATCHED"); return r; }
+  function resume(taskId) { if (damaged) return R(damaged); const gc0 = ctl("RESUME", taskById(taskId)?.agentId ?? null); if (!gc0.allowed) { log("TASK_RESUME_BLOCKED_BY_CONTROL_CHAIN", { taskId, reason: gc0.reason }); return R("CONTROL_CHAIN_" + gc0.verdict + ":" + gc0.reason); } const r = workforce.unsuspendTask(taskId, { masterToken: token }); log(r.ok ? "TASK_RESUMED_BY_MASTER" : "TASK_RESUME_REFUSED", { taskId, result: r.ok ? r.status : r.reason }); const j = Object.values(S.jobs).find(x => x.taskId === taskId); if (r.ok && j) setJob(j, "DISPATCHED"); return r; }
   async function reassign(taskId, toAgent, { ownerPanel = false } = {}) {
     if (damaged) return R(damaged); if (stopped()) return R("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const to = toAgent ?? (() => { const t = taskById(taskId); return t ? workforce.selectAgent("EXECUTION", { skill: executorSkill(t.executor) ?? t.executor, exclude: [t.agentId, t.checker].filter(Boolean) }) : null; })();
-    if (!to) return R("NO_AVAILABLE_TAKER"); const r = await workforce.reassignTask(taskId, to, { masterToken: token, ownerPanel }); log(r.ok ? "TASK_REASSIGNED_BY_MASTER" : "TASK_REASSIGN_REFUSED", { taskId, to, result: r.ok ? r.taskId : r.reason });
+    if (!to) return R("NO_AVAILABLE_TAKER"); const gc = ctl("REASSIGN", to, { params: { taskId } }); if (!gc.allowed) { log("TASK_REASSIGN_BLOCKED_BY_CONTROL_CHAIN", { taskId, to, reason: gc.reason }); return R("CONTROL_CHAIN_" + gc.verdict + ":" + gc.reason); } const r = await workforce.reassignTask(taskId, to, { masterToken: token, ownerPanel }); log(r.ok ? "TASK_REASSIGNED_BY_MASTER" : "TASK_REASSIGN_REFUSED", { taskId, to, result: r.ok ? r.taskId : r.reason });
     if (r.ok) { const j = Object.values(S.jobs).find(x => x.taskId === taskId); if (j) setJob(j, "DISPATCHED", { taskId: r.taskId, agentId: to }); } return r;
   }
   function cancel(jobId) { const j = Object.hasOwn(S.jobs, jobId) ? S.jobs[jobId] : null; if (!j) return R("UNKNOWN_JOB"); if (!["QUEUED", "WAITING_APPROVAL"].includes(j.state)) return R("JOB_NOT_CANCELLABLE", { state: j.state }); setJob(j, "CANCELLED"); log("JOB_CANCELLED", { jobId }); return { ok: true }; }
@@ -100,6 +122,7 @@ export function createMasterCoordinator({ dir, workforce, models = null, campaig
   // ============================================================ models
   /** Approved model choice: the agent's assignment first, then others; only models that are enabled, credentialed AND live; spend 0 unless the caller grants a budget. */
   async function selectModel({ agentId, capability = "text", maxCostUsd = 0 } = {}) {
+    if (maxCostUsd > 0) { const gc = ctl("MODEL_SPEND", agentId, { spendUsd: maxCostUsd, params: { capability } }); if (!gc.allowed) { log("MODEL_SPEND_BLOCKED_BY_CONTROL_CHAIN", { agentId, maxCostUsd, reason: gc.reason }); return R("CONTROL_CHAIN_" + gc.verdict + ":" + gc.reason, { approvalRequired: gc.approvalRequired ?? null }); } }
     if (typeof models !== "function") return R("MODEL_VIEW_NOT_CONNECTED"); let v; try { v = await models(); } catch { return R("MODEL_VIEW_UNAVAILABLE"); } if (!v || v.state !== "CONNECTED") return R("MODEL_VIEW_UNAVAILABLE");
     const asg = (v.assignments ?? {})[agentId], pref = asg ? [asg.primary, ...(asg.fallbacks ?? [])] : [];
     const ok = m => m.usable === true && (m.capabilities ?? []).includes(capability) && (maxCostUsd > 0 ? true : (m.costClass === "FREE" || m.costPer1kTokensUsd === 0));
@@ -128,7 +151,7 @@ export function createMasterCoordinator({ dir, workforce, models = null, campaig
   async function managers() {
     const wfv = workforce.systemView(), agents = workforce.agentViews();
     const builtin = {
-      MASTER_COORDINATOR: async () => { const a = workforce.coordinator.auditVerify(), m = audit.verify(); return { ok: a.ok && m.ok && !damaged, detail: "coordination audit " + a.ok + ", master audit " + m.ok + (damaged ? ", " + damaged : ""), data: { supervisions: S.supervisions, lastSupervisedAt: S.lastReport?.at ?? null } }; },
+      MASTER_COORDINATOR: async () => { const a = workforce.coordinator.auditVerify(), m = audit.verify(), lp = loopStatus ? loopStatus() : null, bad = lp && ["ESCALATED"].includes(lp.state); return { ok: a.ok && m.ok && !damaged && !bad, detail: "coordination audit " + a.ok + ", master audit " + m.ok + (damaged ? ", " + damaged : "") + (lp ? ", loop " + lp.state : ", no loop attached"), data: { supervisions: S.supervisions, lastSupervisedAt: S.lastReport?.at ?? null, loop: lp, liveness: liveness() } }; },
       WORKFORCE_MANAGER: async () => { const r = workforce.registry.verify(); return { ok: r.ok && agents.length === 30, detail: "registry integrity " + r.ok + ", agents " + agents.length, data: workforce.registry.summary() }; },
       SEARCH_AGENT_MANAGER: async () => { const a = agents.filter(x => x.team === "SEARCH"); return { ok: a.length === 5, detail: a.length + " SEARCH agents", data: { states: countBy(a, "state") } }; },
       EXECUTION_AGENT_MANAGER: async () => { const a = agents.filter(x => x.team === "EXECUTION"); return { ok: a.length === 25, detail: a.length + " EXECUTION agents", data: { states: countBy(a, "state") } }; },
@@ -174,7 +197,7 @@ export function createMasterCoordinator({ dir, workforce, models = null, campaig
     const integ = { events: sys.integrity.events, registry: sys.integrity.registry, coordination: sys.integrity.coordination, ledger: sys.integrity.ledger, master: audit.verify().ok }; for (const [k, v] of Object.entries(integ)) if (v === false) add("ERROR", "INTEGRITY_FAILURE", k);
     const simulated = ts.filter(t => t.provenance === "SIMULATED").length, real = ts.filter(t => t.status === "VERIFIED" && t.provenance !== "SIMULATED").length;
     const report = { at: now(), tookMs: clock() - t0, stopped: isStop, tasks: { total: ts.length, running: ts.filter(t => t.status === "RUNNING").length, awaitingCheck: ts.filter(t => t.status === "SUBMITTED").length, suspended: ts.filter(t => t.status === "SUSPENDED").length, interrupted: ts.filter(t => t.status === "INTERRUPTED").length, deadLetter: ts.filter(t => t.status === "DEAD_LETTER").length, verifiedReal: real, simulated }, queue: countBy(Object.values(S.jobs), "state"), models: modelInfo, integrity: integ, findings, actions };
-    S.lastReport = report; S.supervisions++; save(); log("SUPERVISED", { findings: findings.length, actions: actions.length, tasks: report.tasks.total, stopped: isStop }); return { ok: true, ...report };
+    S.lastReport = report; S.supervisions++; save(); beat({ phase: "SUPERVISED", findings: findings.length }); log("SUPERVISED", { findings: findings.length, actions: actions.length, tasks: report.tasks.total, stopped: isStop }); return { ok: true, ...report };
   }
   // ============================================================ campaign bridge
   // A campaign organises an approved workflow in the SAME coordinator ledger: its tasks mirror the plan's work steps, owners are permanent agents, the budget is tokens + time only (never money).
@@ -204,6 +227,6 @@ export function createMasterCoordinator({ dir, workforce, models = null, campaig
     const s = campaigns.sync(cid); return { ok: true, campaignId: cid, status: s.status, progress: s.progress, actions: acts };
   }
   function hierarchy() { return { owner: "OWNER (signatures: host approvals, spend caps, plan gates, enabling paid models)", master: "MASTER COORDINATOR = agent-coordination.mjs + master-coordinator.mjs (one coordinator)", managementLayer: MANAGER_IDS.filter(i => i !== "MASTER_COORDINATOR"), agents: { search: 5, execution: 25, permanent: 30, temporarySubagents: "bounded, only through the coordinator, never counted" }, below: "VERIFICATION, EVIDENCE, MEMORY, RESULTS" }; }
-  async function status() { return { ok: true, started: S.startedAt, damaged, supervisions: S.supervisions, stopped: stopped(), queue: Object.values(S.jobs).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)).slice(0, 60), lastReport: S.lastReport, hierarchy: hierarchy(), managers: await managers(), audit: audit.verify(), recovered }; }
-  return { planCampaign, syncCampaign, enqueue, dispatch, verifyPending, supervise, suspend, resume, reassign, cancel, prioritize, selectModel, managers, status, hierarchy, jobs: () => Object.values(S.jobs).map(j => ({ ...j })), verify: () => ({ ok: audit.verify().ok && !damaged, audit: audit.verify(), damaged }), auditEntries: () => audit.entries() };
+  async function status() { return { ok: true, controlChain: typeof controlGuard === "function" ? "ATTACHED" : "NOT_ATTACHED", started: S.startedAt, damaged, supervisions: S.supervisions, stopped: stopped(), queue: Object.values(S.jobs).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)).slice(0, 60), lastReport: S.lastReport, hierarchy: hierarchy(), managers: await managers(), audit: audit.verify(), recovered }; }
+  return { recordEvent: (type, data = {}) => log("LOOP_" + String(type).replace(/[^A-Z_]/g, "").slice(0, 30), data), liveness, close, instanceId, planCampaign, syncCampaign, enqueue, dispatch, verifyPending, supervise, suspend, resume, reassign, cancel, prioritize, selectModel, managers, status, hierarchy, jobs: () => Object.values(S.jobs).map(j => ({ ...j })), verify: () => ({ ok: audit.verify().ok && !damaged, audit: audit.verify(), damaged }), auditEntries: () => audit.entries() };
 }

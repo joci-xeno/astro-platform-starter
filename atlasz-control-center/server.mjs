@@ -86,10 +86,9 @@ export function createControlCenterServer(opts = {}) {
   const liveTimer = setInterval(() => { if (live.clients.size) liveTick(); }, 2000); liveTimer.unref?.();
   let tradeBusy = false, tradeTimer = null; const tradeMs = Number(opts.tradingTickMs ?? 0);      // autonomous SIMULATED paper trading: strategies receive their next stored candle without a manual start (frozen by kill switch / safe mode inside the panel)
   if (tradeMs >= 1000) { tradeTimer = setInterval(async () => { if (tradeBusy) return; tradeBusy = true; try { await core.tradingTick(); } catch { /* next interval retries */ } finally { tradeBusy = false; } }, tradeMs); tradeTimer.unref?.(); }
-  // Master Coordinator supervision: starts with ATLASZ (default every 60 s; 0 disables, e.g. in tests). Overlapping ticks are skipped; a stopped system is handled inside the Master (it reports and dispatches nothing).
-  let masterBusy = false, masterTimer = null; const masterMs = Number(opts.masterTickMs ?? 60000);
-  if (masterMs >= 1000) { masterTimer = setInterval(async () => { if (masterBusy) return; masterBusy = true; try { await core.superviseMaster(); } catch { /* next interval retries */ } finally { masterBusy = false; } }, masterMs); masterTimer.unref?.(); }
-  const close = async () => { if (masterTimer) clearInterval(masterTimer); if (schedTimer) clearInterval(schedTimer); clearInterval(liveTimer); if (tradeTimer) clearInterval(tradeTimer); for (const r of live.clients) { try { r.end(); } catch { /* closed */ } } live.clients.clear(); stream.closeAll(); await core.stopRuntime(); await new Promise(r => server.close(r)); };
+  // Master Coordinator supervision: starts with ATLASZ (default every 60 s; 0 disables, e.g. in tests). The loop (atlasz-addons/tick-loop.mjs) runs one tick at a time, detects a stuck tick, bounds restarts and escalates.
+  const masterMs = Number(opts.masterTickMs ?? 60000); if (masterMs >= 1000) core.startMasterLoop(masterMs);
+  const close = async () => { core.stopMasterLoop(); if (schedTimer) clearInterval(schedTimer); clearInterval(liveTimer); if (tradeTimer) clearInterval(tradeTimer); for (const r of live.clients) { try { r.end(); } catch { /* closed */ } } live.clients.clear(); stream.closeAll(); await core.stopRuntime(); await new Promise(r => server.close(r)); };
   return { core, server, listen, close, token };
 }
 

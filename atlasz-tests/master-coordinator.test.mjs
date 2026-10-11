@@ -15,8 +15,8 @@ import { tmp, rm } from "./helpers.mjs";
 
 const NOW = "2026-10-11T20:00:00Z";
 const CAP = JSON.parse(fs.readFileSync(new URL("../docs/audit/live_capture_2026-10-11.json", import.meta.url), "utf8"));
-const ctl = { stop: false, hang: null, nowMs: Date.parse(NOW) };
-const HANG = { ...BUILTIN_EXECUTORS.implementation_plan, async run(input, ctx) { if (ctl.hang) await ctl.hang; return BUILTIN_EXECUTORS.implementation_plan.run(input, ctx); } };
+const ctl = { stop: false, hang: null, failNext: false, nowMs: Date.parse(NOW) };
+const HANG = { ...BUILTIN_EXECUTORS.implementation_plan, async run(input, ctx) { if (ctl.hang) await ctl.hang; if (ctl.failNext) throw Object.assign(new Error("boom"), { code: "BOOM" }); return BUILTIN_EXECUTORS.implementation_plan.run(input, ctx); } };
 const HANGP = { ...BUILTIN_EXECUTORS.proposal_draft, async run(input, ctx) { if (ctl.hang) await ctl.hang; return BUILTIN_EXECUTORS.proposal_draft.run(input, ctx); } };
 function boot(d, over = {}) {
   const e = () => createDiscoveryEngine({ dir: path.join(d, "disc"), now: () => NOW });
@@ -31,7 +31,7 @@ async function planned(d, wf, e) {
   const good = res.find(r => r.eligible && /Going Global/.test(r.title)); await wf.planOpportunity(good.opportunityId); assert.equal(wf.supplyOwnerInput(good.opportunityId, { requiredSkills: ["plan.implementation_plan", "doc.proposal_draft"] }, "OWNER_PANEL").ok, true);
   const p = await wf.planOpportunity(good.opportunityId); assert.ok(p.planId); return { oppId: good.opportunityId, planId: p.planId, res };
 }
-const reset = () => { ctl.stop = false; ctl.hang = null; ctl.nowMs = Date.parse(NOW); };
+const reset = () => { ctl.stop = false; ctl.hang = null; ctl.failNext = false; ctl.nowMs = Date.parse(NOW); };
 
 test("items 1-4,8,13,14,15 + scenarios A,B,D,E,F,G: master assigns discovery-qualified work by priority, prevents conflicts, dispatches to EXECUTION agents, independent check, records completion; simulated work is counted apart", async () => {
   reset(); const d = tmp("mc-"); try {
@@ -152,4 +152,52 @@ test("Global Business Intelligence: read-only funnel / sources / regions / deadl
     assert.ok(r.sources.find(s => s.sourceId === "find-a-tender-uk").opportunities === 3); assert.ok(r.regions.some(x => x.region === "Europe" && x.genuinelyConnected === 0)); assert.ok(r.deadlines.length >= 1 && r.deadlines.every(x => ["OPEN", "NEAR", "PASSED"].includes(x.state)));
     assert.match(r.currencyNote, /No conversion/); assert.ok(oppId); assert.equal(gbi.health().ok, true);
   } finally { rm(d); }
+});
+
+test("DEF-001 transactional reassignment: failures at every transition leave the original task recoverable; success commits exactly once; a crash mid-transaction is compensated at the next open", async () => {
+  reset(); const d = tmp("mc-rt-"); try {
+    const { wf, m, e } = boot(d), { planId } = await planned(d, wf, e);
+    const mkSuspended = async (stepId = "TECHPLAN") => { const r = m.enqueue({ planId, stepId }); assert.equal(r.ok, true, JSON.stringify(r)); const dd = await m.dispatch(); const tid = dd.dispatched[0].taskId; assert.equal(m.suspend(tid, "t").status, "SUSPENDED"); return tid; };
+    const tid = await mkSuspended(); const owner = wf.getTask(tid).agentId;
+    // transition 1 (PREPARE): the target cannot work -> nothing at all changed on the original
+    const other = wf.agentViews().filter(a => a.team === "EXECUTION" && a.id !== owner)[0].id; wf.registry.setPaused(other, true, "t");
+    const r1 = await m.reassign(tid, other); assert.equal(r1.ok, false); assert.equal(r1.reassignAborted, "BEFORE_ANY_CHANGE"); assert.equal(wf.getTask(tid).status, "SUSPENDED"); assert.equal(wf.getTask(tid).reassignIntent, undefined); wf.registry.setPaused(other, false);
+    assert.equal((await m.reassign(tid, owner)).reason, "REASSIGN_TARGET_NOT_INDEPENDENT");
+    // transition 3 (RUN fails): the replacement dies -> the original is restored, not lost
+    ctl.failNext = true; const r2 = await m.reassign(tid, other); assert.equal(r2.ok, false); assert.equal(r2.rolledBack, true, JSON.stringify(r2)); const t2 = wf.getTask(tid);
+    assert.equal(t2.status, "SUSPENDED"); assert.match(t2.reassignFailure.reason, /BOOM/); assert.notEqual(t2.status, "REASSIGNED"); assert.equal(t2.reassignIntent, undefined);
+    assert.ok(wf.systemView().events.some(x => x.type === "REASSIGN_ROLLED_BACK"), "rollback is in the audited event log");
+    // retry after the cause is gone: commits exactly once
+    ctl.failNext = false; const r3 = await m.reassign(tid, other); assert.equal(r3.ok, true, JSON.stringify(r3)); assert.equal(wf.getTask(tid).status, "REASSIGNED"); assert.equal(wf.getTask(r3.taskId).reassignedFrom, tid); assert.equal(wf.getTask(r3.taskId).agentId, other);
+    assert.equal((await m.reassign(tid, other)).reason, "TASK_NOT_REASSIGNABLE");
+    // transition 2->4 interrupted by a crash: a second workforce opening the same state compensates the half-done reassignment
+    {
+      const tid2 = await mkSuspended("PROPOSAL");
+      let release; ctl.hang = new Promise(r => { release = r; }); const pending = m.reassign(tid2); await new Promise(r => setTimeout(r, 60));
+      assert.equal(wf.getTask(tid2).status, "REASSIGNING", JSON.stringify(wf.getTask(tid2))); assert.ok(wf.getTask(tid2).reassignIntent.to);
+      const wf2 = createWorkforce({ dir: path.join(d, "wf"), registry: createAgentRegistry({ dir: path.join(d, "registry") }), sleep: async () => {}, now: () => NOW, isStopped: () => false, executors: { ...BUILTIN_EXECUTORS } });
+      assert.equal(wf2.getTask(tid2).status, "SUSPENDED", "restart compensation restored the original"); assert.equal(wf2.getTask(tid2).reassignFailure.reason, "RESTART_DURING_REASSIGNMENT");
+      ctl.hang = null; release(); await pending.catch(() => {});
+    }
+  } finally { rm(d); }
+});
+
+test("DEF-003 the unified owner-control chain is IN the Master's path: kill switch, NO-SPEND firewall and a throwing guard all stop the action; allowed actions are recorded", async () => {
+  reset(); const { rig } = await import("./owner-control-rig.mjs"); const oc = rig({ roster: [...Array.from({ length: 5 }, (_, i) => ({ id: "SEARCH-" + (i + 1), team: "SEARCH" })), ...Array.from({ length: 25 }, (_, i) => ({ id: "EXECUTION-" + (i + 1), team: "EXECUTION" }))], tools: Object.keys(BUILTIN_EXECUTORS) });
+  const d = tmp("mc-oc-"), d2 = tmp("mc-oc2-"); try {
+    const g = ({ kind, agentId, spendUsd = 0, params = {} }) => kind === "MODEL_SPEND" ? oc.sys.agents.act(agentId, "SPEND", { external: true, spendUsd, params }) : oc.sys.agents.act(agentId, "INTERNAL_COMPUTE", { params, tool: params.tool });
+    const paid = async () => ({ state: "CONNECTED", models: [{ id: "paid1", providerId: "p", usable: true, capabilities: ["text"], costClass: "PAID", costPer1kTokensUsd: 0.01 }], assignments: {} });
+    const { wf, m, e } = boot(d, { master: { controlGuard: g, models: paid } }), { planId } = await planned(d, wf, e);
+    assert.equal((await m.status()).controlChain, "ATTACHED");
+    assert.equal(m.enqueue({ planId, stepId: "TECHPLAN" }).ok, true); const ok = await m.dispatch(); assert.equal(ok.dispatched.length, 1);                  // allowed: through the chain
+    assert.ok(m.auditEntries().some(x => x.event === "JOB_DISPATCHING" && x.data.controlChain === "ALLOW"), "chain verdict is audited"); assert.ok(oc.sys.chain.tally().evaluated >= 1);
+    const sp = await m.selectModel({ agentId: "EXECUTION-1", capability: "text", maxCostUsd: 0.05 });                                                          // NO-SPEND default: a paid model is refused although "usable"
+    assert.equal(sp.ok, false); assert.match(sp.reason, /^CONTROL_CHAIN_/);
+    assert.equal(m.enqueue({ planId, stepId: "PROPOSAL" }).ok, true); oc.stop("PAUSE_ALL");                                                                         // kill switch seen by the chain alone (Master's own isStopped stays false)
+    const held = await m.dispatch(); assert.equal(held.dispatched.length, 0); assert.ok(m.auditEntries().some(x => x.event === "DISPATCH_BLOCKED_BY_CONTROL_CHAIN" && /KILL_SWITCH|EMERGENCY/.test(x.data.reason)));
+    assert.equal(m.jobs().find(j => j.stepId === "PROPOSAL").state, "QUEUED", "held, not failed"); oc.resume();
+    // fail closed: a guard that throws never lets work through
+    const b2 = boot(d2, { master: { controlGuard: () => { throw new Error("chain down"); } } }), p2 = await planned(d2, b2.wf, b2.e);
+    assert.equal(b2.m.enqueue({ planId: p2.planId, stepId: "TECHPLAN" }).ok, true); const h2 = await b2.m.dispatch(); assert.equal(h2.dispatched.length, 0); assert.ok(b2.m.auditEntries().some(x => x.event === "DISPATCH_BLOCKED_BY_CONTROL_CHAIN" && /GUARD_ERROR_FAIL_CLOSED/.test(x.data.reason)));
+  } finally { rm(d); rm(d2); rm(oc.dir); }
 });
