@@ -126,7 +126,11 @@ test("spend guard: calling a paid/cloud candidate needs a signed MODEL_BENCHMARK
     assert.equal((await t.evo.runCompatibility(id, { approval: ap("MODEL_BENCHMARK", subj, other) })).detail, "SIGNATURE_INVALID");
     const a = ap("MODEL_BENCHMARK", subj); assert.equal((await t.evo.runCompatibility(id, { approval: a })).compatible, true);
     const b = await t.evo.benchmark(id, { baselineId: "base-local", judgeId: "judge-local" }); assert.equal(b.verdict, "INCONCLUSIVE"); assert.ok(b.benchmark.reasons.includes("CANDIDATE_COST_UNKNOWN")); assert.equal(b.benchmark.candidate.costUsdTotal, null);
-    const t3 = t.open(); assert.equal(t3.get(id).benchApproved, t.evo.get(id).configHash);
+    // single-use: the approval cannot be replayed, and the grant is limited to a few guarded runs; after that a NEW approval is required (no permanent spend permission)
+    assert.notEqual((await t.evo.runCompatibility(id, { approval: a })).ok, undefined); const t3 = t.open(); assert.ok(t3.get(id).benchGrant.runsLeft <= 2);
+    let refused = null; for (let i = 0; i < 6 && !refused; i++) { const x = await t.evo.runCompatibility(id); if (!x.ok) refused = x.reason; }
+    assert.equal(refused, "OWNER_APPROVAL_REQUIRED_TO_CALL_PAID_OR_CLOUD_CANDIDATE", "grant exhausted -> fresh approval needed");
+    assert.equal((await t.evo.runCompatibility(id, { approval: a })).ok, false, "replayed approval refused");
   } finally { t.done(); }
 });
 
@@ -176,7 +180,7 @@ test("autoCycle: MANUAL does nothing; AUTO_FOR_FREE_LOCAL rolls out a free local
     const pol = { ...DEFAULT_POLICY, mode: "AUTO_FOR_FREE_LOCAL" }; t.evo.setPolicy(pol, { approval: ap("MODEL_EVOLUTION_POLICY", policySubject(pol)) });
     const r = await t.evo.autoCycle({ baselineId: "base-local", judgeId: "judge-local", target: { role: "EXECUTION" } });
     assert.equal(t.evo.get("cand-local@1.0.0").state, "ROLLED_OUT"); assert.deepEqual(t.reg.roleDefaults().EXECUTION, ["cand-local", "base-local"]);
-    assert.equal(t.evo.get("gpt-new@1.0.0").state, "DISCOVERED"); assert.equal(gptCalls, 0); assert.ok(JSON.stringify(r.actions).includes("OWNER_APPROVAL_REQUIRED_TO_CALL_PAID_OR_CLOUD_CANDIDATE"));
+    assert.equal(t.evo.get("gpt-new@1.0.0").state, "DISCOVERED"); assert.equal(gptCalls, 0); assert.ok(JSON.stringify(r.actions).includes("OWNER_APPROVAL_REQUIRED_PER_RUN"));
   } finally { t.done(); }
 });
 

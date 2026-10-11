@@ -46,16 +46,16 @@ function convert(op, v) {
 const INVERSE = { toNumber: "toString", toInteger: "toString", toString: null, toBoolean: null, trim: null, lowercase: null };
 
 function migrateRecord(rec, ops) {
-  const out = {}, errors = [];
+  const out = Object.create(null), errors = [];      // null-prototype: a record key such as "__proto__" or "constructor" is plain data, never a prototype or inherited lookup
   for (const [k, v] of Object.entries(rec)) { if (ops.drop.has(k)) continue; out[ops.rename[k] ?? k] = v; }
   for (const [f, t] of Object.entries(ops.transforms)) if (f in out) { const c = convert(t, out[f]); if (c.ok) out[f] = c.v; else errors.push({ field: f, reason: "CONVERSION_FAILED:" + t }); }
   for (const [f, d] of Object.entries(ops.add)) if (!(f in out)) out[f] = structuredClone(d);
   return { out, errors };
 }
 function inverseRecord(out, ops, srcRec) {      // best-effort inverse used only to PROVE reversibility on the actual data
-  const back = {};
-  const revName = Object.fromEntries(Object.entries(ops.rename).map(([a, b]) => [b, a]));
-  for (const [k, v] of Object.entries(out)) { const orig = revName[k] ?? k; if (k in ops.add && !(orig in srcRec)) continue; let val = v; const t = ops.transforms[k]; if (t && typeof srcRec[orig] === "string") { const inv = INVERSE[t]; if (inv) { const c = convert(inv, v); val = c.ok ? c.v : v; } } back[orig] = val; }     // the inverse may use the source TYPE, never the source value
+  const back = Object.create(null);
+  const revName = Object.assign(Object.create(null), Object.fromEntries(Object.entries(ops.rename).map(([a, b]) => [b, a])));
+  for (const [k, v] of Object.entries(out)) { const orig = revName[k] ?? k; if (k in ops.add && !Object.hasOwn(srcRec, orig)) continue; let val = v; const t = ops.transforms[k]; if (t && typeof (Object.hasOwn(srcRec, orig) ? srcRec[orig] : undefined) === "string") { const inv = INVERSE[t]; if (inv) { const c = convert(inv, v); val = c.ok ? c.v : v; } } back[orig] = val; }     // the inverse may use the source TYPE, never the source value
   return back;
 }
 const serialize = (format, records) => format === "jsonl" ? records.map(r => JSON.stringify(r)).join("\n") + (records.length ? "\n" : "") : JSON.stringify(records, null, 2) + "\n";
@@ -66,12 +66,14 @@ export function planMigration({ sourceRoot, files, source, target, mapping = {} 
   if (!Array.isArray(files) || !files.length || files.length > LIMITS.maxFiles) return { ok: false, reason: "FILES_INVALID" };
   if (files.some(f => !relOk(f))) return { ok: false, reason: "PATH_TRAVERSAL_OR_INVALID_PATH_REFUSED" };
   if (new Set(files.map(f => path.posix.normalize(f))).size !== files.length) return { ok: false, reason: "DUPLICATE_FILE" };
-  const renames = mapping.renames ?? {}, transforms = mapping.transforms ?? {}, defaults = mapping.defaults ?? {};
+  const np = o => Object.assign(Object.create(null), o ?? {});
+  source = { ...source, fields: np(source.fields) }; target = { ...target, fields: np(target.fields) };      // own-property lookups only: a field named "constructor" is data
+  const renames = np(mapping.renames), transforms = np(mapping.transforms), defaults = np(mapping.defaults);
   for (const [a, b] of Object.entries(renames)) if (!source.fields[a] || !target.fields[b]) return { ok: false, reason: "RENAME_INVALID:" + clean(a) + "->" + clean(b) };
   if (new Set(Object.values(renames)).size !== Object.keys(renames).length) return { ok: false, reason: "RENAME_TARGETS_NOT_UNIQUE" };
   for (const [f, t] of Object.entries(transforms)) if (!target.fields[f] || !TRANSFORMS.has(t)) return { ok: false, reason: "TRANSFORM_INVALID:" + clean(f) };
   for (const f of Object.keys(defaults)) if (!target.fields[f]) return { ok: false, reason: "DEFAULT_FOR_UNKNOWN_FIELD:" + clean(f) };
-  const operations = [], blockers = [], risks = [], ops = { rename: {}, drop: new Set(), transforms: {}, add: {} };
+  const operations = [], blockers = [], risks = [], ops = { rename: Object.create(null), drop: new Set(), transforms: Object.create(null), add: Object.create(null) };
   const mappedFrom = new Map(), renameTargets = new Set(Object.values(renames));     // target field -> source field
   for (const sf of Object.keys(source.fields).sort()) {
     if (renames[sf]) { mappedFrom.set(renames[sf], sf); ops.rename[sf] = renames[sf]; operations.push({ op: "RENAME_FIELD", from: sf, to: renames[sf], reversible: true }); }
@@ -128,7 +130,7 @@ export function planMigration({ sourceRoot, files, source, target, mapping = {} 
   const reversible = operations.every(o => o.reversible === true);
   const plan = {
     kind: "MIGRATION_PLAN", dryRun: true, sourceVersion: String(source.version ?? ""), targetVersion: String(target.version ?? ""), key: { source: sKey, target: tKey },
-    mapping: { renames, transforms, defaults }, files: fileInfo, operations, reversible,
+    mapping: { renames: { ...renames }, transforms: { ...transforms }, defaults: { ...defaults } }, files: fileInfo, operations, reversible,
     steps: [
       { step: 1, name: "PRECHECK", detail: "Re-hash every source file; refuse if any differs from sourceSha256 in this plan." },
       { step: 2, name: "BACKUP", detail: "Copy the source files to a backup folder outside source and target, write manifest.json with sha256 per file, re-hash the copies." },
@@ -144,7 +146,7 @@ export function planMigration({ sourceRoot, files, source, target, mapping = {} 
 }
 
 const planIntegrity = plan => { if (!plan || plan.kind !== "MIGRATION_PLAN" || typeof plan.planSha256 !== "string") return false; const { ok, planSha256, ...rest } = plan; return sha256(canonical(rest)) === planSha256; };
-const ops0 = plan => ({ rename: { ...plan.mapping.renames }, drop: new Set(plan.operations.filter(o => o.op === "DROP_FIELD").map(o => o.field)), transforms: { ...plan.mapping.transforms }, add: Object.fromEntries(plan.operations.filter(o => o.op === "ADD_FIELD").map(o => [o.field, o.default])) });
+const ops0 = plan => ({ rename: Object.assign(Object.create(null), plan.mapping.renames), drop: new Set(plan.operations.filter(o => o.op === "DROP_FIELD").map(o => o.field)), transforms: Object.assign(Object.create(null), plan.mapping.transforms), add: Object.assign(Object.create(null), Object.fromEntries(plan.operations.filter(o => o.op === "ADD_FIELD").map(o => [o.field, o.default]))) });
 function outsideOf(dir, roots) {     // checked BEFORE the folder is created, so a refused folder is never made inside the data
   let real; try { let anc = path.resolve(dir), rest = []; for (let i = 0; i < 64 && !fs.existsSync(anc); i++) { rest.unshift(path.basename(anc)); anc = path.dirname(anc); } real = path.join(fs.realpathSync(anc), ...rest); } catch { return { ok: false, reason: "DIR_UNAVAILABLE" }; } for (const r of roots) { const rr = realRoot(r); if (rr.ok && (real === rr.real || real.startsWith(rr.real + path.sep) || rr.real.startsWith(real + path.sep))) return { ok: false, reason: "DIR_MUST_BE_OUTSIDE_DATA_FOLDERS" }; }
   try { fs.mkdirSync(real, { recursive: true }); if (fs.realpathSync(real) !== real) return { ok: false, reason: "DIR_UNAVAILABLE" }; } catch { return { ok: false, reason: "DIR_UNAVAILABLE" }; }

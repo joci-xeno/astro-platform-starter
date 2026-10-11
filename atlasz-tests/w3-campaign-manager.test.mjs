@@ -200,3 +200,29 @@ test("concurrency limit of the ledger is respected: extra tasks wait as PENDING 
     finishTask(coord, cm, "c1", "a", "EXECUTION-5"); assert.deepEqual(cm.sync("c1").dispatched, ["c1.e"]);
   } finally { rm(d); }
 });
+
+// ---- verification round: campaigns.json is not an authority ----
+function forge(d, fn) { const f = path.join(d, "camp", "campaigns.json"), w = JSON.parse(fs.readFileSync(f, "utf8")), b = JSON.parse(w.body); fn(b.campaigns.c1); const body = JSON.stringify(b); fs.writeFileSync(f, JSON.stringify({ sha: H(body), body })); }
+test("hand-edited campaigns.json (DRAFT -> ACTIVE, touchesFiles false) never starts file work: forced to NEEDS_APPROVAL, nothing dispatched", () => {
+  const { d, cm, coord } = mk(); try {
+    cm.create(spec({ touchesFiles: true })); forge(d, c => { c.status = "ACTIVE"; c.touchesFiles = false; });
+    const cm2 = createCampaignManager({ dir: path.join(d, "camp"), coordinator: coord, ownerAuth: createOwnerAuth({ publicKeyB64: KEYS.publicKeyB64 }) });
+    assert.equal(cm2.list()[0].status, "NEEDS_APPROVAL"); const r = cm2.resumeAll(); assert.deepEqual(r.resumed.map(x => x.dispatched ?? []).flat(), []);
+    assert.equal(coord.connect("EXECUTION-1").list?.().length ?? 0, 0);
+  } finally { rm(d); }
+});
+test("a legitimately approved file campaign survives restart; without the owner key it falls back to NEEDS_APPROVAL", () => {
+  const { d, cm, coord, approve } = mk(); try {
+    const c = cm.create(spec({ touchesFiles: true })); assert.equal(cm.start("c1", approve(c.planSha256)).ok, true);
+    const mkAuth = () => createOwnerAuth({ publicKeyB64: KEYS.publicKeyB64 });
+    assert.equal(createCampaignManager({ dir: path.join(d, "camp"), coordinator: coord, ownerAuth: mkAuth() }).list()[0].status, "ACTIVE");
+    assert.equal(createCampaignManager({ dir: path.join(d, "camp"), coordinator: coord, ownerAuth: null }).list()[0].status, "NEEDS_APPROVAL");
+  } finally { rm(d); }
+});
+test("cutting the last lines of the campaign audit log is detected (head pin)", () => {
+  const { d, cm, coord } = mk(); try {
+    cm.create(spec()); cm.start("c1"); const lf = path.join(d, "camp", "campaign-audit.jsonl"), lines = fs.readFileSync(lf, "utf8").split("\n").filter(Boolean);
+    fs.writeFileSync(lf, lines.slice(0, -1).join("\n") + "\n");
+    assert.throws(() => createCampaignManager({ dir: path.join(d, "camp"), coordinator: coord }), /AUDIT_CHAIN_TRUNCATED/);
+  } finally { rm(d); }
+});

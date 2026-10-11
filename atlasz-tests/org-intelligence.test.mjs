@@ -155,3 +155,24 @@ test("the module contains no network or scraping code", () => {
   const src = fs.readFileSync(new URL("../atlasz-addons/org-intelligence.mjs", import.meta.url), "utf8").split("\n").filter(l => !l.trim().startsWith("//")).join("\n");
   for (const re of [/\bfetch\s*\(/, /node:https?/, /node:net/, /child_process/, /puppeteer|playwright|cheerio/]) assert.doesNotMatch(src, re);
 });
+
+test("different domains stay different (acme-shop.hu vs acme.shop.hu); same host in different spellings still agrees", () => {
+  const t = mk(); try {
+    const P = { provenance: SRC.a, confidence: 0.9 }, Q = { provenance: SRC.b, confidence: 0.9 };
+    t.oi.assertField("o1", "website", "https://acme-shop.hu", P); t.oi.assertField("o1", "website", "http://acme.shop.hu/", Q);
+    assert.equal(t.oi.view("o1").conflicts.length, 1, "two different domains are a conflict, not a merge");
+    t.oi.assertField("o2", "website", "https://www.Acme-Shop.hu/", P); t.oi.assertField("o2", "website", "acme-shop.hu", Q);
+    assert.equal(t.oi.view("o2").conflicts.length, 0);
+  } finally { t.done(); }
+});
+test("name-only export/forget are CANDIDATES: two people with one name are never removed together; an e-mail key is exact", () => {
+  const t = mk(); try {
+    const A = { name: "Kovacs Peter", email: "peter.kovacs@a-co.org", businessContact: true }, B = { name: "Kovacs Peter", email: "peter.kovacs@b-co.org", businessContact: true };
+    const a = t.oi.addContact("a-co", A, { provenance: SRC.a, lawfulBasis: "LEGITIMATE_INTEREST_B2B" }), b = t.oi.addContact("b-co", B, { provenance: SRC.a, lawfulBasis: "LEGITIMATE_INTEREST_B2B" });
+    const ex = t.oi.exportSubject("Kovacs Peter"); assert.equal(ex.match, "NAME_ONLY_CANDIDATES"); assert.equal(ex.records.length, 2); assert.ok(ex.records.every(r => r.candidate));
+    const f = t.oi.forgetSubject("Kovacs Peter"); assert.equal(f.ok, false); assert.equal(f.candidates.length, 2);
+    assert.equal(t.oi.exportSubject("peter.kovacs@a-co.org").records.length, 1);
+    assert.equal(t.oi.forgetSubject("Kovacs Peter", { contactIds: [a.contactId] }).removed, 1); assert.equal(t.oi.exportSubject("peter.kovacs@b-co.org").records.length, 1);
+    assert.equal(t.oi.exportSubject("peter kovacs a co org").records.length, 0, "an e-mail-like phrase is not an e-mail key");
+  } finally { t.done(); }
+});

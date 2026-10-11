@@ -76,6 +76,7 @@ export function parseJudgeScore(text) {
   return m ? Number(m[1]) : null;
 }
 
+const BENCH_GRANT_RUNS = 3;
 export function createModelEvolution({ dir, registry, ownerAuth = null, adapters = {}, clock = () => performance.now(), now = () => new Date().toISOString(), compatSuite = DEFAULT_COMPAT_SUITE, benchPrompts = DEFAULT_BENCH_PROMPTS, adapterTimeoutMs = LIMITS.adapterTimeoutMs } = {}) {
   if (!dir) throw new Error("DIR_REQUIRED");
   if (!registry || typeof registry.getModel !== "function" || typeof registry.enable !== "function") throw new Error("MODEL_REGISTRY_REQUIRED");
@@ -145,20 +146,24 @@ export function createModelEvolution({ dir, registry, ownerAuth = null, adapters
   }
 
   // ---------------------------------------------------------------- spend guard for calling a candidate
-  function callGuard(c, approval) {
+  function callGuard(c, approval, autoOnly = false) {
     const m = registry.getModel(c.modelId); if (!m) return R("MODEL_REMOVED_FROM_REGISTRY");
     if (modelConfigHash(m) !== c.configHash) return R("MODEL_CONFIG_CHANGED_SINCE_DISCOVERY");
     if (!needsApproval(m) || m.enabled) return { ok: true };                                            // free local, or already owner-approved via MODEL_ENABLE
-    if (c.benchApproved === c.configHash) return { ok: true };
+    if (m.costPer1kTokensUsd === null || m.costPer1kTokensUsd === undefined) return R("COST_UNKNOWN_BENCHMARK_REFUSED", { note: "a paid or cloud candidate with an unknown price is never benchmarked: set a costPer1kTokensUsd first" });
+    // Spend grant: one signed MODEL_BENCHMARK approval is single-use (owner-auth consumes its nonce) and buys at most BENCH_GRANT_RUNS guarded runs for THIS config; then a new approval is needed.
+    const g = c.benchGrant;
+    if (g && g.configHash === c.configHash && g.runsLeft > 0) { g.runsLeft -= 1; save(); audit.append("BENCHMARK_RUN_FROM_GRANT", { candidateId: c.candidateId, runsLeft: g.runsLeft }); return { ok: true }; }
+    if (autoOnly) return R("OWNER_APPROVAL_REQUIRED_PER_RUN", { note: "automatic cycles never spend: a paid or cloud candidate needs a fresh MODEL_BENCHMARK approval for each manual run" });
     const subject = "bench:" + c.candidateId + ":" + c.configHash, v = verifyOwner(approval, "MODEL_BENCHMARK", subject);
     if (!v.ok) return R("OWNER_APPROVAL_REQUIRED_TO_CALL_PAID_OR_CLOUD_CANDIDATE", { detail: v.reason, action: "MODEL_BENCHMARK", subject });
-    c.benchApproved = c.configHash; save(); audit.append("BENCHMARK_SPEND_APPROVED", { candidateId: c.candidateId }); return { ok: true };
+    c.benchGrant = { configHash: c.configHash, runsLeft: BENCH_GRANT_RUNS - 1 }; save(); audit.append("BENCHMARK_SPEND_APPROVED", { candidateId: c.candidateId, runs: BENCH_GRANT_RUNS, nonce: v.nonce ?? null }); return { ok: true };
   }
 
-  async function runCompatibility(candidateId, { approval = null } = {}) {
+  async function runCompatibility(candidateId, { approval = null, auto = false } = {}) {
     const c = cand(candidateId); if (!c) return R("UNKNOWN_CANDIDATE");
     if (!["DISCOVERED", "BENCHMARKING"].includes(c.state)) return R("WRONG_STATE:" + c.state);
-    const g = callGuard(c, approval); if (!g.ok) return g;
+    const g = callGuard(c, approval, auto); if (!g.ok) return g;
     if (c.state === "DISCOVERED") { const mv = move(c, "BENCHMARKING", { step: "COMPATIBILITY" }); if (!mv.ok) return mv; }
     const results = [];
     for (const t of compatSuite) { const r = await call(c.modelId, t.prompt); results.push({ id: t.id, pass: r.ok && !r.truncated && checkOutput(t.check, r.text), error: r.ok ? null : r.error, latencyMs: r.latencyMs ?? null }); }
@@ -185,10 +190,10 @@ export function createModelEvolution({ dir, registry, ownerAuth = null, adapters
       costUsdTotal: costKnown ? okRows.reduce((n, r) => n + (r.costUsd ?? 0), 0) : null };
   }
   /** A/B benchmark vs an ENABLED baseline, judged by a model of a third family. */
-  async function benchmark(candidateId, { baselineId, judgeId, approval = null } = {}) {
+  async function benchmark(candidateId, { baselineId, judgeId, approval = null, auto = false } = {}) {
     const c = cand(candidateId); if (!c) return R("UNKNOWN_CANDIDATE");
     if (c.state !== "BENCHMARKING" || !c.compat || c.compat.passRate !== 1) return R("COMPATIBILITY_MUST_PASS_FIRST");
-    const g = callGuard(c, approval); if (!g.ok) return g;
+    const g = callGuard(c, approval, auto); if (!g.ok) return g;
     const base = registry.getModel(baselineId), judge = registry.getModel(judgeId), cm = registry.getModel(c.modelId);
     if (!base || !base.enabled) return R("BASELINE_MUST_BE_AN_ENABLED_APPROVED_MODEL");
     if (!judge || (!judge.enabled && needsApproval(judge))) return R("JUDGE_MUST_BE_ENABLED_OR_FREE_LOCAL");
@@ -297,8 +302,8 @@ export function createModelEvolution({ dir, registry, ownerAuth = null, adapters
     if (mode === "MANUAL") return { ok: true, mode, actions: [], note: "MANUAL mode: nothing runs automatically" };
     for (const c of Object.values(st.candidates).filter(x => ["DISCOVERED", "BENCHMARKING", "RECOMMENDED"].includes(x.state)).slice(0, Math.min(max, 20))) {
       const step = { candidateId: c.candidateId, steps: [] };
-      if (c.state === "DISCOVERED" || (c.state === "BENCHMARKING" && !c.compat)) { const r = await runCompatibility(c.candidateId); step.steps.push(["COMPATIBILITY", r.ok ? (r.compatible ? "PASS" : "FAIL") : r.reason]); if (!r.ok || !r.compatible) { out.push(step); continue; } }
-      if (c.state === "BENCHMARKING") { const r = await benchmark(c.candidateId, { baselineId, judgeId }); step.steps.push(["BENCHMARK", r.ok ? r.verdict : r.reason]); }
+      if (c.state === "DISCOVERED" || (c.state === "BENCHMARKING" && !c.compat)) { const r = await runCompatibility(c.candidateId, { auto: true }); step.steps.push(["COMPATIBILITY", r.ok ? (r.compatible ? "PASS" : "FAIL") : r.reason]); if (!r.ok || !r.compatible) { out.push(step); continue; } }
+      if (c.state === "BENCHMARKING") { const r = await benchmark(c.candidateId, { baselineId, judgeId, auto: true }); step.steps.push(["BENCHMARK", r.ok ? r.verdict : r.reason]); }
       if (c.state === "RECOMMENDED" && mode === "AUTO_FOR_FREE_LOCAL") {
         const r = approve(c.candidateId, { auto: true }); step.steps.push(["APPROVE", r.ok ? "AUTO_APPROVED_FREE_LOCAL" : r.reason]);
         if (r.ok && target) { const ro = rollout(c.candidateId, { target }); step.steps.push(["ROLLOUT", ro.ok ? "ROLLED_OUT" : ro.reason]); }

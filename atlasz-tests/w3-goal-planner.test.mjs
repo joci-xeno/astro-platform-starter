@@ -128,3 +128,18 @@ test("rootCause: bounded and fail-closed on bad input", () => {
   const distinct = Array.from({ length: 30 }, (_, i) => [{ type: "FAILED_" + String.fromCharCode(65 + (i % 26)) + (i >= 26 ? "Z" : ""), task: "a" }, { type: "FAILED_" + String.fromCharCode(65 + (i % 26)) + (i >= 26 ? "Z" : ""), task: "b" }]).flat();
   assert.equal(rootCause(distinct, { maxHypotheses: 50 }).hypotheses.length, 10);
 });
+
+test("gates survive ordinary wording, look-alikes and zero-width characters; unknown external-effect verbs are gated for review", async () => {
+  const titles = {
+    "Order the replacement licence for the build server": "SPEND_MONEY", "Renew the domain registration": "SPEND_MONEY", "Tweet the launch announcement": "PUBLIC_PUBLICATION",
+    "Force-push the cleaned history to the remote": "DESTRUCTIVE_EXTERNAL_DELETE", "Delete the old customer backups": "DESTRUCTIVE_EXTERNAL_DELETE", "Rotate the service password": "CREDENTIALS_OR_SECURITY",
+    "Pay​ the vendor invoice": "SPEND_MONEY", "pаyment to the vendor": "SPEND_MONEY", "Se​nd the outreach newsletter": "PUBLIC_PUBLICATION", "Ｐａｙ the supplier": "SPEND_MONEY",
+    "Call the customer about the delay": "EXTERNAL_EFFECT_UNKNOWN_NEEDS_REVIEW", "Invite the prospects to the webinar": "PUBLIC_PUBLICATION"
+  };
+  for (const [title, cat] of Object.entries(titles)) {
+    const p = await planGoal({ goal: G, model: fake([{ id: "S1", title, role: "EXECUTION", kind: "execute.x", acceptance: ["done"] }]) });
+    assert.equal(p.ok, true, title); const g = p.steps[0].approvalGate; assert.equal(g.required, true, title + " -> " + JSON.stringify(g)); assert.ok(g.categories.includes(cat) || cat === "PUBLIC_PUBLICATION" && g.categories.length, title + " " + g.categories);
+  }
+  const plain = await planGoal({ goal: G, model: fake([{ id: "S1", title: "Summarise the existing notes into a table", role: "SEARCH", kind: "search.x", acceptance: ["table"] }]) });
+  assert.equal(plain.steps[0].approvalGate.required, false);
+});

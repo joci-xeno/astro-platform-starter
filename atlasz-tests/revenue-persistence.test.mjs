@@ -3,16 +3,16 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { createRevenuePersistence, dailyTargetReport, TARGETS, validatePolicy } from "../atlasz-addons/revenue-persistence.mjs";
+import { createRevenuePersistence, dailyTargetReport, TARGETS, validatePolicy, workflowSubject } from "../atlasz-addons/revenue-persistence.mjs";
 import { generateOwnerKeyPair, issueOwnerApproval, createOwnerAuth } from "../atlasz-addons/owner-auth.mjs";
 import { ROSTER } from "../atlasz-addons/agent-activity.mjs";
 import { tmp, rm } from "./helpers.mjs";
 
 const kp = generateOwnerKeyPair(), other = generateOwnerKeyPair();
-const wfAuth = (id, k = kp, now = Date.now()) => issueOwnerApproval({ privateKeyPem: k.privateKeyPem, action: "WORKFLOW_AUTHORIZE", subject: "workflow:" + id, now });
+const wfAuth = (id, k = kp, now = Date.parse("2026-10-10T08:00:00Z"), steps = ["a", "b"], agentId = "EXECUTION-2") => issueOwnerApproval({ privateKeyPem: k.privateKeyPem, action: "WORKFLOW_AUTHORIZE", subject: workflowSubject({ workflowId: id, opportunityId: null, agentId, steps }), now });
 function mk(policy = {}) {
   const dir = tmp("revpers-"); let t = Date.parse("2026-10-10T08:00:00Z");
-  const open = (o = {}) => createRevenuePersistence({ dir, ownerAuth: createOwnerAuth({ publicKeyB64: kp.publicKeyB64 }), policy, now: () => new Date(t).toISOString(), ...o });
+  const open = (o = {}) => createRevenuePersistence({ dir, ownerAuth: createOwnerAuth({ publicKeyB64: kp.publicKeyB64, nowFn: () => Date.parse("2026-10-10T08:00:30Z") }), policy, now: () => new Date(t).toISOString(), ...o });
   return { dir, rp: open(), open, tick: h => { t += h * 3600000; }, done: () => rm(dir) };
 }
 const DAY = "2026-10-10", AT = "2026-10-10T12:00:00Z";
@@ -33,7 +33,7 @@ test("estimates presented as revenue are NOT counted: PAID without confirmation 
     { stage: "PAID", amountUsd: 10000, costUsd: 0, confirmedReceived: true, externalEvidence: " ", at: AT },        // blank evidence
     paid(10000, { isEstimate: true }), paid(10000, { source: "FORECAST" })
   ]);
-  assert.equal(r.verifiedCollectedUsd, 0); assert.equal(r.minimumMet, false); assert.equal(r.gapToMinimumUsd, 500);
+  assert.equal(r.verifiedCollectedUsd, 0); assert.equal(r.minimumMet, null); assert.equal(r.status, "LOWER_BOUND_UNKNOWN_ENTRIES"); assert.equal(r.verifiedCollectedIsLowerBound, true); assert.equal(r.gapToMinimumUsd, 500);
   assert.equal(r.buckets.rejected.length, 4); assert.equal(r.buckets.excludedSimulated.length, 2);
 });
 
@@ -42,9 +42,10 @@ test("simulated trading P&L is excluded and counted, never added to collected", 
   assert.equal(r.verifiedCollectedUsd, 100); assert.equal(r.buckets.excludedSimulated.length, 4); assert.equal(r.minimumMet, false);
 });
 
-test("no ledger data -> collected is UNKNOWN (null), not zero; an empty ledger is a verified zero", () => {
+test("no ledger data -> collected is UNKNOWN (null), not zero; an empty ledger or a day without entries is UNKNOWN too", () => {
   const n = dailyTargetReport(DAY, null); assert.equal(n.verifiedCollectedUsd, null); assert.equal(n.status, "NO_LEDGER_DATA"); assert.equal(n.minimumMet, null);
-  const z = dailyTargetReport(DAY, []); assert.equal(z.verifiedCollectedUsd, 0); assert.equal(z.status, "MINIMUM_TARGET_NOT_MET");
+  const z = dailyTargetReport(DAY, []); assert.equal(z.verifiedCollectedUsd, null); assert.equal(z.status, "NO_LEDGER_DATA_FOR_DAY"); assert.equal(z.minimumMet, null);
+  const o = dailyTargetReport(DAY, [{ stage: "PAID", amountUsd: 5, costUsd: 0, at: "2026-10-09T10:00:00Z", confirmedReceived: true, externalEvidence: "x:1" }]); assert.equal(o.status, "NO_LEDGER_DATA_FOR_DAY", "entries for other days do not make this day zero");
 });
 
 test("non-USD PAID is listed separately (no FX invented); other days, undated and garbage entries are not counted", () => {
@@ -106,7 +107,7 @@ test("only ELIGIBLE opportunities can be OPEN_QUALIFIED; invalid economics are r
 
 test("multi-day carry-over: authorized unfinished workflows survive a restart and are proposed for RESUME the next day", () => {
   const t = mk(); try {
-    assert.equal(t.rp.registerWorkflow({ workflowId: "wf-1", agentId: "EXECUTION-2", steps: ["draft", "qa", "package"], completedSteps: 1, authorization: wfAuth("wf-1") }).ok, true);
+    assert.equal(t.rp.registerWorkflow({ workflowId: "wf-1", agentId: "EXECUTION-2", steps: ["draft", "qa", "package"], completedSteps: 1, authorization: wfAuth("wf-1", kp, Date.parse("2026-10-10T08:00:00Z"), ["draft", "qa", "package"]) }).ok, true);
     const next = t.open(); t.tick(24);
     const c = next.carryOver("2026-10-11"); assert.equal(c.proposals.length, 1); assert.equal(c.proposals[0].type, "RESUME"); assert.equal(c.proposals[0].nextStep, "qa");
     next.stepDone("wf-1"); next.stepDone("wf-1"); assert.equal(next.carryOver("2026-10-12").proposals.length, 0);
@@ -159,5 +160,15 @@ test("daily report is persisted with the verified figure only, and the module ne
     const r = t.rp.dailyReport(DAY, [paid(200), { stage: "INVOICED", amountUsd: 900, costUsd: 0, at: AT }]);
     assert.equal(r.verifiedCollectedUsd, 200); const s = JSON.parse(fs.readFileSync(path.join(t.dir, "revenue-persistence.json"), "utf8")); assert.equal(s.reports[DAY].verifiedCollectedUsd, 200); assert.equal(s.reports[DAY].separate.invoicedUsd, 900);
     for (const k of Object.keys(t.rp)) assert.doesNotMatch(k, /^(send|pay|spend|submit|accept|bid)/i);
+  } finally { t.done(); }
+});
+
+test("workflow approval is single-use and bound to the exact steps/agent; paidAt dates count; simulated variants are excluded", () => {
+  const t = mk(); try {
+    const a = wfAuth("wf-9"); const ok = t.rp.registerWorkflow({ workflowId: "wf-9", agentId: "EXECUTION-2", steps: ["a", "b"], authorization: a }); assert.equal(ok.ok, true);
+    assert.equal(t.rp.registerWorkflow({ workflowId: "wf-9b", agentId: "EXECUTION-2", steps: ["a", "b"], authorization: a }).ok, false, "replay");
+    assert.equal(t.rp.registerWorkflow({ workflowId: "wf-8", agentId: "EXECUTION-2", steps: ["a", "b", "send-money"], authorization: wfAuth("wf-8") }).reason, "WORKFLOW_NOT_AUTHORIZED", "steps changed after approval");
+    const r = dailyTargetReport(DAY, [{ stage: "PAID", amountUsd: 600, costUsd: 0, confirmedReceived: true, externalEvidence: "stripe:ch_1", paidAt: AT }, paid(900, { source: "paper-trade" }), paid(900, { kind: "demo_payment" }), paid(900, { source: "SIM" })]);
+    assert.equal(r.verifiedCollectedUsd, 600); assert.equal(r.buckets.excludedSimulated.length, 3);
   } finally { t.done(); }
 });

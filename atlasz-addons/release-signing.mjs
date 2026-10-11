@@ -121,7 +121,7 @@ export const downgradeSubject = (component, digest) => "release-downgrade:" + co
 export function createReleaseVerifier({ ownerAuth, stateDir = null, nowFn = () => Date.now(), isStopped = () => false } = {}) {
   if (!ownerAuth || typeof ownerAuth.verifyApproval !== "function" || typeof ownerAuth.verifyRecorded !== "function") throw new Error("OWNER_AUTH_REQUIRED");
   if (stateDir) fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
-  const audit = createAuditChain({ filePath: stateDir ? path.join(stateDir, "release-signing-audit.jsonl") : null, now: () => new Date(nowFn()).toISOString() });
+  const audit = createAuditChain({ filePath: stateDir ? path.join(stateDir, "release-signing-audit.jsonl") : null, now: () => new Date(nowFn()).toISOString(), headPinFile: stateDir ? path.join(stateDir, "release-signing-audit.headpin.json") : null });
   const stopped = () => { try { return Boolean(isStopped()); } catch { return true; } };
   let integrity = "OK";
 

@@ -250,3 +250,22 @@ test("side panel renders output as text only and shows the untrusted label; no a
   const all = fs.readdirSync(EXT, { recursive: true }).filter(f => /\.js$/.test(f)).map(f => fs.readFileSync(path.join(EXT, f), "utf8")).join("\n");
   assert.doesNotMatch(all, /registerAgent|createAgent|agents\.push/);
 });
+
+test("obfuscated dangerous code is found after normalisation (bracket access, concatenation, escapes, aliasing, non-allowlisted chrome.* APIs)", () => {
+  const cases = {
+    "window[\"ev\" + \"al\"](x)": /COMPUTED_ACCESS_ON_GLOBAL/,
+    "globalThis['fet'+'ch']('http://127.0.0.1/')": /COMPUTED_ACCESS_ON_GLOBAL/,
+    "const f = 'fetch'; self[f]('http://127.0.0.1/')": /COMPUTED_ACCESS_ON_GLOBAL/,
+    "x['inner' + 'HTML'] = y; el[\"innerHTML\"] = y": /DANGEROUS_NAME_IN_BRACKET/,
+    "(0, ev\\u0061l)('1')": /EVAL/,
+    "[].constructor.constructor('return 1')()": /PROTOTYPE_OR_REFLECTION/,
+    "const c = chrome; c.cookies.getAll({})": /CHROME_ALIASED/,
+    "const { storage } = chrome; storage.local.set({})": /CHROME_RENAMED_DESTRUCTURING/,
+    "chrome.tabs.captureVisibleTab()": /CHROME_API_NOT_ALLOWLISTED/,
+    "chrome.windows.create({url:'x'})": /CHROME_API_NOT_ALLOWLISTED/,
+    "String.fromCharCode(101,118,97,108)": /OBFUSCATION_PRIMITIVE/
+  };
+  for (const [code, want] of Object.entries(cases)) {
+    const d = copyExt(); try { fs.appendFileSync(path.join(d, "background.js"), "\n" + code + "\n"); const r = auditExtensionFolder(d); assert.equal(r.ok, false, code); assert.match(JSON.stringify(r.findings), want, code); } finally { rm(d); }
+  }
+});

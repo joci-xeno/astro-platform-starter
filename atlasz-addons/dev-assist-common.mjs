@@ -10,7 +10,7 @@ import { createHash } from "node:crypto";
 import { walkRepo } from "./repo-analyzer.mjs";
 import { scrub } from "./secret-patterns.mjs";
 
-export const LIMITS = Object.freeze({ maxSourceBytes: 512 * 1024, maxTokens: 200000, maxParamTokens: 400, maxScan: 400, maxRel: 400, maxTemplateDepth: 16, maxGraphFiles: 3000, snippet: 160 });
+export const LIMITS = Object.freeze({ maxSourceBytes: 512 * 1024, maxTokens: 200000, maxParamTokens: 400, maxScan: 400, maxRel: 400, maxTemplateDepth: 16, maxRegexScan: 2000, scanBudget: 4000000, maxGraphFiles: 3000, snippet: 160 });
 export const JS_EXT = /\.(mjs|cjs|js|jsx|ts|tsx|mts|cts)$/i;
 export const TEST_FILE = /(^|\/)(tests?|__tests__|spec|atlasz-tests)\/.*\.(mjs|cjs|js|ts)$|\.(test|spec)\.(mjs|cjs|js|ts)$/i;
 export const isTestFile = rel => TEST_FILE.test(rel);
@@ -64,7 +64,7 @@ const MULTI = ["...", "=>", "===", "!==", "==", "!=", "&&", "||", "??", "?.", "<
 
 /** Tokens: {t: "id"|"str"|"tpl"|"num"|"re"|"p", v, line}. Comments and whitespace dropped. Never throws; bounded by maxTokens. */
 export function tokenize(src, { maxTokens = LIMITS.maxTokens } = {}) {
-  const s = String(src ?? ""), n = s.length, toks = []; let i = 0, line = 1, truncated = false, unterminated = 0;
+  const s = String(src ?? ""), n = s.length, toks = []; let i = 0, line = 1, truncated = false, unterminated = 0, budget = LIMITS.scanBudget, limit = null;
   const nl = (a, b) => { for (let k = a; k < b; k++) if (s.charCodeAt(k) === 10) line++; };
   const regexOk = () => { const p = toks[toks.length - 1]; if (!p) return true; if (p.t === "p") return !(p.v === ")" || p.v === "]"); if (p.t === "id") return KW_BEFORE_REGEX.has(p.v); return false; };
   const readTemplate = (start, depth) => {     // returns index after the closing backtick
@@ -90,7 +90,8 @@ export function tokenize(src, { maxTokens = LIMITS.maxTokens } = {}) {
     unterminated++; return n;
   };
   while (i < n) {
-    if (toks.length >= maxTokens) { truncated = true; break; }
+    if (toks.length >= maxTokens) { truncated = true; limit = "TOKEN_LIMIT"; break; }
+    if (budget <= 0) { truncated = true; limit = "TOKEN_BUDGET"; break; }        // hostile input (e.g. thousands of unterminated regex-like slashes) cannot make the scan quadratic
     const c = s[i];
     if (c === "\n") { line++; i++; continue; }
     if (c === " " || c === "\t" || c === "\r" || c === "\f" || c === "\v" || c === "﻿" || c === " ") { i++; continue; }
@@ -107,16 +108,17 @@ export function tokenize(src, { maxTokens = LIMITS.maxTokens } = {}) {
     if (IDENT_START.test(c)) { let k = i + 1; while (k < n && IDENT.test(s[k])) k++; toks.push({ t: "id", v: s.slice(i, k), line }); i = k; continue; }
     if (/[0-9]/.test(c) || (c === "." && /[0-9]/.test(s[i + 1] ?? ""))) { let k = i + 1; while (k < n && /[0-9A-Za-z_.]/.test(s[k])) k++; toks.push({ t: "num", v: s.slice(i, k), line }); i = k; continue; }
     if (c === "/" && regexOk()) {
-      let k = i + 1, cls = false;
-      while (k < n && s[k] !== "\n") { const d = s[k]; if (d === "\\") { k += 2; continue; } if (d === "[") cls = true; else if (d === "]") cls = false; else if (d === "/" && !cls) break; k++; }
-      if (s[k] === "/") { k++; while (k < n && /[a-z]/.test(s[k])) k++; toks.push({ t: "re", v: s.slice(i, k), line }); i = k; continue; }
+      let k = i + 1, cls = false; const stop = Math.min(n, i + LIMITS.maxRegexScan);
+      while (k < stop && s[k] !== "\n") { const d = s[k]; if (d === "\\") { k += 2; continue; } if (d === "[") cls = true; else if (d === "]") cls = false; else if (d === "/" && !cls) break; k++; }
+      budget -= k - i;
+      if (k < stop && s[k] === "/") { k++; while (k < n && /[a-z]/.test(s[k])) k++; toks.push({ t: "re", v: s.slice(i, k), line }); i = k; continue; }
       // not a regex after all: fall through as punctuation
     }
     const m = MULTI.find(op => s.startsWith(op, i));
     if (m) { toks.push({ t: "p", v: m, line }); i += m.length; continue; }
     toks.push({ t: "p", v: c, line }); i++;
   }
-  return { tokens: toks, truncated, unterminated };
+  return { tokens: toks, truncated, unterminated, limit };
 }
 
 /** Render a token slice as stable text (used for signatures). */

@@ -39,8 +39,11 @@ export function validatePolicy(raw = {}) {
   }
   return { policy: Object.freeze(p) };
 }
+export const workflowSubject = ({ workflowId, opportunityId = null, agentId, steps }) => "workflow:" + workflowId + ":" + createHash("sha256").update(JSON.stringify([workflowId, opportunityId, agentId, steps])).digest("hex").slice(0, 32);
 const dayOf = iso => new Date(iso).toISOString().slice(0, 10);
-const isSimulated = e => e?.simulated === true || e?.isEstimate === true || SIM_SOURCES.has(String(e?.source ?? "").toUpperCase()) || String(e?.kind ?? "").toUpperCase().includes("SIMULATED") || String(e?.kind ?? "").toUpperCase().includes("TRADING_PNL");
+const SIM_TOKEN = /^(sim|simul|paper|demo|mock|fake|dummy|sandbox|backtest|hypothet|dry|test|trading|pnl)/i;
+const simTokens = v => String(v ?? "").split(/[^A-Za-z]+/).filter(Boolean);
+const isSimulated = e => e?.simulated === true || e?.isEstimate === true || e?.paper === true || e?.sandbox === true || e?.demo === true || SIM_SOURCES.has(String(e?.source ?? "").toUpperCase()) || simTokens(e?.source).some(t => SIM_TOKEN.test(t)) || simTokens(e?.kind).some(t => SIM_TOKEN.test(t)) || String(e?.kind ?? "").toUpperCase().includes("TRADING_PNL");
 
 /**
  * Pure: classify money entries for one day. entries: profit-ledger shaped {stage, amountUsd, costUsd, confirmedReceived?, externalEvidence?, currency?, at, ...}.
@@ -52,10 +55,11 @@ export function dailyTargetReport(day, entries, { targets = TARGETS } = {}) {
   if (entries === null || entries === undefined) return { ...base, status: "NO_LEDGER_DATA", verifiedCollectedUsd: null, gapToMinimumUsd: null, minimumMet: null, note: "No ledger data was supplied: collected revenue is UNKNOWN, not zero." };
   if (!Array.isArray(entries) || entries.length > LIMITS.maxEntries) throw new Error("ENTRIES_INVALID");
   const buckets = { estimated: [], agreed: [], invoiced: [], verifiedPaid: [], verifiedPaidOtherCurrency: [], excludedSimulated: [], rejected: [] };
+  let dated = 0;
   for (const [i, e] of entries.entries()) {
     if (!e || typeof e !== "object") { buckets.rejected.push({ index: i, reason: "ENTRY_NOT_OBJECT" }); continue; }
-    const at = e.at ?? e.receivedAt ?? e.recordedAt; if (typeof at !== "string" || !Number.isFinite(Date.parse(at))) { buckets.rejected.push({ index: i, reason: "ENTRY_DATE_REQUIRED" }); continue; }
-    if (dayOf(at) !== day) continue;
+    const at = e.at ?? e.paidAt ?? e.receivedAt ?? e.recordedAt; if (typeof at !== "string" || !Number.isFinite(Date.parse(at))) { buckets.rejected.push({ index: i, reason: "ENTRY_DATE_REQUIRED" }); continue; }
+    if (dayOf(at) !== day) continue; dated++;
     if (isSimulated(e)) { buckets.excludedSimulated.push({ index: i, kind: e.kind ?? e.source ?? "SIMULATED", amountUsd: Number(e.amountUsd) || null }); continue; }
     if (e.stage === "PAID" && (e.confirmedReceived !== true || !(typeof e.externalEvidence === "string" ? e.externalEvidence.trim().length >= 3 : e.externalEvidence && typeof e.externalEvidence === "object"))) { buckets.rejected.push({ index: i, stage: "PAID", reason: "PAID_NEEDS_CONFIRMED_RECEIPT_AND_EVIDENCE" }); continue; }
     let r; try { r = recordMoney({ ...e, costUsd: e.costUsd ?? 0 }); } catch (err) { buckets.rejected.push({ index: i, stage: e.stage ?? null, reason: err.message }); continue; }
@@ -69,8 +73,11 @@ export function dailyTargetReport(day, entries, { targets = TARGETS } = {}) {
   const sum = l => l.filter(x => x.currency === "USD").reduce((n, x) => n + x.amount, 0);
   const verifiedCollectedUsd = s.confirmedPaidUsd;
   buckets.verifiedPaid = buckets.verifiedPaid.map(({ _r, ...x }) => x); buckets.verifiedPaidOtherCurrency = buckets.verifiedPaidOtherCurrency.map(({ _r, ...x }) => x);
-  return { ...base, status: verifiedCollectedUsd >= targets.minimumDailyUsd ? "MINIMUM_TARGET_MET_VERIFIED" : "MINIMUM_TARGET_NOT_MET",
-    verifiedCollectedUsd, verifiedNetUsd: s.verifiedNetProfitUsd, gapToMinimumUsd: Math.max(0, targets.minimumDailyUsd - verifiedCollectedUsd), minimumMet: verifiedCollectedUsd >= targets.minimumDailyUsd,
+  // Unknown is never zero: a day with no dated entries has UNKNOWN revenue, and rejected entries (undated, unreceipted PAID, malformed) make the figure a LOWER BOUND.
+  if (dated === 0 && buckets.rejected.length === 0) return { ...base, status: "NO_LEDGER_DATA_FOR_DAY", verifiedCollectedUsd: null, verifiedNetUsd: null, gapToMinimumUsd: null, minimumMet: null, aspirationalProgress: null, separate: { estimatedUsd: 0, agreedUsd: 0, invoicedUsd: 0, notRevenue: true }, buckets, note: "No ledger entries exist for this day: collected revenue is UNKNOWN, not zero." };
+  const lowerBound = buckets.rejected.length > 0, met = verifiedCollectedUsd >= targets.minimumDailyUsd;
+  return { ...base, status: met ? "MINIMUM_TARGET_MET_VERIFIED" : lowerBound ? "LOWER_BOUND_UNKNOWN_ENTRIES" : "MINIMUM_TARGET_NOT_MET", verifiedCollectedIsLowerBound: lowerBound,
+    verifiedCollectedUsd, verifiedNetUsd: s.verifiedNetProfitUsd, gapToMinimumUsd: Math.max(0, targets.minimumDailyUsd - verifiedCollectedUsd), minimumMet: met ? true : lowerBound ? null : false,
     aspirationalProgress: verifiedCollectedUsd / targets.aspirationalDailyUsd,
     separate: { estimatedUsd: sum(buckets.estimated), agreedUsd: sum(buckets.agreed), invoicedUsd: sum(buckets.invoiced), notRevenue: true },
     buckets, note: "Targets are not forecasts or income. Only externally confirmed PAID entries with evidence count as collected; estimates, agreements and invoices are listed separately; simulated P&L is excluded." };
@@ -151,10 +158,11 @@ export function createRevenuePersistence({ dir, ownerAuth = null, policy = {}, r
     if (!Array.isArray(steps) || !steps.length || steps.length > 100 || !steps.every(s => typeof s === "string" && s.length <= 120)) return R("STEPS_INVALID");
     if (!Number.isInteger(completedSteps) || completedSteps < 0 || completedSteps > steps.length) return R("COMPLETED_STEPS_INVALID");
     if (!ownerAuth || typeof ownerAuth.verifyRecorded !== "function") return R("OWNER_AUTH_NOT_CONFIGURED");
-    const subject = "workflow:" + workflowId;
-    if (!ownerAuth.verifyRecorded(authorization, { action: "WORKFLOW_AUTHORIZE", subject })) return R("WORKFLOW_NOT_AUTHORIZED", { subject });
+    const subject = workflowSubject({ workflowId, opportunityId, agentId, steps });      // bound to the exact ordered steps, agent and opportunity
+    let va; try { va = ownerAuth.verifyApproval?.(authorization, { action: "WORKFLOW_AUTHORIZE", subject }); } catch { va = null; }      // live, single-use (nonce consumed, expiry enforced); the recorded copy is re-verified later
+    if (!va || va.allowed !== true) return R("WORKFLOW_NOT_AUTHORIZED", { subject, detail: va?.reason ?? "OWNER_APPROVAL_INVALID" });
     if (!Object.hasOwn(st.workflows, workflowId) && Object.keys(st.workflows).length >= LIMITS.maxWorkflows) return R("WORKFLOW_LIMIT");
-    st.workflows[workflowId] = { workflowId, opportunityId, agentId, steps: [...steps], completedSteps, authorizedAt: authorization.issuedAt, authorizationNonce: authorization.nonce, authorization, registeredAt: now(), finished: completedSteps === steps.length };
+    st.workflows[workflowId] = { workflowId, opportunityId, agentId, steps: [...steps], completedSteps, authorizedAt: authorization.issuedAt, authorizationNonce: authorization.nonce, authorization, subject, registeredAt: now(), finished: completedSteps === steps.length };
     save(); audit.append("WORKFLOW_REGISTERED", { workflowId, agentId, nonce: authorization.nonce }); return { ok: true };
   }
   function stepDone(workflowId) { const w = Object.hasOwn(st.workflows, workflowId) ? st.workflows[workflowId] : null; if (!w) return R("UNKNOWN_WORKFLOW"); if (w.finished) return R("ALREADY_FINISHED"); w.completedSteps++; w.finished = w.completedSteps === w.steps.length; w.lastStepAt = now(); save(); return { ok: true, finished: w.finished }; }
@@ -164,7 +172,7 @@ export function createRevenuePersistence({ dir, ownerAuth = null, policy = {}, r
     const dayStart = Date.parse(day + "T00:00:00.000Z"), out = [];
     for (const w of Object.values(st.workflows)) {
       if (w.finished) continue;
-      const sigOk = Boolean(ownerAuth?.verifyRecorded?.(w.authorization, { action: "WORKFLOW_AUTHORIZE", subject: "workflow:" + w.workflowId }));
+      const sigOk = Boolean(ownerAuth?.verifyRecorded?.(w.authorization, { action: "WORKFLOW_AUTHORIZE", subject: w.subject }));
       const ageDays = (dayStart - Date.parse(w.authorizedAt)) / 86400000;
       const action = !sigOk ? "BLOCKED_AUTHORIZATION_INVALID" : ageDays > P.maxCarryOverDays ? "NEEDS_REAUTHORIZATION" : "RESUME";
       out.push({ type: action, workflowId: w.workflowId, agentId: w.agentId, nextStep: w.steps[w.completedSteps], completedSteps: w.completedSteps, totalSteps: w.steps.length, authorizationAgeDays: Math.round(ageDays * 10) / 10 });

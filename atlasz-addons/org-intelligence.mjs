@@ -28,6 +28,9 @@ const EMAIL_RE = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i, PHONE_RE = /(?:\+?\d[
 const CTRL = /[\u0000-\u001f\u007f\u2028\u2029]/;
 const sha = t => createHash("sha256").update(t).digest("hex");
 const norm = v => String(v).normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+/** Type-aware key: a website is compared as a host (punctuation is significant: acme-shop.hu and acme.shop.hu are different domains), a registration number ignores spaces and dashes only. */
+const hostKey = v => { let x = String(v).normalize("NFKC").trim().toLowerCase().replace(/^[a-z][a-z0-9+.-]*:\/\//, "").replace(/^www\./, ""); x = x.split(/[\/?#]/)[0].replace(/:\d+$/, "").replace(/\.$/, ""); return x; };
+const fieldKey = (field, v) => field === "website" ? hostKey(v) : field === "registrationNumber" ? String(v).normalize("NFKC").toUpperCase().replace(/[\s-]+/g, "") : norm(v);
 
 function provenanceOk(p) {
   if (!p || typeof p !== "object") return "PROVENANCE_REQUIRED";
@@ -45,7 +48,9 @@ export function createOrgIntelligence({ dir = null, isSourceApproved = () => fal
   let st = { salt: salt ?? randomBytes(16).toString("hex"), orgs: {}, suppressed: [] };
   if (FILE && fs.existsSync(FILE)) { try { st = JSON.parse(fs.readFileSync(FILE, "utf8")); } catch { throw new Error("ORG_STORE_UNREADABLE"); } }
   const save = () => { if (!FILE) return; const t = FILE + ".tmp"; fs.writeFileSync(t, JSON.stringify(st), { mode: 0o600 }); fs.renameSync(t, FILE); };
-  const subjectHash = key => sha(st.salt + ":" + norm(key)).slice(0, 32);
+  const isEmail = k => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(k).trim());
+  const emailHash = e => sha(st.salt + ":e:" + String(e).normalize("NFKC").trim().toLowerCase()).slice(0, 32), nameHash = n => sha(st.salt + ":n:" + norm(n)).slice(0, 32);
+  const subjectHash = key => isEmail(key) ? emailHash(key) : nameHash(key);
   const approved = id => { if (id === "manual") return true; try { return isSourceApproved(id) === true; } catch { return false; } };
   const R = (reason, extra = {}) => ({ ok: false, reason, ...extra });
 
@@ -67,7 +72,7 @@ export function createOrgIntelligence({ dir = null, isSourceApproved = () => fal
     if (EMAIL_RE.test(String(v)) || (field !== "registrationNumber" && field !== "foundedYear" && PHONE_RE.test(String(v)))) return R("PERSONAL_DATA_NOT_ALLOWED_IN_ORG_FIELD");
     const o = upsertOrg(orgId); if (!o.ok) return o;
     const list = o.org.fields[field] ??= [];
-    const a = { value: v, key: norm(v), sourceId: provenance.sourceId, url: provenance.sourceId === "manual" ? null : String(provenance.url).slice(0, 500), evidenceNote: provenance.evidenceNote ?? null, observedAt: new Date(Date.parse(provenance.observedAt)).toISOString(), confidence, recordedAt: now() };
+    const a = { value: v, key: fieldKey(field, v), sourceId: provenance.sourceId, url: provenance.sourceId === "manual" ? null : String(provenance.url).slice(0, 500), evidenceNote: provenance.evidenceNote ?? null, observedAt: new Date(Date.parse(provenance.observedAt)).toISOString(), confidence, recordedAt: now() };
     const same = list.findIndex(x => x.sourceId === a.sourceId && x.key === a.key);
     if (same >= 0) list[same] = a; else { if (list.length >= LIMITS.maxAssertionsPerField) list.shift(); list.push(a); }
     save(); audit.append("ORG_FIELD_ASSERTED", { orgId, field, sourceId: a.sourceId, valueHash: sha(a.key).slice(0, 16) });
@@ -80,7 +85,7 @@ export function createOrgIntelligence({ dir = null, isSourceApproved = () => fal
     const candidates = [...groups.values()].map(g => ({ value: g.value, confidence: g.confidence, sources: g.sources, independentSources: new Set(g.sources.map(s => s.sourceId)).size }));
     const res = org.resolutions[field];
     if (candidates.length > 1) {
-      const chosen = res && candidates.find(c => norm(c.value) === res.key);
+      const chosen = res && candidates.find(c => fieldKey(field, c.value) === res.key);
       return chosen ? { field, status: "CONFLICT_RESOLVED_BY_REVIEW", value: chosen.value, confidence: chosen.confidence, resolution: { reviewer: res.reviewer, note: res.note, at: res.at }, candidates }
         : { field, status: "CONFLICT", value: null, confidence: null, candidates };
     }
@@ -96,8 +101,8 @@ export function createOrgIntelligence({ dir = null, isSourceApproved = () => fal
     const org = Object.hasOwn(st.orgs, orgId) ? st.orgs[orgId] : null; if (!org) return R("UNKNOWN_ORG");
     if (typeof reviewer !== "string" || !/^[A-Za-z0-9_.-]{2,40}$/.test(reviewer)) return R("REVIEWER_REQUIRED");
     const fv = fieldView(org, field); if (fv.status !== "CONFLICT" && fv.status !== "CONFLICT_RESOLVED_BY_REVIEW") return R("NO_CONFLICT");
-    if (!fv.candidates.some(c => norm(c.value) === norm(chosenValue))) return R("CHOICE_MUST_BE_AN_EXISTING_CANDIDATE");
-    org.resolutions[field] = { key: norm(chosenValue), reviewer, note: note === null ? null : String(note).slice(0, LIMITS.maxNote), at: now() };
+    if (!fv.candidates.some(c => fieldKey(field, c.value) === fieldKey(field, chosenValue))) return R("CHOICE_MUST_BE_AN_EXISTING_CANDIDATE");
+    org.resolutions[field] = { key: fieldKey(field, chosenValue), reviewer, note: note === null ? null : String(note).slice(0, LIMITS.maxNote), at: now() };
     save(); audit.append("ORG_CONFLICT_RESOLVED", { orgId, field, reviewer }); return { ok: true };
   }
 
@@ -111,7 +116,7 @@ export function createOrgIntelligence({ dir = null, isSourceApproved = () => fal
     if (raw.email != null && !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(raw.email)) return R("CONTACT_EMAIL_INVALID");
     if (!raw.name && !raw.email) return R("CONTACT_NAME_OR_EMAIL_REQUIRED");
     if (raw.businessContact !== true) return R("BUSINESS_CONTACT_ONLY");
-    const keys = [raw.email, raw.name].filter(Boolean).map(subjectHash);
+    const keys = [raw.email ? emailHash(raw.email) : null, raw.name ? nameHash(raw.name) : null].filter(Boolean);
     if (keys.some(k => st.suppressed.includes(k))) { audit.append("CONTACT_REFUSED_SUPPRESSED", { orgId }); return R("SUBJECT_SUPPRESSED_AFTER_FORGET"); }
     const o = upsertOrg(orgId); if (!o.ok) return o;
     if (o.org.contacts.length >= LIMITS.maxContactsPerOrg) return R("CONTACT_LIMIT");
@@ -131,20 +136,26 @@ export function createOrgIntelligence({ dir = null, isSourceApproved = () => fal
     if (!company && !domain) return R("NEEDS_UNCONFLICTED_NAME_OR_WEBSITE", { conflicts: v.conflicts });
     return { ok: true, plan: buildBuyerQuery({ company, domain, need, roles }), executable: false, note: "PLAN_ONLY: no contact-finder connector is configured; listed sources are suggestions, not connected services" };
   }
+  /** A key containing an e-mail address is an exact subject id. A bare name is only a CANDIDATE match (two different people can share a name): export lists candidates, forget needs the chosen contactIds. */
+  function matches(key) { const h = subjectHash(key), exact = isEmail(key), out = []; for (const org of Object.values(st.orgs)) for (const c of org.contacts) if (c.subjectKeys.includes(h)) out.push({ orgId: org.orgId, c }); return { h, exact, out }; }
   function exportSubject(key) {
     if (typeof key !== "string" || !key.trim()) return R("SUBJECT_KEY_REQUIRED");
-    const h = subjectHash(key), out = [];
-    for (const org of Object.values(st.orgs)) for (const c of org.contacts) if (c.subjectKeys.includes(h)) out.push({ orgId: org.orgId, ...strip(c) });
-    audit.append("SUBJECT_EXPORTED", { subject: h, records: out.length });
-    return { ok: true, subject: h, records: out, exportedAt: now() };
+    const { h, exact, out } = matches(key);
+    audit.append("SUBJECT_EXPORTED", { subject: h, records: out.length, match: exact ? "EXACT_EMAIL" : "NAME_CANDIDATES" });
+    return { ok: true, subject: h, match: exact ? "EXACT_EMAIL" : "NAME_ONLY_CANDIDATES", records: out.map(x => ({ orgId: x.orgId, ...(exact ? {} : { candidate: true }), ...strip(x.c) })), exportedAt: now() };
   }
-  function forgetSubject(key, { requestRef = null } = {}) {
+  function forgetSubject(key, { requestRef = null, contactIds = null } = {}) {
     if (typeof key !== "string" || !key.trim()) return R("SUBJECT_KEY_REQUIRED");
-    const h = subjectHash(key); let removed = 0; const alsoSuppress = new Set([h]);
-    for (const org of Object.values(st.orgs)) { const keep = []; for (const c of org.contacts) { if (c.subjectKeys.includes(h)) { removed++; c.subjectKeys.forEach(k => alsoSuppress.add(k)); } else keep.push(c); } org.contacts = keep; }
+    const { h, exact, out } = matches(key); let pick = out;
+    if (!exact) {
+      if (!Array.isArray(contactIds) || !contactIds.length) return R("NAME_ONLY_MATCH_IS_A_CANDIDATE_SELECT_CONTACT_IDS", { candidates: out.map(x => ({ orgId: x.orgId, contactId: x.c.contactId })) });
+      pick = out.filter(x => contactIds.includes(x.c.contactId));
+    }
+    const alsoSuppress = new Set(exact ? [h] : []); let removed = 0; const drop = new Set(pick.map(x => x.c.contactId + "@" + x.orgId));
+    for (const org of Object.values(st.orgs)) { const keep = []; for (const c of org.contacts) { if (drop.has(c.contactId + "@" + org.orgId)) { removed++; c.subjectKeys.forEach(k => alsoSuppress.add(k)); } else keep.push(c); } org.contacts = keep; }
     for (const k of alsoSuppress) if (!st.suppressed.includes(k)) st.suppressed.push(k);
     while (st.suppressed.length > LIMITS.maxSuppressed) st.suppressed.shift();
-    save(); audit.append("SUBJECT_FORGOTTEN", { subject: h, removed, requestRef: requestRef === null ? null : String(requestRef).slice(0, 80) });
+    save(); audit.append("SUBJECT_FORGOTTEN", { subject: h, removed, match: exact ? "EXACT_EMAIL" : "NAME_SELECTED", requestRef: requestRef === null ? null : String(requestRef).slice(0, 80) });
     return { ok: true, removed, suppressed: true };
   }
   const summary = () => ({ state: "IMPLEMENTED_NOT_CONNECTED", orgs: Object.keys(st.orgs).length, contacts: Object.values(st.orgs).reduce((n, o) => n + o.contacts.length, 0), suppressedSubjects: st.suppressed.length, conflicts: Object.keys(st.orgs).reduce((n, id) => n + view(id).conflicts.length, 0), auditHead: audit.head() });

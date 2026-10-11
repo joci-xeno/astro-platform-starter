@@ -64,7 +64,7 @@ export async function runDebate({ question, proposal = null, model, rounds = 2, 
         const valid = quarantined ? [] : cites.filter(c => Object.hasOwn(reg, c)), unknown = cites.filter(c => !Object.hasOwn(reg, c));
         const prev = [...turns].reverse().find(t => t.role === role);
         const t = { n: turns.length + 1, round: r, role, side: sideOf(role), family: res.family, text: res.text, textSha256: res.sha, quarantined, injectionSignals: res.screen.injectionSignals, gaming: res.screen.gaming, oversized: res.screen.oversized, citations: valid, unverifiedCitations: unknown };
-        const e = log("DEBATE_TURN", { n: t.n, round: r, role, family: t.family, textSha256: t.textSha256, quarantined, citations: valid, unverifiedCitations: unknown });
+        const e = log("DEBATE_TURN", { n: t.n, round: r, role, family: t.family, textSha256: t.textSha256, fencedSha256: quarantined ? null : sha256(fence(t.role + " r" + t.round, t.text)), quarantined, citations: valid, unverifiedCitations: unknown });
         t.auditSeq = e.seq; t.auditHash = e.hash; turns.push(t);
         if (prev && prev.textSha256 === t.textSha256) { log("DEBATE_LOOP_DETECTED", { role }); stop = "REPEATED_TURN:" + role; break; }
         if (role === "CRITIC" && !quarantined && /^\s*CONCEDE\b/.test(res.text)) { log("DEBATE_CRITIC_CONCEDED", { round: r }); stop = "CRITIC_CONCEDED"; break; }
@@ -118,9 +118,20 @@ export async function runDebate({ question, proposal = null, model, rounds = 2, 
 /** Check a debate record against an audit log: the chain must verify and every turn's sha/seq/hash must be in it. */
 export function verifyDebate(record, entries) {
   const v = verifyChain(entries ?? []); if (!v.ok) return { ok: false, reason: "CHAIN_" + v.reason, brokenAt: v.brokenAt };
-  for (const t of record?.turns ?? []) {
-    const e = entries[t.auditSeq - 1];
-    if (!e || e.hash !== t.auditHash || e.event !== "DEBATE_TURN" || e.data?.textSha256 !== t.textSha256 || e.data?.role !== t.role || e.data?.debateId !== record.debateId) return { ok: false, reason: "TURN_NOT_IN_CHAIN", turn: t.n };
+  if (!record || typeof record !== "object" || typeof record.debateId !== "string") return { ok: false, reason: "RECORD_REQUIRED" };
+  for (const t of record.turns ?? []) {
+    const e = entries[t.auditSeq - 1], d = e?.data;
+    if (!e || e.hash !== t.auditHash || e.event !== "DEBATE_TURN" || d?.textSha256 !== t.textSha256 || d?.role !== t.role || d?.debateId !== record.debateId) return { ok: false, reason: "TURN_NOT_IN_CHAIN", turn: t.n };
+    if (d.n !== t.n || d.round !== t.round || d.family !== t.family || Boolean(d.quarantined) !== Boolean(t.quarantined)) return { ok: false, reason: "TURN_METADATA_DIFFERS_FROM_CHAIN", turn: t.n };
+    if (t.quarantined) { if (t.text !== null && t.text !== undefined) return { ok: false, reason: "QUARANTINED_TURN_TEXT_PRESENT", turn: t.n }; }
+    else if (typeof t.text !== "string" || typeof d.fencedSha256 !== "string" || sha256(t.text) !== d.fencedSha256) return { ok: false, reason: "TURN_TEXT_DIFFERS_FROM_CHAIN", turn: t.n };
   }
+  const mine = entries.filter(e => e.data?.debateId === record.debateId);
+  const res = [...mine].reverse().find(e => e.event === "DEBATE_RESOLUTION"), jdg = [...mine].reverse().find(e => e.event === "DEBATE_JUDGE");
+  if (!res) return { ok: false, reason: "RESOLUTION_NOT_IN_CHAIN" };
+  const R = record.resolution ?? {};
+  if (res.data.status !== R.status || (res.data.winner ?? null) !== (R.winner ?? null) || res.data.by !== R.by || (res.data.basis ?? null) !== (R.basis ?? null)) return { ok: false, reason: "RESOLUTION_DIFFERS_FROM_CHAIN" };
+  if (record.judge?.used) { if (!jdg || (jdg.data.ruling ?? null) !== (record.judge.ruling ?? null) || Boolean(jdg.data.independent) !== Boolean(record.judge.independent)) return { ok: false, reason: "JUDGE_DIFFERS_FROM_CHAIN" }; }
+  else if (jdg) return { ok: false, reason: "JUDGE_RECORD_MISSING_BUT_CHAIN_HAS_RULING" };
   return { ok: true, length: v.length, head: v.head };
 }

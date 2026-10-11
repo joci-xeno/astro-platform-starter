@@ -1,5 +1,7 @@
 // Browser extension guard (PKG150 MR01, MR02, MR13, MR15, HK14; 85-capability item M01 Universal AI Browser Sidebar).
 // Two halves:
+//   (HONEST LIMIT: these source checks are a SPEED BUMP against careless or lazily obfuscated code - they normalise escapes, comments and string concatenation and allowlist chrome.* calls -
+//    but a determined author can still hide behaviour from regex rules. Real protection is the manifest permission set, the CSP, the loopback-only host list and human review of the diff.)
 //   1. auditExtensionFolder(dir)  STATIC check of the extension source in browser-extension/: manifest permission allowlist, loopback-only host access,
 //      strict CSP, no remote code / eval / dynamic import / string timers / HTML injection, content script that cannot read fields or write to the page,
 //      token never in persistent storage, and a sha256 file inventory. It reads files; it never loads or runs them.
@@ -22,12 +24,23 @@ const sha = b => createHash("sha256").update(b).digest("hex");
 
 // [code, regex, appliesTo(file)] - scanned on the RAW text (comments included: stripping comments naively would also hide URL literals).
 const JS_RULES = [
-  ["EVAL", /\beval\s*\(/], ["NEW_FUNCTION", /\bnew\s+Function\s*\(|(?<![\w.])Function\s*\(\s*["'`]/], ["STRING_TIMER", /\bset(?:Timeout|Interval)\s*\(\s*["'`]/],
+  ["EVAL", /\beval\b/], ["NEW_FUNCTION", /\bnew\s+Function\s*\(|(?<![\w.])Function\s*\(\s*["'`]/], ["STRING_TIMER", /\bset(?:Timeout|Interval)\s*\(\s*["'`]/],
   ["HTML_INJECTION", /\.(?:inner|outer)HTML\s*=|insertAdjacentHTML|document\.write\s*\(/], ["DYNAMIC_IMPORT", /(?<![\w.])import\s*\(/], ["IMPORT_SCRIPTS", /\bimportScripts\s*\(/],
   ["OTHER_TRANSPORT", /\bWebSocket\b|\bXMLHttpRequest\b|\bEventSource\b|sendBeacon/], ["EXTERNAL_MESSAGING", /onMessageExternal|onConnectExternal|connectNative|sendNativeMessage/],
   ["PERSISTENT_STORAGE", /chrome\.storage\.(?:local|sync|managed)|\blocalStorage\b|\bsessionStorage\b|\bindexedDB\b/], ["FORM_SUBMIT", /\.submit\s*\(|requestSubmit/],
-  ["PRIVILEGED_API", /chrome\.(?:debugger|cookies|history|webRequest|downloads|management|proxy)\b/]
+  ["PRIVILEGED_API", /chrome\.(?:debugger|cookies|history|webRequest|downloads|management|proxy)\b/],
+  ["COMPUTED_ACCESS_ON_GLOBAL", /\b(?:window|globalThis|self|top|parent|document|chrome|this|Reflect|navigator|location)\s*(?:\?\.)?\s*\[/], ["DANGEROUS_NAME_IN_BRACKET", /\[\s*["'`](?:eval|Function|constructor|fetch|XMLHttpRequest|WebSocket|localStorage|sessionStorage|innerHTML|outerHTML|submit|cookie|import|open|write)["'`]\s*\]/],
+  ["PROTOTYPE_OR_REFLECTION", /\.constructor\b|__proto__|\bReflect\b|\bProxy\b|\bwith\s*\(/], ["OBFUSCATION_PRIMITIVE", /String\.fromCharCode|String\.fromCodePoint|\batob\s*\(|\bunescape\s*\(|\.raw\b|\bwindow\.name\b/],
+  ["CHROME_ALIASED", /[=,(:]\s*(?:globalThis\.|window\.|self\.)?chrome\s*(?:[;,)}]|$)/m], ["CHROME_RENAMED_DESTRUCTURING", /\{[^}]*\}\s*=\s*(?:globalThis\.|window\.|self\.)?chrome\b/]
 ];
+const CHROME_ALLOWED = new Set(["runtime.getURL", "runtime.id", "runtime.onInstalled", "runtime.onMessage", "runtime.sendMessage", "scripting.executeScript", "sidePanel.setPanelBehavior", "storage.session", "tabs.query"]);
+/** The scan input is normalised first so that trivial obfuscation cannot hide a token from the rules: \uXXXX / \xHH escapes decoded, comments removed, adjacent string literals joined ("ev"+"al"), whitespace around dots collapsed. */
+export function normaliseJs(t) {
+  let x = String(t).replace(/\\u\{([0-9a-fA-F]{1,6})\}/g, (m, h) => { try { return String.fromCodePoint(parseInt(h, 16)); } catch { return m; } }).replace(/\\u([0-9a-fA-F]{4})/g, (m, h) => String.fromCharCode(parseInt(h, 16))).replace(/\\x([0-9a-fA-F]{2})/g, (m, h) => String.fromCharCode(parseInt(h, 16)));
+  x = x.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:\\])\/\/[^\n]*/g, "$1");
+  for (let i = 0; i < 8; i++) { const y = x.replace(/(["'`])([^"'`\n]*)\1\s*\+\s*(["'`])([^"'`\n]*)\3/g, (m, q1, a, q2, b) => q1 + a + b + q1); if (y === x) break; x = y; }
+  return x.replace(/\s*\.\s*/g, ".").replace(/\?\.\s*/g, "?.");
+}
 const CONTENT_RULES = [
   ["CONTENT_READS_FIELD_VALUE", /\.value\b|\.checked\b|\.files\b/], ["CONTENT_WRITES_PAGE", /\.(?:textContent|innerText|nodeValue|src|href)\s*=(?!=)|setAttribute|appendChild|removeChild|replaceChild|insertBefore|\.remove\s*\(/],
   ["CONTENT_INTERACTS", /\.click\s*\(|dispatchEvent|\.focus\s*\(|addEventListener|execCommand/], ["CONTENT_MESSAGING", /chrome\.runtime|\bfetch\s*\(/]
@@ -121,7 +134,10 @@ export function auditExtensionFolder(dir) {
       if (/javascript:/i.test(t)) findings.push({ file, code: "JAVASCRIPT_URL" });
     }
     if (isJs) {
-      for (const [code, re] of JS_RULES) { const mt = re.exec(t); if (mt) findings.push({ file, code, line: lineOf(t, mt.index) }); }
+      const nt = normaliseJs(t), seenCodes = new Set();
+      for (const [code, re] of JS_RULES) { const mt = re.exec(t); if (mt) { findings.push({ file, code, line: lineOf(t, mt.index) }); seenCodes.add(code); } }
+      for (const [code, re] of JS_RULES) if (!seenCodes.has(code)) { const mt = re.exec(nt); if (mt) findings.push({ file, code, detail: "AFTER_NORMALISATION" }); }
+      for (const mt of nt.matchAll(/chrome\.([A-Za-z]+)(?:\.([A-Za-z]+))?/g)) { const k = mt[2] ? mt[1] + "." + mt[2] : mt[1]; if (!CHROME_ALLOWED.has(k) && !(mt[1] === "storage" && mt[2] === "session")) findings.push({ file, code: "CHROME_API_NOT_ALLOWLISTED", detail: k.slice(0, 60) }); }
       if (/\bfetch\s*\(/.test(t) && file !== (m?.background?.service_worker ?? "background.js")) findings.push({ file, code: "FETCH_OUTSIDE_SERVICE_WORKER" });
       if (file === "content-script.js") for (const [code, re] of CONTENT_RULES) { const mt = re.exec(t); if (mt) findings.push({ file, code, line: lineOf(t, mt.index), detail: mt[0] }); }
     }

@@ -159,3 +159,35 @@ test("everything persists across a reopen, and rejected changes leave no trace",
     assert.ok(fs.readFileSync(path.join(t.dir, "registry-audit.jsonl"), "utf8").includes("REGISTRY_REVISION"));
   } finally { t.done(); }
 });
+
+// ---- verification round fixes ----
+test("deleted audit log + hand-edited enabled paid model: registry opens read-only; recorded approval is required for enabled paid models", () => {
+  const t = mk(); try {
+    const f = path.join(t.dir, "registry.json"), j = JSON.parse(fs.readFileSync(f, "utf8")); j.models["gpt-x"].enabled = true; fs.writeFileSync(f, JSON.stringify(j));
+    fs.rmSync(path.join(t.dir, "registry-audit.jsonl"), { force: true });
+    const r2 = t.open(); assert.equal(r2.status().readOnly, true); assert.equal(r2.getModel("gpt-x").enabled, false); assert.ok(r2.status().unapprovedEnabled.includes("gpt-x"));
+    assert.equal(r2.resolve({ agentId: ROSTER[0], maxCostUsd: 1 }).candidates.length, 0);
+  } finally { t.done(); }
+});
+test("legitimately approved enable survives reload; tampering the config invalidates it", () => {
+  const t = mk(); try {
+    const m = t.reg.getModel("gpt-x"); assert.equal(t.reg.enable("gpt-x", { approval: ap("MODEL_ENABLE", t.reg.enableSubject(m)) }).ok, true);
+    assert.equal(t.open().getModel("gpt-x").enabled, true);
+  } finally { t.done(); }
+});
+test("rollback refuses a tampered snapshot and an unverifiable one", () => {
+  const t = mk(); try {
+    const snaps = t.reg.snapshots(); const rev = snaps[snaps.length - 2].revision, f = path.join(t.dir, "snapshots", String(rev).padStart(6, "0") + ".json");
+    const j = JSON.parse(fs.readFileSync(f, "utf8")); j.models["gpt-x"] && (j.models["gpt-x"].enabled = true); j.providers.openai.egressHosts = ["evil.example.net"]; fs.writeFileSync(f, JSON.stringify(j, null, 1));
+    const subj = t.reg.rollbackSubject(rev); assert.equal(t.reg.rollback(rev, { approval: ap("MODEL_REGISTRY_ROLLBACK", subj) }).reason, "SNAPSHOT_TAMPERED");
+  } finally { t.done(); }
+});
+test("prototype-named keys do not crash billing or role defaults", () => {
+  const t = mk(); try {
+    for (const k of ["constructor", "__proto__", "toString", "hasOwnProperty"]) { assert.equal(t.reg.billing.begin(k.padEnd(8, "_"), "gpt-x").ok, true); }
+    assert.equal(t.reg.billing.begin("constructor", "gpt-x").reason, "DUPLICATE_BILLING_BLOCKED");
+    assert.equal(t.reg.billing.status("never-used-key"), null); assert.equal(t.reg.setRoleDefault("SEARCH", ["constructor"]).reason, "MODELS_INVALID");
+    assert.equal(t.reg.setAssignment(ROSTER[0], { primary: "toString" }).reason, "UNKNOWN_MODEL");
+    assert.equal(t.reg.addProvider({ id: "loc2", displayName: "L", kind: "LOCAL", egressHosts: ["127.0.0.1"], credentialRef: "SOME_KEY" }).reason, "LOCAL_PROVIDER_CANNOT_HAVE_CREDENTIAL");
+  } finally { t.done(); }
+});

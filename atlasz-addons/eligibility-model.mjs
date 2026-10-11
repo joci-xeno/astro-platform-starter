@@ -134,7 +134,7 @@ export function evaluateEligibility(opportunity, profileIn, { now = Date.now() }
 /** Owner-maintained profile store: set needs a signed owner approval bound to the exact profile; reads re-verify the recorded signature. */
 export function createCapabilityProfileStore({ ownerAuth, dir = null, now = () => new Date().toISOString() } = {}) {
   if (!ownerAuth || typeof ownerAuth.verifyApproval !== "function" || typeof ownerAuth.verifyRecorded !== "function") throw new Error("OWNER_AUTH_REQUIRED");
-  const log = createAuditChain({ filePath: dir ? path.join(dir, "capability-profile-audit.jsonl") : null, now });
+  const log = createAuditChain({ filePath: dir ? path.join(dir, "capability-profile-audit.jsonl") : null, now, headPinFile: dir ? path.join(dir, "capability-profile-audit.headpin.json") : null });
   if (dir) fs.mkdirSync(dir, { recursive: true });
   const subjectOf = p => "capability-profile:" + profileHash(p);
   function set(raw, { approval = null } = {}) {
@@ -145,8 +145,8 @@ export function createCapabilityProfileStore({ ownerAuth, dir = null, now = () =
   }
   function current() {
     try { log.reload(); } catch { return { profile: null, integrity: "TAMPERED" }; }
-    let cur = null, bad = 0;
-    for (const e of log.entries()) if (e.event === "PROFILE_SET") { const v = validateProfile(e.data?.profile); if (v.error || subjectOf(v.profile) !== e.data.subject || !ownerAuth.verifyRecorded(e.data.approval, { action: "CAPABILITY_PROFILE_SET", subject: e.data.subject })) { bad++; continue; } cur = v.profile; }
+    let cur = null, bad = 0; const nonces = new Set();
+    for (const e of log.entries()) if (e.event === "PROFILE_SET") { const v = validateProfile(e.data?.profile); const nn = e.data?.approval?.nonce; if (typeof nn !== "string" || nonces.has(nn)) { bad++; continue; } nonces.add(nn); if (v.error || subjectOf(v.profile) !== e.data.subject || !ownerAuth.verifyRecorded(e.data.approval, { action: "CAPABILITY_PROFILE_SET", subject: e.data.subject })) { bad++; continue; } cur = v.profile; }
     return { profile: cur, integrity: bad ? "UNVERIFIED_RECORDS_IGNORED:" + bad : "OK" };
   }
   function evaluate(opportunity, opts) { const c = current(); if (!c.profile) return { verdict: "UNKNOWN_NEEDS_REVIEW", checks: [], reasons: ["NO_OWNER_APPROVED_PROFILE"], flags: ["PROFILE_MISSING"], executable: false }; return evaluateEligibility(opportunity, c.profile, opts); }

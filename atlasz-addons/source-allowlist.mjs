@@ -91,7 +91,7 @@ export function createSourceAllowlist({ ownerAuth, stateDir = null, isStopped = 
   if (!ownerAuth || typeof ownerAuth.verifyApproval !== "function" || typeof ownerAuth.verifyRecorded !== "function") throw new Error("OWNER_AUTH_REQUIRED");
   if (stateDir) fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
   const now = () => new Date(nowFn()).toISOString();
-  const log = createAuditChain({ filePath: stateDir ? path.join(stateDir, "source-allowlist-audit.jsonl") : null, now });
+  const log = createAuditChain({ filePath: stateDir ? path.join(stateDir, "source-allowlist-audit.jsonl") : null, now, headPinFile: stateDir ? path.join(stateDir, "source-allowlist-audit.headpin.json") : null });
   const stopped = () => { try { return Boolean(isStopped()); } catch { return true; } };
   const rate = new Map(), recent = [], stats = { allowed: 0, denied: 0 };
   let integrity = "OK";

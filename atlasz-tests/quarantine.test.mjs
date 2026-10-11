@@ -440,3 +440,36 @@ test("canary: no baseline is a warning, start/stop are idempotent and the timer 
     assert.doesNotMatch(src, /process\.kill|process\.abort|\.kill\(/);
   } finally { rm(d); }
 });
+
+// ---- verifier round 1 (batch 1): parser mismatches with real tar / streaming unzip
+const paxRec = (k, v) => { const body = " " + k + "=" + v + "\n"; let len = body.length + 1; while (String(len).length + body.length !== len) len = String(len).length + body.length; return Buffer.from(len + body); };
+const padTo512 = d => Buffer.concat([d, Buffer.alloc((512 - (d.length % 512)) % 512)]);
+test("TAR pax size that differs from the ustar size is BLOCKED (tar and the inspector would otherwise read different entries)", () => {
+  const evil = tarHeader({ name: "evil-link", type: "2", link: "/etc/passwd", size: 0 }), pad = Buffer.alloc(512);
+  const pax = paxRec("size", "512"), px = tarHeader({ name: "PaxHeader/x", type: "x", size: pax.length });
+  const first = tarHeader({ name: "a.txt", size: 1024 });          // header says 1024; the pax record says 512 -> real tar finds `evil` as the next header
+  const a = Buffer.concat([px, padTo512(pax), first, pad, evil, Buffer.alloc(1024)]);
+  const r = inspectArchive(a); assert.equal(r.verdict, "BLOCK"); assert.ok(codes(r).includes("TAR_PAX_SIZE_DIFFERS_FROM_HEADER"), codes(r).join());
+});
+test("TAR pax record with a newline inside the path is read by its length prefix, not by lines", () => {
+  const pax = paxRec("path", "a\n/../../x"), px = tarHeader({ name: "PaxHeader/x", type: "x", size: pax.length });
+  const a = Buffer.concat([px, padTo512(pax), tarHeader({ name: "a", size: 0 }), Buffer.alloc(1024)]);
+  const r = inspectArchive(a); assert.equal(r.verdict, "BLOCK"); assert.ok(codes(r).some(c => /CONTROL_CHARACTER_IN_ENTRY_NAME|PATH_TRAVERSAL|PARENT/.test(c)), codes(r).join());
+});
+test("TAR malformed or truncated pax records and global pax overrides are BLOCKED", () => {
+  for (const raw of [Buffer.from("99 path=x\n"), Buffer.from("5 a=b"), Buffer.from("zz path=x\n"), Buffer.from("12 path=abc\n12 path=abd\n")]) {
+    const px = tarHeader({ name: "PaxHeader/x", type: "x", size: raw.length }); const r = inspectArchive(Buffer.concat([px, padTo512(raw), tarHeader({ name: "a", size: 0 }), Buffer.alloc(1024)]));
+    assert.ok(codes(r).includes("TAR_PAX_RECORD_MALFORMED"), raw.toString());
+  }
+  const g = paxRec("path", "../../x"), gh = tarHeader({ name: "PaxHeader/g", type: "g", size: g.length });
+  assert.ok(codes(inspectArchive(Buffer.concat([gh, padTo512(g), tarHeader({ name: "a", size: 0 }), Buffer.alloc(1024)]))).includes("TAR_GLOBAL_PAX_OVERRIDE_IGNORED"));
+});
+test("TAR: a normal pax path override still works and a plain archive is unaffected", () => {
+  const pax = paxRec("path", "dir/long-name.txt"), px = tarHeader({ name: "PaxHeader/x", type: "x", size: pax.length });
+  const r = inspectArchive(Buffer.concat([px, padTo512(pax), tarHeader({ name: "short", size: 3 }), padTo512(Buffer.from("abc")), Buffer.alloc(1024)])); assert.equal(r.verdict, "NO_STRUCTURAL_FINDINGS", codes(r).join());
+});
+test("ZIP bytes before the central directory that belong to no listed entry are BLOCKED (unlisted local entries)", () => {
+  const good = zip([{ name: "ok.txt", data: "hi" }]);
+  const hidden = zip([{ name: "../../../../tmp/evil.sh", data: "rm -rf" }]).subarray(0, 30 + "../../../../tmp/evil.sh".length + 6);      // a lone local header + data
+  const r = inspectArchive(Buffer.concat([hidden, good])); assert.ok(codes(r).some(c => /ZIP_UNLISTED_BYTES|ZIP_ENTRY|MALFORMED|OUT_OF_BOUNDS|MISMATCH/.test(c)), codes(r).join()); assert.notEqual(r.verdict, "NO_STRUCTURAL_FINDINGS");
+});

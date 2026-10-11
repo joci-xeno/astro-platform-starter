@@ -21,7 +21,7 @@ import { containsSecret, scrub } from "./secret-patterns.mjs";
 import { sha256, canon, boundText } from "./reasoning-common.mjs";
 
 export const LIMITS = Object.freeze({ maxCampaigns: 50, maxMilestones: 10, maxTasks: 50, maxGoal: 1000, maxTitle: 160, maxFiles: 100, maxCheckpoints: 20, maxCheckpointChars: 4000, maxObservations: 200, maxTokens: 50_000_000, maxTimeMs: 90 * 86_400_000, stallThreshold: 3 });
-export const STATUSES = Object.freeze(["DRAFT", "ACTIVE", "STALLED", "PAUSED_BUDGET", "COMPLETED", "CANCELLED"]);
+export const STATUSES = Object.freeze(["DRAFT", "NEEDS_APPROVAL", "ACTIVE", "STALLED", "PAUSED_BUDGET", "COMPLETED", "CANCELLED"]);
 const CID = /^[a-z0-9][a-z0-9-]{0,19}$/, TID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,30}$/, MONEY = /usd|eur|huf|gbp|money|cost|price|spend|dollar|credit|cash|fiat|pay/i;
 const kindRole = kind => { const p = String(kind).split(/[._-]/)[0]; return Object.hasOwn(KIND_ROLES, p) ? KIND_ROLES[p] : null; };
 const plain = v => v !== null && typeof v === "object" && !Array.isArray(v);
@@ -32,7 +32,7 @@ export function createCampaignManager({ dir, coordinator, ownerAuth = null, isSt
   if (!coordinator || typeof coordinator.connect !== "function" || !coordinator.ledger) throw new Error("COORDINATOR_REQUIRED");
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   const tenantId = coordinator.summary().tenantId, led = coordinator.ledger;
-  const audit = createAuditChain({ filePath: path.join(dir, "campaign-audit.jsonl") });
+  const audit = createAuditChain({ filePath: path.join(dir, "campaign-audit.jsonl"), headPinFile: path.join(dir, "campaign-audit.headpin.json") });
   const file = path.join(dir, "campaigns.json");
   const fail = (reason, extra = {}) => ({ ok: false, reason, ...extra });
   const stopped = () => { try { return Boolean(isStopped()); } catch { return true; } };
@@ -47,10 +47,39 @@ export function createCampaignManager({ dir, coordinator, ownerAuth = null, isSt
     } catch { try { fs.renameSync(file, file + ".corrupt-" + nowFn()); } catch { /* ignore */ } C = Object.create(null); loadedFrom = "CORRUPT_SET_ASIDE_STARTED_EMPTY"; log("CAMPAIGN_STATE_CORRUPT", {}); }
   }
   const save = () => { const body = JSON.stringify({ v: 1, campaigns: C }), t = file + "." + crypto.randomBytes(4).toString("hex") + ".tmp"; fs.writeFileSync(t, JSON.stringify({ sha: sha256(body), body }), { mode: 0o600 }); fs.renameSync(t, file); };
+  /** campaigns.json is NOT trusted for authority: the plan hash, the touches-files flag and the owner's signed start approval are re-derived from the hash-chained audit log
+   *  (CAMPAIGN_CREATED / CAMPAIGN_STARTED records) every time a campaign is loaded or dispatched. A non-DRAFT campaign without a matching, still-valid record is forced to NEEDS_APPROVAL. */
+  function anchors(id) {
+    let created = null, started = null;
+    for (const e of audit.entries()) { if (e.data?.id !== id) continue; if (e.event === "CAMPAIGN_CREATED") { created = e.data; started = null; } else if (e.event === "CAMPAIGN_STARTED") started = e.data; }
+    return { created, started };
+  }
+  function authoritative(c) {
+    const { created, started } = anchors(c.id);
+    const sha = planSha(c);
+    if (!created || created.planSha256 !== sha || c.planSha256 !== sha) return { ok: false, reason: "PLAN_NOT_ANCHORED_IN_AUDIT_LOG" };
+    const touches = created.touchesFiles === true;
+    if (c.touchesFiles !== touches) return { ok: false, reason: "TOUCHES_FILES_MISMATCH" };
+    if (c.status === "DRAFT" || c.status === "NEEDS_APPROVAL" || c.status === "CANCELLED") return { ok: true, touches };
+    if (!started || started.planSha256 !== sha) return { ok: false, reason: "START_NOT_RECORDED" };
+    if (touches) {
+      let ok = false; try { ok = Boolean(ownerAuth && typeof ownerAuth.verifyRecorded === "function" && ownerAuth.verifyRecorded(started.approval, { action: "CAMPAIGN_START", subject: sha })); } catch { ok = false; }
+      if (!ok) return { ok: false, reason: "RECORDED_OWNER_APPROVAL_INVALID" };
+    }
+    return { ok: true, touches };
+  }
+  function revalidate(c) {
+    if (c.status === "NEEDS_APPROVAL") return false;
+    const a = authoritative(c); if (a.ok) return true;
+    const prev = c.status; c.status = "NEEDS_APPROVAL"; c.needsApprovalReason = a.reason; { const cr = anchors(c.id).created; c.touchesFiles = cr ? cr.touchesFiles === true : true; } log("CAMPAIGN_FORCED_NEEDS_APPROVAL", { id: c.id, was: prev, reason: a.reason }); return false;
+  }
   const get = id => (typeof id === "string" && CID.test(id) && Object.hasOwn(C, id) ? C[id] : null);
   const planOf = c => ({ id: c.id, goal: c.goal, milestones: c.milestones.map(m => ({ id: m.id, title: m.title, taskIds: m.taskIds })), tasks: Object.values(c.tasks).map(t => ({ id: t.id, kind: t.kind, owner: t.owner, dependsOn: t.dependsOn, payload: t.payload, milestone: t.milestone })).sort((a, b) => (a.id < b.id ? -1 : 1)), touchesFiles: c.touchesFiles, files: c.files, budget: c.budget });
   const planSha = c => sha256(canon(planOf(c)));
   const ledgerTask = t => { if (!t.ledgerId) return null; const r = led.get(tenantId, t.ledgerId); return r.ok ? r.task : null; };
+
+  for (const c of Object.values(C)) if (["ACTIVE", "STALLED", "PAUSED_BUDGET", "COMPLETED"].includes(c.status)) revalidate(c);
+  if (Object.keys(C).length) save();
 
   /** spec: {id, goal, milestones:[{id,title,tasks:[{id,kind,owner,payload?,dependsOn?}]}], files?:[], touchesFiles?, budget:{tokens, timeMs}} */
   function create(spec = {}) {
@@ -92,19 +121,21 @@ export function createCampaignManager({ dir, coordinator, ownerAuth = null, isSt
   function start(id, approval = null) {
     if (stopped()) return fail("OWNER_STOP_OR_SAFE_MODE_ACTIVE"); const c = get(id); if (!c) return fail("CAMPAIGN_NOT_FOUND"); if (c.status !== "DRAFT") return fail("BAD_STATE:" + c.status);
     if (planSha(c) !== c.planSha256) { log("CAMPAIGN_PLAN_HASH_MISMATCH", { id }); return fail("PLAN_HASH_MISMATCH"); }
+    { const au = authoritative(c); if (!au.ok) { log("CAMPAIGN_START_DENIED", { id, reason: au.reason }); return fail("PLAN_NOT_ANCHORED:" + au.reason); } }
     if (c.touchesFiles) {
       if (!ownerAuth || typeof ownerAuth.verifyApproval !== "function") { log("CAMPAIGN_START_DENIED", { id, reason: "OWNER_AUTH_NOT_AVAILABLE" }); return fail("OWNER_APPROVAL_REQUIRED", { detail: "OWNER_AUTH_NOT_AVAILABLE" }); }
       const v = ownerAuth.verifyApproval(approval, { action: "CAMPAIGN_START", subject: c.planSha256 });
       if (!v.allowed) { log("CAMPAIGN_START_DENIED", { id, reason: v.reason }); return fail("OWNER_APPROVAL_REQUIRED", { detail: v.reason }); }
       c.approval = { nonce: v.nonce, ownerId: v.ownerId, action: "CAMPAIGN_START", subject: c.planSha256, at: nowFn() };
     }
-    c.status = "ACTIVE"; c.startedAt = nowFn(); c.lastTickAt = nowFn(); log("CAMPAIGN_STARTED", { id, planSha256: c.planSha256, approvalNonce: c.approval?.nonce ?? null }); const d = dispatch(c); save();
+    c.status = "ACTIVE"; c.startedAt = nowFn(); c.lastTickAt = nowFn(); log("CAMPAIGN_STARTED", { id, planSha256: c.planSha256, approvalNonce: c.approval?.nonce ?? null, approval: c.touchesFiles ? approval : null }); const d = dispatch(c); save();
     return { ok: true, id, status: c.status, dispatched: d };
   }
 
   /** Register (through the owner's coordinator handle) every pending task whose campaign dependencies are DONE in the ledger. */
   function dispatch(c) {
     if (c.status !== "ACTIVE") return [];
+    if (!revalidate(c)) { save(); return []; }
     const out = [];
     for (const t of Object.values(c.tasks)) {
       if (t.state !== "PENDING") continue;
@@ -194,7 +225,7 @@ export function createCampaignManager({ dir, coordinator, ownerAuth = null, isSt
 
   /** After a restart: continue every ACTIVE/STALLED campaign from disk. Time while the process was down is NOT charged to the time budget. */
   function resumeAll() {
-    const out = [];
+    const out = []; for (const c of Object.values(C)) if (["ACTIVE", "STALLED", "PAUSED_BUDGET"].includes(c.status)) revalidate(c);
     for (const c of Object.values(C)) if (c.status === "ACTIVE" || c.status === "STALLED") { c.lastTickAt = nowFn(); out.push({ id: c.id, ...sync(c.id) }); }
     log("CAMPAIGN_RESUMED_AFTER_RESTART", { loadedFrom, campaigns: out.map(x => x.id) }); return { ok: true, loadedFrom, resumed: out.map(x => ({ id: x.id, status: x.status, dispatched: x.dispatched })) };
   }

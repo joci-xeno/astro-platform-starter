@@ -154,3 +154,13 @@ test("judge with no independent family at all (judge == critic family) is discar
   const r = await runDebate({ question: Q, model: fake({ judge: { text: "{\"winner\":\"CRITIQUE\"}", family: "beta" } }), rounds: 1, evidence: EV });
   assert.equal(r.judge.ruling, null); assert.equal(r.resolution.by, "OWNER_ESCALATION");
 });
+
+test("verifyDebate re-checks turn text, resolution and judge against the chain", async () => {
+  const r = await runDebate({ question: Q, model: fake(), rounds: 1, evidence: EV });
+  assert.equal(verifyDebate(r, r.auditEntries).ok, true);
+  const a = structuredClone(r); a.turns[0].text = a.turns[0].text.replace(/\n.*\n/, "\nSomething else entirely\n"); assert.equal(verifyDebate(a, r.auditEntries).reason, "TURN_TEXT_DIFFERS_FROM_CHAIN");
+  const b = structuredClone(r); b.resolution.winner = b.resolution.winner === "PROPOSAL" ? "CRITIQUE" : "PROPOSAL"; assert.equal(verifyDebate(b, r.auditEntries).reason, "RESOLUTION_DIFFERS_FROM_CHAIN");
+  const c = structuredClone(r); c.resolution.by = "OWNER"; assert.equal(verifyDebate(c, r.auditEntries).reason, "RESOLUTION_DIFFERS_FROM_CHAIN");
+  const d = structuredClone(r); d.judge.ruling = d.judge.ruling === "PROPOSAL" ? "CRITIQUE" : "PROPOSAL"; assert.equal(verifyDebate(d, r.auditEntries).reason, "JUDGE_DIFFERS_FROM_CHAIN");
+  const e = structuredClone(r); e.turns[1].round = 9; assert.equal(verifyDebate(e, r.auditEntries).reason, "TURN_METADATA_DIFFERS_FROM_CHAIN");
+});

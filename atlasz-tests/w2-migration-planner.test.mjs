@@ -197,3 +197,13 @@ test("status vocabulary is honest and apply is described as owner-gated", () => 
   assert.equal(STATUS.completionState, "CODE_ADDED"); assert.equal(STATUS.live, "NOT_LIVE"); assert.match(STATUS.apply, /OWNER_APPROVAL_GATED/);
   assert.equal(ACTION, "DATA_MIGRATION_APPLY");
 });
+
+test("prototype-named fields are plain data: no [native code] renames, no prototype pollution, reversible flag stays honest", () => {
+  const d = tmp("mig-proto-"); try {
+    fs.writeFileSync(path.join(d, "a.jsonl"), [JSON.stringify({ id: "1", constructor: "x", name: "A" }), '{"id":"2","__proto__":{"polluted":true},"name":"B"}', JSON.stringify({ id: "3", toString: "t", name: "C" })].join("\n") + "\n");
+    const S = { key: "id", fields: { id: { type: "string", required: true }, name: { type: "string" }, constructor: { type: "string" }, toString: { type: "string" } } };
+    const p = planMigration({ sourceRoot: d, files: ["a.jsonl"], source: S, target: { key: "id", fields: { id: { type: "string", required: true }, name: { type: "string" } } }, mapping: {} });
+    assert.equal(p.ok, true, JSON.stringify(p)); assert.equal(p.reversible, false, "dropping fields can never be reversible");
+    assert.ok(p.operations.filter(o => o.op === "DROP_FIELD").length >= 2); assert.ok(!JSON.stringify(p).includes("native code")); assert.equal({}.polluted, undefined);
+  } finally { rm(d); }
+});

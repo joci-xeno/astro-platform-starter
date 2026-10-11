@@ -64,10 +64,26 @@ export function createModelRegistry({ dir, ownerAuth = null, gate = emergencyGat
     if (parsed.schemaVersion > SCHEMA_VERSION) { state = parsed; integrity = "NEWER_SCHEMA"; readOnly = true; note = `registry schema ${parsed.schemaVersion} is newer than this build (${SCHEMA_VERSION}); opened read-only`; return; }
     let s = parsed; while (s.schemaVersion < SCHEMA_VERSION) { const f = MIGRATIONS[s.schemaVersion]; if (!f) { integrity = "NO_MIGRATION"; readOnly = true; return; } s = f(structuredClone(s)); s.schemaVersion = (s.schemaVersion ?? 0) + 1; }
     const exp = expectedHash();
-    state = s; integrity = exp === null ? "UNCHAINED" : exp.sha256 === sha(raw) ? "OK" : "MISMATCH"; readOnly = integrity === "MISMATCH" || integrity === "UNCHAINED" && audit.entries().length > 0;
+    state = s; integrity = exp === null ? "UNCHAINED" : exp.sha256 === sha(raw) ? "OK" : "MISMATCH"; const nonEmpty = s.revision > 0 || Object.keys(s.models ?? {}).length > 0 || Object.keys(s.providers ?? {}).length > 0 || Object.keys(s.assignments ?? {}).length > 0;
+    readOnly = integrity === "MISMATCH" || integrity === "UNCHAINED" && (audit.entries().length > 0 || nonEmpty);
+    if (integrity === "UNCHAINED" && readOnly) note = "registry has content but no audit history (log deleted or registry copied in); read-only until the owner rolls back to a verified snapshot";
     if (integrity === "MISMATCH") note = "registry.json does not match the hash recorded in the audit chain (hand edit?); read-only until the owner rolls back to a verified snapshot";
   }
   load();
+  // Every enabled model that needs approval must have a recorded, still-valid owner signature bound to its exact configuration; otherwise it is forced DISABLED in memory.
+  let unapprovedEnabled = [];
+  function enforceRecordedApprovals() {
+    unapprovedEnabled = [];
+    const last = new Map(); for (const e of audit.entries()) { if (e.event !== "REGISTRY_REVISION") continue; const d = e.data ?? {}; if (d.event === "MODEL_ENABLED" || d.event === "MODEL_DISABLED") last.set(d.id, d); }
+    for (const m of Object.values(state.models ?? {})) {
+      if (!m.enabled || !needsApproval(m)) continue;
+      const d = last.get(m.id); let ok = false;
+      try { ok = Boolean(d && d.event === "MODEL_ENABLED" && d.cfg === modelConfigHash(m) && ownerAuth && typeof ownerAuth.verifyRecorded === "function" && ownerAuth.verifyRecorded(d.approval, { action: "MODEL_ENABLE", subject: enableSubject(m) })); } catch { ok = false; }
+      if (!ok) { m.enabled = false; unapprovedEnabled.push(m.id); }
+    }
+    if (unapprovedEnabled.length) note = (note ? note + "; " : "") + "UNAPPROVED_ENABLED: " + unapprovedEnabled.join(",") + " forced disabled (no valid recorded owner approval)";
+  }
+  enforceRecordedApprovals();
 
   function persist(event, detail) {
     const next = { ...state, revision: state.revision + 1 }, raw = JSON.stringify(next, null, 1);
@@ -93,6 +109,7 @@ export function createModelRegistry({ dir, ownerAuth = null, gate = emergencyGat
       if (!KINDS.includes(p.kind)) return refuse("KIND_INVALID"); if (!clean(p.displayName)) return refuse("NAME_INVALID");
       if (!validHosts(p.egressHosts ?? [], p.kind) || (p.kind === "CLOUD" && !(p.egressHosts ?? []).length)) return refuse("EGRESS_HOSTS_INVALID");
       if (p.kind === "LOCAL" && (p.egressHosts ?? []).some(h => h !== "127.0.0.1")) return refuse("LOCAL_PROVIDER_MUST_BE_LOOPBACK");
+      if (p.kind === "LOCAL" && p.credentialRef != null) return refuse("LOCAL_PROVIDER_CANNOT_HAVE_CREDENTIAL");
       if (p.credentialRef != null && !(typeof p.credentialRef === "string" && /^[A-Z][A-Z0-9_]{2,63}$/.test(p.credentialRef))) return refuse("CREDENTIAL_REF_MUST_BE_A_NAME");
       state.providers[p.id] = { id: p.id, displayName: p.displayName, kind: p.kind, family: ID_RE.test(p.family ?? "") ? p.family : p.id, egressHosts: [...(p.egressHosts ?? [])], credentialRef: p.credentialRef ?? null, addedAt: now() };
     });
@@ -131,12 +148,12 @@ export function createModelRegistry({ dir, ownerAuth = null, gate = emergencyGat
     if (!ownerAuth) return { ok: false, reason: "OWNER_AUTH_NOT_CONFIGURED" };
     try { const r = ownerAuth.verifyApproval(approval, { action, subject }); return r && r.allowed === true ? { ok: true } : { ok: false, reason: r?.reason ?? "OWNER_APPROVAL_INVALID" }; } catch (e) { return { ok: false, reason: "OWNER_APPROVAL_INVALID" }; }
   }
-  const enableSubject = m => `model:${m.id}@${m.version}:${modelConfigHash(m)}`;
+  function enableSubject(m) { return `model:${m.id}@${m.version}:${modelConfigHash(m)}`; }
   function enable(id, { approval = null } = {}) {
     const g = guard(); if (g) return g; const m = state.models[id]; if (!m) return refuse("UNKNOWN_MODEL"); if (m.enabled) return { ok: true, unchanged: true };
     const gt = gate({ external: m.kind !== "LOCAL" }); if (!gt.allowed) return refuse("EMERGENCY_STOP:" + gt.reason);
     if (needsApproval(m)) { const v = verifyOwner(approval, "MODEL_ENABLE", enableSubject(m)); if (!v.ok) return refuse("OWNER_APPROVAL_REQUIRED", { detail: v.reason, subject: enableSubject(m) }); }
-    return mutate("MODEL_ENABLED", { id, version: m.version, cfg: modelConfigHash(m), approved: needsApproval(m) }, () => { state.models[id].enabled = true; });
+    return mutate("MODEL_ENABLED", { id, version: m.version, cfg: modelConfigHash(m), approved: needsApproval(m), approval: needsApproval(m) ? approval : null }, () => { state.models[id].enabled = true; });
   }
   function disable(id) { return mutate("MODEL_DISABLED", { id }, () => { const m = state.models[id]; if (!m) return refuse("UNKNOWN_MODEL"); m.enabled = false; }); }
   function upgrade(id, { version, capabilities = null, acknowledgeRemovedCapabilities = false } = {}) {
@@ -162,22 +179,27 @@ export function createModelRegistry({ dir, ownerAuth = null, gate = emergencyGat
     const v = verifyOwner(approval, "MODEL_REGISTRY_ROLLBACK", subj); if (!v.ok) return refuse("OWNER_APPROVAL_REQUIRED", { detail: v.reason, subject: subj });
     let snap; try { snap = JSON.parse(fs.readFileSync(path.join(dir, "snapshots", String(toRevision).padStart(6, "0") + ".json"), "utf8")); } catch { return refuse("SNAPSHOT_UNREADABLE"); }
     if (!snap || snap.schemaVersion !== SCHEMA_VERSION || typeof snap.models !== "object") return refuse("SNAPSHOT_INCOMPATIBLE");
+    { const rawSnap = fs.readFileSync(path.join(dir, "snapshots", String(toRevision).padStart(6, "0") + ".json"), "utf8");
+      const rec = audit.entries().filter(x => x.event === "REGISTRY_REVISION" && x.data?.revision === toRevision).at(-1);
+      if (!rec) return refuse("SNAPSHOT_UNVERIFIABLE_NO_AUDIT_RECORD"); if (rec.data.sha256 !== sha(rawSnap)) return refuse("SNAPSHOT_TAMPERED"); }
     const wasReadOnly = readOnly; readOnly = false;      // a rollback is the way out of a read-only state
     const backup = structuredClone(state), bi = integrity;
-    try { const keepRev = state.revision; state = { ...snap, revision: keepRev }; for (const m of Object.values(state.models)) if (needsApproval(m)) m.enabled = false; persist("REGISTRY_ROLLED_BACK", { toRevision, from: bi }); return { ok: true, revision: state.revision, restoredFrom: toRevision, note: "models that need approval come back DISABLED" }; }
+    try { const keepRev = state.revision; state = { ...snap, revision: keepRev }; for (const m of Object.values(state.models)) { if (needsApproval(m)) m.enabled = false; const p = Object.hasOwn(state.providers, m.providerId) ? state.providers[m.providerId] : null;
+        if (!p || p.kind !== m.kind || p.credentialRef !== m.credentialRef || !(m.egressHosts ?? []).every(h => p.egressHosts.includes(h)) || (p.kind === "LOCAL" && (m.credentialRef !== null || m.egressHosts.some(h => h !== "127.0.0.1")))) m.enabled = false; }
+      note = null; persist("REGISTRY_ROLLED_BACK", { toRevision, from: bi }); return { ok: true, revision: state.revision, restoredFrom: toRevision, note: "models that need approval come back DISABLED" }; }
     catch (e) { state = backup; readOnly = wasReadOnly; return refuse("ROLLBACK_FAILED", { error: String(e.message).slice(0, 120) }); }
   }
   function setAssignment(agentId, { primary, fallbacks = [], capability = "text" } = {}) {
     return mutate("ASSIGNMENT_SET", { agentId, primary }, () => {
       if (!agentSet.has(agentId)) return refuse("NOT_ONE_OF_THE_30_PERMANENT_AGENTS");
-      if (!state.models[primary]) return refuse("UNKNOWN_MODEL"); if (!Array.isArray(fallbacks) || fallbacks.length > LIMITS.maxFallbacks || fallbacks.some(f => !state.models[f] || f === primary)) return refuse("FALLBACKS_INVALID");
+      if (typeof primary !== "string" || !Object.hasOwn(state.models, primary)) return refuse("UNKNOWN_MODEL"); if (!Array.isArray(fallbacks) || fallbacks.length > LIMITS.maxFallbacks || fallbacks.some(f => typeof f !== "string" || !Object.hasOwn(state.models, f) || f === primary)) return refuse("FALLBACKS_INVALID");
       if (!CAP_RE.test(capability)) return refuse("CAPABILITY_INVALID"); for (const id of [primary, ...fallbacks]) if (!state.models[id].capabilities.includes(capability)) return refuse("MODEL_LACKS_CAPABILITY", { model: id });
       state.assignments[agentId] = { primary, fallbacks: [...fallbacks], capability, setAt: now() };
     });
   }
   function clearAssignment(agentId) { return mutate("ASSIGNMENT_CLEARED", { agentId }, () => { if (!agentSet.has(agentId)) return refuse("NOT_ONE_OF_THE_30_PERMANENT_AGENTS"); delete state.assignments[agentId]; }); }
   function setRoleDefault(role, modelIds) {
-    return mutate("ROLE_DEFAULT_SET", { role }, () => { if (!["SEARCH", "EXECUTION"].includes(role)) return refuse("ROLE_INVALID"); if (!Array.isArray(modelIds) || modelIds.length > LIMITS.maxFallbacks + 1 || modelIds.some(i => !state.models[i])) return refuse("MODELS_INVALID"); state.roleDefaults[role] = [...modelIds]; });
+    return mutate("ROLE_DEFAULT_SET", { role }, () => { if (!["SEARCH", "EXECUTION"].includes(role)) return refuse("ROLE_INVALID"); if (!Array.isArray(modelIds) || modelIds.length > LIMITS.maxFallbacks + 1 || modelIds.some(i => typeof i !== "string" || !Object.hasOwn(state.models, i))) return refuse("MODELS_INVALID"); state.roleDefaults[role] = [...modelIds]; });
   }
   const roleOf = id => id.split("-")[0];
   function describe(m) {
@@ -198,20 +220,22 @@ export function createModelRegistry({ dir, ownerAuth = null, gate = emergencyGat
     return { ok: true, agentId, capability, noSpend: maxCostUsd === 0, candidates, skipped, note: candidates.length ? null : "NO_ELIGIBLE_MODEL: nothing is enabled, credentialed and LIVE within the budget" };
   }
   // ---- billing guard: a request key is billed once; failover only after a settled zero-cost failure ----
-  function readBill() { try { return JSON.parse(fs.readFileSync(BILL, "utf8")); } catch { return { keys: {} }; } }
-  function writeBill(b) { const ks = Object.keys(b.keys); if (ks.length > LIMITS.maxBillingKeys) for (const k of ks.slice(0, ks.length - LIMITS.maxBillingKeys)) delete b.keys[k]; const t = BILL + ".tmp"; fs.writeFileSync(t, JSON.stringify(b), { mode: 0o600 }); fs.renameSync(t, BILL); }
+  function readBill() { try { const b = JSON.parse(fs.readFileSync(BILL, "utf8")); return b && typeof b.keys === "object" && b.keys ? b : { keys: {} }; } catch { return { keys: {} }; } }
+  function writeBill(b) { const ks = Object.keys(b.keys); if (ks.length > LIMITS.maxBillingKeys) { let over = ks.length - LIMITS.maxBillingKeys; for (const k of ks) { if (over <= 0) break; if (b.keys[k].state !== "OPEN") { delete b.keys[k]; over--; } } } const t = BILL + ".tmp"; fs.writeFileSync(t, JSON.stringify(b), { mode: 0o600 }); fs.renameSync(t, BILL); }
+  const KEY = k => "k:" + k;
   const billing = {
     begin(requestKey, modelId) {
-      if (typeof requestKey !== "string" || !/^[\w:.-]{8,100}$/.test(requestKey)) return refuse("REQUEST_KEY_INVALID"); if (!state.models[modelId]) return refuse("UNKNOWN_MODEL");
-      const b = readBill(), k = b.keys[requestKey];
+      if (typeof requestKey !== "string" || !/^[\w:.-]{8,100}$/.test(requestKey)) return refuse("REQUEST_KEY_INVALID"); if (typeof modelId !== "string" || !Object.hasOwn(state.models, modelId)) return refuse("UNKNOWN_MODEL");
+      const b = readBill(), k = Object.hasOwn(b.keys, KEY(requestKey)) ? b.keys[KEY(requestKey)] : undefined;
+      if (!k && Object.keys(b.keys).length >= LIMITS.maxBillingKeys && !Object.values(b.keys).some(v => v.state !== "OPEN")) return refuse("BILLING_TABLE_FULL");
       if (k && !(k.state === "FAILED_NO_COST")) return refuse("DUPLICATE_BILLING_BLOCKED", { existing: { model: k.attempts.at(-1).model, state: k.state } });
-      b.keys[requestKey] = { state: "OPEN", attempts: [...(k?.attempts ?? []), { model: modelId, at: now() }], costUsd: 0 }; writeBill(b); audit.append("BILLING_BEGIN", { requestKey, modelId }); return { ok: true, attempt: b.keys[requestKey].attempts.length };
+      b.keys[KEY(requestKey)] = { state: "OPEN", attempts: [...(k?.attempts ?? []), { model: modelId, at: now() }], costUsd: 0 }; writeBill(b); audit.append("BILLING_BEGIN", { requestKey, modelId }); return { ok: true, attempt: b.keys[KEY(requestKey)].attempts.length };
     },
     settle(requestKey, { ok, costUsd = 0 } = {}) {
-      const b = readBill(), k = b.keys[requestKey]; if (!k || k.state !== "OPEN") return refuse("NOT_OPEN"); if (!(Number.isFinite(costUsd) && costUsd >= 0)) return refuse("COST_INVALID");
+      const b = readBill(), k = typeof requestKey === "string" && Object.hasOwn(b.keys, KEY(requestKey)) ? b.keys[KEY(requestKey)] : undefined; if (!k || k.state !== "OPEN") return refuse("NOT_OPEN"); if (!(Number.isFinite(costUsd) && costUsd >= 0)) return refuse("COST_INVALID");
       k.state = ok ? "SETTLED" : costUsd === 0 ? "FAILED_NO_COST" : "FAILED_BILLED"; k.costUsd = costUsd; writeBill(b); audit.append("BILLING_SETTLE", { requestKey, ok: Boolean(ok), costUsd }); return { ok: true, state: k.state, failoverAllowed: k.state === "FAILED_NO_COST" };
     },
-    status: requestKey => readBill().keys[requestKey] ?? null
+    status: requestKey => { const b = readBill(); return typeof requestKey === "string" && Object.hasOwn(b.keys, KEY(requestKey)) ? b.keys[KEY(requestKey)] : null; }
   };
   const snapshots = () => fs.readdirSync(path.join(dir, "snapshots")).sort().map(f => ({ revision: Number(f.slice(0, 6)), subject: rollbackSubject(Number(f.slice(0, 6))) }));
   return {
@@ -219,7 +243,7 @@ export function createModelRegistry({ dir, ownerAuth = null, gate = emergencyGat
     getModel: id => state.models[id] ? describe(state.models[id]) : null,
     listModels: () => Object.values(state.models).map(describe), listProviders: () => Object.values(state.providers).map(p => ({ ...p, models: Object.values(state.models).filter(m => m.providerId === p.id).length, credentialConfigured: p.credentialRef === null ? null : Boolean(hasCredential(p.credentialRef)) })),
     assignments: () => structuredClone(state.assignments), roleDefaults: () => structuredClone(state.roleDefaults), agents: () => [...roster],
-    status: () => ({ schemaVersion: state.schemaVersion, supportedSchemaVersion: SCHEMA_VERSION, revision: state.revision, integrity, readOnly, note, providers: Object.keys(state.providers).length, models: Object.keys(state.models).length, enabled: Object.values(state.models).filter(m => m.enabled).length,
+    status: () => ({ schemaVersion: state.schemaVersion, supportedSchemaVersion: SCHEMA_VERSION, revision: state.revision, integrity, readOnly, note, unapprovedEnabled: [...unapprovedEnabled], providers: Object.keys(state.providers).length, models: Object.keys(state.models).length, enabled: Object.values(state.models).filter(m => m.enabled).length,
       live: Object.values(state.models).filter(m => m.enabled && liveStatus(m.id)).length, assigned: Object.keys(state.assignments).length, agents: roster.length, note2: "LIVE comes only from the model gateway's own passing probe; this registry is configuration." })
   };
 }

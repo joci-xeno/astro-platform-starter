@@ -116,8 +116,21 @@ test("profile store: a record edited after signing is ignored on read (signature
     const es = fs.readFileSync(f, "utf8").trim().split("\n").map(l => JSON.parse(l)); let prev = GENESIS;
     for (const e of es) { if (e.event === "PROFILE_SET") e.data.profile.licences.push({ id: "electrician", jurisdiction: "CA", expiresAt: null }); e.prevHash = prev; e.hash = hashEntry(e); prev = e.hash; }
     fs.writeFileSync(f, es.map(e => JSON.stringify(e)).join("\n") + "\n");
+    assert.throws(() => createCapabilityProfileStore({ ownerAuth: auth, dir }), /AUDIT_CHAIN_TRUNCATED/, "a re-chained log no longer matches the pinned head");
+    fs.rmSync(path.join(dir, "capability-profile-audit.headpin.json"));      // an attacker who also rewrites the pin still fails the signature check
     const c = createCapabilityProfileStore({ ownerAuth: auth, dir }).current(); assert.equal(c.profile, null); assert.match(c.integrity, /UNVERIFIED/);
   } finally { rm(dir); }
 });
 
 test("profile store requires an owner-auth verifier", () => { assert.throws(() => createCapabilityProfileStore({}), /OWNER_AUTH_REQUIRED/); });
+
+test("profile store: re-appending an old signed record (same approval nonce) is ignored - replay cannot roll the profile back", () => {
+  const dir = tmp("elig-rp-"); try {
+    const auth = createOwnerAuth({ publicKeyB64: kp.publicKeyB64 }), s = createCapabilityProfileStore({ ownerAuth: auth, dir });
+    assert.equal(s.set(PROFILE, { approval: ap(subj(PROFILE)) }).ok, true);
+    const f = path.join(dir, "capability-profile-audit.jsonl"), first = JSON.parse(fs.readFileSync(f, "utf8").trim().split("\n")[0]);
+    const P2 = structuredClone(PROFILE); P2.licences = [...P2.licences]; P2.notes = "v2";
+    const r2 = s.set(P2, { approval: ap(subj(P2)) }); if (r2.ok) { const log = AC.createAuditChain({ filePath: f, headPinFile: path.join(dir, "capability-profile-audit.headpin.json") }); log.append("PROFILE_SET", first.data); }
+    const c = createCapabilityProfileStore({ ownerAuth: auth, dir }).current(); assert.match(c.integrity, /UNVERIFIED_RECORDS_IGNORED:1/);
+  } finally { rm(dir); }
+});

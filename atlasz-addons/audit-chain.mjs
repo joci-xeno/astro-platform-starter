@@ -44,10 +44,24 @@ export function readAuditFile(file) {
 
 /** fastAppend (opt-in, for high-volume access logs): an append skips the full re-read and re-verification when the file is exactly as this instance last left it (same size, modification time and inode). Any other change - another process appending, an edit -
  *  takes the full path. An explicit reload()/verify() is always a full check, so tampering that keeps size and timestamp is still found by the next explicit verification (the chain is tamper-evident, not tamper-proof). */
-export function createAuditChain({ filePath = null, now = () => new Date().toISOString(), fastAppend = false } = {}) {
+export function createAuditChain({ filePath = null, now = () => new Date().toISOString(), fastAppend = false, headPinFile = null } = {}) {
+  /** headPinFile (opt-in): after every append an atomic {length, headHash} is written beside the log. On open/reload a chain that is SHORTER than the pin, or whose entry at the pinned length has another hash, throws AUDIT_CHAIN_TRUNCATED -
+   *  cutting the last lines (e.g. to undo an owner-signed removal) is detected unless the pin file is rewritten as well. It raises the bar from one file to two; it is still not WORM storage. */
+  function checkPin(list) {
+    if (!headPinFile || !fs.existsSync(headPinFile)) return;
+    let pin; try { pin = JSON.parse(fs.readFileSync(headPinFile, "utf8")); } catch { throw new Error("AUDIT_HEAD_PIN_CORRUPT"); }
+    if (!pin || !Number.isInteger(pin.length) || pin.length < 0 || typeof pin.headHash !== "string") throw new Error("AUDIT_HEAD_PIN_CORRUPT");
+    if (list.length < pin.length) throw new Error("AUDIT_CHAIN_TRUNCATED:" + list.length + "<" + pin.length);
+    if (pin.length > 0 && list[pin.length - 1].hash !== pin.headHash) throw new Error("AUDIT_CHAIN_TRUNCATED:HEAD_MISMATCH");
+  }
+  function writePin(list) {
+    if (!headPinFile) return; fs.mkdirSync(path.dirname(headPinFile), { recursive: true });
+    const t = headPinFile + ".tmp"; fs.writeFileSync(t, JSON.stringify({ length: list.length, headHash: list.length ? list[list.length - 1].hash : GENESIS }), { mode: 0o600 }); fs.renameSync(t, headPinFile);
+  }
   let entries = filePath ? readAuditFile(filePath) : [];
   const initial = verifyChain(entries);
   if (!initial.ok) throw new Error("AUDIT_CHAIN_TAMPERED:" + initial.reason + "@" + initial.brokenAt);
+  if (filePath) checkPin(entries);
   if (filePath) fs.mkdirSync(path.dirname(filePath), { recursive: true });
 
   /** A crash mid-append can leave a final line without its newline. A complete entry just gets its newline; an unparseable fragment is cut off (it was never a valid entry), so the next entry does not glue onto it and turn ordinary crash recovery into a permanent "tampered" state. */
@@ -73,7 +87,7 @@ export function createAuditChain({ filePath = null, now = () => new Date().toISO
       const fd = fs.openSync(filePath, "a", 0o600);
       try { fs.writeSync(fd, JSON.stringify(e) + "\n"); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
     }
-    entries.push(e); if (filePath && fastAppend) seen = statKey();
+    entries.push(e); if (filePath && fastAppend) seen = statKey(); if (filePath) writePin(entries);
     return structuredClone(e);
   }
   // Re-read the file (another process, e.g. the owner CLI, may have appended). Tampering still throws.
@@ -83,7 +97,7 @@ export function createAuditChain({ filePath = null, now = () => new Date().toISO
     const fresh = readAuditFile(filePath);
     const v = verifyChain(fresh);
     if (!v.ok) throw new Error("AUDIT_CHAIN_TAMPERED:" + v.reason + "@" + v.brokenAt);
-    entries = fresh; if (fastAppend) seen = before;
+    checkPin(fresh); entries = fresh; if (fastAppend) seen = before;
   }
   return {
     reload,

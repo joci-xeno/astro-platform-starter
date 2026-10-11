@@ -17,13 +17,18 @@ const ROSTER = Object.freeze({ SEARCH: Array.from({ length: 5 }, (_, i) => "SEAR
 export const VERIFIER_ACCEPTANCE = "Independent verifier (not the maker) ACCEPTs the result hash in the handoff ledger";
 // Owner-approval categories from AGENTS.md. Deterministic; applied to title + acceptance + kind of every step and to nothing a model can switch off.
 export const GATES = Object.freeze([
-  ["SPEND_MONEY", /\b(?:pay|payment|purchas\w*|buy|subscri\w*|spend\w*|top[- ]?up|credits?\s+(?:purchase|top)|upgrade\s+(?:plan|tier)|billing)\b/i],
-  ["CONTRACT", /\b(?:sign\w*|contract\w*|binding|accept\s+(?:the\s+)?terms|agreement)\b/i],
-  ["CREDENTIALS_OR_SECURITY", /\b(?:credential\w*|password\w*|api[ _-]?keys?|secrets?|tokens?\s+rotat\w*|rotate\s+\w*\s*(?:keys?|tokens?)|permission\w*|security\s+polic\w*|owner\s+key)\b/i],
-  ["BANKING", /\b(?:bank\w*|iban|wire\s+transfer|payout\s+account)\b/i],
-  ["DESTRUCTIVE_EXTERNAL_DELETE", /\b(?:delete|drop|wipe|purge|destroy)\b.{0,40}\b(?:repo\w*|account|production|database|bucket|external|remote|customer|records?)\b/i],
-  ["PUBLIC_PUBLICATION", /\b(?:publish\w*|post\s+publicly|public\s+release|announce\w*|deploy\w*\s+to\s+production|send\s+(?:the\s+)?(?:email|outreach|newsletter)|submit\s+(?:a\s+)?proposal)\b/i],
+  ["SPEND_MONEY", /\b(?:pay\w*|purchas\w*|buy\w*|bought|subscri\w*|spend\w*|top[- ]?up|credits?\s+(?:purchase|top)|upgrade\s+(?:plan|tier)|billing|bill\w*|order\w*|renew\w*|checkout|check\s+out|donat\w*|fund(?:s|ing|ed)?|reimburs\w*|charg\w*|invoice\w*|wallet|stak\w*|swap\w*|trad(?:e|es|ing)|bid|purchase|rent\w*|licen[cs]e\s+(?:fee|purchase)|prepay\w*|deposit\w*|withdraw\w*)\b/i],
+  ["CONTRACT", /\b(?:sign\w*|contract\w*|binding|accept\s+(?:the\s+|an?\s+)?(?:terms|offer|quote|proposal)|agreement|nda|e-?sign\w*|commit\w*\s+to|enrol\w*|enroll\w*|register\s+(?:for|with)|sla)\b/i],
+  ["CREDENTIALS_OR_SECURITY", /\b(?:credential\w*|password\w*|passphrase|api[ _-]?keys?|secrets?|tokens?|private\s+key|seed\s+phrase|mnemonic|oauth|ssh|certificate|rotate\s+\w*\s*(?:keys?|tokens?)|permission\w*|privilege\w*|security\s+polic\w*|firewall|owner\s+key|grant\s+access|revoke\w*|disable\s+(?:auth|security|logging))\b/i],
+  ["BANKING", /\b(?:bank\w*|iban|swift|wire\s+transfer|transfer\w*\s+(?:funds?|money)|payout\w*|remittance)\b/i],
+  ["DESTRUCTIVE_EXTERNAL_DELETE", /\b(?:delete\w*|drop\w*|wipe\w*|purge\w*|destroy\w*|remove\w*|erase\w*|truncate\w*|force[- ]?push\w*|reset\s+--hard|rm\s+-rf)\b.{0,60}\b(?:repo\w*|account|production|prod|database|bucket|external|remote|customer|records?|branch\w*|history|backup\w*|volume|cluster|files?|data|users?)\b|\bforce[- ]?push\b/i],
+  ["PUBLIC_PUBLICATION", /\b(?:publish\w*|post\w*|tweet\w*|share\w*|broadcast\w*|announce\w*|launch\w*|go\s+live|release\w*|deploy\w*|ship\w*\s+to\s+(?:prod|production|customers?)|send\w*|e-?mail\w*|mail\w*|dm|message\w*\s+(?:the\s+)?(?:customers?|clients?|leads?|prospects?)|notify\w*|newsletter|submit\w*|upload\w*\s+to\s+(?:public|external)|reply\w*\s+to\s+(?:the\s+)?(?:customer|client|lead))\b/i],
 ]);
+// Verbs with an external effect that no named gate covers: such a step is NOT silently allowed - it is gated for owner review (GATE_UNKNOWN_NEEDS_REVIEW).
+const UNKNOWN_EXTERNAL_EFFECT = /\b(?:call|phone|text|sms|invite|cancel|reserve|book|apply|file|enlist|list\s+on|advertis\w*|promot\w*|outreach|contact|follow[- ]?up\s+with|forward|transmit|export\s+to|sync\s+to|push|merge\s+(?:to|into)\s+(?:main|master)|migrate\s+(?:the\s+)?production|install\s+on|connect\s+to|webhook|api\s+call\s+to)\b/i;
+/** Text is normalised before gate matching so that look-alikes and invisible characters cannot slip a step past the lexicons: NFKC, format/zero-width characters removed, common Cyrillic/Greek look-alikes folded to Latin. */
+const FOLD = { "а": "a", "в": "b", "е": "e", "к": "k", "м": "m", "н": "h", "о": "o", "р": "p", "с": "c", "т": "t", "у": "y", "х": "x", "ѕ": "s", "і": "i", "ј": "j", "ο": "o", "ν": "v", "α": "a", "ε": "e", "ι": "i", "κ": "k", "ρ": "p", "τ": "t", "υ": "u", "ɑ": "a", "ᴅ": "d", "ℓ": "l", "ǀ": "l", "0": "0" };
+export function gateNormalise(t) { return String(t ?? "").normalize("NFKC").replace(/[\p{Cf}\u00ad]/gu, "").toLowerCase().replace(/[\u0370-\u03ff\u0400-\u04ff\u0250-\u02af]/g, ch => FOLD[ch] ?? ch).replace(/[_]+/g, " ").replace(/(?<=\p{L})[.\-*](?=\p{L}{1,2}\b)/gu, ""); }
 const NEW_AGENT = /\b(?:create|spawn|add|hire|provision|instantiate)\s+(?:a\s+|an\s+|another\s+|new\s+|more\s+|\d+\s+)*(?:permanent\s+|additional\s+|extra\s+)?agents?\b/i;
 const NO_SPEND = /\b(?:no|zero|without|never)\s+(?:spend\w*|money|payments?|purchases?|paid)\b|\bfree\s+only\b|\bno[- ]cost\b/i;
 const STEP_ID = /^[A-Za-z][A-Za-z0-9_-]{0,19}$/;
@@ -69,8 +74,9 @@ export async function planGoal({ goal, constraints = [], model = null, draftStep
     const acc = (Array.isArray(s.acceptance) ? s.acceptance : []).filter(a => typeof a === "string" && a.trim()).slice(0, LIMITS.maxAcceptance).map(a => boundText(scrub(a.trim()), LIMITS.maxAcceptanceChars).text).filter(a => !screenText(a).injection);
     if (!acc.length) flags.push("ACCEPTANCE_MISSING:" + id);
     const deps = Array.isArray(s.dependsOn) ? [...new Set(s.dependsOn.filter(d => typeof d === "string" && STEP_ID.test(d)))].slice(0, LIMITS.maxDeps) : [];
-    const text = [title, ...acc, kind].join(" \n ");
-    const gates = GATES.filter(([, re]) => re.test(text)).map(([k]) => k);
+    const text = gateNormalise([title, ...acc, kind].join(" \n ")), textRaw = [title, ...acc, kind].join(" \n ");
+    const gates = GATES.filter(([, re]) => re.test(text) || re.test(textRaw)).map(([k]) => k);
+    if (!gates.length && (UNKNOWN_EXTERNAL_EFFECT.test(text))) { gates.push("EXTERNAL_EFFECT_UNKNOWN_NEEDS_REVIEW"); flags.push("GATE_UNKNOWN_NEEDS_REVIEW:" + id); }
     const blocked = noSpend && gates.includes("SPEND_MONEY") ? "BLOCKED_BY_CONSTRAINT_NO_SPENDING" : null;
     seen.add(id); steps.push({ id, title, role, kind, dependsOn: deps, acceptance: [...acc, VERIFIER_ACCEPTANCE], acceptanceFromSource: acc.length > 0, approvalGate: { required: gates.length > 0, categories: gates, action: gates.length ? "OWNER_SIGNED_APPROVAL_BEFORE_THIS_STEP" : null, decidedBy: "DETERMINISTIC_RULES" }, blocked });
   }

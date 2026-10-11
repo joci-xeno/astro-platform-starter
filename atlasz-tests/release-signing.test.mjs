@@ -240,7 +240,7 @@ test("a consistently re-hashed chain with a forged anchor trusts nothing; an edi
   } finally { rm(d); }
 });
 
-test("deleting accepted history from the middle is detected; dropping the newest entry is the documented limit", () => {
+test("deleting accepted history from the middle is detected; dropping the newest entry is caught by the head pin", () => {
   const r = rig();
   try {
     const v1 = r.make("1.0.0"), v2 = r.make("1.1.0");
@@ -250,6 +250,8 @@ test("deleting accepted history from the middle is detected; dropping the newest
     fs.writeFileSync(f, [lines[0], lines[2]].join("\n") + "\n");
     assert.throws(() => createReleaseVerifier({ ownerAuth: auth(), stateDir: path.join(r.d, "state") }), /AUDIT_CHAIN_TAMPERED/, "dropping a middle entry is detected");
     fs.writeFileSync(f, [lines[0], lines[1]].join("\n") + "\n");
+    assert.throws(() => createReleaseVerifier({ ownerAuth: auth(), stateDir: path.join(r.d, "state") }), /AUDIT_CHAIN_TRUNCATED/, "dropping the TAIL entry is now caught by the head pin");
+    fs.rmSync(path.join(r.d, "state", "release-signing-audit.headpin.json"));      // only if the attacker also removes the pin does the documented limit apply
     const rv = createReleaseVerifier({ ownerAuth: auth(), stateDir: path.join(r.d, "state") });
     assert.equal(rv.acceptedVersion(COMP), "1.0.0", "dropping the TAIL entry keeps a valid chain: tamper-evident, not tamper-proof (documented weakness)");
     assert.ok(rv.verifyBundle(v1, { bundleDir: r.bundle }).reasons.includes("REPLAY_OF_ACCEPTED_MANIFEST"), "older accepted history still blocks replay");

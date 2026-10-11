@@ -149,7 +149,7 @@ export function createEgressPolicy({ ownerAuth, stateDir = null, isStopped = () 
   if (!ownerAuth || typeof ownerAuth.verifyApproval !== "function" || typeof ownerAuth.verifyRecorded !== "function") throw new Error("OWNER_AUTH_REQUIRED");
   if (stateDir) fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
   const now = () => new Date(nowFn()).toISOString();
-  const policyLog = createAuditChain({ filePath: stateDir ? path.join(stateDir, "egress-policy-audit.jsonl") : null, now });
+  const policyLog = createAuditChain({ filePath: stateDir ? path.join(stateDir, "egress-policy-audit.jsonl") : null, now, headPinFile: stateDir ? path.join(stateDir, "egress-policy-audit.headpin.json") : null });
   const decisionLog = createAuditChain({ filePath: stateDir ? path.join(stateDir, "egress-decisions.jsonl") : null, now, fastAppend: true });
   const stopped = () => { try { return Boolean(isStopped()); } catch { return true; } };
   const stats = { allowed: 0, denied: 0 };

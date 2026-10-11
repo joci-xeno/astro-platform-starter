@@ -222,7 +222,7 @@ function inspectZip(ctx, b, depth, label) {
     if (lho + 30 + lnlen > b.length || !b.subarray(lho + 30, lho + 30 + lnlen).equals(nameBuf)) { add(ctx, "ZIP_LOCAL_HEADER_NAME_MISMATCH", "BLOCK", where); continue; }
     const dStart = lho + 30 + lnlen + lxlen, dEnd = dStart + csize;
     if (dEnd > b.length) { add(ctx, "ZIP_ENTRY_DATA_OUT_OF_BOUNDS", "BLOCK", where); continue; }
-    ranges.push([lho, dEnd, where]);
+    ranges.push([lho, dEnd, where, (flags & 0x8) ? 24 : 0]);
     // nested archive (whatever its name): stored data is inspected directly; deflated data is first sniffed from a small partial inflate, then inflated with a hard output cap
     if (!isDir && csize > 0) {
       let inner = null;
@@ -243,6 +243,8 @@ function inspectZip(ctx, b, depth, label) {
   if (parsed !== total) add(ctx, "ZIP_ENTRY_COUNT_MISMATCH", "BLOCK", label);
   ranges.sort((a, c) => a[0] - c[0]);
   for (let i = 1; i < ranges.length; i++) if (ranges[i][0] < ranges[i - 1][1]) { add(ctx, "ZIP_OVERLAPPING_ENTRIES", "BLOCK", ranges[i][2]); break; }
+  // Every byte before the central directory must belong to a listed entry (plus its data descriptor): a streaming extractor reads LOCAL headers in order and would also extract an entry the central directory never lists.
+  { let pos = 0, slack = 0, bad = false; for (const r of ranges) { if (r[0] > pos + slack) { bad = true; break; } pos = Math.max(pos, r[1]); slack = r[3]; } if (!bad && cdOff > pos + slack) bad = true; if (bad) add(ctx, "ZIP_UNLISTED_BYTES_BEFORE_CENTRAL_DIRECTORY", "BLOCK", label); }
   if (ctx.totalCompressed > 0 && ctx.totalUncompressed / ctx.totalCompressed > L.maxRatio) add(ctx, "OVERALL_COMPRESSION_RATIO_EXCEEDS_LIMIT", "BLOCK", label);
 }
 
@@ -266,6 +268,19 @@ function parseOctal(f) {
 function looksLikeTar(b) { return b.length >= 512 && !b.subarray(0, 512).every(x => x === 0) && tarChecksumOk(b.subarray(0, 512)); }
 const cstr = f => f.toString("utf8").replace(/\0.*$/s, "");
 
+
+/** Parse a pax extended header by its length prefixes. Returns {ok, rec}; any inconsistency is ok:false (the caller BLOCKs). */
+function parsePax(data) {
+  const rec = Object.create(null); let i = 0;
+  while (i < data.length) {
+    let j = i; while (j < data.length && data[j] >= 0x30 && data[j] <= 0x39 && j - i < 8) j++;
+    if (j === i || data[j] !== 0x20) return { ok: false };
+    const len = Number(data.subarray(i, j).toString("latin1")); if (!Number.isInteger(len) || len < j - i + 4 || i + len > data.length || data[i + len - 1] !== 0x0a) return { ok: false };
+    const body = data.subarray(j + 1, i + len - 1).toString("utf8"), eq = body.indexOf("="); if (eq <= 0) return { ok: false };
+    const k = body.slice(0, eq); if (k in rec) return { ok: false }; rec[k] = body.slice(eq + 1); i += len;
+  }
+  return { ok: true, rec };
+}
 function inspectTar(ctx, b, depth, label) {
   const L = ctx.limits; let off = 0, pending = {}, zeros = 0;
   const names = new Set();
@@ -279,10 +294,12 @@ function inspectTar(ctx, b, depth, label) {
     const dataStart = off + 512, dataEnd = dataStart + size, next = dataStart + Math.ceil(size / 512) * 512;
     if (dataEnd > b.length) { add(ctx, "TAR_ENTRY_DATA_OUT_OF_BOUNDS", "BLOCK", label + "@" + off); return; }
     const data = b.subarray(dataStart, dataEnd);
-    // metadata records that modify the NEXT header
+    // metadata records that modify the NEXT header. pax records are "<len> <key>=<value>\n" where <len> counts the whole record: parse by that length, never by lines
+    // (a value may itself contain newlines; a line-based parser sees a different path than tar does).
     if (type === "x" || type === "g") {
-      for (const m of data.toString("utf8").matchAll(/(\d+) ([^=\n]+)=([^\n]*)\n/g)) { if (m[2] === "path") pending.name = m[3]; if (m[2] === "linkpath") pending.link = m[3]; if (m[2] === "size") pending.size = Number(m[3]); }
-      if (type === "g") pending = {};                                                                         // global headers: we do not apply them; their path would be reported on the next entry otherwise
+      const px = parsePax(data); if (!px.ok) { add(ctx, "TAR_PAX_RECORD_MALFORMED", "BLOCK", label + "@" + off); return; }
+      if (type === "x") { if (px.rec.path !== undefined) pending.name = px.rec.path; if (px.rec.linkpath !== undefined) pending.link = px.rec.linkpath; if (px.rec.size !== undefined) { if (!/^\d{1,15}$/.test(px.rec.size)) { add(ctx, "TAR_PAX_SIZE_INVALID", "BLOCK", label + "@" + off); return; } pending.size = Number(px.rec.size); } }
+      else { if (Object.keys(px.rec).some(k => ["path", "linkpath", "size"].includes(k))) add(ctx, "TAR_GLOBAL_PAX_OVERRIDE_IGNORED", "BLOCK", label + "@" + off); pending = {}; }          // global headers are not applied; an override in one is itself suspicious
       off = next; continue;
     }
     if (type === "L") { pending.name = cstr(data); off = next; continue; }
@@ -291,6 +308,8 @@ function inspectTar(ctx, b, depth, label) {
     const name = pending.name ?? ((prefix ? prefix + "/" : "") + cstr(h.subarray(0, 100)));
     const link = pending.link ?? cstr(h.subarray(157, 257));
     const realSize = Number.isFinite(pending.size) ? pending.size : size;
+    if (Number.isFinite(pending.size) && pending.size !== size) { add(ctx, "TAR_PAX_SIZE_DIFFERS_FROM_HEADER", "BLOCK", label + "/" + name.slice(0, 200)); return; }      // tar implementations disagree about which one wins: nothing after this point can be trusted
+    if (/[\u0000-\u001f\u007f\u2028\u2029]/.test(name.replace(/\0+$/, ""))) add(ctx, "CONTROL_CHARACTER_IN_ENTRY_NAME", "BLOCK", label + "/" + JSON.stringify(name).slice(0, 200));
     pending = {};
     ctx.count++;
     if (ctx.count > L.maxEntries) { add(ctx, "TOO_MANY_ENTRIES", "BLOCK", label); return; }
