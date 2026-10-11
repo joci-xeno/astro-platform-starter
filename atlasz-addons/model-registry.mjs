@@ -46,6 +46,7 @@ export const SEED_PROVIDERS = Object.freeze([
   { id: "merlin", displayName: "Merlin AI", kind: "CLOUD", family: "merlin", egressHosts: ["api.merlin.example"], credentialRef: "MERLIN_API_KEY" },
   { id: "deepseek", displayName: "DeepSeek", kind: "CLOUD", family: "deepseek", egressHosts: ["api.deepseek.com"], credentialRef: "DEEPSEEK_API_KEY" },
   { id: "mistral", displayName: "Mistral AI", kind: "CLOUD", family: "mistral", egressHosts: ["api.mistral.ai"], credentialRef: "MISTRAL_API_KEY" },
+  { id: "vercel-ai-gateway", displayName: "Vercel AI Gateway (model router)", kind: "CLOUD", family: "vercel-ai-gateway", egressHosts: ["ai-gateway.vercel.sh"], credentialRef: "VERCEL_AI_GATEWAY_KEY" },
   { id: "openrouter", displayName: "OpenRouter (model router)", kind: "CLOUD", family: "openrouter", egressHosts: ["openrouter.ai"], credentialRef: "OPENROUTER_API_KEY" },
   { id: "minimax", displayName: "MiniMax", kind: "CLOUD", family: "minimax", egressHosts: ["api.minimax.io"], credentialRef: "MINIMAX_API_KEY" },
   { id: "glm", displayName: "Zhipu GLM (open.bigmodel.cn)", kind: "CLOUD", family: "glm", egressHosts: ["open.bigmodel.cn"], credentialRef: "GLM_API_KEY" },

@@ -33,6 +33,8 @@ import { createMemoryPanel } from "./memory-panel.mjs";
 import { createModelRegistryPanel } from "./model-registry-panel.mjs";
 import { createSecurityCenterPanel } from "./security-center-panel.mjs";
 import { createAgentsPanel } from "./agents-panel.mjs";
+import { createVaultPanel } from "./vault-panel.mjs";
+import { createChatProvidersPanel } from "./chat-providers-panel.mjs";
 import { createReleaseVerifier } from "../atlasz-addons/release-signing.mjs";
 import { createTradingPanel } from "./trading-panel.mjs";
 import { createOpsViews } from "./ops-views.mjs";
@@ -634,6 +636,13 @@ export function createControlCenterCore({ ollamaFetch = null, cloudFetch = null,
   const modelRegistryAction = b => modelRegPanel.action(b ?? {});
   // Phase 5: the 30 permanent agents. Approval requests go to the same store as every other owner approval; memory and model access reuse the memory panel's agent gateway and the model bridge (no paid usage: budgets default to 0).
   const agentsPanel = createAgentsPanel({ stateDir, ownerAuth: () => ownerAuth(), sign: (p, a, s) => sign(p, a, s), isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL", approvals: { request: q => approvalStore().request(q), outcome: id => approvalStore().outcome(id) }, memory: () => { try { return memoryPanel.agentMemory(); } catch { return null; } }, models: { complete: a => modelRegPanel.action({ op: "ask", agentId: a.agentId, prompt: a.prompt, capability: a.capability, maxCostUsd: a.maxCostUsd }), assignmentOf: () => null } });
+  const stoppedNow = () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL";
+  const vaultPanel = createVaultPanel({ stateDir, ownerAuth: () => ownerAuth(), sign: (p, a, s) => sign(p, a, s), isStopped: stoppedNow });
+  const vaultView = () => { try { return vaultPanel.view(); } catch (e) { return { state: "ERROR", error: String(e?.message ?? e).slice(0, 200) }; } };
+  const vaultAction = b => vaultPanel.action(b ?? {});
+  const chatPanel = createChatProvidersPanel({ stateDir, inbox: { ingest: (...a) => inboxMod().ingest(...a) }, vaultHas: n => { try { return vaultPanel.has?.(n) ?? false; } catch { return false; } }, isStopped: stoppedNow });
+  const chatProviders = () => { try { return chatPanel.view(); } catch (e) { return { state: "ERROR", error: String(e?.message ?? e).slice(0, 200) }; } };
+  const chatProvidersAction = b => chatPanel.action(b ?? {});
   const agents30 = () => { try { return agentsPanel.view(); } catch (e) { return { state: "ERROR", error: String(e?.message ?? e).slice(0, 200) }; } };
   const agents30Action = b => agentsPanel.action(b ?? {});
   const security = () => { try { return secPanel.view(); } catch (e) { return { state: "ERROR", error: String(e?.message ?? e).slice(0, 200) }; } };
@@ -642,6 +651,6 @@ export function createControlCenterCore({ ollamaFetch = null, cloudFetch = null,
   const tradingPanel = createTradingPanel({ stateDir, ownerAuth: () => ownerAuth(), sign: (p, a, s) => sign(p, a, s), isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL" });
   const trading = () => tradingPanel.view(), tradingCandles = q => tradingPanel.candles(q ?? {}), tradingAction = b => tradingPanel.action(b ?? {}), tradingTick = () => tradingPanel.tick({ candlesPerStrategy: 1 });
   const ops = createOpsViews({ stateDir, status, finance, approvals, tradingView: trading, memoryView: memory, ledgerEntries: () => createFinancialLedger({ dir: path.join(stateDir, "ledger") }).entries() });
-  return { trading, tradingCandles, tradingAction, tradingTick, agentsActivity: ops.agents, agentActivityOne: ops.agent, operations: ops.operations, revenueDashboard: ops.revenue, memory, memoryAction, modelRegistry, modelRegistryAction, security, securityAction, agents30, agents30Action, prototypes, prototypeActions, pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, workbench, workbenchAction, a11yAudit, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => pluginView(), mcp, mcpActions, repos, repoActions, theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { trading, tradingCandles, tradingAction, tradingTick, agentsActivity: ops.agents, agentActivityOne: ops.agent, operations: ops.operations, revenueDashboard: ops.revenue, memory, memoryAction, modelRegistry, modelRegistryAction, security, securityAction, agents30, agents30Action, vaultView, vaultAction, chatProviders, chatProvidersAction, prototypes, prototypeActions, pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, workbench, workbenchAction, a11yAudit, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => pluginView(), mcp, mcpActions, repos, repoActions, theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }

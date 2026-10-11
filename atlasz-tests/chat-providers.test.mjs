@@ -24,10 +24,12 @@ async function listening(t, providerId = "telegram", accountId = "bot1", batches
 }
 const enable = (t, providerId, accountId, scope, sender) => t.c.enableSend(providerId, accountId, { scope, sendAdapter: sender, approval: ap("CHAT_SEND_ENABLE", sendEnableSubject(providerId, accountId, scope)) });
 
-test("catalogue: exactly 15 platforms with honest officialApi; only-unofficial platforms are UNAVAILABLE with a reason", () => {
-  assert.equal(CHAT_PROVIDER_CATALOGUE.length, 15);
+test("catalogue: 21 platforms: every one of the owner's 15 (item 7) plus 6 more with honest officialApi; only-unofficial platforms are UNAVAILABLE with a reason", () => {
+  assert.equal(CHAT_PROVIDER_CATALOGUE.length, 21);
   const ids = CHAT_PROVIDER_CATALOGUE.map(p => p.id);
-  for (const id of ["whatsapp-business", "telegram", "slack", "discord", "microsoft-teams", "google-chat", "signal", "messenger", "instagram-dm", "line", "viber", "wechat", "sms-gateway", "email", "matrix"]) assert.ok(ids.includes(id), id);
+  for (const id of ["whatsapp-business", "telegram", "slack", "discord", "microsoft-teams", "google-chat", "signal", "messenger", "instagram-dm", "line", "viber", "wechat", "sms-gateway", "email", "matrix", "apple-messages", "nextcloud-talk", "nostr", "tor-messenger", "zalo", "zalo-personal"]) assert.ok(ids.includes(id), id);
+  // the owner's item-7 list, by name: WhatsApp, Telegram, Discord, Slack, Signal, Apple Messages, SMS, Teams, Nextcloud Talk, Matrix, Nostr, Tor Messenger, Zalo, Zalo Personal, WeChat
+  for (const id of ["whatsapp-business", "telegram", "discord", "slack", "signal", "apple-messages", "sms-gateway", "microsoft-teams", "nextcloud-talk", "matrix", "nostr", "tor-messenger", "zalo", "zalo-personal", "wechat"]) assert.ok(ids.includes(id), "directive item 7: " + id);
   for (const p of CHAT_PROVIDER_CATALOGUE) {
     assert.ok(["YES", "LIMITED", "NO"].includes(p.officialApi), p.id);
     assert.equal(p.unofficialRouteRefused, p.officialApi === "NO"); assert.equal(p.available, p.officialApi !== "NO");
@@ -38,7 +40,7 @@ test("catalogue: exactly 15 platforms with honest officialApi; only-unofficial p
   const t = mk(); try {
     const cat = t.c.catalogue(); assert.equal(cat.find(p => p.id === "signal").state, "UNAVAILABLE"); assert.equal(cat.find(p => p.id === "slack").state, "UNCONFIGURED");
     assert.equal(cat[0].evidence, CATALOGUE_EVIDENCE); assert.match(CATALOGUE_EVIDENCE, /UNVERIFIED/);
-    const s = t.c.summary(); assert.equal(s.live, 0); assert.equal(s.providers, 15); assert.equal(s.available, 14); assert.equal(s.connected, 0);
+    const s = t.c.summary(); assert.equal(s.live, 0); assert.equal(s.providers, 21); assert.equal(s.available, 18); assert.equal(s.connected, 0);
     assert.deepEqual(CHAT_STATES.slice(1), ["UNCONFIGURED", "CONFIGURED", "LISTENING_READONLY", "SEND_ENABLED"]);
   } finally { t.done(); }
 });

@@ -8,7 +8,7 @@ const rec = (reply, ok = true) => { const calls = []; const f = async (url, init
 const mk = (id, fetchImpl, cred = KEY) => createCloudAdapter({ providerId: id, credentialRef: "REF", getCredential: ref => (ref === "REF" ? cred : null), fetchImpl });
 
 test("openai-compatible wire: bearer header, exact host, usage-derived tokens, cost left UNKNOWN (null) for the bridge to price", async () => {
-  for (const id of ["openai", "deepseek", "xai", "mistral", "openrouter", "minimax", "glm", "perplexity", "huggingface"]) {
+  for (const id of ["openai", "deepseek", "xai", "mistral", "openrouter", "vercel-ai-gateway", "minimax", "glm", "perplexity", "huggingface"]) {
     const f = rec({ choices: [{ message: { content: "hi" } }], usage: { prompt_tokens: 10, completion_tokens: 5 } }), a = mk(id, f);
     const r = await a.invoke({ model: "vendor/m-1", prompt: "q" });
     assert.equal(r.output, "hi"); assert.equal(r.tokensIn, 10); assert.equal(r.tokensOut, 5); assert.equal(r.costUsd, null);

@@ -22,6 +22,7 @@ export const PROVIDER_PROFILES = Object.freeze({
   deepseek: { style: "openai-compat", host: "api.deepseek.com", chat: "/chat/completions", models: "/models" },
   xai: { style: "openai-compat", host: "api.x.ai", chat: "/v1/chat/completions", models: "/v1/models" },
   mistral: { style: "openai-compat", host: "api.mistral.ai", chat: "/v1/chat/completions", models: "/v1/models" },
+  "vercel-ai-gateway": { style: "openai-compat", host: "ai-gateway.vercel.sh", chat: "/v1/chat/completions", models: "/v1/models" },
   openrouter: { style: "openai-compat", host: "openrouter.ai", chat: "/api/v1/chat/completions", models: "/api/v1/models" },
   minimax: { style: "openai-compat", host: "api.minimax.io", chat: "/v1/chat/completions", models: null },
   glm: { style: "openai-compat", host: "open.bigmodel.cn", chat: "/api/paas/v4/chat/completions", models: null },
