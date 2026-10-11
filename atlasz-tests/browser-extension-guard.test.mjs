@@ -263,7 +263,10 @@ test("obfuscated dangerous code is found after normalisation (bracket access, co
     "const { storage } = chrome; storage.local.set({})": /CHROME_RENAMED_DESTRUCTURING/,
     "chrome.tabs.captureVisibleTab()": /CHROME_API_NOT_ALLOWLISTED/,
     "chrome.windows.create({url:'x'})": /CHROME_API_NOT_ALLOWLISTED/,
-    "String.fromCharCode(101,118,97,108)": /OBFUSCATION_PRIMITIVE/
+    "String.fromCharCode(101,118,97,108)": /OBFUSCATION_PRIMITIVE/,
+    "chrome?.storage.local.set({t: 1})": /PERSISTENT_STORAGE/,
+    "chrome?.['storage']": /COMPUTED_ACCESS_ON_GLOBAL/,
+    "globalThis?.eval?.('1')": /EVAL/
   };
   for (const [code, want] of Object.entries(cases)) {
     const d = copyExt(); try { fs.appendFileSync(path.join(d, "background.js"), "\n" + code + "\n"); const r = auditExtensionFolder(d); assert.equal(r.ok, false, code); assert.match(JSON.stringify(r.findings), want, code); } finally { rm(d); }

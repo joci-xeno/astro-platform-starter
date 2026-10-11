@@ -134,7 +134,7 @@ test("gates survive ordinary wording, look-alikes and zero-width characters; unk
     "Order the replacement licence for the build server": "SPEND_MONEY", "Renew the domain registration": "SPEND_MONEY", "Tweet the launch announcement": "PUBLIC_PUBLICATION",
     "Force-push the cleaned history to the remote": "DESTRUCTIVE_EXTERNAL_DELETE", "Delete the old customer backups": "DESTRUCTIVE_EXTERNAL_DELETE", "Rotate the service password": "CREDENTIALS_OR_SECURITY",
     "Pay​ the vendor invoice": "SPEND_MONEY", "pаyment to the vendor": "SPEND_MONEY", "Se​nd the outreach newsletter": "PUBLIC_PUBLICATION", "Ｐａｙ the supplier": "SPEND_MONEY",
-    "Call the customer about the delay": "EXTERNAL_EFFECT_UNKNOWN_NEEDS_REVIEW", "Invite the prospects to the webinar": "PUBLIC_PUBLICATION"
+    "Call the customer about the delay": "EXTERNAL_EFFECT_UNKNOWN_NEEDS_REVIEW", "Invite the prospects to the webinar": "PUBLIC_PUBLICATION", "Agree to the vendor terms and conditions": "CONTRACT", "Approve the vendor quote for 2000 EUR": "SPEND_MONEY", "Hand over 500 USD cash to the vendor": "SPEND_MONEY", "Make admin EXECUTION-3 on the GitHub org": "CREDENTIALS_OR_SECURITY", "P\u00e1y the vendor now": "SPEND_MONEY", "P a y the vendor": "SPEND_MONEY", "p.a.y the vendor": "SPEND_MONEY"
   };
   for (const [title, cat] of Object.entries(titles)) {
     const p = await planGoal({ goal: G, model: fake([{ id: "S1", title, role: "EXECUTION", kind: "execute.x", acceptance: ["done"] }]) });

@@ -127,7 +127,7 @@ test("spend guard: calling a paid/cloud candidate needs a signed MODEL_BENCHMARK
     const a = ap("MODEL_BENCHMARK", subj); assert.equal((await t.evo.runCompatibility(id, { approval: a })).compatible, true);
     const b = await t.evo.benchmark(id, { baselineId: "base-local", judgeId: "judge-local" }); assert.equal(b.verdict, "INCONCLUSIVE"); assert.ok(b.benchmark.reasons.includes("CANDIDATE_COST_UNKNOWN")); assert.equal(b.benchmark.candidate.costUsdTotal, null);
     // single-use: the approval cannot be replayed, and the grant is limited to a few guarded runs; after that a NEW approval is required (no permanent spend permission)
-    assert.notEqual((await t.evo.runCompatibility(id, { approval: a })).ok, undefined); const t3 = t.open(); assert.ok(t3.get(id).benchGrant.runsLeft <= 2);
+    assert.notEqual((await t.evo.runCompatibility(id, { approval: a })).ok, undefined); const t3 = t.open(); assert.ok(t.evo.audit().filter(e => e.event === "BENCHMARK_RUN_FROM_GRANT").length >= 2);
     let refused = null; for (let i = 0; i < 6 && !refused; i++) { const x = await t.evo.runCompatibility(id); if (!x.ok) refused = x.reason; }
     assert.equal(refused, "OWNER_APPROVAL_REQUIRED_TO_CALL_PAID_OR_CLOUD_CANDIDATE", "grant exhausted -> fresh approval needed");
     assert.equal((await t.evo.runCompatibility(id, { approval: a })).ok, false, "replayed approval refused");
@@ -232,5 +232,16 @@ test("deprecation tracking: in-use models retiring soon -> FIND_REPLACEMENT; ret
     t.evo.recordDeprecation({ modelId: "unused-model", retiresAt: "2026-10-12", evidenceUrl: "https://changelog.fixture-provider.org/d3", sourceId: "fx-changelog" });
     const r = t.evo.deprecationReport({ withinDays: 30 }).items;
     assert.deepEqual(r.map(x => x.type).sort(), ["FIND_REPLACEMENT", "RETIRED_STILL_IN_USE"]); assert.deepEqual(r.find(x => x.modelId === "base-local").roles, ["EXECUTION"]);
+  } finally { t.done(); }
+});
+
+test("a leftover manual spend grant is never used by autoCycle, and editing the state file cannot create runs", async () => {
+  let gptCalls = 0; const t = mk({ adapters: { "gpt-new": async p => { gptCalls++; return goodModel("GPT", 0.01)(p); } } }); try {
+    t.evo.discoverFromCatalogue(CAT([CLOUD_CAND])); const id = "gpt-new@1.0.0", subj = "bench:" + id + ":" + t.evo.get(id).configHash;
+    await t.evo.runCompatibility(id, { approval: ap("MODEL_BENCHMARK", subj) }); const before = gptCalls;
+    const pol = { ...DEFAULT_POLICY, mode: "RECOMMEND_ONLY" }; t.evo.setPolicy(pol, { approval: ap("MODEL_EVOLUTION_POLICY", policySubject(pol)) });
+    const r = await t.evo.autoCycle({ baselineId: "base-local", judgeId: "judge-local" }); assert.equal(gptCalls, before, JSON.stringify(r.actions));
+    for (const f of fs.readdirSync(t.dir)) if (f.endsWith(".json")) { const p = path.join(t.dir, f); try { const j = JSON.parse(fs.readFileSync(p, "utf8")); const w = o => { if (o && typeof o === "object") for (const k of Object.keys(o)) { if (k === "runsLeft" || k === "benchGrant") o[k] = 999999; else w(o[k]); } }; w(j); fs.writeFileSync(p, JSON.stringify(j)); } catch { /* not state */ } }
+    const t2 = t.open(); let refused = null; for (let i = 0; i < 6 && !refused; i++) { const x = await t2.runCompatibility(id); if (!x.ok) refused = x.reason; } assert.equal(refused, "OWNER_APPROVAL_REQUIRED_TO_CALL_PAID_OR_CLOUD_CANDIDATE");
   } finally { t.done(); }
 });

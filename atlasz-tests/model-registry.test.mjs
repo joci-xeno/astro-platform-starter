@@ -166,7 +166,7 @@ test("deleted audit log + hand-edited enabled paid model: registry opens read-on
     const f = path.join(t.dir, "registry.json"), j = JSON.parse(fs.readFileSync(f, "utf8")); j.models["gpt-x"].enabled = true; fs.writeFileSync(f, JSON.stringify(j));
     fs.rmSync(path.join(t.dir, "registry-audit.jsonl"), { force: true });
     const r2 = t.open(); assert.equal(r2.status().readOnly, true); assert.equal(r2.getModel("gpt-x").enabled, false); assert.ok(r2.status().unapprovedEnabled.includes("gpt-x"));
-    assert.equal(r2.resolve({ agentId: ROSTER[0], maxCostUsd: 1 }).candidates.length, 0);
+    assert.match(r2.resolve({ agentId: ROSTER[0], maxCostUsd: 1 }).reason, /^REGISTRY_UNTRUSTED/);
   } finally { t.done(); }
 });
 test("legitimately approved enable survives reload; tampering the config invalidates it", () => {
@@ -189,5 +189,14 @@ test("prototype-named keys do not crash billing or role defaults", () => {
     assert.equal(t.reg.billing.status("never-used-key"), null); assert.equal(t.reg.setRoleDefault("SEARCH", ["constructor"]).reason, "MODELS_INVALID");
     assert.equal(t.reg.setAssignment(ROSTER[0], { primary: "toString" }).reason, "UNKNOWN_MODEL");
     assert.equal(t.reg.addProvider({ id: "loc2", displayName: "L", kind: "LOCAL", egressHosts: ["127.0.0.1"], credentialRef: "SOME_KEY" }).reason, "LOCAL_PROVIDER_CANNOT_HAVE_CREDENTIAL");
+  } finally { t.done(); }
+});
+
+test("a hand-edited model that claims to be a free local model but points at a cloud provider is forced disabled", () => {
+  const t = mk(); try {
+    t.reg.enable("llama-local"); const f = path.join(t.dir, "registry.json"), j = JSON.parse(fs.readFileSync(f, "utf8"));
+    Object.assign(j.models["llama-local"], { providerId: "openai", egressHosts: ["api.openai.com"], credentialRef: "OPENAI_API_KEY", enabled: true }); fs.writeFileSync(f, JSON.stringify(j));
+    const r2 = t.open(); assert.equal(r2.getModel("llama-local").enabled, false); assert.ok(r2.status().unapprovedEnabled.includes("llama-local"));
+    assert.match(r2.resolve({ agentId: ROSTER[0] }).reason ?? "", /REGISTRY_UNTRUSTED|^$/);
   } finally { t.done(); }
 });

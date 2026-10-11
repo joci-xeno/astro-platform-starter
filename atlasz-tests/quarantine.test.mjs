@@ -473,3 +473,17 @@ test("ZIP bytes before the central directory that belong to no listed entry are 
   const hidden = zip([{ name: "../../../../tmp/evil.sh", data: "rm -rf" }]).subarray(0, 30 + "../../../../tmp/evil.sh".length + 6);      // a lone local header + data
   const r = inspectArchive(Buffer.concat([hidden, good])); assert.ok(codes(r).some(c => /ZIP_UNLISTED_BYTES|ZIP_ENTRY|MALFORMED|OUT_OF_BOUNDS|MISMATCH/.test(c)), codes(r).join()); assert.notEqual(r.verdict, "NO_STRUCTURAL_FINDINGS");
 });
+test("TAR: stacked extended headers, x followed by g, and GNU.sparse overrides are BLOCKED (real tools disagree or apply them)", () => {
+  const hdr = (type, rec) => Buffer.concat([tarHeader({ name: "PaxHeader/" + type, type, size: rec.length }), padTo512(rec)]);
+  const tail = Buffer.concat([tarHeader({ name: "good.txt", size: 0 }), Buffer.alloc(1024)]);
+  const xx = Buffer.concat([hdr("x", paxRec("path", "../../evil.sh")), hdr("x", paxRec("path", "good2.txt")), tail]);
+  assert.ok(codes(inspectArchive(xx)).includes("TAR_MULTIPLE_EXTENDED_HEADERS"), codes(inspectArchive(xx)).join());
+  const xg = Buffer.concat([hdr("x", paxRec("path", "../../evil.sh")), hdr("g", paxRec("comment", "hello")), tail]);
+  const rxg = inspectArchive(xg); assert.ok(codes(rxg).some(c => /PATH_TRAVERSAL|PARENT|ESCAPE|ABSOLUTE/.test(c)), "the pending path still applies after a g header: " + codes(rxg).join());
+  for (const t of ["x", "g"]) { const sp = Buffer.concat([hdr(t, paxRec("GNU.sparse.name", "../../evil.sh")), tail]); assert.ok(codes(inspectArchive(sp)).includes("TAR_PAX_SPARSE_OVERRIDE"), t); }
+  assert.ok(codes(inspectArchive(Buffer.concat([hdr("x", paxRec("weird.key", "v")), tail]))).includes("TAR_PAX_UNKNOWN_KEY"));
+});
+test("ZIP: a local header that claims other sizes than the central directory is BLOCKED", () => {
+  const z = zip([{ name: "a.txt", data: "hello" }]); const lho = 0; z.writeUInt32LE(2, lho + 22);      // local usize differs from the central directory (5)
+  assert.ok(codes(inspectArchive(z)).includes("ZIP_LOCAL_HEADER_DISAGREES_WITH_CENTRAL_DIRECTORY"), codes(inspectArchive(z)).join());
+});

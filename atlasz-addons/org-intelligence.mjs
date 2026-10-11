@@ -117,7 +117,8 @@ export function createOrgIntelligence({ dir = null, isSourceApproved = () => fal
     if (!raw.name && !raw.email) return R("CONTACT_NAME_OR_EMAIL_REQUIRED");
     if (raw.businessContact !== true) return R("BUSINESS_CONTACT_ONLY");
     const keys = [raw.email ? emailHash(raw.email) : null, raw.name ? nameHash(raw.name) : null].filter(Boolean);
-    if (keys.some(k => st.suppressed.includes(k))) { audit.append("CONTACT_REFUSED_SUPPRESSED", { orgId }); return R("SUBJECT_SUPPRESSED_AFTER_FORGET"); }
+    if ((raw.email ? [emailHash(raw.email)] : keys).some(k => st.suppressed.includes(k)))      // with an e-mail the e-mail is the identity (another person may share the name); a name-only record is refused when that name was forgotten
+     { audit.append("CONTACT_REFUSED_SUPPRESSED", { orgId }); return R("SUBJECT_SUPPRESSED_AFTER_FORGET"); }
     const o = upsertOrg(orgId); if (!o.ok) return o;
     if (o.org.contacts.length >= LIMITS.maxContactsPerOrg) return R("CONTACT_LIMIT");
     const ev = typeof verificationEvidence === "string" && verificationEvidence.trim().length >= 3 ? verificationEvidence.slice(0, LIMITS.maxNote) : null;

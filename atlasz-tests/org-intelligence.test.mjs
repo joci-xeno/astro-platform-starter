@@ -176,3 +176,13 @@ test("name-only export/forget are CANDIDATES: two people with one name are never
     assert.equal(t.oi.exportSubject("peter kovacs a co org").records.length, 0, "an e-mail-like phrase is not an e-mail key");
   } finally { t.done(); }
 });
+
+test("forgetting one person does not block other people who share the name (identity = e-mail); a name-only re-add is still refused", () => {
+  const t = mk(); try {
+    t.oi.addContact("a-co", { name: "John Smith", email: "john@a-co.org", businessContact: true }, { provenance: SRC.a, lawfulBasis: "LEGITIMATE_INTEREST_B2B" });
+    assert.equal(t.oi.forgetSubject("john@a-co.org").removed, 1);
+    assert.equal(t.oi.addContact("b-co", { name: "John Smith", email: "john.smith@b-co.org", businessContact: true }, { provenance: SRC.a, lawfulBasis: "LEGITIMATE_INTEREST_B2B" }).ok, true);
+    assert.equal(t.oi.addContact("a-co", { name: "John Smith", email: "john@a-co.org", businessContact: true }, { provenance: SRC.a, lawfulBasis: "LEGITIMATE_INTEREST_B2B" }).reason, "SUBJECT_SUPPRESSED_AFTER_FORGET");
+    assert.equal(t.oi.addContact("c-co", { name: "John Smith", businessContact: true }, { provenance: SRC.a, lawfulBasis: "LEGITIMATE_INTEREST_B2B" }).reason, "SUBJECT_SUPPRESSED_AFTER_FORGET");
+  } finally { t.done(); }
+});

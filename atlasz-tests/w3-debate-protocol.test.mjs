@@ -164,3 +164,10 @@ test("verifyDebate re-checks turn text, resolution and judge against the chain",
   const d = structuredClone(r); d.judge.ruling = d.judge.ruling === "PROPOSAL" ? "CRITIQUE" : "PROPOSAL"; assert.equal(verifyDebate(d, r.auditEntries).reason, "JUDGE_DIFFERS_FROM_CHAIN");
   const e = structuredClone(r); e.turns[1].round = 9; assert.equal(verifyDebate(e, r.auditEntries).reason, "TURN_METADATA_DIFFERS_FROM_CHAIN");
 });
+
+test("verifyDebate rejects a record with turns removed or dissent stripped", async () => {
+  const r = await runDebate({ question: Q, model: fake(), rounds: 2, evidence: EV });
+  const a = structuredClone(r); a.turns.splice(1, 1); assert.equal(verifyDebate(a, r.auditEntries).reason, "TURNS_MISSING_OR_EXTRA_VS_CHAIN");
+  const b = structuredClone(r); b.dissent = []; if (r.dissent.length) assert.equal(verifyDebate(b, r.auditEntries).reason, "DISSENT_DIFFERS_FROM_CHAIN");
+  assert.equal(verifyDebate(r, r.auditEntries).ok, true);
+});

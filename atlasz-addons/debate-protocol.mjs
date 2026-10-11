@@ -105,7 +105,7 @@ export async function runDebate({ question, proposal = null, model, rounds = 2, 
     const lastCritic = [...turns].reverse().find(t => t.role === "CRITIC" && !t.quarantined);
     if (resolution.winner === "PROPOSAL" && lastCritic && !/^\s*CONCEDE\b/.test(lastCritic.text)) dissent.push({ from: "critic:" + lastCritic.family, type: "UNCONCEDED_CRITIQUE", text: fence("critic r" + lastCritic.round, lastCritic.text) });
     if (stop) dissent.push({ from: "protocol", type: "STOPPED_EARLY", reason: stop });
-    const re = log("DEBATE_RESOLUTION", { ...resolution, balance, test: testWinner, stop });
+    const re = log("DEBATE_RESOLUTION", { ...resolution, balance, test: testWinner, stop, dissentSha256: sha256(JSON.stringify(dissent)), turnCount: turns.length });
     let escalation = null;
     if (resolution.status === "UNRESOLVED") {
       escalation = { type: "OWNER_ESCALATION", requiresOwnerDecision: true, debateId: id, question: boundText(question, 500).text, reason: stop ?? (judge.discarded || (judge.ruling === "UNRESOLVED" ? "JUDGE_UNRESOLVED" : "NO_DECISIVE_EVIDENCE_OR_TEST")), options: ["ACCEPT_PROPOSAL", "ACCEPT_CRITIQUE", "REQUEST_MORE_EVIDENCE"], evidenceBalance: balance, testResult: test ? { pass: test.pass ?? null, ref: boundText(test.ref ?? "", 200).text } : null, judgeRuling: judge.ruling ?? null, auditHead: re.hash, createdAt: now() };
@@ -127,10 +127,13 @@ export function verifyDebate(record, entries) {
     else if (typeof t.text !== "string" || typeof d.fencedSha256 !== "string" || sha256(t.text) !== d.fencedSha256) return { ok: false, reason: "TURN_TEXT_DIFFERS_FROM_CHAIN", turn: t.n };
   }
   const mine = entries.filter(e => e.data?.debateId === record.debateId);
+  const chainTurns = mine.filter(e => e.event === "DEBATE_TURN").map(e => e.seq), recTurns = (record.turns ?? []).map(t => t.auditSeq);
+  if (chainTurns.length !== recTurns.length || chainTurns.some((q, i) => q !== recTurns[i])) return { ok: false, reason: "TURNS_MISSING_OR_EXTRA_VS_CHAIN" };      // a record cannot drop (or add) turns that the chain holds
   const res = [...mine].reverse().find(e => e.event === "DEBATE_RESOLUTION"), jdg = [...mine].reverse().find(e => e.event === "DEBATE_JUDGE");
   if (!res) return { ok: false, reason: "RESOLUTION_NOT_IN_CHAIN" };
   const R = record.resolution ?? {};
   if (res.data.status !== R.status || (res.data.winner ?? null) !== (R.winner ?? null) || res.data.by !== R.by || (res.data.basis ?? null) !== (R.basis ?? null)) return { ok: false, reason: "RESOLUTION_DIFFERS_FROM_CHAIN" };
+  if (res.data.dissentSha256 !== sha256(JSON.stringify(record.dissent ?? []))) return { ok: false, reason: "DISSENT_DIFFERS_FROM_CHAIN" };
   if (record.judge?.used) { if (!jdg || (jdg.data.ruling ?? null) !== (record.judge.ruling ?? null) || Boolean(jdg.data.independent) !== Boolean(record.judge.independent)) return { ok: false, reason: "JUDGE_DIFFERS_FROM_CHAIN" }; }
   else if (jdg) return { ok: false, reason: "JUDGE_RECORD_MISSING_BUT_CHAIN_HAS_RULING" };
   return { ok: true, length: v.length, head: v.head };

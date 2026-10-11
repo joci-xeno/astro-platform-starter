@@ -39,7 +39,7 @@ export function normaliseJs(t) {
   let x = String(t).replace(/\\u\{([0-9a-fA-F]{1,6})\}/g, (m, h) => { try { return String.fromCodePoint(parseInt(h, 16)); } catch { return m; } }).replace(/\\u([0-9a-fA-F]{4})/g, (m, h) => String.fromCharCode(parseInt(h, 16))).replace(/\\x([0-9a-fA-F]{2})/g, (m, h) => String.fromCharCode(parseInt(h, 16)));
   x = x.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:\\])\/\/[^\n]*/g, "$1");
   for (let i = 0; i < 8; i++) { const y = x.replace(/(["'`])([^"'`\n]*)\1\s*\+\s*(["'`])([^"'`\n]*)\3/g, (m, q1, a, q2, b) => q1 + a + b + q1); if (y === x) break; x = y; }
-  return x.replace(/\s*\.\s*/g, ".").replace(/\?\.\s*/g, "?.");
+  return x.replace(/\?\.(?=[\[(])/g, "").replace(/\?\./g, ".").replace(/\s*\.\s*/g, ".");      // optional chaining (a?.b, a?.[k], a?.(x)) is read as plain access
 }
 const CONTENT_RULES = [
   ["CONTENT_READS_FIELD_VALUE", /\.value\b|\.checked\b|\.files\b/], ["CONTENT_WRITES_PAGE", /\.(?:textContent|innerText|nodeValue|src|href)\s*=(?!=)|setAttribute|appendChild|removeChild|replaceChild|insertBefore|\.remove\s*\(/],

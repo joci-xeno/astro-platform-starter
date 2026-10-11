@@ -151,14 +151,16 @@ export function createModelEvolution({ dir, registry, ownerAuth = null, adapters
     if (modelConfigHash(m) !== c.configHash) return R("MODEL_CONFIG_CHANGED_SINCE_DISCOVERY");
     if (!needsApproval(m) || m.enabled) return { ok: true };                                            // free local, or already owner-approved via MODEL_ENABLE
     if (m.costPer1kTokensUsd === null || m.costPer1kTokensUsd === undefined) return R("COST_UNKNOWN_BENCHMARK_REFUSED", { note: "a paid or cloud candidate with an unknown price is never benchmarked: set a costPer1kTokensUsd first" });
-    // Spend grant: one signed MODEL_BENCHMARK approval is single-use (owner-auth consumes its nonce) and buys at most BENCH_GRANT_RUNS guarded runs for THIS config; then a new approval is needed.
-    const g = c.benchGrant;
-    if (g && g.configHash === c.configHash && g.runsLeft > 0) { g.runsLeft -= 1; save(); audit.append("BENCHMARK_RUN_FROM_GRANT", { candidateId: c.candidateId, runsLeft: g.runsLeft }); return { ok: true }; }
+    // Spend grant: one signed MODEL_BENCHMARK approval is single-use (owner-auth consumes its nonce) and buys at most BENCH_GRANT_RUNS guarded runs for THIS config.
+    // The remaining runs are COMPUTED from the hash-chained audit log (approvals granted minus runs taken), never read from the editable state file.
     if (autoOnly) return R("OWNER_APPROVAL_REQUIRED_PER_RUN", { note: "automatic cycles never spend: a paid or cloud candidate needs a fresh MODEL_BENCHMARK approval for each manual run" });
+    const left = grantRunsLeft(c);
+    if (left > 0) { audit.append("BENCHMARK_RUN_FROM_GRANT", { candidateId: c.candidateId, configHash: c.configHash, runsLeft: left - 1 }); return { ok: true }; }
     const subject = "bench:" + c.candidateId + ":" + c.configHash, v = verifyOwner(approval, "MODEL_BENCHMARK", subject);
     if (!v.ok) return R("OWNER_APPROVAL_REQUIRED_TO_CALL_PAID_OR_CLOUD_CANDIDATE", { detail: v.reason, action: "MODEL_BENCHMARK", subject });
-    c.benchGrant = { configHash: c.configHash, runsLeft: BENCH_GRANT_RUNS - 1 }; save(); audit.append("BENCHMARK_SPEND_APPROVED", { candidateId: c.candidateId, runs: BENCH_GRANT_RUNS, nonce: v.nonce ?? null }); return { ok: true };
+    audit.append("BENCHMARK_SPEND_APPROVED", { candidateId: c.candidateId, configHash: c.configHash, runs: BENCH_GRANT_RUNS, nonce: v.nonce ?? null }); audit.append("BENCHMARK_RUN_FROM_GRANT", { candidateId: c.candidateId, configHash: c.configHash, runsLeft: BENCH_GRANT_RUNS - 1 }); return { ok: true };
   }
+  function grantRunsLeft(c) { let n = 0; for (const e of audit.entries()) { if (e.data?.candidateId !== c.candidateId || e.data?.configHash !== c.configHash) continue; if (e.event === "BENCHMARK_SPEND_APPROVED") n += Number(e.data.runs) || 0; else if (e.event === "BENCHMARK_RUN_FROM_GRANT") n -= 1; } return Math.max(0, n); }
 
   async function runCompatibility(candidateId, { approval = null, auto = false } = {}) {
     const c = cand(candidateId); if (!c) return R("UNKNOWN_CANDIDATE");

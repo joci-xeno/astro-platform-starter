@@ -220,6 +220,7 @@ function inspectZip(ctx, b, depth, label) {
     if (!Number.isFinite(lho) || lho + 30 > b.length || u32(b, lho) !== 0x04034b50) { add(ctx, "ZIP_LOCAL_HEADER_MISSING", "BLOCK", where); continue; }
     const lnlen = u16(b, lho + 26), lxlen = u16(b, lho + 28);
     if (lho + 30 + lnlen > b.length || !b.subarray(lho + 30, lho + 30 + lnlen).equals(nameBuf)) { add(ctx, "ZIP_LOCAL_HEADER_NAME_MISMATCH", "BLOCK", where); continue; }
+    if (!(flags & 0x8)) { const lc = u32(b, lho + 18), lu = u32(b, lho + 22), lm = u16(b, lho + 8); if ((lc !== 0xffffffff && lc !== csize) || (lu !== 0xffffffff && lu !== usize) || lm !== method) { add(ctx, "ZIP_LOCAL_HEADER_DISAGREES_WITH_CENTRAL_DIRECTORY", "BLOCK", where); } }      // readers that trust the local header would extract different bytes
     const dStart = lho + 30 + lnlen + lxlen, dEnd = dStart + csize;
     if (dEnd > b.length) { add(ctx, "ZIP_ENTRY_DATA_OUT_OF_BOUNDS", "BLOCK", where); continue; }
     ranges.push([lho, dEnd, where, (flags & 0x8) ? 24 : 0]);
@@ -298,10 +299,17 @@ function inspectTar(ctx, b, depth, label) {
     // (a value may itself contain newlines; a line-based parser sees a different path than tar does).
     if (type === "x" || type === "g") {
       const px = parsePax(data); if (!px.ok) { add(ctx, "TAR_PAX_RECORD_MALFORMED", "BLOCK", label + "@" + off); return; }
+      for (const k of Object.keys(px.rec)) {
+        if (/^GNU\.sparse\./i.test(k)) { add(ctx, "TAR_PAX_SPARSE_OVERRIDE", "BLOCK", label + "@" + off); return; }       // sparse maps rename/resize members in GNU tar and Python; not supported, so not accepted
+        if (!/^(?:mtime|atime|ctime|uid|gid|uname|gname|comment|charset|hdrcharset|path|linkpath|size|SCHILY\.[\w.-]+|LIBARCHIVE\.[\w.-]+)$/.test(k)) { add(ctx, "TAR_PAX_UNKNOWN_KEY", "BLOCK", label + "@" + off); return; }
+      }
+      if (type === "x" && pending.xSeen) { add(ctx, "TAR_MULTIPLE_EXTENDED_HEADERS", "BLOCK", label + "@" + off); return; }      // tar implementations disagree on which of two stacked extended headers wins
+      if (type === "x") pending.xSeen = true;
       if (type === "x") { if (px.rec.path !== undefined) pending.name = px.rec.path; if (px.rec.linkpath !== undefined) pending.link = px.rec.linkpath; if (px.rec.size !== undefined) { if (!/^\d{1,15}$/.test(px.rec.size)) { add(ctx, "TAR_PAX_SIZE_INVALID", "BLOCK", label + "@" + off); return; } pending.size = Number(px.rec.size); } }
-      else { if (Object.keys(px.rec).some(k => ["path", "linkpath", "size"].includes(k))) add(ctx, "TAR_GLOBAL_PAX_OVERRIDE_IGNORED", "BLOCK", label + "@" + off); pending = {}; }          // global headers are not applied; an override in one is itself suspicious
+      else { if (Object.keys(px.rec).some(k => ["path", "linkpath", "size"].includes(k))) add(ctx, "TAR_GLOBAL_PAX_OVERRIDE_IGNORED", "BLOCK", label + "@" + off); }      // a pending extended header is NOT cleared by a global one: real tools still apply it to the next entry          // global headers are not applied; an override in one is itself suspicious
       off = next; continue;
     }
+    if ((type === "L" || type === "K") && (pending.name !== undefined || pending.link !== undefined || pending.xSeen)) { add(ctx, "TAR_MULTIPLE_EXTENDED_HEADERS", "BLOCK", label + "@" + off); return; }
     if (type === "L") { pending.name = cstr(data); off = next; continue; }
     if (type === "K") { pending.link = cstr(data); off = next; continue; }
     const prefix = h.subarray(257, 262).toString("latin1") === "ustar" ? cstr(h.subarray(345, 500)) : "";

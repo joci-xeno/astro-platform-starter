@@ -72,10 +72,18 @@ export function createModelRegistry({ dir, ownerAuth = null, gate = emergencyGat
   load();
   // Every enabled model that needs approval must have a recorded, still-valid owner signature bound to its exact configuration; otherwise it is forced DISABLED in memory.
   let unapprovedEnabled = [];
+  function consistentWithProvider(m) {
+    const p = Object.hasOwn(state.providers ?? {}, m.providerId) ? state.providers[m.providerId] : null;
+    if (!p || p.kind !== m.kind || (p.credentialRef ?? null) !== (m.credentialRef ?? null) || !Array.isArray(m.egressHosts) || !m.egressHosts.every(h => p.egressHosts.includes(h))) return false;
+    if (p.kind === "LOCAL" && (m.credentialRef != null || m.egressHosts.some(h => h !== "127.0.0.1"))) return false;
+    if (p.kind === "CLOUD" && m.costClass === "FREE") return false;
+    return true;
+  }
   function enforceRecordedApprovals() {
     unapprovedEnabled = [];
     const last = new Map(); for (const e of audit.entries()) { if (e.event !== "REGISTRY_REVISION") continue; const d = e.data ?? {}; if (d.event === "MODEL_ENABLED" || d.event === "MODEL_DISABLED") last.set(d.id, d); }
     for (const m of Object.values(state.models ?? {})) {
+      if (m.enabled && !consistentWithProvider(m)) { m.enabled = false; unapprovedEnabled.push(m.id); continue; }       // kind/hosts/credential must still be those of the provider (a hand edit cannot turn a cloud model into a "local free" one)
       if (!m.enabled || !needsApproval(m)) continue;
       const d = last.get(m.id); let ok = false;
       try { ok = Boolean(d && d.event === "MODEL_ENABLED" && d.cfg === modelConfigHash(m) && ownerAuth && typeof ownerAuth.verifyRecorded === "function" && ownerAuth.verifyRecorded(d.approval, { action: "MODEL_ENABLE", subject: enableSubject(m) })); } catch { ok = false; }
@@ -210,6 +218,7 @@ export function createModelRegistry({ dir, ownerAuth = null, gate = emergencyGat
   /** Ordered candidates for an agent. maxCostUsd=0 means no-spend: only costPer1kTokensUsd===0 models qualify. Unusable models are listed in `skipped` with the reason. */
   function resolve({ agentId, capability = "text", maxCostUsd = 0, estimateTokens = 1000 } = {}) {
     if (!agentSet.has(agentId)) return refuse("NOT_ONE_OF_THE_30_PERMANENT_AGENTS");
+    if (readOnly && (integrity === "MISMATCH" || integrity === "UNCHAINED")) return refuse("REGISTRY_UNTRUSTED:" + integrity, { note });      // fail closed: a hand-edited registry routes nothing until the owner rolls back to a verified snapshot
     const a = state.assignments[agentId], order = [...(a && a.capability === capability ? [a.primary, ...a.fallbacks] : []), ...state.roleDefaults[roleOf(agentId)], ...Object.keys(state.models)];
     const seen = new Set(), candidates = [], skipped = [];
     for (const id of order) { if (seen.has(id)) continue; seen.add(id); const m = state.models[id]; if (!m) continue; if (!m.capabilities.includes(capability)) continue;

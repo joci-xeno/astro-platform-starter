@@ -75,7 +75,7 @@ export function dailyTargetReport(day, entries, { targets = TARGETS } = {}) {
   buckets.verifiedPaid = buckets.verifiedPaid.map(({ _r, ...x }) => x); buckets.verifiedPaidOtherCurrency = buckets.verifiedPaidOtherCurrency.map(({ _r, ...x }) => x);
   // Unknown is never zero: a day with no dated entries has UNKNOWN revenue, and rejected entries (undated, unreceipted PAID, malformed) make the figure a LOWER BOUND.
   if (dated === 0 && buckets.rejected.length === 0) return { ...base, status: "NO_LEDGER_DATA_FOR_DAY", verifiedCollectedUsd: null, verifiedNetUsd: null, gapToMinimumUsd: null, minimumMet: null, aspirationalProgress: null, separate: { estimatedUsd: 0, agreedUsd: 0, invoicedUsd: 0, notRevenue: true }, buckets, note: "No ledger entries exist for this day: collected revenue is UNKNOWN, not zero." };
-  const lowerBound = buckets.rejected.length > 0, met = verifiedCollectedUsd >= targets.minimumDailyUsd;
+  const lowerBound = buckets.rejected.length > 0 || buckets.verifiedPaidOtherCurrency.length > 0, met = verifiedCollectedUsd >= targets.minimumDailyUsd;
   return { ...base, status: met ? "MINIMUM_TARGET_MET_VERIFIED" : lowerBound ? "LOWER_BOUND_UNKNOWN_ENTRIES" : "MINIMUM_TARGET_NOT_MET", verifiedCollectedIsLowerBound: lowerBound,
     verifiedCollectedUsd, verifiedNetUsd: s.verifiedNetProfitUsd, gapToMinimumUsd: Math.max(0, targets.minimumDailyUsd - verifiedCollectedUsd), minimumMet: met ? true : lowerBound ? null : false,
     aspirationalProgress: verifiedCollectedUsd / targets.aspirationalDailyUsd,
@@ -172,7 +172,7 @@ export function createRevenuePersistence({ dir, ownerAuth = null, policy = {}, r
     const dayStart = Date.parse(day + "T00:00:00.000Z"), out = [];
     for (const w of Object.values(st.workflows)) {
       if (w.finished) continue;
-      const sigOk = Boolean(ownerAuth?.verifyRecorded?.(w.authorization, { action: "WORKFLOW_AUTHORIZE", subject: w.subject }));
+      const subj = workflowSubject(w), sigOk = w.subject === subj && Boolean(ownerAuth?.verifyRecorded?.(w.authorization, { action: "WORKFLOW_AUTHORIZE", subject: subj }));      // the subject is RECOMPUTED from the stored steps/agent/opportunity: editing them voids the approval
       const ageDays = (dayStart - Date.parse(w.authorizedAt)) / 86400000;
       const action = !sigOk ? "BLOCKED_AUTHORIZATION_INVALID" : ageDays > P.maxCarryOverDays ? "NEEDS_REAUTHORIZATION" : "RESUME";
       out.push({ type: action, workflowId: w.workflowId, agentId: w.agentId, nextStep: w.steps[w.completedSteps], completedSteps: w.completedSteps, totalSteps: w.steps.length, authorizationAgeDays: Math.round(ageDays * 10) / 10 });

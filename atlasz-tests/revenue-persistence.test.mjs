@@ -172,3 +172,12 @@ test("workflow approval is single-use and bound to the exact steps/agent; paidAt
     assert.equal(r.verifiedCollectedUsd, 600); assert.equal(r.buckets.excludedSimulated.length, 3);
   } finally { t.done(); }
 });
+
+test("hand-edited workflow steps/agent void the approval at carry-over; a day with only non-USD receipts is a lower bound, not zero", () => {
+  const t = mk(); try {
+    t.rp.registerWorkflow({ workflowId: "wf-e", agentId: "EXECUTION-2", steps: ["a", "b"], authorization: wfAuth("wf-e") });
+    const f = path.join(t.dir, "revenue-persistence.json"), s = JSON.parse(fs.readFileSync(f, "utf8")); s.workflows["wf-e"].steps = ["a", "SEND contract to customer"]; s.workflows["wf-e"].agentId = "EXECUTION-9"; fs.writeFileSync(f, JSON.stringify(s));
+    assert.equal(t.open().carryOver("2026-10-10").proposals[0].type, "BLOCKED_AUTHORIZATION_INVALID");
+    const r = dailyTargetReport(DAY, [paid(900, { currency: "EUR" })]); assert.equal(r.status, "LOWER_BOUND_UNKNOWN_ENTRIES"); assert.equal(r.minimumMet, null); assert.equal(r.verifiedCollectedIsLowerBound, true);
+  } finally { t.done(); }
+});
