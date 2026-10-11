@@ -52,7 +52,7 @@ export function createModelRoutingBridge({ registry, gateway, providerEgress, ad
   if (!gateway || typeof gateway.register !== "function") throw new Error("GATEWAY_REQUIRED");
   if (!providerEgress || typeof providerEgress.checkModelRequest !== "function") throw new Error("PROVIDER_EGRESS_REQUIRED");
   const registered = new Map(), stats = { calls: 0, blocked: 0, billedBlocked: 0 };
-  const adapterFor = m => (Object.hasOwn(adapters, m.providerId) ? adapters[m.providerId] : null);
+  const adapterFor = m => { try { return typeof adapters === "function" ? (adapters(m.providerId) ?? null) : (Object.hasOwn(adapters, m.providerId) ? adapters[m.providerId] : null); } catch { return null; } };      // adapters: {providerId: adapter} or a resolver function
   const costClass = m => (m.costClass === "FREE" ? "FREE" : m.costClass === "PAID" ? "PAID" : "UNKNOWN");
 
   /** One guarded request: registry still enabled + egress policy + kill switch, then the adapter. */
@@ -63,7 +63,12 @@ export function createModelRoutingBridge({ registry, gateway, providerEgress, ad
     const d = providerEgress.checkModelRequest({ modelId: cur.id, url: ep.url, method: ep.method, bodyBytes: Buffer.byteLength(prompt) + 512, resolvedAddresses: ra });
     if (!d.allowed) { stats.blocked++; return R("EGRESS_BLOCKED:" + d.reason); }
     const ac = new AbortController();
-    try { const r = await withTimeout(a.invoke({ model: cur.id, prompt, signal: ac.signal }), BRIDGE_LIMITS.timeoutMs, "INVOKE"); return { ok: true, ...r }; }
+    try {
+      const r = await withTimeout(a.invoke({ model: cur.providerModel ?? cur.id, prompt, signal: ac.signal }), BRIDGE_LIMITS.timeoutMs, "INVOKE");
+      // cost: the adapter's own figure if it has one, else reported token usage x the registry price (owner-approved config); otherwise UNKNOWN (null), never 0
+      if ((r.costUsd === null || r.costUsd === undefined) && Number.isFinite(r.tokensIn) && Number.isFinite(r.tokensOut) && Number.isFinite(cur.costPer1kTokensUsd)) r.costUsd = ((r.tokensIn + r.tokensOut) / 1000) * cur.costPer1kTokensUsd;
+      return { ok: true, ...r };
+    }
     catch (e) { ac.abort(); return R("INVOKE_FAILED:" + String(e?.message ?? e).slice(0, 100)); }
   }
 
@@ -113,7 +118,7 @@ export function createModelRoutingBridge({ registry, gateway, providerEgress, ad
     return R("NO_ELIGIBLE_MODEL", { skipped: plan.skipped, tried, note: plan.note ?? "nothing enabled, credentialed and LIVE within the budget has a working adapter" });
   }
 
-  const status = () => ({ state: "CONNECTED_REGISTRY_TO_GATEWAY", adapters: Object.keys(adapters), registeredInGateway: [...registered.keys()], stats: { ...stats },
+  const status = () => ({ state: "CONNECTED_REGISTRY_TO_GATEWAY", adapters: typeof adapters === "function" ? registry.listModels().map(m => m.providerId).filter((x, i, a) => a.indexOf(x) === i && adapterFor({ providerId: x })) : Object.keys(adapters), registeredInGateway: [...registered.keys()], stats: { ...stats },
     live: registry.listModels().filter(m => liveStatus(m.id)).map(m => m.id), note: "LIVE means our own probe passed; nothing is LIVE until a real adapter answers its probe." });
   return { syncGateway, probeAll, complete, liveStatus, status };
 }

@@ -65,3 +65,28 @@ test("connected chain over real HTTP: egress approval -> probe -> LIVE -> an age
     assert.equal((await c.act({ op: "ask", agentId: "EXECUTION-3", prompt: "again" })).result.reason, "NO_ELIGIBLE_MODEL");
   } finally { await c.close?.(); rm(c.base); }
 });
+
+test("cloud provider over real HTTP: vault credential + owner-signed enable + signed egress -> free probe -> LIVE -> paid answer is priced from reported usage and billed once; no credential means no request", async () => {
+  const { createSecretVault, generateVaultKey } = await import("../atlasz-addons/secret-vault.mjs");
+  const vk = generateVaultKey(), prev = process.env.ATLASZ_VAULT_KEY; process.env.ATLASZ_VAULT_KEY = vk;
+  const calls = []; const cloudFetch = async (u, init) => { calls.push({ u, auth: init.headers?.authorization, method: init.method }); return u.endsWith("/models") ? { ok: true, text: async () => '{"data":[{"id":"deepseek-chat"}]}' } : { ok: true, text: async () => '{"choices":[{"message":{"content":"cloud answer"}}],"usage":{"prompt_tokens":1000,"completion_tokens":1000}}' }; };
+  const c = await boot({ cloudFetch, cloudResolve: async () => ["93.184.216.34"] });
+  try {
+    await c.key(); await c.act({ op: "seed" });
+    assert.ok((await c.view()).providers.some(p => p.id === "deepseek" && p.credentialRef === "DEEPSEEK_API_KEY"), "the seven added providers are seeded as data");
+    assert.equal((await c.act({ op: "addModel", model: { id: "ds-chat", providerId: "deepseek", providerModel: "deepseek-chat", version: "1.0.0", costClass: "PAID", costPer1kTokensUsd: 0.01, capabilities: ["text"] } })).result.ok, true);
+    assert.equal((await c.act({ op: "addModel", model: { id: "ds-bad", providerId: "deepseek", providerModel: "../x", version: "1.0.0", costClass: "PAID", costPer1kTokensUsd: 0.01, capabilities: ["text"] } })).result.reason, "PROVIDER_MODEL_INVALID");
+    assert.equal((await c.act({ op: "enable", id: "ds-chat", passphrase: PW })).result.ok, true);
+    await c.act({ op: "setAssignment", agentId: "EXECUTION-3", primary: "ds-chat" });
+    assert.equal((await c.act({ op: "egressApply", providerId: "deepseek", passphrase: PW })).result.ok, true);
+    assert.equal((await c.act({ op: "probe" })).result.results["ds-chat"], "FAIL", "no credential in the vault: probe fails and nothing is sent"); assert.equal(calls.length, 0);
+    assert.equal((await c.view()).models.find(m => m.id === "ds-chat").status, "NO_CREDENTIAL");
+    const vault = createSecretVault({ dir: path.join(c.stateDir, "vault"), keyB64: vk, ownerAuth: { verifyApproval: () => ({ allowed: true }) } }); vault.set("DEEPSEEK_API_KEY", "synthetic-key-" + "z".repeat(20), { ownerApproval: { nonce: "t" } });
+    assert.equal((await c.act({ op: "probe" })).result.results["ds-chat"], "PASS"); assert.equal(calls[0].method, "GET"); assert.match(calls[0].u, /^https:\/\/api\.deepseek\.com\/models$/);
+    assert.equal((await c.view()).models.find(m => m.id === "ds-chat").status, "LIVE");
+    const a = await c.act({ op: "ask", agentId: "EXECUTION-3", prompt: "hello", maxCostUsd: 1 }); assert.equal(a.result.ok, true, JSON.stringify(a.result)); assert.equal(a.result.output, "cloud answer");
+    assert.equal(a.result.costUsd, 0.02, "2000 tokens x $0.01/1k"); assert.equal(a.result.costKnown, true);
+    const post = calls.find(x => x.method === "POST"); assert.equal(post.u, "https://api.deepseek.com/chat/completions"); assert.match(post.auth, /^Bearer synthetic-key-/);
+    assert.ok(calls.every(x => x.u.startsWith("https://api.deepseek.com/")), "nothing else was contacted");
+  } finally { if (prev === undefined) delete process.env.ATLASZ_VAULT_KEY; else process.env.ATLASZ_VAULT_KEY = prev; await c.close?.(); rm(c.base); }
+});

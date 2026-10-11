@@ -29,11 +29,12 @@ export const LIMITS = Object.freeze({ maxProviders: 100, maxModels: 500, maxCapa
 export const COST_CLASSES = Object.freeze(["FREE", "PAID", "UNKNOWN"]);
 export const KINDS = Object.freeze(["CLOUD", "LOCAL"]);
 const ID_RE = /^[a-z0-9][a-z0-9._-]{0,63}$/, HOST_RE = /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
+const PM_RE = /^[A-Za-z0-9][A-Za-z0-9._:\/@+-]{0,119}$/;
 const CAP_RE = /^[a-z0-9][a-z0-9._:-]{0,39}$/, RISK_FIELDS = ["providerId", "costClass", "kind", "egressHosts", "credentialRef", "costPer1kTokensUsd"];
 const sha = v => crypto.createHash("sha256").update(typeof v === "string" ? v : JSON.stringify(v)).digest("hex");
 const clean = s => typeof s === "string" && s.length > 0 && s.length <= LIMITS.maxText && !/[\u0000-\u001f\u007f\u2028\u2029\p{Cf}]/u.test(s) && !containsSecret(s);
 const sorted = o => Array.isArray(o) ? o.map(sorted) : o && typeof o === "object" ? Object.fromEntries(Object.keys(o).sort().map(k => [k, sorted(o[k])])) : o;
-export const modelConfigHash = m => sha(sorted({ id: m.id, providerId: m.providerId, version: m.version, kind: m.kind, costClass: m.costClass, capabilities: m.capabilities, contextLimit: m.contextLimit, egressHosts: m.egressHosts, credentialRef: m.credentialRef, costPer1kTokensUsd: m.costPer1kTokensUsd })).slice(0, 16);
+export const modelConfigHash = m => sha(sorted({ id: m.id, providerId: m.providerId, version: m.version, kind: m.kind, costClass: m.costClass, capabilities: m.capabilities, contextLimit: m.contextLimit, egressHosts: m.egressHosts, credentialRef: m.credentialRef, costPer1kTokensUsd: m.costPer1kTokensUsd, ...(m.providerModel ? { providerModel: m.providerModel } : {}) })).slice(0, 16);
 export const needsApproval = m => m.kind !== "LOCAL" || m.costClass !== "FREE";
 
 /** Starter catalogue. It is DATA the owner edits; the exact list of "13 providers" is not defined anywhere in the repository, so only the providers named by the owner's capability sources are seeded. */
@@ -43,6 +44,13 @@ export const SEED_PROVIDERS = Object.freeze([
   { id: "google", displayName: "Google (Gemini family)", kind: "CLOUD", family: "gemini", egressHosts: ["generativelanguage.googleapis.com"], credentialRef: "GOOGLE_API_KEY" },
   { id: "xai", displayName: "xAI (Grok family)", kind: "CLOUD", family: "grok", egressHosts: ["api.x.ai"], credentialRef: "XAI_API_KEY" },
   { id: "merlin", displayName: "Merlin AI", kind: "CLOUD", family: "merlin", egressHosts: ["api.merlin.example"], credentialRef: "MERLIN_API_KEY" },
+  { id: "deepseek", displayName: "DeepSeek", kind: "CLOUD", family: "deepseek", egressHosts: ["api.deepseek.com"], credentialRef: "DEEPSEEK_API_KEY" },
+  { id: "mistral", displayName: "Mistral AI", kind: "CLOUD", family: "mistral", egressHosts: ["api.mistral.ai"], credentialRef: "MISTRAL_API_KEY" },
+  { id: "openrouter", displayName: "OpenRouter (model router)", kind: "CLOUD", family: "openrouter", egressHosts: ["openrouter.ai"], credentialRef: "OPENROUTER_API_KEY" },
+  { id: "minimax", displayName: "MiniMax", kind: "CLOUD", family: "minimax", egressHosts: ["api.minimax.io"], credentialRef: "MINIMAX_API_KEY" },
+  { id: "glm", displayName: "Zhipu GLM (open.bigmodel.cn)", kind: "CLOUD", family: "glm", egressHosts: ["open.bigmodel.cn"], credentialRef: "GLM_API_KEY" },
+  { id: "perplexity", displayName: "Perplexity", kind: "CLOUD", family: "perplexity", egressHosts: ["api.perplexity.ai"], credentialRef: "PERPLEXITY_API_KEY" },
+  { id: "huggingface", displayName: "Hugging Face (inference router)", kind: "CLOUD", family: "huggingface", egressHosts: ["router.huggingface.co"], credentialRef: "HF_TOKEN" },
   { id: "ollama-local", displayName: "Ollama (local, loopback only)", kind: "LOCAL", family: "local", egressHosts: ["127.0.0.1"], credentialRef: null }
 ]);
 
@@ -133,8 +141,9 @@ export function createModelRegistry({ dir, ownerAuth = null, gate = emergencyGat
       if (!clean(m.displayName ?? m.id)) return refuse("NAME_INVALID");
       const per = m.costPer1kTokensUsd ?? (m.costClass === "FREE" ? 0 : null); if (per !== null && !(Number.isFinite(per) && per >= 0 && per < 1000)) return refuse("COST_INVALID");
       if (m.costClass === "FREE" && p.kind === "CLOUD") return refuse("CLOUD_MODEL_CANNOT_BE_DECLARED_FREE_WITHOUT_EVIDENCE");
+      if (m.providerModel !== undefined && (typeof m.providerModel !== "string" || !PM_RE.test(m.providerModel) || m.providerModel.includes(".."))) return refuse("PROVIDER_MODEL_INVALID");
       state.models[m.id] = { id: m.id, displayName: m.displayName ?? m.id, providerId: p.id, family: p.family, kind: p.kind, version: m.version, costClass: m.costClass ?? "UNKNOWN", costPer1kTokensUsd: per, capabilities: caps, contextLimit: Number.isInteger(m.contextLimit) && m.contextLimit > 0 ? m.contextLimit : null,
-        egressHosts: [...p.egressHosts], credentialRef: p.credentialRef, enabled: false, revision: 1, addedAt: now() };
+        egressHosts: [...p.egressHosts], credentialRef: p.credentialRef, ...(m.providerModel ? { providerModel: m.providerModel } : {}), enabled: false, revision: 1, addedAt: now() };
     });
   }
   function editModel(id, patch = {}) {

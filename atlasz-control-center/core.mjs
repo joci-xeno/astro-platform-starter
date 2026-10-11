@@ -62,7 +62,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const RUNTIME_ENTRY = path.join(HERE, "..", "atlasz-runtime", "supervisor-safe.mjs");
 const AUDITS = ["owner-auth-audit.jsonl", "emergency-audit.jsonl", "update-center-audit.jsonl", "safe-mode-audit.jsonl", "vault/vault-audit.jsonl", "ledger/ledger.jsonl"];
 
-export function createControlCenterCore({ ollamaFetch = null, a11yWorkerUrl = null, a11yTimeoutMs = 3000, stateDir, configDir, backupRoot = path.join(configDir, "backups"), port = 8080, fetchImpl = fetch,
+export function createControlCenterCore({ ollamaFetch = null, cloudFetch = null, cloudResolve = null, a11yWorkerUrl = null, a11yTimeoutMs = 3000, stateDir, configDir, backupRoot = path.join(configDir, "backups"), port = 8080, fetchImpl = fetch,
   updateAdapters = null, localUpdates = true, runtimeEntry = RUNTIME_ENTRY, nodeBin = process.execPath, evidenceDir = process.env.ATLASZ_EVIDENCE_DIR || null } = {}) {
   if (!stateDir || !configDir) throw new Error("STATE_DIR_AND_CONFIG_DIR_REQUIRED");
   fs.mkdirSync(stateDir, { recursive: true }); fs.mkdirSync(configDir, { recursive: true });
@@ -623,7 +623,12 @@ export function createControlCenterCore({ ollamaFetch = null, a11yWorkerUrl = nu
   const memoryPanel = createMemoryPanel({ stateDir, ownerAuth: () => ownerAuth(), sign: (p, a, s) => sign(p, a, s), fetchImpl });
   const memory = () => { try { return memoryPanel.view(); } catch (e) { return { state: "ERROR", error: String(e?.message ?? e).slice(0, 200) }; } };
   const memoryAction = b => memoryPanel.action(b ?? {});
-  const modelRegPanel = createModelRegistryPanel({ stateDir, ownerAuth: () => ownerAuth(), sign: (p, ac, su) => sign(p, ac, su), isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL", ollamaFetch });
+  // Provider credentials live ONLY in the encrypted vault (<state>/vault); the model panel receives a resolver that reads one at call time and a presence check. No vault/key -> no credential -> cloud calls fail closed.
+  let modelVault = null;
+  const vaultOrNull = () => { try { return (modelVault ??= createSecretVault({ dir: path.join(stateDir, "vault") })); } catch { return null; } };
+  const modelCredentialPresent = ref => { try { return Boolean(ref && vaultOrNull()?.has(ref)); } catch { return false; } };
+  const modelCredential = ref => { try { const v = vaultOrNull(); return v && ref && v.has(ref) ? v.get(ref, { purpose: "model-provider-call" }) : null; } catch { return null; } };
+  const modelRegPanel = createModelRegistryPanel({ credentialResolver: modelCredential, hasCredential: modelCredentialPresent, cloudFetch, cloudResolve, stateDir, ownerAuth: () => ownerAuth(), sign: (p, ac, su) => sign(p, ac, su), isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL", ollamaFetch });
   const modelRegistry = () => { try { return modelRegPanel.view(); } catch (e) { return { state: "ERROR", error: String(e?.message ?? e).slice(0, 200) }; } };
   const modelRegistryAction = b => modelRegPanel.action(b ?? {});
   const security = () => { try { return secPanel.view(); } catch (e) { return { state: "ERROR", error: String(e?.message ?? e).slice(0, 200) }; } };
