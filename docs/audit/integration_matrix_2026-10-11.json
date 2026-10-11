@@ -1,0 +1,4323 @@
+{
+ "generatedAt": "2026-10-11T22:34:40.527Z",
+ "method": "static import closure + test-file references + live Control Center boot; static reachability is not 'running', 'tested' is not 'end-to-end verified'. LIMITATION: test linkage is by file name; Control Center panels are exercised through HTTP tests (control-center-*.test.mjs) without naming the panel file, so panels can show 0 tests here although they have HTTP tests; dynamic/string-built imports are not seen by the import closure.",
+ "modules": 254,
+ "tally": {
+  "PARTIAL": 206,
+  "VERIFIED_WORKING": 46,
+  "EXTERNAL_BLOCKER": 2
+ },
+ "connected": {
+  "master": 22,
+  "agents": 21,
+  "controlCenter": 121,
+  "isolatedFromAll": 133
+ },
+ "masterManagers": [],
+ "rows": [
+  {
+   "file": "atlasz-addons/a11y-audit.mjs",
+   "purpose": "Static accessibility audit for the Control Center (85-capability audit A13 Visual Accessibility and Guidance: the UI-checklist part).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 7,
+   "integrationTests": 1,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "a11y-audit.test.mjs",
+    "a11y-control-center.test.mjs",
+    "r6-round10.test.mjs",
+    "r6-round11.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/a11y-worker.mjs",
+   "purpose": "Worker entry for the accessibility audit: the engine runs off the request thread so a pathological input can be killed by a timeout instead of hanging the Contr",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 0,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "no test references it and nothing in the Control Center loads it (isolated)",
+   "testFiles": []
+  },
+  {
+   "file": "atlasz-addons/agent-activity.mjs",
+   "purpose": "Unified programme M6: the REAL operational state of the 30 permanent agents, derived read-only from the coordination ledger and coordinator state the runtime wr",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 5,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "m6-agent-activity.test.mjs",
+    "model-registry.test.mjs",
+    "model-routing-bridge-regress.test.mjs",
+    "model-routing-bridge.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/agent-coordination.mjs",
+   "purpose": "Unified programme M4: coordination of the 30 permanent agents (5 SEARCH + 25 EXECUTION). The Master Coordinator is THIS orchestration logic; it is not an agent ",
+   "implemented": true,
+   "connectedToMaster": true,
+   "connectedToAgents": true,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 7,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "m4-agent-coordination.test.mjs",
+    "m5-verification-round1.test.mjs",
+    "m5-verification-round2.test.mjs",
+    "m6-agent-activity.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/agent-executors.mjs",
+   "purpose": "Phase 5: the REAL local executors the 25 EXECUTION agents can be given (digital work that needs no network and no spend), each paired with an INDEPENDENT verifi",
+   "implemented": true,
+   "connectedToMaster": true,
+   "connectedToAgents": true,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 3,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "agent-workforce.test.mjs",
+    "master-coordinator.test.mjs",
+    "master-security-probe.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/agent-factory.mjs",
+   "purpose": "Additive factory only. It creates validated definitions; Astra decides how/when to register them with the live supervisor.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "agent-factory-governor.test.mjs",
+    "contract-factories.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/agent-memory.mjs",
+   "purpose": "Unified programme M5: the bridge between the 30 permanent agents and the M3 memory store.",
+   "implemented": true,
+   "connectedToMaster": true,
+   "connectedToAgents": true,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 8,
+   "integrationTests": 2,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "control-center-memory.test.mjs",
+    "global-discovery-workforce.test.mjs",
+    "m5-memory-integration.test.mjs",
+    "m5-verification-round1.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/agent-portfolio-manager.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-core-engine.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/agent-registry.mjs",
+   "purpose": "Phase 5: durable registry of the 30 permanent agents (5 SEARCH/SALES + 25 EXECUTION). The Master Coordinator is orchestration logic and is NOT an entry here.",
+   "implemented": true,
+   "connectedToMaster": true,
+   "connectedToAgents": true,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 5,
+   "integrationTests": 4,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "agent-registry.test.mjs",
+    "agent-workforce.test.mjs",
+    "global-discovery-workforce.test.mjs",
+    "master-coordinator.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/agent-tool-broker.mjs",
+   "purpose": "M2 - the ONLY path from one of the 30 agents to a typed tool. Layers: fixed roster -> job/refusal state -> kill switch -> per-agent rate -> role policy (deny by",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 1,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "a08-sources.test.mjs",
+    "agent-tool-broker.test.mjs",
+    "m12-profile-integration.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/agent-tool-policy.mjs",
+   "purpose": "M2 - approved per-role tool permissions for the 30 agents (owner decisions D1-D10, 2026-10-07). Deny by default.",
+   "implemented": true,
+   "connectedToMaster": true,
+   "connectedToAgents": true,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 6,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "a08-sources.test.mjs",
+    "agent-tool-broker.test.mjs",
+    "agent-tool-policy-vs-proposal.test.mjs",
+    "agent-tools-hosted.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/agent-workforce.mjs",
+   "purpose": "Phase 5: the working layer of the 30 permanent agents. It COMPOSES existing modules (it replaces none of them):",
+   "implemented": true,
+   "connectedToMaster": true,
+   "connectedToAgents": true,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 4,
+   "integrationTests": 4,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "agent-workforce.test.mjs",
+    "global-discovery-workforce.test.mjs",
+    "master-coordinator.test.mjs",
+    "master-security-probe.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/alt-solution-harness.mjs",
+   "purpose": "Alternative-solution test harness (PKG150 GE15 \"alternative software solution testing\").",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "alt-solution-harness.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/analyst.mjs",
+   "purpose": "Advanced Analyst Mode (85-capability programme: M07; used by GE07). Deterministic, dependency-free data analysis: CSV in -> profile -> logged cleaning -> statis",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 5,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "analyst-mutation.test.mjs",
+    "chunker-analyst.test.mjs",
+    "r6-round2.test.mjs",
+    "render-detail.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/anti-collusion-guard.mjs",
+   "purpose": "Detect suspicious coordination/evaluation gaming. Collaboration is allowed only with task evidence.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "contract-core-engine.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/approval-command-gateway.mjs",
+   "purpose": "ATLASZ Approval / Command Gateway v1.0",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "gated-modules.test.mjs",
+    "stop-enforcement.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/approval-requests.mjs",
+   "purpose": "ATLASZ Owner Approval UX data model (V7.3 §41). A request is only valid when it answers ALL eight owner questions:",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 5,
+   "integrationTests": 4,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "a08-sources.test.mjs",
+    "agent-tool-broker.test.mjs",
+    "approval-requests.test.mjs",
+    "control-center-home.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/architecture-assessor.mjs",
+   "purpose": "Independent architecture assessment (PKG150 O501 / AS06 / O506). Deterministic, offline, READ-ONLY: it reads a project folder and returns findings and plans; it",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "w2-architecture-assessor.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/assistant-profiles.mjs",
+   "purpose": "Assistant profiles (85-capability audit M12 Custom AI Assistants): CONFIGURATION for how the existing agents are used, never new agents and never new permission",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 10,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "assistant-profiles.test.mjs",
+    "m12-profile-integration.test.mjs",
+    "r6-round10.test.mjs",
+    "r6-round11.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/audit-chain.mjs",
+   "purpose": "ATLASZ tamper-evident audit chain (V7.3 §34 immutable security events, §14 immutable kill-switch events).",
+   "implemented": true,
+   "connectedToMaster": true,
+   "connectedToAgents": true,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 17,
+   "integrationTests": 2,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "audit-chain-headpin.test.mjs",
+    "egress-policy.test.mjs",
+    "eligibility-model.test.mjs",
+    "event-stream.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/backtest.mjs",
+   "purpose": "Unified programme M6: reproducible backtesting and strategy validation for the ORB research engine.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "m6-control-center.test.mjs",
+    "m6-market-orb.test.mjs",
+    "revenue-persistence.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/backup-recovery.mjs",
+   "purpose": "ATLASZ Backup / Restore / Recovery / Last-Known-Good (V7.3 §37, §51, §52 #17 #20).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "backup-recovery.test.mjs",
+    "local-update-adapters.test.mjs",
+    "update-center.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/behavior-monitor.mjs",
+   "purpose": "Behavior Anomaly Monitor (Joci additive requirements: \"emergent / behavior anomaly monitoring\"). Practical detection of unexpected SYSTEM behaviour — not a cons",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "behavior-monitor.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/black-box.mjs",
+   "purpose": "Observability / Black Box (V7.3 Brain §11): hash-chained, correlation-ID based operation record. Secrets are redacted before they are written.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 8,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "agent-factory-governor.test.mjs",
+    "behavior-monitor.test.mjs",
+    "brain-core.test.mjs",
+    "brain-intelligence.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/brain-health.mjs",
+   "purpose": "Brain Health / self-evaluation (V7.3 Brain §16). Measures; recommends; never changes authority or removes a control.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "brain-intelligence.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/brain-system.mjs",
+   "purpose": "Brain System assembly: one coordinated set of Brain modules sharing governance, black box and capability graph, persisted under <dir>.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 5,
+   "integrationTests": 1,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "control-center-brain.test.mjs",
+    "governed-dispatch.test.mjs",
+    "memory-fabric.test.mjs",
+    "money-engine-sandbox.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/business-factory.mjs",
+   "purpose": "Business Factory (V7.3 Brain §10): turns a legitimate, repeatable opportunity into a DRAFT service package.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "brain-intelligence.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/capability-graph.mjs",
+   "purpose": "Capability / Skill Graph (V7.3 Brain §4): durable graph of what each agent, team, model, tool, connector, skill and workflow can do,",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 8,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "brain-core.test.mjs",
+    "brain-intelligence.test.mjs",
+    "brain-orchestration.test.mjs",
+    "brain-systems.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/central-brain.mjs",
+   "purpose": "Central Brain + Brain Bus (V7.3 Brain §1, §14). The Central Brain reads authorized state and produces a decision brief; it coordinates, it does not execute.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "brain-systems.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/disaster-recovery.mjs",
+   "purpose": "Disaster Recovery Command (V7.3 Brain §12): incident state machine + recovery readiness.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "agent-factory-governor.test.mjs",
+    "brain-intelligence.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/evidence-sources.mjs",
+   "purpose": "ATLASZ internal evidence sources for Independent Verification (V7.3 §8 / package §1).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "evidence-sources.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/governance.mjs",
+   "purpose": "Brain governance chokepoint (V7.3 Brain §1, §17). Every consequential Brain action goes through authorize().",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 6,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "agent-factory-governor.test.mjs",
+    "brain-core.test.mjs",
+    "brain-intelligence.test.mjs",
+    "brain-orchestration.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/governed-dispatch.mjs",
+   "purpose": "Governed dispatch (V7.3 Joci package §1,3,5,6,7): the ONE route from an accepted opportunity/candidate to an EXECUTION agent.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "agent-factory-governor.test.mjs",
+    "governed-dispatch.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/knowledge-brain.mjs",
+   "purpose": "Knowledge Intelligence (V7.3 Brain §5): typed, provenance-tracked, tenant-isolated knowledge. Model guesses are never silently stored as facts.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "brain-intelligence.test.mjs",
+    "memory-fabric.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/memory-fabric.mjs",
+   "purpose": "ATLASZ Memory Fabric (package §23, V7.3 §12-13): ONE governed facade over the existing memory modules —",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "memory-fabric.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/model-intelligence.mjs",
+   "purpose": "Model Intelligence / Brain Router (V7.3 Brain §15): routes by measured task suitability. A model is usable only with a real passing probe.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 5,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "brain-systems.test.mjs",
+    "context-conversation.test.mjs",
+    "model-gateway.test.mjs",
+    "model-routing-bridge-regress.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/opportunity-intelligence.mjs",
+   "purpose": "Opportunity Intelligence (V7.3 Brain §9): explainable scoring (unknown stays unknown, never invented) + guarded pipeline.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "brain-intelligence.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/orchestrator.mjs",
+   "purpose": "Brain Orchestrator (V7.3 Brain §2): TASK -> ANALYZE -> PLAN -> CAPABILITY MATCH -> ASSIGN -> EXECUTE -> OBSERVE -> VERIFY -> REPLAN -> COMPLETE -> EVIDENCE -> L",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 6,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "agent-factory-governor.test.mjs",
+    "brain-orchestration.test.mjs",
+    "brain-systems.test.mjs",
+    "contract-core-engine.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/owner-command.mjs",
+   "purpose": "Owner Command Layer (V7.3 Brain §13): natural language (EN/HU) -> a fixed whitelist of controlled, audited operations.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "agent-factory-governor.test.mjs",
+    "brain-intelligence.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/planning-brain.mjs",
+   "purpose": "Planning Brain (V7.3 Brain §3): GOAL -> PROJECT -> MILESTONES -> TASKS -> SUBTASKS, dependency graph, approval points, cost estimate, failure policy.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 4,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "brain-core.test.mjs",
+    "brain-intelligence.test.mjs",
+    "brain-orchestration.test.mjs",
+    "brain-systems.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/search-pipeline.mjs",
+   "purpose": "Governed SEARCH/SALES intelligence pipeline (V7.3 Joci package §4). The five SEARCH agents feed this; it never contacts anyone.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "governed-dispatch.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/security-brain.mjs",
+   "purpose": "Security Brain (V7.3 Brain §8). Classifies events into ALLOW / WARN / REQUIRE_APPROVAL / QUARANTINE / BLOCK / ENTER_SAFE_MODE.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 8,
+   "integrationTests": 1,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "agent-factory-governor.test.mjs",
+    "brain-orchestration.test.mjs",
+    "brain-systems.test.mjs",
+    "business-engines.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/simulation-lab.mjs",
+   "purpose": "Simulation Lab (V7.3 Brain §6): scenario testing on an isolated CLONE of state. Environments SIMULATION / STAGING / LIVE are distinct and never merged.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "brain-systems.test.mjs",
+    "memory-fabric.test.mjs",
+    "owner-control-bypass.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/brain/verifier.mjs",
+   "purpose": "Independent Verification Layer (V7.3 Brain §7): \"I did it\" never means \"verified completed\".",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 6,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "agent-factory-governor.test.mjs",
+    "brain-intelligence.test.mjs",
+    "brain-orchestration.test.mjs",
+    "brain-systems.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/browser-extension-guard.mjs",
+   "purpose": "Browser extension guard (PKG150 MR01, MR02, MR13, MR15, HK14; 85-capability item M01 Universal AI Browser Sidebar).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "browser-extension-guard.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/budget-consumption-governor.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-existing-modules.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/artifact-registry.mjs",
+   "purpose": "Governed Artifact Registry (package §9). CREATED != VERIFIED != DELIVERED — three independent, evidence-backed statuses.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "business-engines.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/communication-center.mjs",
+   "purpose": "Governed Communication Center (package §22). States: DRAFT -> APPROVAL_REQUIRED -> APPROVED -> QUEUED -> SENT -> DELIVERED_IF_VERIFIABLE | FAILED.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "business-engines.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/crm.mjs",
+   "purpose": "Lightweight internal CRM (package §20): a VIEW layer over the Entity Graph and the live engines — it owns no copy of customer, deal, job, invoice or payment dat",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "crm.test.mjs",
+    "entity-graph.test.mjs",
+    "w2-data-quality.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/deal-pipeline.mjs",
+   "purpose": "Governed deal pipeline (package §6). DISCOVERED > SCREENED > QUALIFIED > FEASIBLE > READY_FOR_OUTREACH > OUTREACH_DRAFTED > OUTREACH_APPROVED_IF_REQUIRED",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "business-engines.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/delivery-service.mjs",
+   "purpose": "Governed Delivery Engine (package §12). READY_FOR_DELIVERY > DELIVERY_APPROVAL_REQUIRED > DELIVERY_ATTEMPTED > DELIVERED | DELIVERY_FAILED > DELIVERY_VERIFIED.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "business-engines.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/entity-graph.mjs",
+   "purpose": "Durable, tenant-isolated Customer / Entity Graph (package §19). One graph for customers, companies, contacts, opportunities, deals, jobs, documents, communicati",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 6,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-memory-control.test.mjs",
+    "crm.test.mjs",
+    "document-intelligence.test.mjs",
+    "entity-graph.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/finance-intelligence.mjs",
+   "purpose": "Financial Intelligence (package §15). Five classes that are NEVER combined:",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "business-engines.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/inbox-pipeline.mjs",
+   "purpose": "Universal Inbox pipeline (package §21):  RECEIVE > SECURITY SCREEN > CLASSIFY > ENTITY LINK > JOB/DEAL LINK > PRIORITIZE > ROUTE > RECORD",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "inbox-pipeline.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/invoice-service.mjs",
+   "purpose": "Internal Invoice Engine (package §13). DRAFT > READY > ISSUED > SENT > (PARTIALLY_PAID) > PAID_CLAIMED > PAYMENT_VERIFICATION_REQUIRED > VERIFIED_PAID; OVERDUE;",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "business-engines.test.mjs",
+    "recurring-billing.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/job-system.mjs",
+   "purpose": "Universal Job object (package §7) — the common work container across ATLASZ.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "business-engines.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/judge.mjs",
+   "purpose": "Independent Judge abstraction (package §11). Extends Independent Verification with pluggable judge kinds:",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 6,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "business-engines.test.mjs",
+    "model-gateway.test.mjs",
+    "provider-resilience.test.mjs",
+    "w3-debate-protocol.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/money-engine.mjs",
+   "purpose": "ATLASZ Money Engine (internal flow, package §9/§16/§28): wires the governed engines into ONE traceable lifecycle",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "money-engine-sandbox.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/payment-verification.mjs",
+   "purpose": "Payment Verification Engine (package §14). CLAIMED -> PENDING_VERIFICATION -> VERIFIED | FAILED | UNKNOWN.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "business-engines.test.mjs",
+    "recurring-billing.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/qa-factory.mjs",
+   "purpose": "QA Factory (package §10): selects checks by work type, runs them, and routes failures back for repair/replan.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "business-engines.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/recurring-billing.mjs",
+   "purpose": "Recurring / subscription engine (package §18). A subscription is a CONTRACT, not revenue:",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "recurring-billing.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business/store.mjs",
+   "purpose": "Small durable JSON store shared by the business engines. Atomic writes; a corrupt file is NEVER silently replaced (fail closed).",
+   "implemented": true,
+   "connectedToMaster": true,
+   "connectedToAgents": true,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 16,
+   "integrationTests": 5,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "approval-requests.test.mjs",
+    "business-engines.test.mjs",
+    "control-center-memory.test.mjs",
+    "control-center.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/business-memory.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-memory-control.test.mjs",
+    "memory-fabric.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/buyer-decision-maker-finder.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-money-tax.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/campaign-manager.mjs",
+   "purpose": "O502 / S501 / SN01 Long-running development campaigns (W3). Orchestration logic, NOT an agent: campaign tasks are owned by the 30 permanent agents through the",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "master-coordinator.test.mjs",
+    "w3-campaign-manager.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/capability-registry.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-core-engine.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/chat-providers.mjs",
+   "purpose": "23-point item 7: Chat providers center. A catalogue of 15 chat platforms + a per-account state machine + inbound adapter interface + one-by-one approved outbox.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "chat-providers.test.mjs",
+    "control-center-vault-chat.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/checkpoint-engine.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-core-engine.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/chunker.mjs",
+   "purpose": "Large-document strategy (85-capability programme: GE01 Long-Context Intelligence). Splits text into bounded chunks on paragraph/sentence/word boundaries with ov",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "chunker-analyst.test.mjs",
+    "chunker-mutation.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/client-dna-engine.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-money-tax.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/code-edit-workflow.mjs",
+   "purpose": "C01 code-edit / repair workflow (unified programme M2). Deterministic and local: no model, no network, no git, no push.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "m2-code-edit-workflow.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/code-review.mjs",
+   "purpose": "Static code review (85-capability audit P07 Code Review Assistant). Pure, deterministic, rule-based: no model, no execution, no network, nothing is fetched or r",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "code-review.test.mjs",
+    "r6-round2.test.mjs",
+    "stage-r5-fixes.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/code-sandbox.mjs",
+   "purpose": "Secure Code Sandbox (85-capability audit: M06, G05, GE07, M07, C01, P04, P07). Runs UNTRUSTED JavaScript or Python in a separate OS process; code is never evalu",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "alt-solution-harness.test.mjs",
+    "code-sandbox-hosted.test.mjs",
+    "code-sandbox.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/completion-registry.mjs",
+   "purpose": "ATLASZ Completion Registry v1.0",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 1,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-existing-modules.test.mjs",
+    "policy-guards.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/computer-use-fabric.mjs",
+   "purpose": "ATLASZ Computer Use Fabric v1.0",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 0,
+   "status": "EXTERNAL_BLOCKER",
+   "whyNotVerified": "needs a sandboxed computer-use provider; policy layer only",
+   "testFiles": [
+    "gated-modules.test.mjs",
+    "probe-evidence.test.mjs",
+    "stop-enforcement.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/connector-catalog.mjs",
+   "purpose": "V7.3 §13 connectors: descriptors + generic read-only REST connector with vault-held credentials.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "connector-catalog.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/context-manager.mjs",
+   "purpose": "Context-window management and token accounting (85-capability programme: G13 Context and Cost Optimization, supports M03 / P16).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "context-conversation.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/contract-analysis.mjs",
+   "purpose": "Contract clause analysis (PKG150 OP09 complex contract analysis, O510 multi-document contract analysis; capability G07).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-analysis.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/conversation.mjs",
+   "purpose": "Multi-model conversation object (85-capability programme: M03 Multi-Model Conversation Interface, P16 Long-Session Continuity; uses G13 context-manager).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 4,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "context-conversation.test.mjs",
+    "m12-profile-integration.test.mjs",
+    "voice-conversation-hosted.test.mjs",
+    "voice-conversation.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/cost-model-router.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-core-engine.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/credential-broker.mjs",
+   "purpose": "ATLASZ Credential Broker (23-point #1/#3, unified programme M1). Agents NEVER receive a raw credential: they ask the broker to perform one HTTPS request",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "m1-round2.test.mjs",
+    "m1-vault-broker.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/data-quality.mjs",
+   "purpose": "Data-quality monitor (PKG150 HK15) and bidirectional sync consistency check (S509). Deterministic, offline, READ-ONLY on the stores it inspects.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "w2-data-quality.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/dead-letter-queue.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-core-engine.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/deal-state.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-money-tax.test.mjs",
+    "gated-modules.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/debate-protocol.mjs",
+   "purpose": "AS10 / O508 Structured multi-agent debate and disagreement resolution (W3). Creates no agent: the roles below are model-adapter calls made on behalf of",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "w3-debate-protocol.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/decision-analysis.mjs",
+   "purpose": "O504 Multi-perspective critical decision analysis (W3). Creates no agent; analysis only - it never acts on the decision.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "w3-decision-analysis.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/delivery-engine.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-money-tax.test.mjs",
+    "gated-modules.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/detail-level.mjs",
+   "purpose": "Adaptive multimodal processing policy (85-capability programme: P15). Decides HOW MUCH of an image/audio/video/document to process for a purpose, under privacy ",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "detail-level-mutation.test.mjs",
+    "render-detail.test.mjs",
+    "stage-r5-fixes.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/dev-assist-common.mjs",
+   "purpose": "Shared, deterministic building blocks for the W2 developer-assist engines (test-intelligence, architecture-assessor, doc-sync, data-quality, migration-planner).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "w2-architecture-assessor.test.mjs",
+    "w2-dev-assist-common.test.mjs",
+    "w2-test-intelligence.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/digital-twin.mjs",
+   "purpose": "V7.3 §16 Digital Twin / Simulation Lab: SIMULATE -> JUDGE -> EXECUTE for consequential actions.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "digital-twin.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/doc-extractors.mjs",
+   "purpose": "Zero-dependency document text extractors (Document Intelligence, package §24). Pure functions over a Buffer; nothing is executed, nothing is written to disk, no",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "doc-extractors.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/doc-sync.mjs",
+   "purpose": "Documentation synchronisation (PKG150 S508 / OP06) and the Hungarian-English interface verifier (S514). Deterministic, offline, READ-ONLY on the analysed projec",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "w2-doc-sync.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/document-center.mjs",
+   "purpose": "V7.3 §Document Center / Document Intelligence: durable document registry with safe, honest text extraction.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 15,
+   "integrationTests": 3,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "control-center-systems.test.mjs",
+    "document-center-quarantine.test.mjs",
+    "document-center.test.mjs",
+    "document-intelligence.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/durable-queue.mjs",
+   "purpose": "ATLASZ Durable Queue (V7.3 §10 Central Priority Queue / DLQ / Checkpoint / resume; §52 #10 hang detection,",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "durable-queue.test.mjs",
+    "safety-modules.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/effort-allocation.mjs",
+   "purpose": "Adaptive reasoning allocation (85-capability programme: C10). Chooses HOW MUCH reasoning/verification a task gets from its complexity, risk and budget.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "context-conversation.test.mjs",
+    "reserved-keys.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/egress-policy.mjs",
+   "purpose": "ATLASZ per-provider egress allowlist (23-point item 3: controlled outbound traffic) + commit leak gate. Decision engine only: it never opens a connection itself",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 5,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "egress-policy.test.mjs",
+    "global-discovery.test.mjs",
+    "model-routing-bridge-regress.test.mjs",
+    "model-routing-bridge.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/eligibility-model.mjs",
+   "purpose": "Jurisdiction / eligibility evaluator for opportunities (Global Business package §2 + integration report §2 \"no jurisdiction/eligibility model\" and §5.4",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "eligibility-model.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/embedding-provider.mjs",
+   "purpose": "Unified programme M5: neural semantic retrieval - runtime detection, model candidates and embedding providers.",
+   "implemented": true,
+   "connectedToMaster": true,
+   "connectedToAgents": true,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 5,
+   "integrationTests": 1,
+   "status": "EXTERNAL_BLOCKER",
+   "whyNotVerified": "embedding model activation awaits owner (EMBEDDING_ACTIVATE)",
+   "testFiles": [
+    "control-center-memory.test.mjs",
+    "m5-memory-integration.test.mjs",
+    "m5-runtime-memory.test.mjs",
+    "m5-verification-round1.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/emergency-stop.mjs",
+   "purpose": "ATLASZ JOCI-only Red Kill Switch / Emergency Stop (V7.3 §14).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 5,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "brain-systems.test.mjs",
+    "control-center.test.mjs",
+    "emergency-stop.test.mjs",
+    "owner-control-rig.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/enterprise-control-plane.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-memory-control.test.mjs",
+    "gated-modules.test.mjs",
+    "regression-repairs.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/enterprise-knowledge-agentic-rag.mjs",
+   "purpose": "Durable mode (85-capability G07/GE09): configureKnowledgeStore({file}) loads items from a JSON file and persists every change atomically (tmp+rename, mode 0600)",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-existing-modules.test.mjs",
+    "rag-durable.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/event-bus.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-core-engine.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/event-stream.mjs",
+   "purpose": "G12 Streaming tool observability: a read-only Server-Sent-Events feed over the tamper-evident Black Box chain.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "event-stream.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/evidence-record.mjs",
+   "purpose": "ATLASZ runtime evidence record (V7.3 §35). A claim of \"TESTED\" is only as good as its record:",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "evidence-record.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/execution-factory.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-factories.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/executor-toolbox-registry.mjs",
+   "purpose": "Astra should register only tools that are actually connected and tested; never mark an unavailable integration as available.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-core-engine.test.mjs",
+    "probe-evidence.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/experience-learning-engine.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-memory-control.test.mjs",
+    "memory-fabric.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/file-lock.mjs",
+   "purpose": "Cross-process mutual exclusion for the small JSON stores (audit chain, research ledger, plugin state, profiles).",
+   "implemented": true,
+   "connectedToMaster": true,
+   "connectedToAgents": true,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "r6-round10.test.mjs",
+    "r6-round11.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/financial-ledger.mjs",
+   "purpose": "V7.3 §11/§27: durable Revenue / Cost / Token-API ledger + verified net profit.",
+   "implemented": true,
+   "connectedToMaster": true,
+   "connectedToAgents": true,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 8,
+   "integrationTests": 2,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "business-engines.test.mjs",
+    "control-center-finance.test.mjs",
+    "evidence-sources.test.mjs",
+    "financial-ledger.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/follow-up-engine.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-money-tax.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/form-assistant.mjs",
+   "purpose": "Digital form completion assistant (PKG150 S06; capabilities P14 structured output, C02 computer-based task execution).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "form-assistant.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/general-intelligence-extensions.mjs",
+   "purpose": "ATLASZ general intelligence extension registry.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-factories.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/global-business-intelligence.mjs",
+   "purpose": "GLOBAL BUSINESS INTELLIGENCE (read-only analytics manager under the Master Coordinator).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "master-coordinator.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/global-discovery.mjs",
+   "purpose": "Global opportunity discovery (owner priority directive, Oct 2026): worldwide, multilingual, multi-currency, no fixed industry.",
+   "implemented": true,
+   "connectedToMaster": true,
+   "connectedToAgents": true,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 2,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "global-discovery-workforce.test.mjs",
+    "global-discovery.test.mjs",
+    "master-coordinator.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/goal-planner.mjs",
+   "purpose": "23-point item 13 (proactive goal-based work) + item 21 (root-cause automation), W3. Creates no agent; executes nothing.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "w3-goal-planner.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/guardrail-engine.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-core-engine.test.mjs",
+    "gated-modules.test.mjs",
+    "stop-enforcement.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/handoff-ledger.mjs",
+   "purpose": "Task ownership, dependency order, verified handoffs and duplicate-work detection across the fixed 30 agents (85-capability audit C03 Multi-Agent Coordination: t",
+   "implemented": true,
+   "connectedToMaster": true,
+   "connectedToAgents": true,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "handoff-ledger.test.mjs",
+    "reserved-keys.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/human-core.mjs",
+   "purpose": "V7.3 §4 Human Core — practical, NOT anthropomorphic. Deterministic and auditable; it never claims consciousness, humanity or real feelings.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "human-core.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/internal-integration-hub.mjs",
+   "purpose": "ATLASZ internal add-on integration hub.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "regression-repairs.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/invoice-engine.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-money-tax.test.mjs",
+    "gated-modules.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/knowledge-projects.mjs",
+   "purpose": "Knowledge Projects (85-capability audit: M02, G07, GE09, GE01, P03, C07, C11). Named workspaces over the Document Center (+ owner notes and web snapshots)",
+   "implemented": true,
+   "connectedToMaster": true,
+   "connectedToAgents": true,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 9,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "knowledge-projects.test.mjs",
+    "r6-round10.test.mjs",
+    "r6-round11.test.mjs",
+    "r6-round12.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/local-ai-manager.mjs",
+   "purpose": "23-point item 6: Local AI manager (Ollama). Discovery, status, fit table, install PLAN (text only), registry hand-off.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "local-ai-manager.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/local-update-adapters.mjs",
+   "purpose": "V7.3 §10 / §40: REAL, locally testable Update Center adapters for offline update packages (no network, no spend).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "control-center.test.mjs",
+    "local-update-adapters.test.mjs",
+    "local-update-signing.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/market-data.mjs",
+   "purpose": "Unified programme M6: market-data model for the research subsystem. Local only: this module never opens a network connection and has no live provider.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "m6-market-orb.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/market-intelligence-engine.mjs",
+   "purpose": "Evidence-first market intelligence. Forecasts are hypotheses until verified; it cannot fabricate market facts.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-factories.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/master-brief.mjs",
+   "purpose": "V7.3 §Conversation-First / Daily Brief: a deterministic startup brief built ONLY from current durable state. No invented events.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "human-core.test.mjs",
+    "personal-command-center.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/master-coordinator.mjs",
+   "purpose": "MASTER COORDINATOR (supervision facade). There is ONE coordinator in ATLASZ: agent-coordination.mjs (identity-bound handles, handoff ledger, independent verifie",
+   "implemented": true,
+   "connectedToMaster": true,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 2,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "master-coordinator.test.mjs",
+    "master-security-probe.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/master-planner-orchestrator.mjs",
+   "purpose": "ATLASZ Universal MASTER Planner / Orchestrator v1.0",
+   "implemented": true,
+   "connectedToMaster": true,
+   "connectedToAgents": true,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "contract-core-engine.test.mjs",
+    "contract-existing-modules.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/mcp-client.mjs",
+   "purpose": "MCP (Model Context Protocol) stdio client slice (85-capability audit C06 MCP-style tool servers).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "mcp-client.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/memory-store.mjs",
+   "purpose": "Unified programme M3: persistent Markdown memory with a SQLite FTS5 index and local hybrid retrieval.",
+   "implemented": true,
+   "connectedToMaster": true,
+   "connectedToAgents": true,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 10,
+   "integrationTests": 2,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "control-center-memory.test.mjs",
+    "global-discovery-workforce.test.mjs",
+    "m3-memory-store.test.mjs",
+    "m5-memory-integration.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/migration-planner.mjs",
+   "purpose": "Secure data-migration planning (PKG150 OP11 / O507). Deterministic, offline; the source store is NEVER modified by planning or by the trial run.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "w2-migration-planner.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/mobile-api.mjs",
+   "purpose": "V7.3 §39 Mobile Control — backend API only (transport-agnostic, nothing listens on a port here).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "mobile-api.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/modality-fabric.mjs",
+   "purpose": "Multimodal fabric (85-capability audit: GE02, P15, G08, G09, A01, A02, A05, A06, P12, P18). What ATLASZ can really do with documents, images, audio and video",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 4,
+   "integrationTests": 2,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "modality-fabric-hosted.test.mjs",
+    "modality-fabric.test.mjs",
+    "observation-memory-hosted.test.mjs",
+    "observation-memory.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/model-evolution.mjs",
+   "purpose": "Automatic model evolution (Global Business package §7.1-7.6; 23-point items 4/5/18) ON TOP OF model-registry.mjs. It never adds a second router or registry:",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "model-evolution.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/model-gateway.mjs",
+   "purpose": "Model Gateway: ONE path from a caller (typed tool, agent, scheduler) to a language model, composing what already exists instead of adding a router:",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 4,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "context-conversation.test.mjs",
+    "model-gateway.test.mjs",
+    "model-routing-bridge-regress.test.mjs",
+    "model-routing-bridge.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/model-registry.mjs",
+   "purpose": "Model & provider registry (23-point items 4, 5, 6, 18; owner requirement \"add, edit, enable, disable or upgrade models later without reinstalling ATLASZ\").",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 6,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "local-ai-manager.test.mjs",
+    "model-evolution.test.mjs",
+    "model-registry.test.mjs",
+    "model-routing-bridge-regress.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/model-routing-bridge.mjs",
+   "purpose": "Model routing bridge (23-point items 4/5/6/7/18/20): the ONE connection between the owner-managed model registry and the model gateway.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "model-routing-bridge-regress.test.mjs",
+    "model-routing-bridge.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/money-pipeline-controller.mjs",
+   "purpose": "ATLASZ Money Pipeline Controller",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-existing-modules.test.mjs",
+    "gated-modules.test.mjs",
+    "owner-control-bypass.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/money-supervisor.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "gap-register-modules.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/multi-model-brain.mjs",
+   "purpose": "ATLASZ Multi-Model Brain registry/router. Providers are never LIVE without a real adapter and successful probe.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-core-engine.test.mjs",
+    "probe-evidence.test.mjs",
+    "stop-enforcement.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/multi-solution.mjs",
+   "purpose": "AS03 Complex multi-solution problem solver (W3). Creates no agent; runs inside whichever of the 30 permanent agents calls it.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "w3-multi-solution.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/negotiation-engine.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "gated-modules.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/notes-organizer.mjs",
+   "purpose": "Personal knowledge organizer (85-capability programme: P03): notes with tags, a reading list and an ideas inbox, searchable and durable.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "notes-organizer.test.mjs",
+    "reserved-keys.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/observability-black-box.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-existing-modules.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/observation-memory.mjs",
+   "purpose": "Observation & user-context memory (85-capability audit: A05 Multimodal Memory, P19 Personal Object and Information Recall, A09 Environmental Context, A08 Contex",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "observation-memory.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/opportunity-qualification-engine.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": true,
+   "connectedToAgents": true,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "contract-money-tax.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/orb-strategy.mjs",
+   "purpose": "Unified programme M6: Opening Range Breakout (ORB) research engine - one state machine shared by the backtester and the paper trader.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "m6-market-orb.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/org-intelligence.mjs",
+   "purpose": "Company / organisation intelligence store (Global Business package §3; integration report §3 \"Company/organization intelligence module\").",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "org-intelligence.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/outcome-compiler.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-factories.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-auth.mjs",
+   "purpose": "ATLASZ Strong Owner Authentication (V7.3 §2, §14, §36).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 70,
+   "integrationTests": 6,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "agent-factory-governor.test.mjs",
+    "agent-registry.test.mjs",
+    "agent-workforce.test.mjs",
+    "approval-requests.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/agent-governor.mjs",
+   "purpose": "ATLASZ 30-agent governor (V7.3 Owner Control §13). The topology is FIXED: exactly 5 SEARCH/SALES + 25 EXECUTION agents.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "agent-factory-governor.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/approval-gateway.mjs",
+   "purpose": "ATLASZ Owner Approval Gateway (V7.3 Owner Control §4). ONE place where every approval request is made and decided.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "agent-factory-governor.test.mjs",
+    "owner-control-core.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/claim-distinctions.mjs",
+   "purpose": "ATLASZ claim distinctions (V7.3 Owner Control §6). A weaker state NEVER becomes the stronger one on a claim: it needs an",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "gap-register-modules.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/control-chain.mjs",
+   "purpose": "ATLASZ unified control chain (V7.3 Owner Control §1, §7). ONE evaluation path that every consequential action takes:",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "agent-factory-governor.test.mjs",
+    "owner-control-bypass.test.mjs",
+    "owner-control-core.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/financial-firewall.mjs",
+   "purpose": "ATLASZ Financial Firewall (V7.3 Owner Control §8). NO-SPEND is the default: any spend > 0 is BLOCKED until Joci (signed, action-bound)",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "agent-factory-governor.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/money-state-guard.mjs",
+   "purpose": "ATLASZ Money Engine state guard (V7.3 Owner Control §14). Wraps the EXISTING money-pipeline-controller: every transition is first",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "agent-factory-governor.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/owner-authority.mjs",
+   "purpose": "ATLASZ Owner Authority (V7.3 Owner Control §2). Joci is the final authority; this module is the single catalogue of",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 6,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "a08-sources.test.mjs",
+    "agent-factory-governor.test.mjs",
+    "agent-tool-broker.test.mjs",
+    "owner-control-bypass.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/owner-control-system.mjs",
+   "purpose": "ATLASZ Multi-layer Owner Control & Safety System — assembly (V7.3 Owner Control §1). Wires the EXISTING owner-auth, emergency-stop,",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "agent-factory-governor.test.mjs",
+    "owner-control-rig.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/recovery-points.mjs",
+   "purpose": "ATLASZ categorised recovery (V7.3 Owner Control §11, §12). Backups, restore points and rollback per category; an existing backup",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "agent-factory-governor.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/recovery-source-map.mjs",
+   "purpose": "ATLASZ recovery source mapping (V7.3 §50). Resolves each recovery category to a REAL local directory, or leaves it NOT_CONFIGURED with the exact",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "agent-factory-governor.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/safe-mode-scope.mjs",
+   "purpose": "ATLASZ Safe Mode scope + module isolation (V7.3 Owner Control §10). In Safe Mode: unsafe external actions are blocked (the chain consults",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "gap-register-modules.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-control/system-doctor.mjs",
+   "purpose": "ATLASZ System Doctor v2 (V7.3 Owner Control §16). Reports a state per component: HEALTHY | DEGRADED | BLOCKED | FAILED | NOT_CONFIGURED | UNKNOWN.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "agent-factory-governor.test.mjs",
+    "owner-control-extra.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/owner-keystore.mjs",
+   "purpose": "ATLASZ owner key store for JOCI's own device (used by the Windows Control Center; the CLI may use it too).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 3,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "approval-requests.test.mjs",
+    "control-center.test.mjs",
+    "mobile-api.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/page-ingest.mjs",
+   "purpose": "Page content ingestion (85-capability audit M01 Universal AI Browser Sidebar - the part that is feasible without a browser extension host).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "page-ingest.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/paper-trader.mjs",
+   "purpose": "Unified programme M6: autonomous PAPER trading. Everything here is simulated money (currency \"SIM-USD\"); there is no broker, exchange, wallet or network code, a",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "m6-paper-trader.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/payment-confirmation-adapter.mjs",
+   "purpose": "Provider-specific webhook verification must be wired by Astra using the real provider SDK/secret.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-existing-modules.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/payment-package-intake.mjs",
+   "purpose": "Review gate for an externally prepared payment (Stripe/KOHO) package BEFORE anything is merged. Read-only: it never runs the package's code and never contacts a",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "payment-package-intake.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/personal-command-center.mjs",
+   "purpose": "Personal Command Center (V7.3 Personal ATLASZ; feeds the Daily Brief; 85-cap A08/A11/P20 inputs).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "personal-command-center.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/plugin-installer.mjs",
+   "purpose": "Plugin installer with versioning and rollback (85-capability audit M05 Plugin/Skill installation; builds on plugin-manager.mjs, does not replace it).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "plugin-installer.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/plugin-manager.mjs",
+   "purpose": "V7.3 §22: plugins / extensions / themes / skins with manifests, permissions, versioning, enable/disable, health, failure isolation.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 9,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "plugin-installer.test.mjs",
+    "plugin-manager.test.mjs",
+    "r6-plugin-containment.test.mjs",
+    "r6-round10.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/preferences.mjs",
+   "purpose": "Preference and history store (85-capability audit A11 Personalisation / preference learning).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 6,
+   "integrationTests": 2,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "a08-sources.test.mjs",
+    "observation-memory.test.mjs",
+    "preferences.test.mjs",
+    "reserved-keys.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/priority-queue-rate-limit-governor.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-existing-modules.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/probe-evidence.mjs",
+   "purpose": "V7.3 §12: LIVE/tested may never be asserted by a bare flag. A caller must hand over probe evidence",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "probe-evidence.test.mjs",
+    "stop-enforcement.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/profit-accounting-engine.mjs",
+   "purpose": "Verified cost/profit accounting. PAID revenue requires confirmed receipt.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-money-tax.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/profit-ledger.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-existing-modules.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/progress-ledger.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-core-engine.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/project-memory.mjs",
+   "purpose": "Project memory with a durable decision log (85-capability programme: C07 Project Memory).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "project-memory.test.mjs",
+    "reserved-keys.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/proposal-quote-engine.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "gap-register-modules.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/prototype-builder.mjs",
+   "purpose": "P04 Rapid prototype builder (85-capability audit): idea -> small working prototype WITH generated tests, SANDBOX only.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "prototype-builder.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/provider-adapters.mjs",
+   "purpose": "Cloud model-provider adapters (Phase 4). One small, strict HTTP framework with three wire styles:",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "provider-adapters.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/provider-egress.mjs",
+   "purpose": "Bridge: model-registry -> egress-policy (23-point item 3 controlled outbound traffic, applied to the model providers of items 4/5/6).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "model-routing-bridge-regress.test.mjs",
+    "model-routing-bridge.test.mjs",
+    "provider-egress.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/provider-resilience.mjs",
+   "purpose": "V7.3 §13/§20 + runtime circuit breakers: provider health monitor, circuit breaker, no-spend cost router with fallback, independent judge, token/cost ledger hook",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 5,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "context-conversation.test.mjs",
+    "model-gateway.test.mjs",
+    "model-routing-bridge-regress.test.mjs",
+    "model-routing-bridge.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/qa-reviewer.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-existing-modules.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/quarantine.mjs",
+   "purpose": "ATLASZ file / archive quarantine + ransomware canary monitor (23-point item 2: malware / ransomware defence). Local only: no network, no model, no download.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "control-center-security.test.mjs",
+    "document-center-quarantine.test.mjs",
+    "quarantine.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/reasoning-common.mjs",
+   "purpose": "W3 shared plumbing for the reasoning/coordination protocol engines (multi-solution, debate, decision analysis, goal planner).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "w3-reasoning-common.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/recovery.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 7,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "backup-recovery.test.mjs",
+    "brain-intelligence.test.mjs",
+    "contract-core-engine.test.mjs",
+    "local-update-adapters.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/regression-eval-suite.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-core-engine.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/release-signing.mjs",
+   "purpose": "ATLASZ release (source bundle) signing for safe self-maintenance (23-point item 23). Local only: no network, no download, no install.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "control-center-security.test.mjs",
+    "local-update-signing.test.mjs",
+    "release-signing.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/render.mjs",
+   "purpose": "Safe preview renderer (85-capability programme: M13 Interactive Artifacts / C09, P18 Visual Highlighting, A07 Visual Guidance).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "render-detail.test.mjs",
+    "render-mutation.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/repo-analyzer.mjs",
+   "purpose": "Governed repository analysis + sandboxed test run (85-capability audit C01 Coding-agent workspace; the governed-read and sandboxed-run slice).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "prototype-builder.test.mjs",
+    "r6-round2.test.mjs",
+    "repo-analyzer.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/research-ledger.mjs",
+   "purpose": "Research Ledger (85-capability audit: M08, C08, G02, GE04, P13, G03, P10). A durable, tamper-evident record of research:",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 8,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "r6-round10.test.mjs",
+    "r6-round11.test.mjs",
+    "r6-round12.test.mjs",
+    "r6-round13.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/restricted-node.mjs",
+   "purpose": "Least-privilege launcher for Node child processes that run code ATLASZ did not write itself: plugin hooks and update self-tests (Task 4 / M1.2, ATLASZ-T3-002).",
+   "implemented": true,
+   "connectedToMaster": true,
+   "connectedToAgents": true,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 17,
+   "integrationTests": 8,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "control-center-ownersafety.test.mjs",
+    "m2-code-edit-workflow.test.mjs",
+    "mcp-client.test.mjs",
+    "mcp-hosted.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/retrieval-eval.mjs",
+   "purpose": "Unified programme M5: retrieval quality evaluation. Metrics and a small labelled corpus so BM25-only, BM25+n-gram and neural/hybrid retrieval can be compared on",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "m5-memory-integration.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/revenue-persistence.mjs",
+   "purpose": "Revenue Persistence Engine (integration report §5; Global Business package \"daily revenue persistence\"). It PLANS and REPORTS; it never sends, bids, accepts,",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "revenue-persistence.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/safe-keys.mjs",
+   "purpose": "Property-name safety for stores keyed by user-supplied ids. A name such as \"__proto__\", \"constructor\" or \"toString\" must never be usable as a tenant/id/key:",
+   "implemented": true,
+   "connectedToMaster": true,
+   "connectedToAgents": true,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "reserved-keys.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/safe-mode.mjs",
+   "purpose": "ATLASZ Safe Mode + crash-loop protection (V7.3 §52, §17).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 4,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "control-center.test.mjs",
+    "owner-control-rig.mjs",
+    "safety-modules.test.mjs",
+    "stop-enforcement.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/scheduler.mjs",
+   "purpose": "Durable scheduler (85-capability audit: C12 Scheduled and Recurring Tasks; shared by P06 workflows, P08 resume, P11 batch).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 4,
+   "integrationTests": 1,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "canonical-queue-safety.test.mjs",
+    "personal-command-center.test.mjs",
+    "scheduler.test.mjs",
+    "w2-data-quality.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/secret-patterns.mjs",
+   "purpose": "One shared definition of \"looks like a credential\", used by every redactor (stream, black box, notes, memory, conversations, code review snippets).",
+   "implemented": true,
+   "connectedToMaster": true,
+   "connectedToAgents": true,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 5,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "m5-verification-round3.test.mjs",
+    "m5-verification-round4.test.mjs",
+    "m5-verification-round5.test.mjs",
+    "m5-verification-round6.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/secret-vault.mjs",
+   "purpose": "ATLASZ Secret Vault (V7.3 §36). Encrypted-at-rest credential store.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 6,
+   "integrationTests": 2,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "connector-catalog.test.mjs",
+    "control-center-model-registry.test.mjs",
+    "control-center-vault-chat.test.mjs",
+    "m1-round2.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/security-gates.mjs",
+   "purpose": "ATLASZ named security E2E gate suite (23-point item 22). Twelve gates; each one IMPORTS the real modules and exercises them in-process with synthetic data",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "security-gates.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/self-healing-loop.mjs",
+   "purpose": "ATLASZ bounded self-healing loop. No policy bypass, spending or secret changes.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-existing-modules.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/semantic-index.mjs",
+   "purpose": "Unified programme M5: persisted vector index for neural semantic retrieval. Brute-force cosine over normalised Float32 vectors (the notes store is capped at a f",
+   "implemented": true,
+   "connectedToMaster": true,
+   "connectedToAgents": true,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "m5-memory-integration.test.mjs",
+    "m5-verification-round1.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/shared-project-registry.mjs",
+   "purpose": "ATLASZ Shared Project Registry v1.0 - in-process canonical state; durable storage adapter can replace persistence later.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-memory-control.test.mjs",
+    "regression-repairs.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/skill-factory.mjs",
+   "purpose": "Safe Skill Factory: creates/test-registers definitions only. It cannot invent credentials or bypass owner/tool policies.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-factories.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/skill-registry.mjs",
+   "purpose": "Skill registry (85-capability audit C05 Skills / reusable capability packages; sits beside the older in-memory skill-factory.mjs, which it does not replace).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "skill-registry.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/social-drafts.mjs",
+   "purpose": "Social media writing assistance - DRAFT ONLY (PKG150 MR09; capability M11 Intelligent Communication Assistant).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "social-drafts.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/source-adapters.mjs",
+   "purpose": "Source ADAPTER framework for external opportunity discovery (Global Business package §2: procurement notices, grants, freelance listings).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "eligibility-model.test.mjs",
+    "source-adapters.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/source-allowlist.mjs",
+   "purpose": "Owner-approved SOURCE ALLOWLIST for external opportunity discovery (Global Business package §2; integration report §4 \"source allowlist\" + §5 conflict 2",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "source-adapters.test.mjs",
+    "source-allowlist.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/spaced-repetition.mjs",
+   "purpose": "Spaced-repetition study cards (85-capability audit P01 Learning companion: flashcards + scheduling).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "reserved-keys.test.mjs",
+    "spaced-repetition.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/stall-replanner.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "contract-core-engine.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/startup-self-check.mjs",
+   "purpose": "ATLASZ Startup Self-Check (V7.3 §52). Read-only: verifies the environment and durable state BEFORE the runtime dispatches work.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "safety-modules.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/suggestions.mjs",
+   "purpose": "Proactive suggestions (85-capability audit A08 Proactive suggestions) and the cross-source adapters that feed them (P20).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 4,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "a08-sources.test.mjs",
+    "r6-round2.test.mjs",
+    "reserved-keys.test.mjs",
+    "suggestions.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/task-ledger.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-core-engine.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/tax-accounting-engine.mjs",
+   "purpose": "Arithmetic must be deterministic. An LLM must not invent tax totals.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-money-tax.test.mjs",
+    "gated-modules.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/team-lead-workflows.mjs",
+   "purpose": "Team lead coordination without changing the fixed 5 SEARCH + 25 EXECUTION topology.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-factories.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/tech-watch.mjs",
+   "purpose": "V7.3 Tech Watch: offline, feed-file-based compatibility monitor + self-inventory / capability-gap detection.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "control-center-systems.test.mjs",
+    "tech-watch.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/tenant-isolation.mjs",
+   "purpose": "V7.3 §47 Commercial / licensing FOUNDATION (no sale, nothing published): strict per-tenant directories, per-tenant config and vault namespace,",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "tenant-isolation.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/test-intelligence.mjs",
+   "purpose": "Test intelligence (PKG150 O513 risk-based test prioritisation; S09/S502 test-gap finder + test scaffold generator; coverage-trend record). Deterministic and off",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "w2-test-intelligence.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/text-compare.mjs",
+   "purpose": "Multi-page comparison (85-capability programme: P13). Compares TEXTS THE CALLER SUPPLIES (already fetched by an authorised path) - it never fetches anything.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "compare-transcript-mutation.test.mjs",
+    "compare-transcript.test.mjs",
+    "injection-filter.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/tool-bridge.mjs",
+   "purpose": "ATLASZ Tool Bridge v1.0",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "gap-register-modules.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/tool-fabric.mjs",
+   "purpose": "ATLASZ Tool Fabric v1.0",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "probe-evidence.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/tracing-evals.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-core-engine.test.mjs",
+    "no-weak-random.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/transcript-actions.mjs",
+   "purpose": "Transcript -> index, summary and action steps (85-capability programme: P02 Video-to-Action Workflow, the part that needs no media provider).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "compare-transcript-mutation.test.mjs",
+    "compare-transcript.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/translation-feedback.mjs",
+   "purpose": "Translation + short replies + feedback analysis (PKG150 HK09 fast multilingual translation, HK11 short response drafting, HK12 large-scale feedback",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "translation-feedback.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/tutor.mjs",
+   "purpose": "Personal learning tutor (85-capability programme: P01): courses made of lessons and multiple-choice questions THE OWNER SUPPLIES, quizzes that adapt to what is",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "r6-round2.test.mjs",
+    "stage-r5-fixes.test.mjs",
+    "tutor.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/typed-tools.mjs",
+   "purpose": "Typed tool registry + strict schema validation (85-capability audit: G06 Function Calling, GE08 Structured Tool Invocation,",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 9,
+   "integrationTests": 3,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "a08-sources.test.mjs",
+    "agent-tool-broker.test.mjs",
+    "code-sandbox-hosted.test.mjs",
+    "m12-profile-integration.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/unified-entity-graph.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "contract-memory-control.test.mjs",
+    "memory-fabric.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/universal-connector-layer.mjs",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "probe-evidence.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/universal-inbox.mjs",
+   "purpose": "V7.3 §25 Universal Inbox: one durable inbox for email, agent messages, system alerts, approval requests, job events, payment events, connector events.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 4,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "chat-providers.test.mjs",
+    "control-center-systems.test.mjs",
+    "inbox-pipeline.test.mjs",
+    "universal-inbox.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/update-center.mjs",
+   "purpose": "ATLASZ Update Center / Safe Update System (V7.3 addendum, Joci 2026-10-07).",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 5,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "agent-factory-governor.test.mjs",
+    "local-update-adapters.test.mjs",
+    "owner-control-bypass.test.mjs",
+    "release-signing.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/voice-conversation.mjs",
+   "purpose": "Live Voice conversation layer (85-capability audit: A03 Speak-to-Speak, A04 Voice Interaction; V7.3 §5). It sits ON TOP of the existing voice-session.mjs state ",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "voice-conversation-hosted.test.mjs",
+    "voice-conversation.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/voice-interface.mjs",
+   "purpose": "ATLASZ voice interface capability.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "probe-evidence.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/voice-session.mjs",
+   "purpose": "V7.3 §5 Speak-to-Speak session layer (provider-agnostic). This is the SESSION STATE MACHINE only: no microphone, STT or TTS is included.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "voice-conversation-hosted.test.mjs",
+    "voice-conversation.test.mjs",
+    "voice-session.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/watchdog.mjs",
+   "purpose": "ATLASZ Watchdog (V7.3 §17, §52 #10 hang detection). Components either push heartbeats or expose a probe.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "safety-modules.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/workbench.mjs",
+   "purpose": "Workbench: the single, validated entry point that connects the capability modules built in the 85-capability programme to real callers (Control Center, schedule",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 5,
+   "integrationTests": 2,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "m12-profile-integration.test.mjs",
+    "reserved-keys.test.mjs",
+    "stage-r5-fixes.test.mjs",
+    "workbench-b1-hosted.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-addons/workflow-engine.mjs",
+   "purpose": "Reusable workflows (85-capability programme: GE11 templates & stateful delegation, P06 reusable personal workflows, P08 interrupted-task continuation,",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "connected, but only unit-tested (no integration/E2E test references it)",
+   "testFiles": [
+    "workflow-engine.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-control-center/agents-panel.mjs",
+   "purpose": "Owner-facing 30-agent workforce (Phase 5). Hosts the registry + workforce inside the Control Center process (single writer for the coordinator and the task stor",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 0,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "loaded by the Control Center but no test file references it by name",
+   "testFiles": []
+  },
+  {
+   "file": "atlasz-control-center/brain-views.mjs",
+   "purpose": "Read-only views of persisted Brain state for the Control Center (V7.3 Brain §18). The runtime owns the Brain files; this module only reads.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 0,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "loaded by the Control Center but no test file references it by name",
+   "testFiles": []
+  },
+  {
+   "file": "atlasz-control-center/chat-providers-panel.mjs",
+   "purpose": "Owner-facing Chat Providers center (23-point item 7/20). Lists every platform with its honest availability, lets the owner record an account (a credential REFER",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 0,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "loaded by the Control Center but no test file references it by name",
+   "testFiles": []
+  },
+  {
+   "file": "atlasz-control-center/core.mjs",
+   "purpose": "ATLASZ Windows Control Center — core (V7.3 §21, §41, addendum). Every owner function that the CLI offers is exposed here",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 14,
+   "integrationTests": 13,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "a08-sources.test.mjs",
+    "approval-requests.test.mjs",
+    "control-center-brain.test.mjs",
+    "control-center-finance.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-control-center/memory-panel.mjs",
+   "purpose": "Unified programme M5: owner-facing memory controls for the Control Center. Everything here is a thin layer over the real modules (memory-store, agent-memory, em",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 0,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "loaded by the Control Center but no test file references it by name",
+   "testFiles": []
+  },
+  {
+   "file": "atlasz-control-center/model-registry-panel.mjs",
+   "purpose": "Owner-facing control of the model & provider registry (23-point items 4, 5, 6, 18 and the \"add / edit / enable / disable / upgrade without reinstalling\" require",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 0,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "loaded by the Control Center but no test file references it by name",
+   "testFiles": []
+  },
+  {
+   "file": "atlasz-control-center/money-views.mjs",
+   "purpose": "Read-only Money Engine / Jobs / Agents views for the Control Center (V7.3 §53, §74). Reads only what the runtime persisted under <state>/money",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 3,
+   "integrationTests": 1,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "control-center-money-views.test.mjs",
+    "money-engine-hosted.test.mjs",
+    "money-engine-sandbox.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-control-center/ops-views.mjs",
+   "purpose": "Unified programme M6: Operations Dashboard, Revenue & Business dashboard and Live Agent Activity, composed from the REAL sources only.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 0,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "loaded by the Control Center but no test file references it by name",
+   "testFiles": []
+  },
+  {
+   "file": "atlasz-control-center/security-center-panel.mjs",
+   "purpose": "Owner-facing Security Center (23-point items 3/4: malware defences, intrusion detection). Today it connects ONE real control: the file quarantine.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 0,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "loaded by the Control Center but no test file references it by name",
+   "testFiles": []
+  },
+  {
+   "file": "atlasz-control-center/server.mjs",
+   "purpose": "ATLASZ Control Center local server. Binds 127.0.0.1 ONLY. Defences: per-launch random token, Host allow-list (DNS rebinding),",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 34,
+   "integrationTests": 33,
+   "status": "VERIFIED_WORKING",
+   "whyNotVerified": "",
+   "testFiles": [
+    "a11y-control-center.test.mjs",
+    "code-sandbox-hosted.test.mjs",
+    "control-center-agents30.test.mjs",
+    "control-center-brain.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-control-center/trading-panel.mjs",
+   "purpose": "Unified programme M6: Live Trading & Crypto panel of the Control Center. Thin layer over market-data / orb-strategy / backtest / paper-trader.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 0,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "loaded by the Control Center but no test file references it by name",
+   "testFiles": []
+  },
+  {
+   "file": "atlasz-control-center/vault-panel.mjs",
+   "purpose": "Owner-facing API Key Vault (23-point item 1/20). Shows NAMES and metadata only; a secret value is accepted exactly once (to be stored) and is never returned, ec",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": true,
+   "loadedWhenControlCenterBoots": true,
+   "unitOrIntegrationTests": 0,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "loaded by the Control Center but no test file references it by name",
+   "testFiles": []
+  },
+  {
+   "file": "atlasz-runtime/agent-child.js",
+   "purpose": "Global round keeps all 30 agents on 30 different lanes at the same time.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 0,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "no test references it and nothing in the Control Center loads it (isolated)",
+   "testFiles": []
+  },
+  {
+   "file": "atlasz-runtime/owner-cli.mjs",
+   "purpose": "ATLASZ owner CLI — runs on JOCI's own device. The private key never goes to the server or into git.",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "canonical-runtime.test.mjs",
+    "emergency-stop.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-runtime/runtime-http.mjs",
+   "purpose": "HTTP surface of the canonical runtime (Task 4 / M1.1, ATLASZ-T3-001). Before this module the server bound 0.0.0.0 and served the whole dashboard, the lead list ",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 1,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "runtime-http.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-runtime/supervisor-safe.mjs",
+   "purpose": "---- V7.3 safety layer: self-check -> safe mode -> durable queue -> watchdog (fixed topology 5 SEARCH + 25 EXECUTION) ----",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 24,
+   "integrationTests": 9,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "agent-factory-governor.test.mjs",
+    "agent-tools-hosted.test.mjs",
+    "brain-runtime-wiring.test.mjs",
+    "canonical-queue-safety.test.mjs"
+   ]
+  },
+  {
+   "file": "atlasz-runtime/supervisor.js",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 0,
+   "integrationTests": 0,
+   "status": "PARTIAL",
+   "whyNotVerified": "no test references it and nothing in the Control Center loads it (isolated)",
+   "testFiles": []
+  },
+  {
+   "file": "atlasz-runtime/worker.js",
+   "purpose": "",
+   "implemented": true,
+   "connectedToMaster": false,
+   "connectedToAgents": false,
+   "connectedToControlCenter": false,
+   "loadedWhenControlCenterBoots": false,
+   "unitOrIntegrationTests": 2,
+   "integrationTests": 1,
+   "status": "PARTIAL",
+   "whyNotVerified": "tested as a library but not reachable from Master, agents or Control Center (disconnected)",
+   "testFiles": [
+    "policy-guards.test.mjs",
+    "tenant-isolation.test.mjs"
+   ]
+  }
+ ]
+}

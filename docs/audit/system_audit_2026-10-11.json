@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-10-11T22:21:16.143Z",
+ "generatedAt": "2026-10-11T22:30:34.643Z",
  "date": "2026-10-11",
  "agents": {
   "total": 30,
@@ -389,10 +389,13 @@
    "area": "15",
    "status": "EXTERNAL_BLOCKER",
    "liveProbe": "no live probe (library verified by tests only)",
-   "implementation": [],
+   "implementation": [
+    "atlasz-control-center/electron/main.mjs",
+    ".github/workflows/build-windows-installer.yml"
+   ],
    "tests": [],
    "missingFiles": [],
-   "reason": "Never run on Windows; installer workflow is manual-only and has not been run. NOT claimed verified.",
+   "reason": "Installer WAS built once on a GitHub Windows runner (run 37701784773, commit fa2a230, 2026-10-07, 82 MB artifact, test suite passed there) - older than HEAD, never installed or launched on a real Windows machine. Not production-ready.",
    "dependsOn": []
   },
   {

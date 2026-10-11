@@ -43,3 +43,14 @@ test("Master over HTTP: auth required; 14 managers with honest live status; auto
     const v1 = await c.view(); assert.equal(v1.agents.length, 30); assert.equal((v1.master.queue ?? []).length, 0);
   } finally { await c.cc.close(); }
 });
+
+test("adversarial HTTP inputs to the Master ops: prototype keys, oversized and typed-wrong fields, unknown ops are refused without changing state", async () => {
+  const base = tmp("ccm2-"), stateDir = path.join(base, "s"), configDir = path.join(base, "c"); fs.mkdirSync(stateDir, { recursive: true });
+  const c = await mk(stateDir, configDir, { masterTickMs: 0 });
+  try {
+    const bad = [{ op: "masterEnqueue", planId: "__proto__", stepId: "constructor" }, { op: "masterEnqueue", planId: "x".repeat(100000), stepId: "y", note: "n".repeat(1e6) }, { op: "masterEnqueue", planId: ["a"], stepId: { a: 1 }, priority: "9" },
+      { op: "masterSuspend", taskId: "../../etc/passwd" }, { op: "masterReassign", taskId: "constructor", toAgent: "SEARCH-1" }, { op: "masterCancel", jobId: "__proto__" }, { op: "masterDispatch", max: 1e9 }, { op: "masterNoSuchOp" }];
+    for (const b of bad) { const r = await c.post("/api/agents30/action", b); assert.ok(r.status < 500, JSON.stringify(b).slice(0, 60) + " -> " + r.status); const j = JSON.parse(r.body); assert.ok(r.status >= 400 || j.result?.ok === false || (j.result?.dispatched ?? []).length === 0, "refused or inert: " + JSON.stringify(b).slice(0, 60)); }
+    const v = await c.view(); assert.equal(v.agents.length, 30); assert.equal((v.master.queue ?? []).length, 0);
+  } finally { await c.cc.close(); }
+});

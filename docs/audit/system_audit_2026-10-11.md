@@ -28,7 +28,7 @@ Agents: 30 (5 SEARCH + 25 EXECUTION)
 | Quality Assurance / Independent Checker | VERIFIED_WORKING | CONNECTED: independent verifier assignment via coordinator; 0 check record(s) |  |
 | Recovery and Maintenance Manager | PARTIAL | DEGRADED: no backup exists | Backup/restore engine tested; no backup or passed restore drill in the sandbox. |
 | Global Discovery Engine | PARTIAL | library (tests only) | 0 sources genuinely CONNECTED: the three first hosts await the owner's signed approval; only operator-captured (labelled) data exists. |
-| Windows Electron desktop app | EXTERNAL_BLOCKER | library (tests only) | Never run on Windows; installer workflow is manual-only and has not been run. NOT claimed verified. |
+| Windows Electron desktop app | EXTERNAL_BLOCKER | library (tests only) | Installer WAS built once on a GitHub Windows runner (run 37701784773, commit fa2a230, 2026-10-07, 82 MB artifact, test suite passed there) - older than HEAD, never installed or launched on a real Windows machine. Not production-ready. |
 | Original 85 / 23-point / additional 150 programme | PARTIAL | library (tests only) | 150 package tally {"EXTERNAL_BLOCKER":14,"PARTIAL_PRE_EXISTING":95,"IMPLEMENTED_TESTED_NOT_CONNECTED":32,"COVERED_BY_VERIFIED_85":6,"NOT_STARTED":2,"MISSING":1}; see docs/audit/ for the 85 and 23-point classifications (not all are connected or live). |
 
 ## Models
