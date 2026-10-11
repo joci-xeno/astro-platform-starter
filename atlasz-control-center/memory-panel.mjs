@@ -68,5 +68,5 @@ export function createMemoryPanel({ stateDir, ownerAuth, sign, fetchImpl = globa
     }
   }
   const hasPassphrase = a => typeof a.passphrase === "string" && a.passphrase.length > 0;
-  return { view, action, close: reset };
+  return { view, action, close: reset, agentMemory: () => { open(); return am; } };
 }
