@@ -241,7 +241,16 @@ test("a leftover manual spend grant is never used by autoCycle, and editing the 
     await t.evo.runCompatibility(id, { approval: ap("MODEL_BENCHMARK", subj) }); const before = gptCalls;
     const pol = { ...DEFAULT_POLICY, mode: "RECOMMEND_ONLY" }; t.evo.setPolicy(pol, { approval: ap("MODEL_EVOLUTION_POLICY", policySubject(pol)) });
     const r = await t.evo.autoCycle({ baselineId: "base-local", judgeId: "judge-local" }); assert.equal(gptCalls, before, JSON.stringify(r.actions));
-    for (const f of fs.readdirSync(t.dir)) if (f.endsWith(".json")) { const p = path.join(t.dir, f); try { const j = JSON.parse(fs.readFileSync(p, "utf8")); const w = o => { if (o && typeof o === "object") for (const k of Object.keys(o)) { if (k === "runsLeft" || k === "benchGrant") o[k] = 999999; else w(o[k]); } }; w(j); fs.writeFileSync(p, JSON.stringify(j)); } catch { /* not state */ } }
+    for (const f of fs.readdirSync(path.join(t.dir, "evo"))) if (f.endsWith(".json")) { const p = path.join(t.dir, "evo", f); try { const j = JSON.parse(fs.readFileSync(p, "utf8")); const w = o => { if (o && typeof o === "object") for (const k of Object.keys(o)) { if (k === "runsLeft" || k === "benchGrant") o[k] = 999999; else w(o[k]); } }; w(j); fs.writeFileSync(p, JSON.stringify(j)); } catch { /* not state */ } }
     const t2 = t.open(); let refused = null; for (let i = 0; i < 6 && !refused; i++) { const x = await t2.runCompatibility(id); if (!x.ok) refused = x.reason; } assert.equal(refused, "OWNER_APPROVAL_REQUIRED_TO_CALL_PAID_OR_CLOUD_CANDIDATE");
+  } finally { t.done(); }
+});
+
+test("a forged BENCHMARK_SPEND_APPROVED line without a valid owner signature buys no runs", async () => {
+  let gptCalls = 0; const t = mk({ adapters: { "gpt-new": async p => { gptCalls++; return goodModel("GPT", 0.01)(p); } } }); try {
+    t.evo.discoverFromCatalogue(CAT([CLOUD_CAND])); const id = "gpt-new@1.0.0", cfg = t.evo.get(id).configHash;
+    const { createAuditChain } = await import("../atlasz-addons/audit-chain.mjs"); const f = "model-evolution-audit.jsonl";
+    const log = createAuditChain({ filePath: path.join(t.dir, "evo", f) }); log.append("BENCHMARK_SPEND_APPROVED", { candidateId: id, configHash: cfg, runs: 1000000, nonce: "x", approval: { nonce: "x", signature: "AAAA" } });
+    const r = await t.open().runCompatibility(id); assert.equal(r.reason, "OWNER_APPROVAL_REQUIRED_TO_CALL_PAID_OR_CLOUD_CANDIDATE"); assert.equal(gptCalls, 0);
   } finally { t.done(); }
 });

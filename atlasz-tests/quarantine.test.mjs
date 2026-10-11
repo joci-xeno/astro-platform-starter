@@ -487,3 +487,8 @@ test("ZIP: a local header that claims other sizes than the central directory is 
   const z = zip([{ name: "a.txt", data: "hello" }]); const lho = 0; z.writeUInt32LE(2, lho + 22);      // local usize differs from the central directory (5)
   assert.ok(codes(inspectArchive(z)).includes("ZIP_LOCAL_HEADER_DISAGREES_WITH_CENTRAL_DIRECTORY"), codes(inspectArchive(z)).join());
 });
+test("TAR: a GNU long-name header followed by a pax header (L then x) is BLOCKED", () => {
+  const nm = Buffer.from("good.txt\0"), L = Buffer.concat([tarHeader({ name: "././@LongLink", type: "L", size: nm.length }), padTo512(nm)]);
+  const pax = paxRec("path", "../../evil.sh"), X = Buffer.concat([tarHeader({ name: "PaxHeader/x", type: "x", size: pax.length }), padTo512(pax)]);
+  assert.ok(codes(inspectArchive(Buffer.concat([L, X, tarHeader({ name: "short", size: 0 }), Buffer.alloc(1024)]))).includes("TAR_MULTIPLE_EXTENDED_HEADERS"));
+});

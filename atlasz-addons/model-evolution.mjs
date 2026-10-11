@@ -158,9 +158,10 @@ export function createModelEvolution({ dir, registry, ownerAuth = null, adapters
     if (left > 0) { audit.append("BENCHMARK_RUN_FROM_GRANT", { candidateId: c.candidateId, configHash: c.configHash, runsLeft: left - 1 }); return { ok: true }; }
     const subject = "bench:" + c.candidateId + ":" + c.configHash, v = verifyOwner(approval, "MODEL_BENCHMARK", subject);
     if (!v.ok) return R("OWNER_APPROVAL_REQUIRED_TO_CALL_PAID_OR_CLOUD_CANDIDATE", { detail: v.reason, action: "MODEL_BENCHMARK", subject });
-    audit.append("BENCHMARK_SPEND_APPROVED", { candidateId: c.candidateId, configHash: c.configHash, runs: BENCH_GRANT_RUNS, nonce: v.nonce ?? null }); audit.append("BENCHMARK_RUN_FROM_GRANT", { candidateId: c.candidateId, configHash: c.configHash, runsLeft: BENCH_GRANT_RUNS - 1 }); return { ok: true };
+    audit.append("BENCHMARK_SPEND_APPROVED", { candidateId: c.candidateId, configHash: c.configHash, runs: BENCH_GRANT_RUNS, nonce: v.nonce ?? null, approval }); audit.append("BENCHMARK_RUN_FROM_GRANT", { candidateId: c.candidateId, configHash: c.configHash, runsLeft: BENCH_GRANT_RUNS - 1 }); return { ok: true };
   }
-  function grantRunsLeft(c) { let n = 0; for (const e of audit.entries()) { if (e.data?.candidateId !== c.candidateId || e.data?.configHash !== c.configHash) continue; if (e.event === "BENCHMARK_SPEND_APPROVED") n += Number(e.data.runs) || 0; else if (e.event === "BENCHMARK_RUN_FROM_GRANT") n -= 1; } return Math.max(0, n); }
+  function grantRunsLeft(c) { let n = 0; const seenNonce = new Set(); for (const e of audit.entries()) { if (e.data?.candidateId !== c.candidateId || e.data?.configHash !== c.configHash) continue; if (e.event === "BENCHMARK_SPEND_APPROVED") { const ap = e.data.approval, nn = ap?.nonce; let ok = false; try { ok = typeof nn === "string" && !seenNonce.has(nn) && Boolean(ownerAuth?.verifyRecorded?.(ap, { action: "MODEL_BENCHMARK", subject: "bench:" + c.candidateId + ":" + c.configHash })); } catch { ok = false; } if (ok) { seenNonce.add(nn); n += Math.min(BENCH_GRANT_RUNS, Number(e.data.runs) || 0); } }      // only an owner-signed record buys runs; a forged log line has no signature
+       else if (e.event === "BENCHMARK_RUN_FROM_GRANT") n -= 1; } return Math.max(0, n); }
 
   async function runCompatibility(candidateId, { approval = null, auto = false } = {}) {
     const c = cand(candidateId); if (!c) return R("UNKNOWN_CANDIDATE");

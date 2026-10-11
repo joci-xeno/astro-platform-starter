@@ -303,6 +303,7 @@ function inspectTar(ctx, b, depth, label) {
         if (/^GNU\.sparse\./i.test(k)) { add(ctx, "TAR_PAX_SPARSE_OVERRIDE", "BLOCK", label + "@" + off); return; }       // sparse maps rename/resize members in GNU tar and Python; not supported, so not accepted
         if (!/^(?:mtime|atime|ctime|uid|gid|uname|gname|comment|charset|hdrcharset|path|linkpath|size|SCHILY\.[\w.-]+|LIBARCHIVE\.[\w.-]+)$/.test(k)) { add(ctx, "TAR_PAX_UNKNOWN_KEY", "BLOCK", label + "@" + off); return; }
       }
+      if (type === "x" && (pending.name !== undefined || pending.link !== undefined)) { add(ctx, "TAR_MULTIPLE_EXTENDED_HEADERS", "BLOCK", label + "@" + off); return; }      // a GNU long-name/link header stacked with a pax header: implementations disagree which wins
       if (type === "x" && pending.xSeen) { add(ctx, "TAR_MULTIPLE_EXTENDED_HEADERS", "BLOCK", label + "@" + off); return; }      // tar implementations disagree on which of two stacked extended headers wins
       if (type === "x") pending.xSeen = true;
       if (type === "x") { if (px.rec.path !== undefined) pending.name = px.rec.path; if (px.rec.linkpath !== undefined) pending.link = px.rec.linkpath; if (px.rec.size !== undefined) { if (!/^\d{1,15}$/.test(px.rec.size)) { add(ctx, "TAR_PAX_SIZE_INVALID", "BLOCK", label + "@" + off); return; } pending.size = Number(px.rec.size); } }
