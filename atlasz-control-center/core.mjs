@@ -84,7 +84,7 @@ export function createControlCenterCore({ ollamaFetch = null, cloudFetch = null,
   // Release signature verifier (trust anchors are owner-signed, kept in <state>/updates/release-signing). Built lazily; with no owner key it fails closed ("VERIFIER_UNAVAILABLE").
   let relV = null;
   const releaseVerifier = () => (relV ??= createReleaseVerifier({ ownerAuth: ownerAuth(), stateDir: path.join(stateDir, "updates", "release-signing"), isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL" }));
-  const releaseVerifierProxy = { verifyBundle: (...a) => { try { return releaseVerifier().verifyBundle(...a); } catch { return { ok: false, reasons: ["VERIFIER_UNAVAILABLE"] }; } } };
+  const releaseVerifierProxy = { verifyBundle: (...a) => { try { return releaseVerifier().verifyBundle(...a); } catch { return { ok: false, reasons: ["VERIFIER_UNAVAILABLE"] }; } }, accept: (...a) => { try { return releaseVerifier().accept(...a); } catch { return { ok: false, reasons: ["VERIFIER_UNAVAILABLE"] }; } } };
   const localAdapters = !updateAdapters && localUpdates ? createLocalUpdateAdapters({ inboxDir: path.join(stateDir, "updates", "inbox"), releaseVerifier: releaseVerifierProxy }) : null;
   const adapters = updateAdapters ?? localAdapters?.adapters ?? {};
   const packDir = path.join(configDir, "extension-pack");

@@ -357,7 +357,8 @@ export function inspectArchive(buf, { name = "archive", limits = {} } = {}) {
 export function prescan(buf, name = "unnamed", { limits = {} } = {}) {
   const b = Buffer.isBuffer(buf) ? buf : Buffer.from(buf ?? []), L = { ...LIMITS, ...limits };
   const tf = typeFindings(b, name), arch = tf.type.archive || looksLikeTar(b) ? inspectArchive(b, { name, limits: L }) : null;
-  const findings = [...nameFindings(name), ...tf.findings, ...(arch?.findings ?? [])].slice(0, 200);
+  // Intake paths (documents, update payloads) never legitimately carry native executables: binary executable content (PE/ELF/Mach-O), directly or inside an archive, blocks regardless of the file name.
+  const findings = [...nameFindings(name), ...tf.findings, ...(arch?.findings ?? [])].slice(0, 200).map(f => (/^EXECUTABLE_CONTENT:|^EXECUTABLE_INSIDE_ARCHIVE:\w+_EXECUTABLE/.test(f.code) ? { ...f, severity: "BLOCK" } : f));
   return { blocking: findings.some(f => f.severity === "BLOCK"), findings, type: tf.type.type, archive: arch ? arch.verdict : null };
 }
 

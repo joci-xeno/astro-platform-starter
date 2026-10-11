@@ -4,8 +4,8 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { generateOwnerKeyPair, issueOwnerApproval, createOwnerAuth } from "../atlasz-addons/owner-auth.mjs";
-import { createReleaseVerifier, generatePublisherKeyPair, buildManifest, signManifest, anchorAddSubject, keyIdOf } from "../atlasz-addons/release-signing.mjs";
-import { createLocalUpdateAdapters, buildPackage, SIGNATURE_FILE } from "../atlasz-addons/local-update-adapters.mjs";
+import { createReleaseVerifier, generatePublisherKeyPair, anchorAddSubject, keyIdOf } from "../atlasz-addons/release-signing.mjs";
+import { createLocalUpdateAdapters, buildPackage, signPackage, SIGNATURE_FILE } from "../atlasz-addons/local-update-adapters.mjs";
 import { tmp, rm } from "./helpers.mjs";
 
 const owner = generateOwnerKeyPair(), pub = generatePublisherKeyPair();
@@ -19,9 +19,8 @@ function rig(opts = {}) {
   const mk = (name, version, files, { sign = true, tamper = false } = {}) => {
     buildPackage(path.join(inbox, name), { componentId: "ext", riskTags: [], version, files });
     if (sign) {
-      const payload = path.join(inbox, name, "payload"), env = signManifest(buildManifest({ rootDir: payload, component: "ext", version }), { privateKeyPem: pub.privateKeyPem });
-      fs.writeFileSync(path.join(inbox, name, SIGNATURE_FILE), JSON.stringify(env));
-      if (tamper) fs.appendFileSync(path.join(payload, "code.mjs"), "// changed after signing\n");
+      signPackage(path.join(inbox, name), { privateKeyPem: pub.privateKeyPem, component: "ext", version });
+      if (tamper) fs.appendFileSync(path.join(inbox, name, "payload", "code.mjs"), "// changed after signing\n");
     }
   };
   const stage = async version => { const dir = path.join(root, "stg-" + version); fs.mkdirSync(dir); return la.adapters.stager({ update: { componentId: "ext", version }, stagingDir: dir }); };
@@ -35,11 +34,10 @@ test("a correctly signed package stages with signature evidence; a tampered one,
     r.mk("bad", "1.2.0", { VERSION: "1.2.0", "code.mjs": "export const v = 3;\n" }); // signed over the payload, then payload changed but manifest hashes recomputed would differ: mutate payload + keep package manifest valid
     const payload = path.join(r.root, "inbox", "bad", "payload", "code.mjs"), mf = path.join(r.root, "inbox", "bad", "manifest.json");
     const m = JSON.parse(fs.readFileSync(mf, "utf8")); fs.appendFileSync(payload, "// evil\n"); m.files["code.mjs"] = (await import("node:crypto")).createHash("sha256").update(fs.readFileSync(payload)).digest("hex"); fs.writeFileSync(mf, JSON.stringify(m));
-    const t = await r.stage("1.2.0"); assert.equal(t.ok, false); assert.match(t.evidence, /^SIGNATURE_REFUSED:.*FILE_ALTERED:code\.mjs/);
+    const t = await r.stage("1.2.0"); assert.equal(t.ok, false); assert.match(t.evidence, /^SIGNATURE_REFUSED:.*FILE_ALTERED:payload\/code\.mjs/);
     // signature from a key that is not a trust anchor
     r.mk("rogue", "1.3.0", { VERSION: "1.3.0", "code.mjs": "export const v = 4;\n" }, { sign: false });
-    const other = generatePublisherKeyPair(), pl = path.join(r.root, "inbox", "rogue", "payload");
-    fs.writeFileSync(path.join(r.root, "inbox", "rogue", SIGNATURE_FILE), JSON.stringify(signManifest(buildManifest({ rootDir: pl, component: "ext", version: "1.3.0" }), { privateKeyPem: other.privateKeyPem })));
+    const other = generatePublisherKeyPair(); signPackage(path.join(r.root, "inbox", "rogue"), { privateKeyPem: other.privateKeyPem, component: "ext", version: "1.3.0" });
     const u = await r.stage("1.3.0"); assert.equal(u.ok, false); assert.match(u.evidence, /UNKNOWN_SIGNING_KEY/);
   } finally { r.done(); }
 });
@@ -57,5 +55,14 @@ test("a signature file with no verifier configured is refused, never ignored", a
     r.mk("s", "1.1.0", { VERSION: "1.1.0", "code.mjs": "export const v = 2;\n" });
     const la = createLocalUpdateAdapters({ inboxDir: path.join(root, "inbox") }); const dir = path.join(root, "stg"); fs.mkdirSync(dir);
     const s = await la.adapters.stager({ update: { componentId: "ext", version: "1.1.0" }, stagingDir: dir }); assert.equal(s.ok, false); assert.equal(s.evidence, "SIGNATURE_PRESENT_BUT_NO_VERIFIER_CONFIGURED");
+  } finally { r.done(); }
+});
+
+test("package manifest fields (remove, riskTags) are covered by the signature", async () => {
+  const r = rig();
+  try {
+    r.mk("m", "1.1.0", { VERSION: "1.1.0", "code.mjs": "export const v = 2;\n" });
+    const mf = path.join(r.root, "inbox", "m", "manifest.json"), m = JSON.parse(fs.readFileSync(mf, "utf8")); m.remove = ["security-fix.mjs"]; m.riskTags = ["x"]; fs.writeFileSync(mf, JSON.stringify(m));
+    const s = await r.stage("1.1.0"); assert.equal(s.ok, false); assert.match(s.evidence, /^SIGNATURE_REFUSED:.*FILE_ALTERED:manifest\.json/);
   } finally { r.done(); }
 });

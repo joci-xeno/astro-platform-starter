@@ -51,14 +51,14 @@ test("endpoint() accepts a registry record and uses its providerModel; profile h
   assert.throws(() => createCloudAdapter({ providerId: "nope" }), /PROVIDER_PROFILE_INVALID/);
 });
 
-test("pinned transport: only checked DNS answers are connectable; unpinned, expired, non-https, userinfo and port URLs fail closed before any socket", async () => {
-  let t = 1000; const tr = createPinnedTransport({ lookup: async h => [{ address: "93.184.216.34", family: 4 }], ttlMs: 500, nowFn: () => t });
+test("pinned transport: only the addresses the caller passes (pinTo) are connectable; missing, invalid, non-https, userinfo and port URLs fail closed before any socket", async () => {
+  const tr = createPinnedTransport({ lookup: async () => [{ address: "93.184.216.34", family: 4 }, { address: "nope" }] });
+  assert.deepEqual(await tr.resolveAddresses("api.openai.com"), ["93.184.216.34"], "non-IP answers are dropped");
   await assert.rejects(() => tr.fetch("https://api.openai.com/v1/models"), /ADDRESS_NOT_PINNED/);
-  assert.deepEqual(await tr.resolveAddresses("api.openai.com"), ["93.184.216.34"]);
-  t += 600; await assert.rejects(() => tr.fetch("https://api.openai.com/v1/models"), /ADDRESS_NOT_PINNED/, "an old answer is not reused");
-  for (const u of ["http://api.openai.com/x", "https://user:pw@api.openai.com/x", "https://api.openai.com:8443/x", "not a url"]) await assert.rejects(() => tr.fetch(u), /HTTPS_HOST_ONLY|URL_INVALID/);
+  await assert.rejects(() => tr.fetch("https://api.openai.com/v1/models", { pinTo: ["not-an-ip"] }), /ADDRESS_NOT_PINNED/);
+  for (const u of ["http://api.openai.com/x", "https://user:pw@api.openai.com/x", "https://api.openai.com:8443/x", "not a url"]) await assert.rejects(() => tr.fetch(u, { pinTo: ["93.184.216.34"] }), /HTTPS_HOST_ONLY|URL_INVALID/);
   await assert.rejects(() => createPinnedTransport({ lookup: async () => [] }).resolveAddresses("a.example.com"), /DNS_NO_ADDRESS/);
-  const a = createCloudAdapter({ providerId: "openai", credentialRef: "R", getCredential: () => KEY });          // no fetch injected: production transport, DNS-pinned
+  const a = createCloudAdapter({ providerId: "openai", credentialRef: "R", getCredential: () => KEY });          // no fetch injected: production transport
   assert.equal(typeof a.resolveAddresses, "function");
-  await assert.rejects(() => a.invoke({ model: "m", prompt: "q" }), /ADDRESS_NOT_PINNED/, "without a checked resolution nothing is sent");
+  await assert.rejects(() => a.invoke({ model: "m", prompt: "q" }), /ADDRESS_NOT_PINNED/, "without the checked addresses nothing is sent");
 });

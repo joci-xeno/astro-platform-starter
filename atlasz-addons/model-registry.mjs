@@ -228,11 +228,12 @@ export function createModelRegistry({ dir, ownerAuth = null, gate = emergencyGat
   function resolve({ agentId, capability = "text", maxCostUsd = 0, estimateTokens = 1000 } = {}) {
     if (!agentSet.has(agentId)) return refuse("NOT_ONE_OF_THE_30_PERMANENT_AGENTS");
     if (readOnly && (integrity === "MISMATCH" || integrity === "UNCHAINED")) return refuse("REGISTRY_UNTRUSTED:" + integrity, { note });      // fail closed: a hand-edited registry routes nothing until the owner rolls back to a verified snapshot
+    if (!Number.isFinite(maxCostUsd) || maxCostUsd < 0) return refuse("BUDGET_INVALID"); if (!Number.isFinite(estimateTokens) || estimateTokens < 0) return refuse("ESTIMATE_INVALID");
     const a = state.assignments[agentId], order = [...(a && a.capability === capability ? [a.primary, ...a.fallbacks] : []), ...state.roleDefaults[roleOf(agentId)], ...Object.keys(state.models)];
     const seen = new Set(), candidates = [], skipped = [];
     for (const id of order) { if (seen.has(id)) continue; seen.add(id); const m = state.models[id]; if (!m) continue; if (!m.capabilities.includes(capability)) continue;
       const d = describe(m), est = m.costPer1kTokensUsd === null ? null : m.costPer1kTokensUsd * estimateTokens / 1000;
-      if (est === null && maxCostUsd > 0 ? false : est === null || est > maxCostUsd) { skipped.push({ id, reason: est === null ? "COST_UNKNOWN" : "OVER_BUDGET", estimateUsd: est }); continue; }
+      if (est === null || est > maxCostUsd) { skipped.push({ id, reason: est === null ? "COST_UNKNOWN" : "OVER_BUDGET", estimateUsd: est }); continue; }
       if (!d.usable) { skipped.push({ id, reason: d.blockers.join("+") }); continue; }
       candidates.push({ id, providerId: m.providerId, family: m.family, version: m.version, estimateUsd: est, assigned: Boolean(a && (a.primary === id || a.fallbacks.includes(id))) }); }
     return { ok: true, agentId, capability, noSpend: maxCostUsd === 0, candidates, skipped, note: candidates.length ? null : "NO_ELIGIBLE_MODEL: nothing is enabled, credentialed and LIVE within the budget" };

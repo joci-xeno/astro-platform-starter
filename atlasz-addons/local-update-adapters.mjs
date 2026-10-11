@@ -10,8 +10,25 @@ import { spawnSync } from "node:child_process";
 import { restrictedNodeCommand } from "./restricted-node.mjs";
 import { parseVersion } from "./update-center.mjs";
 import { prescan } from "./quarantine.mjs";
+import { buildManifest, signManifest } from "./release-signing.mjs";
+import os from "node:os";
 
 export const SIGNATURE_FILE = "release-signature.json";
+/** The signed view of a package: manifest.json + payload/ (everything except the signature file), copied to a temp dir so the signature covers riskTags, remove, breaking, requires as well as the files. */
+function withSignedView(pkgDir, fn) {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "atlasz-sigview-"));
+  try {
+    fs.copyFileSync(path.join(pkgDir, "manifest.json"), path.join(tmp, "manifest.json"));
+    fs.cpSync(path.join(pkgDir, "payload"), path.join(tmp, "payload"), { recursive: true, dereference: false, verbatimSymlinks: true });
+    return fn(tmp);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+}
+/** Publisher-side helper: sign a built package (writes release-signature.json into it). */
+export function signPackage(pkgDir, { privateKeyPem, component, version }) {
+  const env = withSignedView(pkgDir, tmp => signManifest(buildManifest({ rootDir: tmp, component, version }), { privateKeyPem }));
+  fs.writeFileSync(path.join(pkgDir, SIGNATURE_FILE), JSON.stringify(env)); return env;
+}
+
 
 // Detector for the quarantined legacy policy marker. Built from parts so this scanner is not itself a carrier of the marker.
 const LEGACY_MARKER = new RegExp("atlasz-" + "competition", "i");
@@ -91,7 +108,7 @@ export function createLocalUpdateAdapters({ inboxDir, nodeBin = process.execPath
     if (fs.existsSync(sigFile)) {
       if (!releaseVerifier || typeof releaseVerifier.verifyBundle !== "function") return { ok: false, evidence: "SIGNATURE_PRESENT_BUT_NO_VERIFIER_CONFIGURED" };
       let env; try { env = JSON.parse(fs.readFileSync(sigFile, "utf8")); } catch { return { ok: false, evidence: "SIGNATURE_FILE_UNREADABLE" }; }
-      const r = releaseVerifier.verifyBundle(env, { bundleDir: payload });
+      const r = withSignedView(pkg.dir, tmp => releaseVerifier.verifyBundle(env, { bundleDir: tmp }));
       if (!r.ok) return { ok: false, evidence: "SIGNATURE_REFUSED:" + r.reasons.slice(0, 4).join(",") };
       if (env.manifest?.component !== update.componentId || env.manifest?.version !== update.version) return { ok: false, evidence: "SIGNATURE_FOR_DIFFERENT_COMPONENT_OR_VERSION" };
       signature = { state: "SIGNATURE_VALID_CONTENT_MATCHES", keyId: r.keyId, digest: r.digest };
@@ -117,7 +134,11 @@ export function createLocalUpdateAdapters({ inboxDir, nodeBin = process.execPath
     for (const [rel, h] of Object.entries(m.files)) { const p = path.join(dir, rel); if (!fs.existsSync(p) || sha(fs.readFileSync(p)) !== h) bad.push(rel); }
     return { ok: bad.length === 0, why: bad.length ? "MODIFIED_OR_MISSING:" + bad.join(",") : null, version: m.version };
   }
-  async function tester({ dir, phase }) {
+  async function tester({ dir, phase, update }) {
+    // After a successful install the signed release is recorded as ACCEPTED (replay/downgrade history). Best effort: the Update Center's own "newer than installed" rule already holds either way.
+    if (phase === "POST_INSTALL" && update && releaseVerifier && typeof releaseVerifier.accept === "function") {
+      try { const pk = find(update.componentId, update.version), sf = pk && path.join(pk.dir, SIGNATURE_FILE); if (sf && fs.existsSync(sf)) withSignedView(pk.dir, tmp => releaseVerifier.accept(JSON.parse(fs.readFileSync(sf, "utf8")), { bundleDir: tmp })); } catch { /* evidence only */ }
+    }
     const st = path.join(dir, SELFTEST);
     if (fs.existsSync(st)) {
       // Least privilege (ATLASZ-T3-002): the self-test is code from the update package, so it runs under Node's permission model - it may read its own package directory and

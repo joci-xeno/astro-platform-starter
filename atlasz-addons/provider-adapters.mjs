@@ -13,6 +13,7 @@
 // Status: IMPLEMENTED + TESTED with fake fetch. No provider has been contacted: whether any of these hosts/paths work with the owner's key is UNKNOWN until the owner supplies a credential and runs the probe.
 import https from "node:https";
 import dns from "node:dns";
+import net from "node:net";
 const MAX_RESPONSE = 2 * 1024 * 1024;
 const KEY_RE = /^[A-Za-z0-9._~+\/=:-]{8,512}$/;
 
@@ -33,20 +34,19 @@ export const PROVIDER_PROFILES = Object.freeze({
 const withTimeout = (p, ms, label) => { let t; return Promise.race([p, new Promise((_, rej) => { t = setTimeout(() => rej(new Error(label + "_TIMEOUT")), ms); t.unref?.(); })]).finally(() => clearTimeout(t)); };
 const num = v => (Number.isFinite(v) && v >= 0 ? v : null);
 
-/** DNS answers that were CHECKED by the egress policy are the ONLY addresses the default transport will connect to (the policy asks the caller to pin). TLS still verifies the certificate for the host name. */
-export function createPinnedTransport({ lookup = (h => dns.promises.lookup(h, { all: true })), ttlMs = 30000, nowFn = Date.now } = {}) {
-  const pins = new Map();
+/** The caller passes the exact IP addresses the egress policy checked (`pinTo`); the transport connects ONLY to one of them (no shared state, so concurrent requests cannot swap each other's address). TLS still verifies the certificate for the host name. */
+export function createPinnedTransport({ lookup = (h => dns.promises.lookup(h, { all: true })) } = {}) {
   const resolveAddresses = async host => {
-    const r = await lookup(host), addrs = (Array.isArray(r) ? r : [r]).filter(x => x && typeof x.address === "string");
+    const r = await lookup(host), addrs = (Array.isArray(r) ? r : [r]).filter(x => x && typeof x.address === "string" && net.isIP(x.address));
     if (!addrs.length) throw new Error("DNS_NO_ADDRESS");
-    pins.set(host, { addrs, at: nowFn() }); return addrs.map(a => a.address);
+    return addrs.map(a => a.address);
   };
   const fetchPinned = (url, init = {}) => new Promise((resolve, reject) => {
     let u; try { u = new URL(url); } catch { return reject(new Error("URL_INVALID")); }
     if (u.protocol !== "https:" || u.username || u.password || u.port) return reject(new Error("HTTPS_HOST_ONLY"));
-    const pin = pins.get(u.hostname); if (!pin || nowFn() - pin.at > ttlMs) return reject(new Error("ADDRESS_NOT_PINNED"));
-    const a = pin.addrs[0], req = https.request({ hostname: u.hostname, port: 443, path: u.pathname + u.search, method: init.method ?? "GET", headers: init.headers, signal: init.signal,
-      lookup: (_h, o, cb) => (o && o.all ? cb(null, [{ address: a.address, family: a.family ?? (a.address.includes(":") ? 6 : 4) }]) : cb(null, a.address, a.family ?? (a.address.includes(":") ? 6 : 4))) }, res => {
+    const pin = Array.isArray(init.pinTo) ? init.pinTo.find(x => typeof x === "string" && net.isIP(x)) : null; if (!pin) return reject(new Error("ADDRESS_NOT_PINNED"));
+    const fam = net.isIP(pin), req = https.request({ hostname: u.hostname, port: 443, path: u.pathname + u.search, method: init.method ?? "GET", headers: init.headers, signal: init.signal,
+      lookup: (_h, o, cb) => (o && o.all ? cb(null, [{ address: pin, family: fam }]) : cb(null, pin, fam)) }, res => {
       const chunks = []; let n = 0;
       res.on("data", c => { n += c.length; if (n > MAX_RESPONSE) req.destroy(new Error("RESPONSE_TOO_LARGE")); else chunks.push(c); });
       res.on("end", () => resolve({ ok: res.statusCode >= 200 && res.statusCode < 300, status: res.statusCode, text: async () => Buffer.concat(chunks).toString("utf8") }));    // 3xx is never followed: ok=false
@@ -92,24 +92,24 @@ export function createCloudAdapter({ providerId, profile = PROVIDER_PROFILES[pro
     endpoint: model => ({ url: base + chatPath(model), method: "POST" }),
     endpointFor: p => ({ url: base + (profile.models ?? profile.chat.replace("{model}", "x")), method: profile.models ? "GET" : "POST" }),
     ...(resolveAddresses ? { resolveAddresses: host => resolveAddresses(host) } : {}),
-    async invoke({ model, prompt, signal, maxTokens = 1024 }) {
+    async invoke({ model, prompt, signal, maxTokens = 1024, pin = null }) {
       const k = key();                                                                 // throws NO_CREDENTIAL before any request
-      const j = await readJson(await withTimeout(f()(base + chatPath(model), { method: "POST", headers: headers(k), body: JSON.stringify(body(model, prompt, maxTokens)), signal, redirect: "error" }), timeoutMs, "PROVIDER"));
+      const j = await readJson(await withTimeout(f()(base + chatPath(model), { method: "POST", headers: headers(k), body: JSON.stringify(body(model, prompt, maxTokens)), signal, redirect: "error", pinTo: pin }), timeoutMs, "PROVIDER"));
       const out = extract(j); if (out === null) throw new Error("PROVIDER_RESPONSE_SHAPE");
       const [tin, tout] = usage(j), price = num(pricePer1kUsd(model));
       return { output: out, tokensIn: tin, tokensOut: tout, costUsd: price !== null && tin !== null && tout !== null ? ((tin + tout) / 1000) * price : null };
     },
     /** Free reachability + credential check via the model-list endpoint. Providers without one cannot be probed without spending, so they report PROBE_UNSUPPORTED (never LIVE by probe). */
-    async probe() {
+    async probe({ pin = null } = {}) {
       if (!profile.models) return { ok: false, reason: "PROBE_UNSUPPORTED" };
-      try { const k = key(); const j = await readJson(await withTimeout(f()(base + profile.models, { method: "GET", headers: headers(k), redirect: "error" }), Math.min(timeoutMs, 10000), "PROBE")); return { ok: Array.isArray(j?.data) || Array.isArray(j?.models) }; }
+      try { const k = key(); const j = await readJson(await withTimeout(f()(base + profile.models, { method: "GET", headers: headers(k), redirect: "error", pinTo: pin }), Math.min(timeoutMs, 10000), "PROBE")); return { ok: Array.isArray(j?.data) || Array.isArray(j?.models) }; }
       catch (e) { return { ok: false, reason: String(e?.message ?? e).slice(0, 40) }; }
     },
     /** Model ids the provider reports (authoritative source for registry entries; never invented here). */
-    async discover() {
+    async discover({ pin = null } = {}) {
       if (!profile.models) return { ok: false, reason: "DISCOVERY_UNSUPPORTED", models: [] };
       try {
-        const k = key(), j = await readJson(await withTimeout(f()(base + profile.models, { method: "GET", headers: headers(k), redirect: "error" }), Math.min(timeoutMs, 15000), "DISCOVER"));
+        const k = key(), j = await readJson(await withTimeout(f()(base + profile.models, { method: "GET", headers: headers(k), redirect: "error", pinTo: pin }), Math.min(timeoutMs, 15000), "DISCOVER"));
         const arr = Array.isArray(j?.data) ? j.data : Array.isArray(j?.models) ? j.models : [];
         return { ok: true, models: arr.map(m => String(m?.id ?? m?.name ?? "").replace(/^models\//, "")).filter(x => /^[A-Za-z0-9][A-Za-z0-9._:\/@+-]{0,119}$/.test(x)).slice(0, 500) };
       } catch (e) { return { ok: false, reason: String(e?.message ?? e).slice(0, 40), models: [] }; }
