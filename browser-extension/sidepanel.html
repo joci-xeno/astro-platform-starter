@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ATLASZ Local Assistant</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <header>
+    <h1>ATLASZ Local Assistant</h1>
+    <p class="note">Talks only to your Control Center on 127.0.0.1. Nothing is sent anywhere else.</p>
+  </header>
+
+  <section id="setup" aria-labelledby="setup-h">
+    <h2 id="setup-h">Connect (once per browser session)</h2>
+    <label for="port">Control Center port</label>
+    <input id="port" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="e.g. 51234">
+    <label for="token">Dashboard token (or the whole Control Center URL)</label>
+    <input id="token" type="password" autocomplete="off" spellcheck="false">
+    <div class="row">
+      <button id="save" type="button">Save for this session</button>
+      <button id="forget" type="button">Forget</button>
+    </div>
+    <p id="setup-status" role="status" class="note"></p>
+  </section>
+
+  <section id="actions" aria-labelledby="actions-h">
+    <h2 id="actions-h">Selected text</h2>
+    <div class="row">
+      <button type="button" data-kind="EXPLAIN">Explain</button>
+      <button type="button" data-kind="TRANSLATE">Translate</button>
+      <select id="lang" aria-label="Target language"><option value="EN">to English</option><option value="HU">to Hungarian</option></select>
+      <button type="button" data-kind="ANALYSE">Analyse</button>
+    </div>
+    <h2>This page</h2>
+    <div class="row"><button type="button" data-kind="SUMMARIZE_PAGE">Summarise page</button></div>
+    <p class="note">Text inside forms, fields and password boxes is never read.</p>
+  </section>
+
+  <section id="result" aria-live="polite">
+    <p id="label" class="untrusted" hidden>AI-generated, untrusted - check before you rely on it or copy it anywhere.</p>
+    <pre id="output"></pre>
+    <p id="error" class="error" role="alert"></p>
+  </section>
+  <script src="sidepanel.js" type="module"></script>
+</body>
+</html>

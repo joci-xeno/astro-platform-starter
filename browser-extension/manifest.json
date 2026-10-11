@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "ATLASZ Local Assistant",
+  "version": "0.1.0",
+  "description": "Explain, translate or analyse selected text and summarise the current page through YOUR local ATLASZ Control Center (127.0.0.1 only). Output is AI-generated and untrusted.",
+  "minimum_chrome_version": "116",
+  "permissions": ["activeTab", "scripting", "sidePanel", "storage"],
+  "host_permissions": ["http://127.0.0.1/*"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "side_panel": { "default_path": "sidepanel.html" },
+  "action": { "default_title": "ATLASZ Local Assistant" },
+  "content_security_policy": {
+    "extension_pages": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+  }
+}
