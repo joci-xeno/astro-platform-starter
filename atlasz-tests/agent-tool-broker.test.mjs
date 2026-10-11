@@ -301,3 +301,11 @@ test("mutation-driven: exact boundaries and defensive branches (prompt cap, resu
     assert.deepEqual([r.status, r.reason], ["DENIED", "NO_APPROVAL_ON_RECORD"]); assert.equal(calls2.length, 0);
   } finally { s.done(); }
 });
+
+test("a finished tool call leaves no pending timeout timer behind (a leaked 10 s timer kept every hosted process alive)", async () => {
+  const s = setup(); try {
+    const timers = () => process.getActiveResourcesInfo().filter(x => x === "Timeout").length, before = timers();
+    for (let i = 0; i < 5; i++) { const ok = await s.broker.call({ agentId: "SEARCH-1", jobId: J(), tool: "kp.list", args: {} }); assert.equal(ok.status, "OK"); }
+    assert.ok(timers() <= before, `timers before ${before}, after ${timers()}`);
+  } finally { s.done(); }
+});
