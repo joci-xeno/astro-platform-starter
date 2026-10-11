@@ -1,0 +1,33 @@
+defect_id,severity,title,owner,reproduction_evidence,proposed_fix,test,status,verification_result
+DEF-001,HIGH,reassignTask marks old task REASSIGNED before the replacement is created,Claude Code,"atlasz-addons/agent-workforce.mjs reassignTask: touch(t,{status:'REASSIGNED'}) precedes executeTask; a failing replacement leaves the original closed",Compensating transaction: create/commit replacement first or restore the original status on failure,master-coordinator.test.mjs (to extend),OPEN,not yet verified
+DEF-002,HIGH,No process-level watchdog or single-instance protection for the Master loop,Claude Code,Master tick runs in a timer inside server.mjs; a stuck tick is not detected,Heartbeat + stale detection + instance lock,to add,OPEN,not yet verified
+DEF-003,HIGH,Financial firewall / money-state-guard / agent-governor / control-chain not on any runtime path,Claude Code,integration_matrix: owner-control/* unreachable (9 of 12),Wire as mandatory gates in Master dispatch and ledger/money operations,to add,OPEN,not yet verified
+DEF-004,MEDIUM,scheduler.mjs not connected to runtime operations,Claude Code,integration_matrix: scheduler unreachable,Master TASK_SCHEDULER manager drives scheduled jobs through typed tools,to add,OPEN,not yet verified
+DEF-005,MEDIUM,recovery.mjs / backup recovery not on a runtime path in the Master,Claude Code,RECOVERY_MAINTENANCE probe DEGRADED in sandbox,Probe real backup/drill state; provide recover action with owner approval,to add,OPEN,not yet verified
+DEF-006,HIGH,credential-broker not integrated with vault and provider adapters,Claude Code,integration_matrix: credential-broker unreachable,"Broker issues scoped, short-lived credential handles to adapters; no secret in logs",to add,OPEN,not yet verified
+DEF-007,HIGH,No malware scanning,Claude Code,no adapter,"Scanner adapter, fail-closed",to add,OWNER_BLOCKED,owner must approve scanner
+DEF-008,MEDIUM,No canary/integrity monitoring,Claude Code,none,Canary + baseline monitor,to add,OPEN,not yet verified
+DEF-009,MEDIUM,Electron-bundled Node may lack --permission mode,Claude Code,docs/SANDBOX_LIMITS_WINDOWS_ELECTRON.md,Check process.versions.node at startup; fail closed (already); document; pin Electron with Node>=22.13 only if an owner-approved upgrade exists,windows CI + owner machine,OPEN,fail-closed behaviour tested; compatibility unverified on Windows
+DEF-010,HIGH,133 modules unreachable from any running path,Claude Code,integration_matrix_2026-10-11.json isolatedFromAll=133,Module broker + per-module disposition in the repair register,integration matrix rerun,OPEN,tracked per module in ATLASZ_V73_TOTAL_INTEGRATION_REPAIR.csv
+DEF-011,HIGH,Brain modules are isolated libraries; brain-views reads persisted state only,Claude Code,brain/* unreachable (15 of 22),Brain bridge under the Master,brain-master integration test,OPEN,not yet verified
+DEF-012,HIGH,"0 model records, 0 LIVE providers, 0 usable models",Claude Code,"model registry view after seed: providers 14, models 0","Catalog discovery, local path, live tests when authorized",to add,OPEN,not yet verified
+DEF-013,MEDIUM,Agents only use 5 local executors,Claude Code,agent_evidence_2026-10-11.md,Tool broker expansion,to add,OPEN,not yet verified
+DEF-014,MEDIUM,No connector source CONNECTED,Claude Code,global-discovery source states,Owner signature then real run,real run,OWNER_BLOCKED,needs owner signature
+DEF-015,MEDIUM,No continuous discovery,Claude Code,none,Discovery service,to add,OPEN,not yet verified
+DEF-016,MEDIUM,"Four managers DEGRADED in sandbox (security, runtime, scheduler, recovery)",Claude Code,system_audit_2026-10-11.json,Real probes + owner-side setup instructions,to add,OPEN,not yet verified
+DEF-017,LOW,Integration matrix links tests by file name only; panels show 0 tests,Claude Code,integration_matrix method note,Link tests by exercised route / import graph,scripts/integration-matrix.mjs,OPEN,not yet verified
+DEF-018,MEDIUM,23-point package has no per-item recalculation,Claude Code,docs/ATLASZ_V73_UNIFIED_AUDIT.md baseline only,Recompute,to add,OPEN,not yet verified
+DEF-019,MEDIUM,Windows installer is stale and never installed/launched,Claude Code,gh run 37701784773 @fa2a230,Fresh build + owner install test,manual,OWNER_BLOCKED,needs owner PC
+DEF-020,MEDIUM,No automatic update pipeline connected to the app,Claude Code,"update-center exists, no feed/policy/rollback loop",Update pipeline,to add,OPEN,not yet verified
+DEF-021,LOW,Only a manual Windows workflow in CI,Claude Code,no test/security/release workflows,Add workflows,CI,OPEN,not yet verified
+DEF-022,HIGH,Stripe/KOHO not integrated,Claude Code,docs/STRIPE_HANDOFF.md,Separate approved phase,n/a,EXTERNAL_BLOCKED,awaiting Astra
+DEF-023,MEDIUM,TED and CanadaBuys have no adapters,Claude Code,global-discovery catalogue,Reviewed adapters,to add,EXTERNAL_BLOCKED,needs policy review and real sample
+REG-001,HIGH,Forged CONNECTOR/OPERATOR retrieval labels,Claude Code,"probe, batch 1",hasEvidence() backs labels,global-discovery.test.mjs,FIXED_VERIFIED,passes in gate
+REG-002,HIGH,ReDoS in text helpers,Claude Code,probe,linear-time scanners,global-discovery.test.mjs,FIXED_VERIFIED,passes in gate
+REG-003,MEDIUM,Empty run counted as connected,Claude Code,probe,RUN_EMPTY state,global-discovery.test.mjs,FIXED_VERIFIED,passes in gate
+REG-004,HIGH,Host check bypass via userinfo/port,Claude Code,probe,canonicalUrl null for userinfo/port/non-https,global-discovery.test.mjs,FIXED_VERIFIED,passes in gate
+REG-005,HIGH,Agent handle widening project memory reach,Claude Code,probe,pickPublic,m5-memory-integration.test.mjs; global-discovery-workforce.test.mjs,FIXED_VERIFIED,passes in gate
+REG-006,HIGH,Spend cap bypass via open requests / file deletion / rounding,Claude Code,probe,"reservation, audit-backed fail-closed, exact subject",model-registry.test.mjs,FIXED_VERIFIED,passes in gate
+REG-007,HIGH,"Payment package intake evasions (FIFO, binary, comment gates, split keys)",Claude Code,probe,hardened scanner,payment-package-intake.test.mjs,FIXED_VERIFIED,passes in gate
+REG-008,HIGH,Forged Master capability / owner-directed task takeover,Claude Code,probe,"one-shot token, owner-only reassign",master-security-probe.test.mjs,FIXED_VERIFIED,passes in gate
+REG-009,MEDIUM,Tampered Master audit/state accepted,Claude Code,probe,fail closed / set aside,master-security-probe.test.mjs,FIXED_VERIFIED,passes in gate
