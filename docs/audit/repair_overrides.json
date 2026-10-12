@@ -671,7 +671,7 @@
    "proposed_fix": "workflow-stages.mjs + registry.setStage enforcement (no skip, no reverse, authority-verified external facts)",
    "test": "opportunity-intake.test.mjs",
    "status": "TESTED",
-   "verification_result": "only the OWNER_APPROVAL authority is connected (signature verified, single use); delivery/invoice/payment authorities not connected: those stages stay refused (fail closed)"
+   "verification_result": "all five authorities connected in the Control Center (owner approval = real signature, single use; QA accept = workforce VERIFIED task with independent checker; delivery/invoice = money-engine records; payment = processor-confirmed ledger entry, exact amount/currency, LIVE only). No delivery adapter is connected, so DELIVER can never be verified yet: honest. Opportunity-to-job link is asserted by the Master (limit)."
   },
   {
    "defect_id": "M-001",

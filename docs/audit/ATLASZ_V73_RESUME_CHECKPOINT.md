@@ -1,10 +1,10 @@
 # ATLASZ V7.3 — RESUME CHECKPOINT
 - Branch: `atlasz-v73-integration` (remote `github` only; never `origin`, never `main`)
-- Last verified: Batch 8 Phase A + C + E-slice + UI — gate 2163/2163 (previous: Phase C 2160, Phase A 2148). Exact commit id: `git log -1` / `git ls-remote github atlasz-v73-integration`.
+- Last verified: Batch 8 Phase A + C + E (stage authorities) + UI — gate 2165/2165 (previous: 2163, 2160, 2148). Exact commit id: `git log -1` / `git ls-remote github atlasz-v73-integration`.
 - Current batch: 6 complete → next: Batch 7 (real authorized AI model connectivity), then Batch 8–14.
 
 ## Completed (Batch 8 Phase E slice + UI)
-- `workflow-stages.mjs`: entry criteria (required evidence) for the 14 stages; `registry.setStage` refuses skip/reverse/unverified evidence. Only OWNER_APPROVAL authority connected (real signature, single use). Delivery/invoice/payment authority wiring is the next step (those stages remain refused until connected).
+- `workflow-stages.mjs`: entry criteria (required evidence) for the 14 stages; `registry.setStage` refuses skip/reverse/unverified evidence. All five authorities connected (`core.verifyStageEvidence`): owner approval (real signature, single use), QA accept (workforce, independent checker), delivery & invoice (money-engine records), payment (processor-confirmed ledger, exact amount/currency, LIVE only). No delivery adapter exists, so DELIVER cannot verify yet. Link opportunity->job is asserted by the Master (limit).
 - Control Center: Opportunity Pipeline page, network supervision section, model inventory rows (12 facts).
 
 ## Completed (Batch 8 Phase C + demonstrations)
@@ -48,7 +48,7 @@ Dockerfile.worker still launches legacy supervisor.js (B6-005); 86 non-133 modul
 Owner key provisioning; host approvals; provider credentials + `ATLASZ_VAULT_KEY`; malware scanner choice; D12 signature (optional); legacy runtime removal; manual Windows installer run; enable auto-update policy; real USB backup rehearsal; Stripe awaits Astra package (deferred).
 
 ## Exact next action
-(Batch 8 A/C/E-slice done.) Next: connect DELIVERY_RECORD / INVOICE_RECORD / PAYMENT_VERIFIED authorities to the stage gate (money-engine, payment-events), proposal-draft stage from the workforce executors, wire a first authorised live source once the owner signs a host approval, Windows update CI + real smoke test (owner machine), physical backup rehearsal (owner device).
+(Batch 8 A/C/E-slice done.) Next: proposal-draft stage from the workforce executors, wire a first authorised live source once the owner signs a host approval, Windows update CI + real smoke test (owner machine), physical backup rehearsal (owner device).
 
 Older: (7A/7B/7D done; see above.) Remaining: 7E financial event tracking dashboard wiring, backup rehearsal on owner device, broker registration of AURORA read-only status, real credentials/voice test by owner.
 

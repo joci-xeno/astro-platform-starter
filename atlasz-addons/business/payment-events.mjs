@@ -97,6 +97,15 @@ export function createPaymentEventLedger({ dir, environment = "LIVE", secretFor 
         bankReconciledMinor: sumOf(Object.values(S.payouts).filter(p => p.state === "BANK_RECONCILED"), p => p.amountMinor) }, eventsProcessed: Object.keys(S.events).length, auditOk: audit.verify().ok };
   }
   /** Authority for the payment-verification engine: VERIFIED only for a processor-confirmed succeeded payment carrying this invoice id with the exact amount and currency, not fully refunded, not under open dispute. */
+  /** Synchronous check used by the workflow stage gate: a PROCESSOR-CONFIRMED succeeded payment for this invoice with the exact amount and currency, not fully refunded, no open dispute, in THIS ledger's environment. */
+  function confirmedPayment({ invoiceId, amount, currency } = {}) {
+    const p = Object.values(S.payments).find(x => x.invoiceId === invoiceId && x.state === "PAYMENT_SUCCEEDED");
+    if (!p) return { ok: false, reason: "NO_PROCESSOR_CONFIRMED_PAYMENT_FOR_INVOICE" };
+    if (p.dispute?.status === "OPEN") return { ok: false, reason: "DISPUTE_OPEN" };
+    if (p.amountMinor !== Math.round(Number(amount) * 100) || p.currency !== String(currency ?? "").toLowerCase()) return { ok: false, reason: "AMOUNT_OR_CURRENCY_MISMATCH" };
+    if (p.refundedMinor >= p.amountMinor) return { ok: false, reason: "FULLY_REFUNDED" };
+    return { ok: true, reference: p.key, environment };
+  }
   const authority = (id = "stripe-webhook-ledger") => ({ id, type: "PAYMENT_PROCESSOR", verify: async c => {
     const p = Object.values(S.payments).find(x => x.invoiceId === c.invoiceId && x.state === "PAYMENT_SUCCEEDED");
     if (!p) return { status: "UNKNOWN", reason: "NO_PROCESSOR_CONFIRMED_PAYMENT_FOR_INVOICE" };
@@ -105,5 +114,5 @@ export function createPaymentEventLedger({ dir, environment = "LIVE", secretFor 
     if (p.refundedMinor >= p.amountMinor) return { status: "FAILED", reason: "FULLY_REFUNDED" };
     return { status: "VERIFIED", amount: Number(c.amount), currency: String(c.currency).toUpperCase(), reference: p.key, environment, settledAt: new Date(p.at * 1000).toISOString() };
   } });
-  return { ingest, reconcileBank, summary, authority, payment: k => (S.payments[k] ? structuredClone(S.payments[k]) : null), payout: k => (S.payouts[k] ? structuredClone(S.payouts[k]) : null), verify: () => audit.verify() };
+  return { ingest, reconcileBank, summary, authority, confirmedPayment, payment: k => (S.payments[k] ? structuredClone(S.payments[k]) : null), payout: k => (S.payouts[k] ? structuredClone(S.payouts[k]) : null), verify: () => audit.verify() };
 }

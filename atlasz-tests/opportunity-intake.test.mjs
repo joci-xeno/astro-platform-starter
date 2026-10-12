@@ -145,3 +145,10 @@ test("HTTP: pipeline and network endpoints need the session token and answer fro
     const n = JSON.parse((await get("/api/security/network")).body); assert.ok(Number.isInteger(n.summary.events)); assert.match(n.note, /not a packet monitor/);
   } finally { await cc.close(); rm(d); }
 });
+test("hosted stage authorities: forged or missing delivery / invoice / payment / QA / approval evidence is never verified; the later stages stay closed", async () => {
+  const { createControlCenterCore } = await import("../atlasz-control-center/core.mjs"); const d = tmp("oi-"); try {
+    const c = createControlCenterCore({ stateDir: path.join(d, "s"), configDir: path.join(d, "c") }), opp = { opportunityId: "opp-x" };
+    for (const [a, e] of [["OWNER_APPROVAL", { approvalId: "nope" }], ["QA_ACCEPT", { taskId: "t", decision: "ACCEPT", checker: "SEARCH-1" }], ["DELIVERY_RECORD", { deliveryId: "dlv-1" }], ["INVOICE_RECORD", { invoiceId: "inv-00001" }], ["PAYMENT_VERIFIED", { invoiceId: "inv-00001", amount: 1, currency: "USD" }], ["UNKNOWN_AUTHORITY", {}]])
+      assert.equal(c.verifyStageEvidence(a, e, opp), false, a);
+  } finally { rm(d); }
+});

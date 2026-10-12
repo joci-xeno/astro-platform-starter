@@ -74,7 +74,17 @@ test("as an authority for the payment-verification engine: only a processor-conf
   } finally { rm(d); }
 });
 test("the ledger can only RECEIVE: no money-moving API exists, no network/process module is imported, and a damaged store fails closed", () => {
-  const d = tmp("pe-"); try { const { L } = mk(d); assert.deepEqual(Object.keys(L).sort(), ["authority", "ingest", "payment", "payout", "reconcileBank", "summary", "verify"]);
+  const d = tmp("pe-"); try { const { L } = mk(d); assert.deepEqual(Object.keys(L).sort(), ["authority", "confirmedPayment", "ingest", "payment", "payout", "reconcileBank", "summary", "verify"]);
     const src = fs.readFileSync(new URL("../atlasz-addons/business/payment-events.mjs", import.meta.url), "utf8"); assert.doesNotMatch(src.replace(/\/\/.*$/gm, ""), /node:(http|https|net|child_process|dns|tls)|fetch\(|XMLHttpRequest|refund\w*\(|createTransfer|createPayout/);
     fs.writeFileSync(path.join(d, "pe", "payment-events.json"), "{broken"); assert.throws(() => mk(d), /PAYMENT_EVENT_STORE_UNREADABLE/); } finally { rm(d); }
+});
+test("confirmedPayment (stage gate lookup): exact amount+currency, processor-confirmed, not fully refunded, no open dispute; anything else is not verified", () => {
+  const d = tmp("pe-"); try { const { L } = mk(d);
+    assert.equal(L.confirmedPayment({ invoiceId: "inv-1", amount: 200, currency: "USD" }).reason, "NO_PROCESSOR_CONFIRMED_PAYMENT_FOR_INVOICE");
+    send(L, ev("evt_p1", "payment_intent.created", pi())); assert.equal(L.confirmedPayment({ invoiceId: "inv-1", amount: 200, currency: "USD" }).ok, false, "initiated is not money");
+    send(L, ev("evt_p2", "payment_intent.succeeded", pi()));
+    const ok = L.confirmedPayment({ invoiceId: "inv-1", amount: 200, currency: "USD" }); assert.equal(ok.ok, true); assert.equal(ok.environment, "LIVE");
+    assert.equal(L.confirmedPayment({ invoiceId: "inv-1", amount: 199, currency: "USD" }).reason, "AMOUNT_OR_CURRENCY_MISMATCH"); assert.equal(L.confirmedPayment({ invoiceId: "inv-1", amount: 200, currency: "EUR" }).ok, false);
+    assert.equal(L.confirmedPayment({ invoiceId: "inv-2", amount: 200, currency: "USD" }).ok, false);
+  } finally { rm(d); }
 });
