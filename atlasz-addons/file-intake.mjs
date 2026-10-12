@@ -8,7 +8,7 @@ import { createQuarantine } from "./quarantine.mjs";
 import { scrub } from "./secret-patterns.mjs";
 
 export const INTAKE_MAX_BYTES = 25 * 1024 * 1024;
-export function createFileIntake({ dir, ownerAuth = null, scanner = null, isStopped = () => false, maxBytes = INTAKE_MAX_BYTES, alert = () => {}, onIncident = () => {}, now = () => Date.now() } = {}) {
+export function createFileIntake({ dir, boundary = null, ownerAuth = null, scanner = null, isStopped = () => false, maxBytes = INTAKE_MAX_BYTES, alert = () => {}, onIncident = () => {}, now = () => Date.now() } = {}) {
   const q = createQuarantine({ dir, ownerAuth, scanner, isStopped, nowFn: now, limits: { maxFileBytes: maxBytes } });
   const notify = a => { try { alert(a); return true; } catch { return false; } };
   const stateOf = rec => rec.scan.status === "SCANNER_DETECTED" ? "BLOCKED_DETECTED" : rec.findings.some(f => f.severity === "BLOCK") ? "BLOCKED_STRUCTURAL"
@@ -24,5 +24,6 @@ export function createFileIntake({ dir, ownerAuth = null, scanner = null, isStop
     if (blocked) { try { onIncident({ kind: state === "BLOCKED_DETECTED" ? "MALWARE_DETECTED_BY_SCANNER" : "MALICIOUS_FILE_STRUCTURE", severity: "CRITICAL", confirmed: true, operation: "file:" + rec.sha256, detail: rec.originalName + " " + state, evidence: { sha256: rec.sha256, scan: rec.scan, findings: rec.findings.slice(0, 10) } }); } catch { /* the file is still held */ } }
     return { ok: true, state, sha256: rec.sha256, type: rec.type, executable: rec.executable, scan: rec.scan, findings: rec.findings, releasedToAgents: false };
   }
-  return { submit, list: q.list, get: q.get, release: q.release, remove: q.remove, verify: q.verify, status: q.status, scannerName: scanner?.name ?? null, auditEntries: q.auditEntries };
+  const release = (...a) => { if (boundary) { let b; try { b = boundary.check({ agentId: null, tool: "quarantine.release", opClass: "FILE_RELEASE" }); } catch { b = { allowed: false, reason: "BOUNDARY_ERROR" }; } if (!b.allowed) return { ok: false, reason: "BOUNDARY:" + b.reason }; } return q.release(...a); };
+  return { submit, list: q.list, get: q.get, release, remove: q.remove, verify: q.verify, status: q.status, scannerName: scanner?.name ?? null, auditEntries: q.auditEntries };
 }

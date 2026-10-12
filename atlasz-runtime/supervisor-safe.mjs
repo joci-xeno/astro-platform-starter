@@ -21,6 +21,9 @@ import { loadActivatedProvider } from "../atlasz-addons/embedding-provider.mjs";
 import { createMemoryStore } from "../atlasz-addons/memory-store.mjs";
 import { createCodeEditWorkflow } from "../atlasz-addons/code-edit-workflow.mjs";
 import { createCredentialBroker } from "../atlasz-addons/credential-broker.mjs";
+import { createIncidentResponse } from "../atlasz-addons/incident-response.mjs";
+import { createExecutionBoundary } from "../atlasz-addons/execution-boundary.mjs";
+import { createNetworkSupervisor } from "../atlasz-addons/network-supervisor.mjs";
 import { roleOf as agentRoleOf } from "../atlasz-addons/agent-tool-policy.mjs";
 import { createApprovalRequests } from "../atlasz-addons/approval-requests.mjs";
 import { getDefaultOwnerAuth } from "../atlasz-addons/owner-auth.mjs";
@@ -63,9 +66,13 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
   // ---- V7.3 safety layer: self-check -> safe mode -> durable queue -> watchdog (fixed topology 5 SEARCH + 25 EXECUTION) ----
   const ownerAuth = getDefaultOwnerAuth();
   const deadLetters = configureDeadLetters({ dir: path.join(dataDir, "dead-letters"), ownerAuth });       // durable: failed work survives restarts; retry/recovery need a signed owner approval
+  // Universal execution boundary (independent of the Brain and the models): the incident controller's persisted blocks apply to every tool call, credential request and model egress in this process.
+  const incidents = createIncidentResponse({ dir: path.join(dataDir, "incidents"), ownerAuth, alert: a => { try { process.stderr.write("[ALERT] " + JSON.stringify({ level: a.level, incident: a.incident, kind: a.kind }) + "\n"); } catch { /* alerting is best effort */ } } });
+  const networkSupervisor = createNetworkSupervisor({ dir: path.join(dataDir, "network-supervision"), declare: i => incidents.declare(i) });
+  const executionBoundary = createExecutionBoundary({ isBlocked: a => incidents.isBlocked(a), isStopped: () => emergencyStatus().mode !== "RUNNING" });
   const vault = createSecretVault({ dir: path.join(dataDir, "vault"), ownerAuth });
   // Credential broker (M1): agents never get raw credentials. No grants exist until the owner signs them, and no agent tool is wired to it yet (agent-tool-policy denies unlisted tools).
-  const credentialBroker = createCredentialBroker({ vault, ownerAuth, stateDir: path.join(dataDir, "vault", "broker"), roleOf: agentRoleOf, isKnownAgent: id => (state?.agents ?? []).some(a => a.id === id) });
+  const credentialBroker = createCredentialBroker({ vault, boundary: executionBoundary, netSup: networkSupervisor, ownerAuth, stateDir: path.join(dataDir, "vault", "broker"), roleOf: agentRoleOf, isKnownAgent: id => (state?.agents ?? []).some(a => a.id === id) });
   const codeEdit = createCodeEditWorkflow({ projectsRoot: path.join(dataDir, "projects"), stateDir: path.join(dataDir, "code-edit"), ownerAuth, isKnownAgent: id => (state?.agents ?? []).some(a => a.id === id), isStopped: () => emergencyStatus().mode !== "RUNNING" || safeMode.status().mode !== "NORMAL" });      // M2/C01: controlled code edits; no agent tool is wired (agent-tool-policy denies unlisted tools)
   // Neural retrieval is OFF unless the owner activated a local embedding model (record written by the Control Center after a signed approval); otherwise the store stays lexical and says so.
   const embeddingConfigFile = path.join(dataDir, "memory", "embedding-activation.json"), semanticProvider = loadActivatedProvider({ configFile: embeddingConfigFile, fetchImpl });
@@ -136,7 +143,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
   // Typed tool surface (G06/GE08): the ONLY way a model/agent calls an ATLASZ function. Schema-checked in and out, classified by the control chain
   // on every call. These built-ins are READ-ONLY views of persisted state; any external-effect tool must declare a gated operation.
   const EMPTY = { type: "object", properties: {} };
-  const tools = createToolRegistry({ chain: ownerControl.chain, blackBox: brain.blackBox, now });
+  const tools = createToolRegistry({ chain: ownerControl.chain, blackBox: brain.blackBox, boundary: executionBoundary, now });
   tools.register({ name: "atlasz.queue", description: "Durable queue pressure (ready/leased/dead counts).", operation: "READ_STATUS", input: EMPTY, output: { type: "object", properties: { full: { type: "boolean" } }, additionalProperties: true }, handler: () => queue.pressure() });
   tools.register({ name: "money.panel", description: "Money Engine panel (LIVE vs SANDBOX separate; verified vs claimed).", operation: "READ_STATUS", input: EMPTY, output: { type: "object", properties: {}, additionalProperties: true }, handler: () => moneyEngine.panel() });
   tools.register({ name: "inbox.summary", description: "Inbox pipeline summary (counts only, no message bodies).", operation: "READ_STATUS", input: EMPTY, output: { type: "object", properties: {}, additionalProperties: true }, handler: () => inboxPipeline.summary() });
@@ -229,7 +236,10 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
     update(agent, "RUNNING", "Search recent public project requests: " + query);
     try {
       const url = "https://hn.algolia.com/api/v1/search_by_date?tags=comment&hitsPerPage=50&numericFilters=created_at_i%3E" + Math.floor((Date.now() - 30 * 86400000) / 1000) + "&query=" + encodeURIComponent(query);
-      const response = await fetchImpl(url, { signal: AbortSignal.timeout(20000), headers: { "User-Agent": "ATLASZ-30/3.1 project-research" } });
+      const nb = executionBoundary.check({ agentId: agent.id, tool: "hn-search", opClass: "NETWORK_REQUEST" });         // universal boundary: an incident block stops this agent's search too
+      if (!nb.allowed) { networkSupervisor.record({ kind: "EGRESS", agentId: agent.id, tool: "hn-search", host: "hn.algolia.com", port: 443, method: "GET", decision: "DENY", reason: nb.reason }); throw new Error("BOUNDARY:" + nb.reason); }
+      let response; try { response = await fetchImpl(url, { signal: AbortSignal.timeout(20000), headers: { "User-Agent": "ATLASZ-30/3.1 project-research" } }); } catch (e) { networkSupervisor.record({ kind: "EGRESS", agentId: agent.id, tool: "hn-search", host: "hn.algolia.com", port: 443, method: "GET", decision: "ALLOW", reason: "UPSTREAM_ERROR" }); throw e; }
+      networkSupervisor.record({ kind: "EGRESS", agentId: agent.id, tool: "hn-search", host: "hn.algolia.com", port: 443, method: "GET", decision: "ALLOW", status: response.status });
       if (!response.ok) throw new Error("SOURCE_HTTP_" + response.status);
       const json = await response.json();
       if (!Array.isArray(json.hits)) throw new Error("SOURCE_SCHEMA_MISMATCH");
@@ -448,7 +458,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
       agents: state.agents, blockers, sourceErrors: state.sourceErrors, emergency: emergencyStatus(), safeMode: safeMode.status(), pendingApprovals: approvalRequests.pending().length, queue: queue.stats(), watchdog: watchdog.status(),
       selfCheck: { level: selfCheck.level, problems: selfCheck.checks.filter(c => c.status !== "OK").map(c => ({ id: c.id, status: c.status, detail: c.detail })) },
       agentTools: { ...agentTools.stats(), status: "SANDBOX_ENFORCED_NOT_LIVE", signals: agentToolSignals.length, note: "Agents may call only tools allowed by the owner-approved table (deny by default); limits and approvals enforced in code." },
-      deadLetters: deadLetters.status(), coordination: coordination.summary(), vault: vault.status(), credentialBroker: credentialBroker.summary(), codeEdit: codeEdit.summary(), memoryStore: memoryStore.status(), agentMemory: agentMemory.diagnose(), internalAddons: addonSnapshot(),
+      deadLetters: deadLetters.status(), incidents: { open: incidents.open().length, blocks: incidents.blocks().length }, networkSupervision: networkSupervisor.summary(), coordination: coordination.summary(), vault: vault.status(), credentialBroker: credentialBroker.summary(), codeEdit: codeEdit.summary(), memoryStore: memoryStore.status(), agentMemory: agentMemory.diagnose(), internalAddons: addonSnapshot(),
       brain: brainSafe(() => brain.summary()) ?? { state: "ERROR" }, models: brainSafe(() => modelGateway.summary()) ?? { state: "ERROR" }, voice: brainSafe(() => { const x = voice.summary({}); return { conversations: x.conversations, open: x.open, live: x.voice.live, providerMode: x.providerMode, blocker: x.voice.blocker, canApprove: false }; }) ?? { state: "ERROR" }, observations: brainSafe(() => { const x = observations.summary({ tenantId: KP_TENANT, role: "OWNER" }); return { total: x.total, expired: x.expired, deleted: x.deleted, rawMediaStored: false, chain: x.chain, method: x.method }; }) ?? { state: "ERROR" }, modality: brainSafe(() => { const m = modality.summary(); return { builtIn: m.builtIn.length, externalSlotsNotLive: m.external, note: m.note }; }) ?? { state: "ERROR" }, sandbox: brainSafe(() => { const x = sandbox.summary(); return { level: x.level, languages: x.languages, runs: x.runs, audit: x.audit, label: x.label }; }) ?? { state: "ERROR" }, research: brainSafe(() => research.summary({ tenantId: KP_TENANT, role: "OWNER" })) ?? { state: "ERROR" }, knowledge: brainSafe(() => ({ projects: knowledge.list({ tenantId: KP_TENANT }).length, documents: documents.summary().total, method: "KEYWORD_BM25_NOT_SEMANTIC" })) ?? { state: "ERROR" }, scheduler: brainSafe(() => scheduler.summary()) ?? { state: "ERROR" }, pcc: brainSafe(() => pcc.summary()) ?? { state: "ERROR" }, moneyEngine: brainSafe(() => moneyEngine.panel()) ?? { state: "ERROR" }, behavior: brainSafe(() => brain.behavior.summary()) ?? { state: "ERROR" }, inbox: brainSafe(() => ({ ...inbox.counts(), pipeline: inboxPipeline.summary() })) ?? { state: "ERROR" }, ownerControl: brainSafe(() => ownerControl.status()) ?? { state: "ERROR" }, ledger: ledger.summary(), uptime: { startedAt: bootedAt, seconds: Math.round((Date.now() - Date.parse(bootedAt)) / 1000) }
     };
   }
@@ -478,7 +488,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
     schedule(() => brainSafe(() => brain.behavior.scan()), 60000);          // behaviour anomaly scan over the tamper-evident Black Box (detect + recommend only)
   }
   function stop() { stopping = true; try { memoryStore.close(); } catch { /* closed */ } watchdog.stop(); for (const t of timers) clearTimeout(t); save(); }
-  return { deadLetters, credentialBroker, codeEdit, memoryStore, agentMemory, coordination, tools, agentTools, agentToolSignals, modelGateway, knowledge, research, sandbox, modality, observations, voice, documents, pcc, scheduler, inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
+  return { incidents, executionBoundary, networkSupervisor, deadLetters, credentialBroker, codeEdit, memoryStore, agentMemory, coordination, tools, agentTools, agentToolSignals, modelGateway, knowledge, research, sandbox, modality, observations, voice, documents, pcc, scheduler, inbox, inboxPipeline, moneyEngine, evidenceSources, recoveryMap, brain, ownerControl, ledger, state, search, execute, dashboard, save, start, stop, recoveredStalled, recoveredQueue, queue, approvalRequests, safeMode, watchdog, selfCheck, vault };
 }
 
 if (process.env.ATLASZ_TEST_MODE !== "1") {

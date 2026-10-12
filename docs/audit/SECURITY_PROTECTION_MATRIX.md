@@ -28,11 +28,14 @@ Nothing here claims the system is unhackable or that all malware is detected. A 
 | 21 | Durable checkpoints, safe retries, duplicate prevention, task recovery after crash/restart | yes | yes | yes | `brain-failure-modes`, `master-coordinator`, `tick-loop`, RESTART |
 | 22 | Master / Brain failure: fail closed, no model reasoning when unavailable | yes | yes | yes | `brain-failure-modes.test` |
 | 23 | Encrypted portable backup (AES-256-GCM, scrypt), tamper/wrong-passphrase failure, restore only into empty targets, isolated restoration rehearsal | yes | n/a | yes | `portable-backup.test` · **BLOCKED**: rehearsal on a physical USB/SSD needs the owner's device |
+| 25 | Universal execution boundary: one incident/stop check at the typed tool registry (every module capability + every agent tool), credential broker, model egress, quarantine release, connectors, SEARCH-agent fetch | yes | yes (RUNTIME_ENFORCED on listed paths) | yes | `execution-boundary.test`, `enforcement-coverage.test`; reach listed in `enforcement_coverage.json` |
+| 26 | Per-agent network supervision with detectors and CONFIRMED broker-bypass containment | yes | yes (wired paths only) | yes | `execution-boundary.test` |
 | 24 | Owner key provisioning outside the repo, passphrase-encrypted | yes | yes | yes | `repo-secret-scan.test` · **BLOCKED**: owner has not provisioned the key yet |
 
 ## Remaining security gaps (honest)
-- SEC-GAP-1: egress decisions are audited per provider, not attributed to an agent, so "suspicious network activity" is not yet shown per agent.
-- SEC-GAP-2: containment covers call paths that consult the incident module; any future agent-reachable path must be wired to it.
+- SEC-GAP-1: CLOSED (Batch 8 Phase A) for wired paths: egress, credential and tool events are attributed per agent/task/tool with detectors (`network-supervisor.mjs`). Not a packet monitor: traffic from code outside the wired paths is not seen.
+- SEC-GAP-2: NARROWED: the boundary is now at the common typed-tool registry and the paths listed in `enforcement_coverage.json`; `enforcement-coverage.test` fails when a new network/process primitive is unclassified. Still not universal: see SEC-GAP-5. No claim of universal isolation; no OS-level network isolation exists yet (owner/Windows-side decision).
+- SEC-GAP-5: local child processes (code sandbox, MCP servers, scanner, git/tooling, plugin manager) are not gated by the incident boundary; they run under Node's permission model or as owner-initiated tooling.
 - SEC-GAP-3: scanner signature freshness is the engine's responsibility; ATLASZ does not check it.
 - SEC-GAP-4: no external penetration test; the adversarial suite covers known attack classes only.
 - Pattern-based redaction/scanning cannot recognise unknown credential formats or secrets split over several fields.

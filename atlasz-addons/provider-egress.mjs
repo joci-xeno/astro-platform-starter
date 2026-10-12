@@ -31,7 +31,7 @@ function rawHost(url) {
   return h ? h.toLowerCase() : null;
 }
 
-export function createProviderEgress({ registry, egress, gate = emergencyGate, routes = {}, dir = null, now = () => new Date().toISOString() } = {}) {
+export function createProviderEgress({ registry, egress, boundary = null, netSup = null, gate = emergencyGate, routes = {}, dir = null, now = () => new Date().toISOString() } = {}) {
   if (!registry || typeof registry.getModel !== "function" || typeof registry.listModels !== "function" || typeof registry.listProviders !== "function") throw new Error("REGISTRY_REQUIRED");
   if (!egress || typeof egress.check !== "function" || typeof egress.setPolicy !== "function" || typeof egress.listPolicies !== "function") throw new Error("EGRESS_POLICY_REQUIRED");
   const audit = createAuditChain({ filePath: dir ? path.join(dir, "provider-egress-audit.jsonl") : null, now });
@@ -78,6 +78,7 @@ export function createProviderEgress({ registry, egress, gate = emergencyGate, r
   }
 
   function record(allowed, reason, info) {
+    try { netSup?.record({ kind: "EGRESS", agentId: info.agentId, taskId: info.taskId, tool: "model.complete", host: info.host, method: info.method, decision: allowed ? "ALLOW" : "DENY", reason }); } catch { /* observation only */ }
     allowed ? stats.allowed++ : stats.denied++;
     const d = { allowed, reason, modelId: info.modelId ?? null, providerId: info.providerId ?? null, host: info.host ?? null, method: info.method ?? null, path: info.path ?? null, egressDecisionSeq: info.egressDecisionSeq ?? null };
     try { const e = audit.append(allowed ? "MODEL_EGRESS_ALLOW" : "MODEL_EGRESS_DENY", d); d.auditSeq = e.seq; }
@@ -88,9 +89,10 @@ export function createProviderEgress({ registry, egress, gate = emergencyGate, r
   /** Never throws. */
   function checkModelRequest(request) {
     const r = request && typeof request === "object" ? request : {};
-    const info = { modelId: typeof r.modelId === "string" ? r.modelId.slice(0, PROVIDER_EGRESS_LIMITS.maxModelId) : null, method: typeof r.method === "string" ? r.method.slice(0, 10).toUpperCase() : r.method === undefined ? "GET" : null };
+    const info = { agentId: typeof r.agentId === "string" ? r.agentId.slice(0, 40) : null, taskId: typeof r.taskId === "string" ? r.taskId.slice(0, 80) : null, modelId: typeof r.modelId === "string" ? r.modelId.slice(0, PROVIDER_EGRESS_LIMITS.maxModelId) : null, method: typeof r.method === "string" ? r.method.slice(0, 10).toUpperCase() : r.method === undefined ? "GET" : null };
     const D = reason => record(false, reason, info);
     try {
+      if (boundary) { const b = boundary.check({ agentId: info.agentId, tool: "model.complete", opClass: "MODEL_EGRESS", taskId: info.taskId }); if (!b.allowed) return D("BOUNDARY:" + b.reason); }
       if (typeof r.modelId !== "string" || !ID_RE.test(r.modelId)) return D("MODEL_ID_INVALID");
       const m = registry.getModel(r.modelId); if (!m) return D("UNKNOWN_MODEL");
       info.providerId = m.providerId;

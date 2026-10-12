@@ -81,7 +81,7 @@ const sleepFail = (ms, h) => new Promise((_, rej) => { h.t = setTimeout(() => re
  * register({name, description, operation, input, output, handler, version, timeoutMs, spendUsd})
  *  operation - a key of the Owner Authority catalogue (e.g. READ_STATUS, DRAFT, SEND_EXTERNAL). Unknown operations are refused at call time by the chain.
  */
-export function createToolRegistry({ chain, blackBox = null, now = () => new Date().toISOString() } = {}) {
+export function createToolRegistry({ chain, blackBox = null, boundary = null, now = () => new Date().toISOString() } = {}) {
   if (!chain || typeof chain.evaluate !== "function") throw new Error("CONTROL_CHAIN_REQUIRED");
   const tools = new Map(), stats = { calls: 0, ok: 0, rejected: 0 };
   const log = (kind, d) => { try { blackBox?.record({ kind, ...d }); } catch { /* audit failure must not change the verdict; the chain already audited */ } };
@@ -103,10 +103,12 @@ export function createToolRegistry({ chain, blackBox = null, now = () => new Dat
   function describe() { return [...tools.values()].map(t => ({ name: t.name, description: t.description, version: t.version, parameters: t.input, returns: t.output, operation: t.operation })); }
 
   /** invoke never throws. status: OK | UNKNOWN_TOOL | INVALID_ARGUMENTS | DENIED | REQUIRES_APPROVAL | HANDLER_ERROR | OUTPUT_INVALID | TIMEOUT */
-  async function invoke(name, args, { actor = { type: "TOOL", id: String(name) }, ownerApproval = null } = {}) {
+  async function invoke(name, args, { actor = { type: "TOOL", id: String(name) }, ownerApproval = null, onBehalfOf = null, taskId = null } = {}) {
     stats.calls++;
     const t = tools.get(name), done = (status, extra = {}) => { if (status === "OK") stats.ok++; else stats.rejected++; log("TOOL_CALL", { tool: name, status, actor: actor?.id ?? null, ...(extra.errors ? { errors: extra.errors.slice(0, 5) } : {}) }); return { status, tool: name, at: now(), ...extra }; };
     if (!t) return done("UNKNOWN_TOOL");
+    // universal execution boundary: independent incident / stop check BEFORE validation, the control chain or the handler (fail closed; an owner approval is never consumed for a refused call)
+    if (boundary) { let b; try { b = boundary.check({ agentId: actor?.id ?? null, onBehalfOf, tool: name, operation: t.operation, opClass: "TOOL_EXECUTION", taskId }); } catch { b = { allowed: false, reason: "BOUNDARY_ERROR" }; } if (!b.allowed) return done("DENIED", { reason: b.reason, layer: "EXECUTION_BOUNDARY" }); }
     const v = validate(t.input, args);
     if (!v.ok) return done("INVALID_ARGUMENTS", { errors: v.errors });
     let d;

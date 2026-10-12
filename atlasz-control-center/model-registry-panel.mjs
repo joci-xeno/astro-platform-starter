@@ -14,7 +14,7 @@ import { createCapabilityGraph } from "../atlasz-addons/brain/capability-graph.m
 import { createProviderEgress } from "../atlasz-addons/provider-egress.mjs";
 import { createEgressPolicy } from "../atlasz-addons/egress-policy.mjs";
 
-export function createModelRegistryPanel({ stateDir, ownerAuth, sign, liveStatus = () => false, hasCredential = () => false, isStopped = () => false, adapters = null, ollamaFetch = null, credentialResolver = null, cloudFetch = null, cloudResolve = null } = {}) {
+export function createModelRegistryPanel({ boundary = null, netSup = null, stateDir, ownerAuth, sign, liveStatus = () => false, hasCredential = () => false, isStopped = () => false, adapters = null, ollamaFetch = null, credentialResolver = null, cloudFetch = null, cloudResolve = null } = {}) {
   const dir = path.join(stateDir, "models");
   const auth = { verifyApproval: (...a) => { try { return ownerAuth().verifyApproval(...a); } catch { return { allowed: false, reason: "NO_OWNER_KEY" }; } },
     verifyRecorded: (...a) => { try { return ownerAuth().verifyRecorded(...a); } catch { return false; } } };
@@ -44,7 +44,7 @@ export function createModelRegistryPanel({ stateDir, ownerAuth, sign, liveStatus
   function chain() {
     if (stack) return stack; const r = open();
     const egress = createEgressPolicy({ ownerAuth: auth, stateDir: path.join(stateDir, "models", "egress"), isStopped });
-    const pe = createProviderEgress({ registry: r, egress, gate, routes: cloudRoutes(), dir: path.join(stateDir, "models", "provider-egress") });
+    const pe = createProviderEgress({ registry: r, egress, boundary, netSup, gate, routes: cloudRoutes(), dir: path.join(stateDir, "models", "provider-egress") });
     const gw = createModelGateway({ resilience: createProviderResilience({ gate, clock: () => Date.now(), timeoutMs: 60000 }), models: createModelIntelligence({ graph: createCapabilityGraph(), clockMs: () => Date.now() }) });
     const bridge = createModelRoutingBridge({ registry: r, gateway: gw, providerEgress: pe, adapters: adapters ?? (id => adapterFor(r, id)) });
     return (stack = { egress, pe, gw, bridge });

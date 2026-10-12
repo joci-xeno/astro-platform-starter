@@ -20,7 +20,7 @@ export const CONNECTOR_DESCRIPTORS = Object.freeze({
   tavily:   { name: "Tavily",   base: "https://api.tavily.com",          vault: "TAVILY_API_KEY", auth: bearer, probe: null, capabilities: ["web.search"] }
 });
 
-export function createConnectorCatalog({ vault, fetchImpl = globalThis.fetch, gate = emergencyGate, descriptors = CONNECTOR_DESCRIPTORS, now = () => new Date().toISOString(), timeoutMs = 10000 } = {}) {
+export function createConnectorCatalog({ boundary = null, netSup = null, vault, fetchImpl = globalThis.fetch, gate = emergencyGate, descriptors = CONNECTOR_DESCRIPTORS, now = () => new Date().toISOString(), timeoutMs = 10000 } = {}) {
   if (!vault) throw new Error("VAULT_REQUIRED");
   const evidence = new Map(), lastError = new Map(), approvedProbes = new Set();
   const D = id => { const d = descriptors[id]; if (!d) throw new Error("UNKNOWN_CONNECTOR"); return d; };
@@ -39,10 +39,13 @@ export function createConnectorCatalog({ vault, fetchImpl = globalThis.fetch, ga
   async function call(d, path, { method = "GET", body } = {}) {
     const url = new URL(path, d.base);
     if (url.origin !== new URL(d.base).origin) throw new Error("HOST_NOT_ALLOWED");
+    if (boundary) { for (const opClass of ["CREDENTIAL_ACCESS", "NETWORK_REQUEST"]) { let b; try { b = boundary.check({ agentId: null, tool: "connector:" + d.name, opClass }); } catch { b = { allowed: false, reason: "BOUNDARY_ERROR" }; } if (!b.allowed) { try { netSup?.record({ kind: "EGRESS", agentId: "OWNER-CONNECTOR", tool: "connector:" + d.name, host: url.hostname, method, decision: "DENY", reason: b.reason }); } catch { /* observation only */ } throw new Error("BOUNDARY:" + b.reason); } } }
     const token = vault.get(d.vault, { purpose: "connector:" + d.name });
     const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), timeoutMs);
     try {
-      return await fetchImpl(url, { method, headers: { ...(d.headers || {}), ...(body ? { "content-type": "application/json" } : {}), ...d.auth(token) }, body, signal: ctl.signal });
+      const r0 = await fetchImpl(url, { method, headers: { ...(d.headers || {}), ...(body ? { "content-type": "application/json" } : {}), ...d.auth(token) }, body, signal: ctl.signal });
+      try { netSup?.record({ kind: "EGRESS", agentId: "OWNER-CONNECTOR", tool: "connector:" + d.name, host: url.hostname, port: Number(url.port) || 443, method, decision: "ALLOW", status: r0?.status }); } catch { /* observation only */ }
+      return r0;
     } finally { clearTimeout(t); }
   }
   async function probe(id) {

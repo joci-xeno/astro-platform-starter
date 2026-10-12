@@ -505,8 +505,8 @@
    "reproduction_evidence": "security directive review",
    "proposed_fix": "Feed egress-policy denials (per provider, not per agent) into agentSupervision",
    "test": "none yet",
-   "status": "OPEN",
-   "verification_result": "egress decisions are audited but not attributed to agent ids"
+   "status": "TESTED",
+   "verification_result": "per-agent network supervision on wired paths (execution-boundary.test); not a packet monitor"
   },
   {
    "defect_id": "SEC-GAP-2",
@@ -517,7 +517,7 @@
    "proposed_fix": "Wire any new agent-reachable path through incidentResponse.isBlocked",
    "test": "none yet",
    "status": "OPEN",
-   "verification_result": "documented in SECURITY_PROTECTION_MATRIX.md"
+   "verification_result": "boundary at typed-tool registry + credential broker + model egress + quarantine release + connectors; coverage file + test; SEC-GAP-5 remains"
   },
   {
    "defect_id": "SEC-GAP-3",
@@ -595,6 +595,28 @@
    "test": "aurora.test.mjs; security tests",
    "status": "TESTED",
    "verification_result": "8 statuses, COMPLETED_VERIFIED only after verification"
+  },
+  {
+   "defect_id": "SEC-GAP-5",
+   "severity": "MEDIUM",
+   "title": "Local child processes (sandbox, MCP, scanner, tooling) not gated by the incident boundary",
+   "owner": "Claude Code",
+   "reproduction_evidence": "enforcement_coverage.json",
+   "proposed_fix": "Wire boundary into spawn wrappers or OS-level isolation (owner/Windows decision)",
+   "test": "enforcement-coverage.test.mjs (classification only)",
+   "status": "OPEN",
+   "verification_result": "documented; sandboxed by Node permission model where applicable"
+  },
+  {
+   "defect_id": "A-001",
+   "severity": "HIGH",
+   "title": "Incident blocking enforced only on paths that consulted the incident module",
+   "owner": "Claude Code",
+   "reproduction_evidence": "directive section 3.1; direct registry/module call bypassed block",
+   "proposed_fix": "execution-boundary at typed tool registry + credential broker + model egress + quarantine release + connectors + SEARCH fetch",
+   "test": "execution-boundary.test.mjs",
+   "status": "TESTED",
+   "verification_result": "direct registry, module-broker, concurrent, restart, relabelled-metadata cases refused"
   }
  ],
  "gaps": [

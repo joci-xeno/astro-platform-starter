@@ -12,6 +12,15 @@ export function registerSecurity(broker, ctx) {
       cap("status", "READ_STATUS", () => { const l = ctx.incidentResponse().list(); return { total: l.length, open: l.filter(i => i.state !== "CLEARED").length, blocks: ctx.incidentResponse().blocks().length, auditChain: ctx.incidentResponse().verify(), severities: SEVERITIES }; }, { description: "Counts of incidents and active blocks plus audit-chain integrity." }),
       cap("open", "READ_STATUS", () => ({ incidents: ctx.incidentResponse().list().filter(i => i.state !== "CLEARED").slice(0, 100).map(i => ({ id: i.id, severity: i.severity, kind: i.kind, agentId: i.agentId ?? null, state: i.state, at: i.at })) }), { description: "Open incidents (no evidence payloads)." })],
     selfTest: { capability: "status", expect: r => (r.auditChain?.ok !== false && Array.isArray(r.severities) ? true : "incident audit chain invalid") } });
+  broker.register({ id: "execution-boundary", source: "atlasz-addons/execution-boundary.mjs", manager: "SECURITY_APPROVAL_MANAGER", lifecycle: "ON_DEMAND", policy: POLICY.security,
+    purpose: "Universal execution boundary: one independent incident/stop check that the typed tool registry, credential broker, model egress, quarantine release and connectors consult before acting (fail closed). Can only refuse. Read-only status here.",
+    capabilities: [cap("status", "READ_STATUS", () => ({ ...ctx.executionBoundary().stats(), coverage: "docs/audit/enforcement_coverage.json" }), { description: "Boundary check counters by operation class." })],
+    selfTest: { capability: "status", expect: r => (Number.isInteger(r.checked) ? true : "boundary stats missing") } });
+  broker.register({ id: "network-supervisor", source: "atlasz-addons/network-supervisor.mjs", manager: "SECURITY_APPROVAL_MANAGER", lifecycle: "ON_DEMAND", policy: POLICY.security,
+    purpose: "Per-agent network supervision: outbound decisions attributed to agent, task, tool, host, status, reason and cost (host only, scrubbed, hash-chained); detectors raise incidents for refused-request floods, unauthorised destinations, credential denials, unusual volume and broker bypass attempts.",
+    capabilities: [cap("summary", "READ_STATUS", () => ({ ...ctx.networkSupervisor().summary(), chain: ctx.networkSupervisor().verify() }), { description: "Per-agent counts and detector findings count." }),
+      cap("findings", "READ_STATUS", () => ({ findings: ctx.networkSupervisor().findings().slice(-100) }), { description: "Recent detector findings." })],
+    selfTest: { capability: "summary", expect: r => (Number.isInteger(r.events) ? true : "network summary missing") } });
   broker.register({ id: "file-intake", source: "atlasz-addons/file-intake.mjs", manager: "SECURITY_APPROVAL_MANAGER", lifecycle: "ON_DEMAND", policy: POLICY.security,
     purpose: "Untrusted file intake: isolated quarantine, type/size/content validation, scan by an ESTABLISHED engine (ClamAV / Windows Defender), never executed, never reachable by privileged tools, release only with a signed owner approval. If no engine is installed every file stays HELD. Read-only status here; no file content is exposed.",
     capabilities: [

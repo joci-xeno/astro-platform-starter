@@ -73,7 +73,7 @@ export function normaliseGrant(raw, { nowMs = Date.now(), checkExpiry = true } =
   return { grant: { id: raw.id, credential: raw.credential, agents: [...new Set(agents)], roles: [...new Set(roles)], hosts: [...new Set(hosts)], methods: [...new Set(methods)], pathPrefixes: [...new Set(pathPrefixes)], auth: a.style === "header" ? { style: "header", name: a.name } : { style: "bearer" }, maxPerMinute, maxPerDay, expiresAt: new Date(exp).toISOString(), purpose, allowWrite } };
 }
 
-export function createCredentialBroker({ vault, ownerAuth = getDefaultOwnerAuth(), fetchImpl = globalThis.fetch, gate = emergencyGate, stateDir = null, roleOf = () => null, isKnownAgent = null, now = () => Date.now(),
+export function createCredentialBroker({ vault, boundary = null, netSup = null, ownerAuth = getDefaultOwnerAuth(), fetchImpl = globalThis.fetch, gate = emergencyGate, stateDir = null, roleOf = () => null, isKnownAgent = null, now = () => Date.now(),
   timeoutMs = 10000, maxBodyBytes = 64 * 1024, maxResponseBytes = 256 * 1024, maxInflight = 4, maxGrants = 100 } = {}) {
   if (!vault || typeof vault.get !== "function" || typeof vault.has !== "function") throw new Error("VAULT_REQUIRED");
   const audit = createAuditChain({ filePath: stateDir ? path.join(stateDir, "broker-audit.jsonl") : null });
@@ -186,6 +186,7 @@ export function createCredentialBroker({ vault, ownerAuth = getDefaultOwnerAuth(
     const who = safeStr(a.agentId, 40), gid = safeStr(a.grantId, 48);
     const D = (reason, extra = {}) => deny(reason, { agentId: who, grantId: gid, ...extra });
     try { const g0 = gate({ external: true }); if (!g0 || g0.allowed === false) return D("OWNER_STOP"); } catch { return D("OWNER_STOP"); }
+    if (boundary) { let b; try { b = boundary.check({ agentId: typeof a.agentId === "string" ? a.agentId : null, tool: "credential.request", opClass: "CREDENTIAL_ACCESS" }); } catch { b = { allowed: false, reason: "BOUNDARY_ERROR" }; } if (!b.allowed) { try { netSup?.record({ kind: "CREDENTIAL", agentId: who, decision: "DENY", reason: b.reason }); } catch { /* observation only */ } return D("BOUNDARY:" + b.reason); } }
     let vs; try { vs = vault.status(); } catch { return D("VAULT_UNAVAILABLE"); }
     if (vs.state !== "UNLOCKED") return D("VAULT_LOCKED");
     if (typeof a.agentId !== "string" || !AGENT_RE.test(a.agentId)) return D("AGENT_INVALID");      // validated on the RAW value, not the truncated one

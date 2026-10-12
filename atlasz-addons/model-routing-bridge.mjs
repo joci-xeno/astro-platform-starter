@@ -58,12 +58,12 @@ export function createModelRoutingBridge({ registry, gateway, providerEgress, ad
   const costClass = m => (m.costClass === "FREE" ? "FREE" : m.costClass === "PAID" ? "PAID" : "UNKNOWN");
 
   /** One guarded request: registry still enabled + egress policy + kill switch, then the adapter. */
-  async function guarded(m, prompt) {
+  async function guarded(m, prompt, who = {}) {
     const a = adapterFor(m); if (!a) return R("NO_ADAPTER", { notSent: true });
     const cur = registry.getModel(m.id); if (!cur || cur.enabled !== true) return R("MODEL_DISABLED", { notSent: true });
     let ra, ep;
     try { ep = a.endpoint(cur); ra = typeof a.resolveAddresses === "function" ? await a.resolveAddresses(new URL(ep.url).hostname) : (cur.kind === "LOCAL" ? ["127.0.0.1"] : []); } catch { return R("RESOLVE_FAILED", { notSent: true }); }
-    const d = providerEgress.checkModelRequest({ modelId: cur.id, url: ep.url, method: ep.method, bodyBytes: Buffer.byteLength(prompt) + 512, resolvedAddresses: ra });
+    const d = providerEgress.checkModelRequest({ modelId: cur.id, url: ep.url, method: ep.method, bodyBytes: Buffer.byteLength(prompt) + 512, resolvedAddresses: ra, agentId: who.agentId ?? null, taskId: who.taskId ?? null });
     if (!d.allowed) { stats.blocked++; return R("EGRESS_BLOCKED:" + d.reason, { notSent: true }); }
     const ac = new AbortController();
     try {
@@ -111,7 +111,7 @@ export function createModelRoutingBridge({ registry, gateway, providerEgress, ad
       const m = registry.getModel(c.id); if (!m) continue;
       const paid = needsApproval(m);
       if (paid) { const b = registry.billing.begin(rk, c.id, { estimateUsd: c.estimateUsd }); if (!b.ok) { stats.billedBlocked++; tried.push({ id: c.id, reason: b.reason }); if (b.reason === "DUPLICATE_BILLING_BLOCKED") return R("DUPLICATE_BILLING_BLOCKED", { requestKey: rk, tried }); continue; } }
-      const r = await guarded(m, prompt);
+      const r = await guarded(m, prompt, { agentId, taskId: typeof requestKey === "string" ? requestKey : null });
       if (!r.ok) {
         // A paid request that may already have reached the provider is NOT a zero-cost failure: it is booked at its worst-case estimate and blocks failover under this key.
         if (paid) registry.billing.settle(rk, r.notSent ? { ok: false, costUsd: 0 } : { ok: false, costUsd: c.estimateUsd > 0 ? c.estimateUsd : Number.MIN_VALUE });

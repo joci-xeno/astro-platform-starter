@@ -3,6 +3,9 @@
 - Last verified: Batch 7 A/B/D (AURORA directive) — gate 2133/2133 (previous: 7a 2091, security 2088, Batch 6 2049). Exact commit id: `git log -1` / `git ls-remote github atlasz-v73-integration`.
 - Current batch: 6 complete → next: Batch 7 (real authorized AI model connectivity), then Batch 8–14.
 
+## Completed (Batch 8 Phase A — security closure)
+- `execution-boundary.mjs`: one independent incident/stop check at the typed tool registry (every module capability and agent tool call), credential broker, model egress, quarantine release, connectors and the SEARCH-agent fetch. `network-supervisor.mjs`: per-agent/task/tool/host attribution + detectors (broker bypass = CONFIRMED, contains the agent). Runtime supervisor wired with its own incident controller. Reach and limits: `docs/audit/enforcement_coverage.json` (+ test). SEC-GAP-1 closed on wired paths, SEC-GAP-2 narrowed, SEC-GAP-5 (local child processes) open. No OS-level isolation; no universal-isolation claim. Gate 2148/2148.
+
 ## Completed (Batch 7 A/B/D — AURORA directive)
 - 7A: durable event-sourced dead-letter store (B6-004 TESTED), runtime `npm start` -> `supervisor-safe.mjs` (legacy `supervisor.js` not started; `Dockerfile.worker` still legacy: owner/dependency decision), restart-recovery tests. D12 stays disabled.
 - 7B: model evidence ladder REGISTERED/CONFIGURED/AUTHENTICATED/CALL_VERIFIED/LIVE_OPERATIONAL/BLOCKED from REAL transports only; credential leak fixes B7-001/002. **0 models LIVE_OPERATIONAL** (no owner-authorised credentials).

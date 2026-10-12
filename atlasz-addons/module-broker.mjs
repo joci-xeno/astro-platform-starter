@@ -73,10 +73,10 @@ export function createModuleBroker({ tools, managers = [], audit = () => {}, now
   async function healthAll({ manager = null } = {}) { const out = []; for (const m of mods.values()) if (!manager || m.manager === manager) out.push(await health(m.id)); return out; }
 
   /** The only way to use a module. Never throws; every call is audited. */
-  async function invoke(id, capability, args = {}, { actor = { type: "SYSTEM", id: "MASTER" }, ownerApproval = null } = {}) {
+  async function invoke(id, capability, args = {}, { actor = { type: "SYSTEM", id: "MASTER" }, ownerApproval = null, onBehalfOf = null, taskId = null } = {}) {
     const m = mods.get(id); if (!m) return { status: "UNKNOWN_MODULE", ok: false };
     const c = m.caps.get(capability); if (!c) return { status: "UNKNOWN_CAPABILITY", ok: false };
-    const r = await tools.invoke(c.tool, args, { actor, ownerApproval });
+    const r = await tools.invoke(c.tool, args, { actor, ownerApproval, onBehalfOf, taskId });
     m.invocations++; if (r.status !== "OK") m.failures++; m.lastInvocation = { capability, status: r.status, at: now(), actor: actor?.id ?? null };
     log("MODULE_INVOKED", { id, capability, status: r.status, actor: actor?.id ?? null, manager: m.manager });
     return { ...r, ok: r.status === "OK", module: id, capability, manager: m.manager };
