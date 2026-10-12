@@ -239,3 +239,22 @@ test("DUPLICATE EXECUTION: running the same job twice never produces a second ar
     assert.equal(w.sentMail.length, 1);                                                                               // the one outreach mail, no duplicates
   } finally { w.done(); }
 });
+
+test("REVENUE OPS DASHBOARD: every stage count follows the real engine state; SANDBOX rehearsal never produces collected revenue; projected stays separate", async () => {
+  const { revenueOps } = await import("../atlasz-control-center/revenue-ops.mjs");
+  const w = await world(); const { m, steps } = w;
+  try {
+    const R = () => revenueOps({ money: m, pending: () => [{ id: "a1" }], workforceTasks: () => [{ status: "FAILED" }], deadLetters: () => 1 });
+    let r = R(); assert.equal(r.state, "NON_LIVE_ENVIRONMENT_NEVER_REVENUE"); assert.equal(r.metrics.discovered, 0); assert.equal(r.collected.verifiedNetProfitUsd, null);
+    assert.equal(r.metrics.ownerBlockedActions, 1); assert.equal(r.metrics.failedWorkflows, 2);
+    const d = await steps.toFeasible(); await steps.toSent(d.dealId); r = R();
+    assert.equal(r.metrics.discovered, 1); assert.equal(r.metrics.qualified, 1); assert.equal(r.metrics.proposalsSubmittedAuthorized, 1); assert.equal(r.metrics.contractsAccepted, 0);
+    const won = await steps.toWon(d.dealId), jobId = won.jobId; await steps.toExecuted(jobId); r = R(); assert.equal(r.metrics.contractsAccepted, 1); assert.equal(r.metrics.jobsInProgress, 1);
+    await steps.toVerified(jobId); await steps.toDelivered(jobId); const inv = await steps.toInvoiced(jobId); r = R();
+    assert.equal(r.metrics.jobsCompleted, 1); assert.equal(r.metrics.invoicesIssued, 1); assert.equal(r.metrics.paymentsReceived, 0);
+    const claim = await steps.toClaimed(jobId, inv.invoiceId); await m.verifyPayment(jobId, claim.paymentId, "sandbox-processor"); r = R();
+    assert.equal(r.metrics.paymentsReceived, 1);                                   // the sandbox payment is counted as a verified sandbox record ...
+    assert.equal(r.collected.verifiedPaymentsUsd, null); assert.equal(r.collected.verifiedNetProfitUsd, null);   // ... but never as collected revenue
+    assert.equal(r.projectedAddedToCollected, false);
+  } finally { w.done(); }
+});

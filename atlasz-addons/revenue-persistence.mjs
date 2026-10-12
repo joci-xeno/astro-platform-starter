@@ -30,6 +30,31 @@ const OUTREACH_KINDS = ["SEND", "BID", "ACCEPT", "FOLLOW_UP"];
 const ID_RE = /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,99}$/, DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const SIM_SOURCES = new Set(["SIMULATED", "SIMULATION", "TRADING_SIM", "PAPER_TRADING", "BACKTEST", "ESTIMATE", "FORECAST"]);
 
+const kn01 = v => (typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 1 ? v : null);
+/** ADVISORY priority with a full explanation (the Brain recommends; the Master/owner decide; this can never approve or start anything).
+ *  score = expectedNet x P(success) x (1 - risk) x timeFactor x deadlineBoost, where P(success) = feasibility x paymentProbability x customerReliability.
+ *  Unknown inputs never count as 0 or 1: they are listed under `unknown`, lower `confidence`, and an unknown expected net gives score null (sorted last).
+ *  Hard blockers (owner restrictions, no free agent, no usable model) make the item NOT dispatchable regardless of score. */
+export function scoreOpportunity(o, ctx = {}) {
+  const t = Date.parse(ctx.now ?? new Date().toISOString()), unknown = [], blockers = [], factors = [];
+  const r = ctx.ownerRestrictions ?? {};
+  if (Array.isArray(r.blockedCategories) && o.category && r.blockedCategories.includes(o.category)) blockers.push("OWNER_RESTRICTION:CATEGORY:" + o.category);
+  if (Number.isFinite(r.maxSpendUsd) && Number.isFinite(o.estimatedCostUsd) && o.estimatedCostUsd > r.maxSpendUsd) blockers.push("OWNER_RESTRICTION:SPEND_LIMIT");
+  if (ctx.modelsAvailable === false) blockers.push("NO_USABLE_MODEL_AVAILABLE");
+  if (Number.isInteger(ctx.freeExecutionAgents) && ctx.freeExecutionAgents < (o.requiredAgents ?? 1)) blockers.push("NO_FREE_AGENT");
+  const known = (k, v) => { if (v === null || v === undefined) unknown.push(k); return v ?? null; };
+  const net = known("expectedNetUsd", o.expectedNetUsd), feas = known("feasibility", o.feasibility), pay = known("paymentProbability", o.paymentProbability), rel = known("customerReliability", o.customerReliability), risk = known("risk", o.risk), days = known("daysToRevenue", o.daysToRevenue);
+  const pSuccess = feas !== null && pay !== null ? feas * pay * (rel ?? 1) : null;
+  let deadlineBoost = 1, dl = null;
+  if (o.deadlineAt) { dl = (Date.parse(o.deadlineAt) - t) / 86400000; if (dl < 0) blockers.push("DEADLINE_PASSED"); else { deadlineBoost = dl <= 2 ? 1.5 : dl <= 7 ? 1.2 : 1; if (days !== null && days > dl) blockers.push("CANNOT_FINISH_BEFORE_DEADLINE"); } } else unknown.push("deadlineAt");
+  const timeFactor = days === null ? null : 1 / (1 + days / 30);
+  factors.push({ factor: "expectedNetUsd", value: net }, { factor: "pSuccess", value: pSuccess }, { factor: "riskPenalty", value: risk === null ? null : 1 - risk }, { factor: "timeFactor", value: timeFactor }, { factor: "deadlineBoost", value: deadlineBoost });
+  const score = net === null || pSuccess === null ? null : Math.round(net * pSuccess * (risk === null ? 1 : 1 - risk) * (timeFactor ?? 1) * deadlineBoost * 100) / 100;
+  const confidence = Math.round((1 - unknown.length / 7) * 100) / 100;
+  return { id: o.id, score, dispatchable: blockers.length === 0 && score !== null, blockers, unknown, confidence, factors, advisory: true, bypassesApproval: false,
+    explanation: (score === null ? "No score: " + (net === null ? "expected net unknown" : "success probability unknown") + ". " : "Score " + score + " = net " + net + " x P(success) " + pSuccess.toFixed(3) + (risk === null ? "" : " x (1-risk) " + (1 - risk).toFixed(2)) + (timeFactor === null ? "" : " x time " + timeFactor.toFixed(2)) + (deadlineBoost !== 1 ? " x deadline " + deadlineBoost : "") + ". ")
+      + (blockers.length ? "Blocked: " + blockers.join(", ") + ". " : "") + (unknown.length ? "Unknown (not treated as zero): " + unknown.join(", ") + "." : "") };
+}
 export function validatePolicy(raw = {}) {
   const p = { ...DEFAULT_POLICY };
   for (const [k, v] of Object.entries(raw ?? {})) {
@@ -107,7 +132,7 @@ export function createRevenuePersistence({ dir, ownerAuth = null, policy = {}, r
     if (Object.values(econ).some(Number.isNaN) || (econ.paymentProbability !== null && (econ.paymentProbability < 0 || econ.paymentProbability > 1)) || (econ.feasibility !== null && (econ.feasibility < 0 || econ.feasibility > 1))) return R("ECONOMICS_INVALID");
     if (!Object.hasOwn(st.opportunities, o.id) && Object.keys(st.opportunities).length >= LIMITS.maxOpportunities) return R("OPPORTUNITY_LIMIT");
     const prev = st.opportunities[o.id];
-    st.opportunities[o.id] = { id: o.id, searchAgent: o.searchAgent, executionAgent: o.executionAgent ?? null, status: o.status ?? "OPEN_QUALIFIED", ...econ, valueIsRevenue: false, lastProgressAt: o.lastProgressAt ?? now(), createdAt: prev?.createdAt ?? now() };
+    st.opportunities[o.id] = { id: o.id, searchAgent: o.searchAgent, executionAgent: o.executionAgent ?? null, status: o.status ?? "OPEN_QUALIFIED", ...econ, valueIsRevenue: false, risk: kn01(o.risk), customerReliability: kn01(o.customerReliability), deadlineAt: typeof o.deadlineAt === "string" && !Number.isNaN(Date.parse(o.deadlineAt)) ? o.deadlineAt : null, requiredAgents: Number.isInteger(o.requiredAgents) && o.requiredAgents > 0 ? Math.min(o.requiredAgents, 30) : null, category: typeof o.category === "string" ? o.category.slice(0, 60) : null, lastProgressAt: o.lastProgressAt ?? now(), createdAt: prev?.createdAt ?? now() };
     save(); return { ok: true };
   }
   function progress(id, { status = null } = {}) {
@@ -202,5 +227,5 @@ export function createRevenuePersistence({ dir, ownerAuth = null, policy = {}, r
     save(); audit.append("DAILY_REPORT", { day, status: r.status, verifiedCollectedUsd: r.verifiedCollectedUsd }); return r;
   }
   const status = () => ({ state: "IMPLEMENTED_NOT_CONNECTED", policy: P, targets: TARGETS, opportunities: Object.values(st.opportunities).reduce((m, o) => (m[o.status] = (m[o.status] ?? 0) + 1, m), {}), workflowsOpen: Object.values(st.workflows).filter(w => !w.finished).length, agents: agents.size, moneyStages: MONEY_STAGES });
-  return { track, progress, replenishmentPlan, failover, applyReassign, registerWorkflow, stepDone, carryOver, proposeOutreach, dailyReport, ranked: () => rank(Object.values(st.opportunities).filter(o => o.status === "OPEN_QUALIFIED")).map(o => ({ ...o })), status, audit: () => audit.entries() };
+  return { track, progress, replenishmentPlan, failover, applyReassign, registerWorkflow, stepDone, carryOver, proposeOutreach, dailyReport, rankedExplained: ctx => Object.values(st.opportunities).filter(o => o.status === "OPEN_QUALIFIED").map(o => scoreOpportunity(o, ctx)).sort((a, b) => (b.dispatchable - a.dispatchable) || (a.score === null) - (b.score === null) || (b.score ?? 0) - (a.score ?? 0) || a.id.localeCompare(b.id)), ranked: () => rank(Object.values(st.opportunities).filter(o => o.status === "OPEN_QUALIFIED")).map(o => ({ ...o })), status, audit: () => audit.entries() };
 }

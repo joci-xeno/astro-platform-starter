@@ -1,16 +1,19 @@
 # ATLASZ V7.3 — RESUME CHECKPOINT
 - Branch: `atlasz-v73-integration` (remote `github`; never `origin`, never `main`)
-- Last verified commit: Batch 5b (gate 2025/2025); previous verified d578428
-- Current batch: 5b complete (module inventory) → next: Batch 6 (Brain/management)
+- Last verified commit: Batch 5c (gate 2034/2034); previous verified d578428
+- Current batch: 5c complete (owner addendum: best-practice gap analysis, revenue ops dashboard, explained prioritisation, encrypted portable backup + restore rehearsal) → next: Batch 6 (Brain/management)
 ## Completed
 - 137 modules registered in the module broker with real self-tests (HEALTHY / LOADED_NEEDS_DEPENDENCY / VIA_CONSUMER / OFFLINE_BY_DESIGN / SUPERSEDED). 130 of the original 133 disconnected modules now have a disposition with evidence.
 - Health monitor (breakers, bounded retries/restarts, BLOCKED never overridden), agent tool policy extension (D12 pending), registrations workflow/agents/discovery/brain/tools/models.
+- 5c: `portable-backup.mjs` (+ core.portableBackup/Verify/RestoreRehearsal, owner surface only), `revenue-ops.mjs` (+ /api/revenue-ops + UI), `scoreOpportunity`/`rankedExplained`, `docs/audit/ATLASZ_V73_BEST_PRACTICE_GAP_ANALYSIS.md`.
 ## Unfinished
+- Owner must run a rehearsal from the real USB device (the automated rehearsal uses temp directories); restoring does not restore external accounts.
+- Wire `rankedExplained` into Master enqueue suggestions; wire health-monitor restart hook; decide fate of in-memory dead-letter-queue module.
 - 3 legacy runtime files (supervisor.js, worker.js, agent-child.js): EXCLUDED_LEGACY, owner decision pending.
 - Brain E2E failure-mode tests; Brain model access (MASTER/BRAIN principal refused by model registry → fails closed).
 - AI models: 0 LIVE (no credentials). Discovery scheduler, tool_call executor, auto-update CI/release, Windows evidence, malware scanner, reconciliation of 85+23+150 / 983.
 ## Failed tests
-- None (gate 2025/2025).
+- None (gate 2034/2034).
 ## Required approvals / blockers
 Owner key provisioning; host approvals; provider credentials + vault key; malware scanner choice; D12 policy review; legacy runtime decision; manual Windows installer run; enable auto-update policy; Stripe awaits Astra package.
 ## Exact next action

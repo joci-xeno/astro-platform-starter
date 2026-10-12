@@ -1,3 +1,4 @@
+import { PB_LIMITS } from "../portable-backup.mjs";
 // Registrations: scheduling, recovery and the Master's own runtime tools. Each wraps the REAL object the running Control Center uses (ctx.scheduler(), ctx.ownerControl().recovery, ctx.superviseNow).
 import { str, int, arr, obj, cap, POLICY } from "./_util.mjs";
 import { RECOVERY_CATEGORIES } from "../owner-control/recovery-points.mjs";
@@ -20,6 +21,10 @@ export function registerRuntime(broker, ctx) {
       cap("drill", "VERIFY_BACKUP", () => { const r = ctx.drill(); return { passed: r.passed === true, files: r.files, mismatches: r.mismatches ?? 0 }; }, { description: "Restore the newest backup into scratch and compare every file hash.", timeoutMs: 120000 })
     ],
     selfTest: { capability: "status", expect: r => (typeof r.count === "number" ? true : "status shape") } });
+  broker.register({ id: "portable-backup", source: "atlasz-addons/portable-backup.mjs", manager: "RECOVERY_MAINTENANCE", lifecycle: "ON_DEMAND", policy: POLICY.low,
+    purpose: "Encrypted portable backup (USB/SSD/SD) and isolated restore rehearsal. OWNER SURFACE ONLY: creating, verifying or restoring needs the owner passphrase, which is never accepted through the broker; the broker exposes the format facts only.",
+    capabilities: [ cap("describe", "READ_STATUS", () => ({ format: "ATLBAK1", cipher: "AES-256-GCM", kdf: "scrypt", minPassphrase: PB_LIMITS.minPassphrase, ownerOnly: true, restoresExternalAccounts: false })) ],
+    selfTest: { capability: "describe", expect: r => (r.format === "ATLBAK1" && r.ownerOnly === true ? true : "describe shape") } });
   broker.register({ id: "scheduler", source: "atlasz-addons/scheduler.mjs", manager: "TASK_SCHEDULER", lifecycle: "CONTINUOUS", policy: POLICY.draft,
     purpose: "Durable scheduler: persisted ONCE/INTERVAL/DAILY jobs that can only call registered typed tools through the control chain (actor SCHEDULER); driven by the Master supervision loop; at-least-once delivery.",
     capabilities: [

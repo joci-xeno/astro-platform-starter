@@ -2,6 +2,9 @@
 // as a plain function so the GUI (server.mjs + public/) and tests use exactly the same code path.
 // Owner-signed actions: the passphrase unlocks Joci's local key only for the moment of signing; nothing is cached.
 import fs from "node:fs";
+import os from "node:os";
+import { listDeadLetters } from "../atlasz-addons/dead-letter-queue.mjs";
+import { revenueOps as buildRevenueOps } from "./revenue-ops.mjs";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { randomBytes, createHash } from "node:crypto";
@@ -13,6 +16,8 @@ import { createEmergencyStop } from "../atlasz-addons/emergency-stop.mjs";
 import { createSafeMode } from "../atlasz-addons/safe-mode.mjs";
 import { runStartupSelfCheck } from "../atlasz-addons/startup-self-check.mjs";
 import { detectNodeRestrictions } from "../atlasz-addons/restricted-node.mjs";
+import { createPortableBackup, verifyPortableBackup, restorePortableBackup } from "../atlasz-addons/portable-backup.mjs";
+import { execFileSync } from "node:child_process";
 import { createBackup, verifyBackup, recoveryDrill, createLkgRegistry, rollbackToLastKnownGood, restoreBackup, LKG_CRITERIA } from "../atlasz-addons/backup-recovery.mjs";
 import { createUpdateCenter } from "../atlasz-addons/update-center.mjs";
 import { readAuditFile, verifyChain } from "../atlasz-addons/audit-chain.mjs";
@@ -294,6 +299,37 @@ export function createControlCenterCore({ ollamaFetch = null, cloudFetch = null,
   const drillLog = path.join(configDir, "drills.jsonl");
   const drills = () => { try { return fs.existsSync(drillLog) ? fs.readFileSync(drillLog, "utf8").split("\n").filter(Boolean).map(l => JSON.parse(l)) : []; } catch { return []; } };
   function drill() { const r = recoveryDrill({ srcDir: stateDir, backupRoot, scratchDir: path.join(configDir, "drill-scratch") }); fs.appendFileSync(drillLog, JSON.stringify({ at: new Date().toISOString(), ok: r.passed === true, files: r.files }) + "\n"); return r; }
+
+  const revenueOps = () => buildRevenueOps({ money: money(), pending: () => approvalStore().pending(), workforceTasks: () => { try { return agentsPanel.workforce()?.listTasks?.() ?? []; } catch { return []; } }, deadLetters: () => { try { return listDeadLetters("OPEN").length; } catch { return 0; } }, revenuePersistence: revenuePersistence() });
+  // ---- portable encrypted backup (OWNER surface only: the passphrase is supplied by the owner per call and is never stored, logged or exposed through the module broker) ----
+  const portableSets = (tmp) => {
+    const root = path.resolve(HERE, ".."), sets = [{ name: "state", dir: stateDir }, { name: "config", dir: configDir, exclude: ["backups", "drill-scratch"] }];
+    if (fs.existsSync(path.join(root, "docs"))) sets.push({ name: "docs", dir: path.join(root, "docs") });
+    const man = path.join(tmp, "manifests"); fs.mkdirSync(man, { recursive: true });
+    for (const f of ["package.json", "atlasz-runtime/package.json", "atlasz-control-center/package.json"]) { try { fs.copyFileSync(path.join(root, f), path.join(man, f.replace(/\//g, "__"))); } catch { /* optional manifest */ } }
+    sets.push({ name: "manifests", dir: man });
+    try { const g = path.join(tmp, "git"); fs.mkdirSync(g, { recursive: true }); execFileSync("git", ["bundle", "create", path.join(g, "atlasz.bundle"), "--all"], { cwd: root, stdio: "ignore", timeout: 120000 }); sets.push({ name: "git", dir: g }); } catch { /* no git history available (installed build): source stays on GitHub */ }
+    return sets;
+  };
+  function portableBackup({ destination, passphrase, label = "owner" } = {}) {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "atlbak-"));
+    try { let commit = null; try { commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: path.resolve(HERE, ".."), encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim(); } catch { /* not a checkout */ }
+      const r = createPortableBackup({ sets: portableSets(tmp), destination, passphrase, label, extra: { gitCommit: commit, node: process.version } });
+      try { ocBlackBox.record({ kind: "PORTABLE_BACKUP", decision: "CREATED", reason: r.id }); } catch { /* audit is best effort */ }
+      return r; } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+  }
+  const portableVerify = ({ file, passphrase }) => verifyPortableBackup(file, passphrase);
+  /** Restore into an ISOLATED scratch tree, boot a fresh Control Center on it and run its health checks. Never touches the live state. */
+  async function portableRestoreRehearsal({ file, passphrase } = {}) {
+    const d = fs.mkdtempSync(path.join(os.tmpdir(), "atlrest-")), t = { state: path.join(d, "state"), config: path.join(d, "config"), docs: path.join(d, "docs"), manifests: path.join(d, "manifests"), git: path.join(d, "git") };
+    try {
+      const rr = restorePortableBackup({ file, passphrase, targets: t });
+      const c2 = createControlCenterCore({ stateDir: t.state, configDir: t.config });
+      const r = await c2.modules({ health: true }); const bad = r.catalog.filter(m => !["HEALTHY", "LOADED_NEEDS_DEPENDENCY", "VIA_CONSUMER", "OFFLINE_BY_DESIGN", "SUPERSEDED"].includes(m.health?.state));
+      const sc = runStartupSelfCheck({ stateDir: t.state, ownerAuth: null });
+      return { passed: bad.length === 0, restored: rr.restored, backupId: rr.backupId, modules: r.summary.modules, unhealthy: bad.map(m => m.id), startupSelfCheck: sc?.ok ?? sc?.passed ?? null, isolated: true, gitBundlePresent: fs.existsSync(path.join(t.git, "atlasz.bundle")), notice: rr.notice };
+    } finally { fs.rmSync(d, { recursive: true, force: true }); }
+  }
   function markLastKnownGood({ smokeEvidence }) {
     if (!smokeEvidence) throw new Error("LKG_EVIDENCE_REQUIRED: supply the test-run evidence (e.g. npm test output reference)");
     const b = createBackup({ srcDir: stateDir, backupRoot, label: "lkg" });
@@ -758,6 +794,6 @@ export function createControlCenterCore({ ollamaFetch = null, cloudFetch = null,
   const tradingPanel = createTradingPanel({ stateDir, ownerAuth: () => ownerAuth(), sign: (p, a, s) => sign(p, a, s), isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL" });
   const trading = () => tradingPanel.view(), tradingCandles = q => tradingPanel.candles(q ?? {}), tradingAction = b => tradingPanel.action(b ?? {}), tradingTick = () => tradingPanel.tick({ candlesPerStrategy: 1 });
   const ops = createOpsViews({ stateDir, status, finance, approvals, tradingView: trading, memoryView: memory, ledgerEntries: () => createFinancialLedger({ dir: path.join(stateDir, "ledger") }).entries() });
-  return { agentToolBroker, trading, tradingCandles, tradingAction, tradingTick, agentsActivity: ops.agents, agentActivityOne: ops.agent, operations: ops.operations, revenueDashboard: ops.revenue, memory, memoryAction, modelRegistry, modelRegistryAction, security, securityAction, agents30, agents30Action, superviseMaster, startMasterLoop, stopMasterLoop, masterLoopStatus, money, brainSystem, brainWorkflow, brainWorkflows, runDueSchedules, moduleBroker, modules, scheduler, credentialBroker, vaultView, vaultAction, chatProviders, chatProvidersAction, prototypes, prototypeActions, pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, workbench, workbenchAction, a11yAudit, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => pluginView(), mcp, mcpActions, repos, repoActions, theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { revenueOps, portableBackup, portableVerify, portableRestoreRehearsal, agentToolBroker, trading, tradingCandles, tradingAction, tradingTick, agentsActivity: ops.agents, agentActivityOne: ops.agent, operations: ops.operations, revenueDashboard: ops.revenue, memory, memoryAction, modelRegistry, modelRegistryAction, security, securityAction, agents30, agents30Action, superviseMaster, startMasterLoop, stopMasterLoop, masterLoopStatus, money, brainSystem, brainWorkflow, brainWorkflows, runDueSchedules, moduleBroker, modules, scheduler, credentialBroker, vaultView, vaultAction, chatProviders, chatProvidersAction, prototypes, prototypeActions, pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, workbench, workbenchAction, a11yAudit, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => pluginView(), mcp, mcpActions, repos, repoActions, theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }

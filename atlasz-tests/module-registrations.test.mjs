@@ -47,3 +47,8 @@ test("health_monitor module is registered and sweeps through the control chain",
   const b = mk().moduleBroker(); assert.ok(b.has("health-monitor"));
   const r = await b.invoke("health-monitor", "status", {}, { actor: { type: "SYSTEM", id: "MASTER" } }); assert.equal(r.status, "OK");
 });
+test("Control Center revenue operations: empty LIVE installation reports NO_BUSINESS_RECORDED with money UNKNOWN (null), never zero revenue", () => {
+  const r = mk().revenueOps();
+  assert.equal(r.environment, "LIVE"); assert.equal(r.state, "NO_BUSINESS_RECORDED"); assert.equal(r.collected.verifiedPaymentsUsd, null); assert.equal(r.collected.verifiedNetProfitUsd, null); assert.equal(r.projected.forecastUsd, null);
+  assert.equal(r.metrics.paymentsReceived, 0); assert.equal(Object.keys(r.metrics).length, 12); assert.equal(r.projectedAddedToCollected, false);
+});
