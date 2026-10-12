@@ -82,5 +82,5 @@ export function createModelRegistryPanel({ stateDir, ownerAuth, sign, liveStatus
       default: throw new Error("UNKNOWN_MODEL_REGISTRY_OP");
     }
   }
-  return { view, action };
+  return { view, action, registry: open, chain };
 }
