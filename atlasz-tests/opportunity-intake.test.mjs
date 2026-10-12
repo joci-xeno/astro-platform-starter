@@ -35,7 +35,7 @@ test("hand-off happy path (fixture): ten checks, task identity, provenance, owne
     assert.deepEqual(r.trail.map(t => t.state), ["RECEIVED", "VALIDATED", "EVIDENCE_CHECKED", "DEDUPED", "RISK_SCREENED", "FEASIBILITY_CHECKED", "COST_CHECKED", "CAPABILITY_CHECKED", "APPROVAL_DECIDED", "ROUTED"]);
     assert.equal(r.requiresOwnerApproval, true); assert.ok(r.approvalReasons.includes("NOT_A_LIVE_CONNECTOR_RETRIEVAL:FIXTURE")); assert.ok(r.approvalReasons.some(x => /SIGNED_OWNER_APPROVAL/.test(x)));
     const o = reg.get(r.opportunityId); assert.equal(o.stage, "VERIFY"); assert.equal(o.retrieval, "FIXTURE"); assert.equal(reg.counts().byRetrieval.CONNECTOR ?? 0, 0);
-    assert.equal(reg.setStage(r.opportunityId, "EXECUTE", "MASTER").ok, false, "no stage skipping"); assert.equal(reg.setStage(r.opportunityId, "QUALIFY", "MASTER").ok, true);
+    assert.equal(reg.setStage(r.opportunityId, "EXECUTE", "MASTER").ok, false, "no stage skipping"); assert.equal(reg.setStage(r.opportunityId, "QUALIFY", "MASTER").reason, "ENTRY_CRITERIA_NOT_MET"); assert.equal(reg.setStage(r.opportunityId, "QUALIFY", "MASTER", null, { evidence: { qualification: { legitimacy: "OK", feasibility: "OK", skillFit: "OK", risk: "LOW" } } }).ok, true);
     assert.equal(mi.verify().ok ?? true, true);
   } finally { rm(d); }
 });
@@ -103,6 +103,45 @@ test("hosted: the Control Center intake routes a fixture, AURÓRA reports it as 
     const r = c.masterIntake().receive({ agentId: "SEARCH-1", record: norm().record }); assert.equal(r.state, "ROUTED");
     const reply = (await c.auroraRespond({ text: "milyen munkák vannak?" })).reply;
     assert.match(reply, /Convert supplier CSV/); assert.match(reply, /\[MINTA\]/); assert.match(reply, /MINTA\/OPERÁTORI adat, nem élő/); assert.match(reply, /nem bevétel/);
+    const reg = c.opportunityRegistry(), id = r.opportunityId, st = (stage, ev) => reg.setStage(id, stage, "MASTER", null, { evidence: ev });
+    assert.equal(st("QUALIFY", { qualification: { legitimacy: 1, feasibility: 1, skillFit: 1, risk: "LOW" } }).ok, true); assert.equal(st("ESTIMATE", { qualification: { verdict: "QUALIFIED" } }).ok, true);
+    assert.equal(st("PLAN", { estimate: { costs: 0, effort: "1h" } }).ok, true); assert.equal(st("OWNER_APPROVAL", { plan: { planId: "p" } }).ok, true);
+    const forged = st("EXECUTE", { ownerApproval: { approvalId: "does-not-exist" } }); assert.equal(forged.ok, false); assert.ok(forged.missing.some(x => /UNVERIFIED_BY_OWNER_APPROVAL/.test(x)), "a forged approval id cannot start execution");
+    assert.equal(reg.get(id).stage, "OWNER_APPROVAL");
     const m = await c.moduleBroker().invoke("opportunity-intake", "summary", {}); assert.equal(m.ok, true); assert.equal(m.result.opportunities.total, 1);
   } finally { rm(d); }
+});
+
+import { evaluateStageEntry, stageList } from "../atlasz-addons/workflow-stages.mjs";
+test("workflow stages: explicit entry criteria are evidence; external facts need a verifying authority; nothing is skipped, reversed or self-asserted", () => {
+  assert.deepEqual(stageList(), WORKFLOW_STAGES);
+  assert.equal(evaluateStageEntry("QUALIFY", {}).ok, false);
+  assert.equal(evaluateStageEntry("EXECUTE", { ownerApproval: { approvalId: "a1" } }).ok, false, "no authority = unverifiable = refused");
+  assert.equal(evaluateStageEntry("EXECUTE", { ownerApproval: { approvalId: "a1" } }, { verify: (a, e) => a === "OWNER_APPROVAL" && e.approvalId === "a1" }).ok, true);
+  assert.equal(evaluateStageEntry("EXECUTE", { ownerApproval: { approvalId: "a1" } }, { verify: () => { throw new Error("x"); } }).ok, false, "a failing authority fails closed");
+  assert.equal(evaluateStageEntry("NET_PROFIT", { reconciliation: { reconciled: true, costsRecorded: false } }).ok, false);
+  assert.equal(evaluateStageEntry("RECONCILIATION", { payment: { eventId: "evt_1", invoiceId: "inv-1" } }, { verify: () => false }).ok, false, "a payment is not real because a field says so");
+  const d = tmp("oi-"); try {
+    const reg = createOpportunityRegistry({ dir: d, verifyEvidence: (a, e) => a === "OWNER_APPROVAL" && e.approvalId === "good" }); const id = reg.upsert(norm().record).id;
+    assert.equal(reg.setStage(id, "VERIFY", "T", null, { internal: true }).ok, true);
+    assert.equal(reg.setStage(id, "VERIFY", "T", null, { internal: true }).reason, "STAGE_BACKWARD_REFUSED");
+    const q = { qualification: { legitimacy: 1, feasibility: 1, skillFit: 1, risk: "LOW" } }, qa = { qualification: { verdict: "QUALIFIED" } };
+    assert.equal(reg.setStage(id, "QUALIFY", "T", null, { evidence: q }).ok, true); assert.equal(reg.setStage(id, "ESTIMATE", "T", null, { evidence: qa }).ok, true);
+    assert.equal(reg.setStage(id, "PLAN", "T", null, { evidence: { estimate: { costs: null, effort: "2h" } } }).ok, false, "an UNKNOWN cost (null) cannot pass the estimate gate - it is never silently zero");
+    assert.equal(reg.setStage(id, "PLAN", "T", null, { evidence: { estimate: { costs: 0, effort: "2h" } } }).ok, true, "an explicitly stated cost of 0 is a stated value");
+    assert.equal(reg.setStage(id, "EXECUTE", "T", null, { evidence: { ownerApproval: { approvalId: "good" } } }).reason, "STAGE_SKIP_REFUSED:PLAN->EXECUTE");
+    assert.equal(reg.setStage(id, "OWNER_APPROVAL", "T", null, { evidence: { plan: { planId: "p1" } } }).ok, true);
+    assert.equal(reg.setStage(id, "EXECUTE", "T", null, { evidence: { ownerApproval: { approvalId: "forged" } } }).ok, false); assert.equal(reg.setStage(id, "EXECUTE", "T", null, { evidence: { ownerApproval: { approvalId: "good" } } }).ok, true);
+  } finally { rm(d); }
+});
+test("HTTP: pipeline and network endpoints need the session token and answer from records only", async () => {
+  const { createControlCenterServer } = await import("../atlasz-control-center/server.mjs"); const http = await import("node:http"); const d = tmp("oi-");
+  const cc = createControlCenterServer({ stateDir: path.join(d, "s"), configDir: path.join(d, "c") }); const { token, port } = await cc.listen();
+  const get = (p, t = token) => new Promise((res, rej) => { const q = http.request({ host: "127.0.0.1", port, path: p, headers: { host: "127.0.0.1:" + port, ...(t ? { "x-atlasz-token": t } : {}) } }, r => { let b = ""; r.on("data", c => b += c); r.on("end", () => res({ status: r.statusCode, body: b })); }); q.on("error", rej); q.end(); });
+  try {
+    assert.equal((await get("/api/opportunity-pipeline", null)).status, 401); assert.equal((await get("/api/security/network", null)).status, 401);
+    cc.core.masterIntake().receive({ agentId: "SEARCH-1", record: norm().record });
+    const p = JSON.parse((await get("/api/opportunity-pipeline")).body); assert.equal(p.counts.total, 1); assert.equal(p.groups.newDiscoveries[0].retrieval, "FIXTURE"); assert.match(p.note, /FIXTURE/);
+    const n = JSON.parse((await get("/api/security/network")).body); assert.ok(Number.isInteger(n.summary.events)); assert.match(n.note, /not a packet monitor/);
+  } finally { await cc.close(); rm(d); }
 });

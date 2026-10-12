@@ -156,3 +156,13 @@ test("Batch 7B: provider failures (401, 429, 500, malformed, network error) are 
     assert.equal((await c.view()).evidence.liveOperational, 0, "even a successful fixture call does not make a model LIVE_OPERATIONAL");
   } finally { if (prev === undefined) delete process.env.ATLASZ_VAULT_KEY; else process.env.ATLASZ_VAULT_KEY = prev; await c.close?.(); rm(c.base); }
 });
+test("model inventory: one row per model with the twelve required facts; nothing is LIVE; unknown stays unknown", async () => {
+  const { createControlCenterCore } = await import("../atlasz-control-center/core.mjs"); const d = tmp("mi-"); try {
+    const c = createControlCenterCore({ stateDir: path.join(d, "s"), configDir: path.join(d, "c") }); await c.modelRegistryAction({ op: "seed" });
+    await c.modelRegistryAction({ op: "addModel", model: { id: "llama-local", providerId: "ollama-local", version: "1.0.0", costClass: "FREE", capabilities: ["text"] } });
+    await c.modelRegistryAction({ op: "addModel", model: { id: "gpt-x", providerId: "openai", version: "1.0.0", costClass: "PAID", costPer1kTokensUsd: 0.01, capabilities: ["text", "tools"] } });
+    const inv = c.modelRegistry().inventory; assert.equal(inv.length, 2);
+    for (const k of ["provider", "modelId", "adapterStatus", "authenticationStatus", "egressStatus", "ownerAuthorizationStatus", "capabilities", "toolCalling", "contextLimitTokens", "pricing", "lastSuccessfulAuthenticatedCall", "operationalStatus"]) assert.ok(k in inv[0], k);
+    assert.ok(inv.every(m => m.operationalStatus !== "LIVE_OPERATIONAL" && m.lastSuccessfulAuthenticatedCall === null)); const g = inv.find(m => m.modelId === "gpt-x"); assert.equal(g.toolCalling, "DECLARED"); assert.equal(g.contextLimitTokens, "UNKNOWN"); assert.match(g.pricing, /unverified/); assert.equal(g.ownerAuthorizationStatus, "NOT_ENABLED_BY_OWNER");
+  } finally { rm(d); }
+});

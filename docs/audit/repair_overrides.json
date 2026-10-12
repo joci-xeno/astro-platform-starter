@@ -661,6 +661,39 @@
    "test": "demonstrations.test.mjs",
    "status": "TESTED",
    "verification_result": "A,F,G carry explicit blockers; origin of data stated per demonstration"
+  },
+  {
+   "defect_id": "E-001",
+   "severity": "HIGH",
+   "title": "Workflow stages had no explicit, evidence-bound entry criteria",
+   "owner": "Claude Code",
+   "reproduction_evidence": "directive Batch 8-9 sections 8, 9.1, 14",
+   "proposed_fix": "workflow-stages.mjs + registry.setStage enforcement (no skip, no reverse, authority-verified external facts)",
+   "test": "opportunity-intake.test.mjs",
+   "status": "TESTED",
+   "verification_result": "only the OWNER_APPROVAL authority is connected (signature verified, single use); delivery/invoice/payment authorities not connected: those stages stay refused (fail closed)"
+  },
+  {
+   "defect_id": "M-001",
+   "severity": "MEDIUM",
+   "title": "No per-model inventory with the twelve required facts",
+   "owner": "Claude Code",
+   "reproduction_evidence": "directive Batch 8-9 sections 8, 9.1, 14",
+   "proposed_fix": "model-registry-panel inventory rows",
+   "test": "control-center-model-registry.test.mjs",
+   "status": "TESTED",
+   "verification_result": "0 models LIVE_OPERATIONAL; unknown context/pricing stay UNKNOWN"
+  },
+  {
+   "defect_id": "UI-001",
+   "severity": "MEDIUM",
+   "title": "Control Center lacked opportunity pipeline and per-agent network supervision views",
+   "owner": "Claude Code",
+   "reproduction_evidence": "directive Batch 8-9 sections 8, 9.1, 14",
+   "proposed_fix": "GET /api/opportunity-pipeline, /api/security/network + app.js views",
+   "test": "opportunity-intake.test.mjs (HTTP)",
+   "status": "TESTED",
+   "verification_result": "token required; labels FIXTURE/OPERATOR/CONNECTOR shown; not a packet monitor"
   }
  ],
  "gaps": [

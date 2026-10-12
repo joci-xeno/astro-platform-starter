@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-10-12T22:56:44.220Z",
+ "generatedAt": "2026-10-12T23:06:19.871Z",
  "note": "Local, isolated runs. A passing demonstration here is NOT live external verification: see each origin and blocker.",
  "demonstrations": [
   {
@@ -42,7 +42,7 @@
     {
      "name": "an EXECUTION agent produced an artifact with a fixed hash",
      "ok": true,
-     "detail": "{\"ok\":true,\"taskId\":\"exec-8f60d91801\",\"status\":\"SUBMITTED_AWAITING_INDEPENDENT_CHECK\",\"checker\":\"EXECUTION-10\",\"provenan"
+     "detail": "{\"ok\":true,\"taskId\":\"exec-508a415ae8\",\"status\":\"SUBMITTED_AWAITING_INDEPENDENT_CHECK\",\"checker\":\"EXECUTION-10\",\"provenan"
     },
     {
      "name": "artifact content is the correct conversion",

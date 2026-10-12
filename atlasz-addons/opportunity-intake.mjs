@@ -7,6 +7,7 @@ import { createAuditChain } from "./audit-chain.mjs";
 import { assessListing, scamIndicators, canonicalUrl, inferRequirements, DISCOVERY_LIMITS } from "./global-discovery.mjs";
 import { INJECTION_PATTERNS } from "./text-compare.mjs";
 import { containsSecret, scrub } from "./secret-patterns.mjs";
+import { evaluateStageEntry } from "./workflow-stages.mjs";
 
 export const WORKFLOW_STAGES = Object.freeze(["DISCOVER", "VERIFY", "QUALIFY", "ESTIMATE", "PLAN", "OWNER_APPROVAL", "EXECUTE", "QUALITY_ASSURANCE", "DELIVERY_APPROVAL", "DELIVER", "INVOICE", "PAYMENT_VERIFICATION", "RECONCILIATION", "NET_PROFIT"]);
 export const RETRIEVALS = Object.freeze(["CONNECTOR", "OPERATOR_TOOL", "FIXTURE"]);
@@ -45,7 +46,7 @@ export function normalizeOpportunity(item = {}, { sourceId = item.sourceId, retr
 }
 
 /** Durable registry. Same stable source id (or same title+client) is the same opportunity: changed content = UPDATED (history kept), unchanged = DUPLICATE_UNCHANGED. */
-export function createOpportunityRegistry({ dir, now = () => new Date().toISOString() } = {}) {
+export function createOpportunityRegistry({ dir, verifyEvidence = null, now = () => new Date().toISOString() } = {}) {
   if (!dir) throw new Error("DIR_REQUIRED"); fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   const audit = createAuditChain({ filePath: path.join(dir, "opportunities-audit.jsonl"), headPinFile: path.join(dir, "opportunities-audit.headpin.json"), now });
   const FILE = path.join(dir, "opportunities.json"); let S = { items: {}, byKey: {}, byContent: {} };
@@ -61,8 +62,11 @@ export function createOpportunityRegistry({ dir, now = () => new Date().toISOStr
     Object.assign(cur, { title: rec.title, description: rec.description, client: rec.client, budget: rec.budget, currency: rec.currency, deadline: rec.deadline, riskFlags: rec.riskFlags, evidence: rec.evidence, requiredSkills: rec.requiredSkills, unknownFields: rec.unknownFields, contentHash: rec.contentHash, retrieval: rec.retrieval });
     if (k) S.byKey[k] = id; S.byContent[ck] = id; audit.append("OPPORTUNITY_UPDATED", { id, changed }); save(); return { action: "UPDATED", id, changed };
   }
-  function setStage(id, stage, by, note = null) { const o = S.items[id]; if (!o) return { ok: false, reason: "UNKNOWN_OPPORTUNITY" }; if (!WORKFLOW_STAGES.includes(stage)) return { ok: false, reason: "STAGE_INVALID" };
+  /** Move forward one stage. The entry criteria of the target stage are REQUIRED EVIDENCE (workflow-stages.mjs); external facts (approval, delivery, payment) must be verified by the injected authority. Intake itself may enter VERIFY. */
+  function setStage(id, stage, by, note = null, { evidence = null, internal = false } = {}) { const o = S.items[id]; if (!o) return { ok: false, reason: "UNKNOWN_OPPORTUNITY" }; if (!WORKFLOW_STAGES.includes(stage)) return { ok: false, reason: "STAGE_INVALID" };
     const from = WORKFLOW_STAGES.indexOf(o.stage), to = WORKFLOW_STAGES.indexOf(stage); if (to > from + 1) return { ok: false, reason: "STAGE_SKIP_REFUSED:" + o.stage + "->" + stage };      // no skipping entry criteria
+    if (to <= from) return { ok: false, reason: "STAGE_BACKWARD_REFUSED" };
+    if (!internal) { const g = evaluateStageEntry(stage, evidence ?? {}, { verify: verifyEvidence ? (a, e) => verifyEvidence(a, e, o) : null }); if (!g.ok) { audit.append("OPPORTUNITY_STAGE_REFUSED", { id, stage, missing: g.missing.slice(0, 8) }); return { ok: false, reason: "ENTRY_CRITERIA_NOT_MET", missing: g.missing }; } }
     o.stage = stage; (o.stageLog ??= []).push({ at: now(), stage, by: clip(by, 40), note: clip(note, 200) }); audit.append("OPPORTUNITY_STAGE", { id, stage, by: clip(by, 40) }); save(); return { ok: true, stage }; }
   const get = id => (S.items[id] ? structuredClone(S.items[id]) : null), list = () => Object.values(S.items).map(x => structuredClone(x));
   const counts = () => { const l = Object.values(S.items), by = f => l.reduce((o, x) => (o[f(x)] = (o[f(x)] ?? 0) + 1, o), {}); return { total: l.length, byStage: by(x => x.stage), byRetrieval: by(x => x.retrieval) }; };
@@ -116,7 +120,7 @@ export function createMasterIntake({ dir, registry, capabilities = [], isStopped
     if (h.state === "CAPABILITY_CHECKED") { const why = ["OUTREACH_AND_CONTRACT_ACCEPTANCE_ALWAYS_NEED_SIGNED_OWNER_APPROVAL"]; if ((r.budget?.max ?? 0) >= R.highValue) why.push("HIGH_PUBLISHED_BUDGET"); if (r.paymentMethods?.includes("CRYPTO")) why.push("CRYPTO_PAYMENT_COMPLIANCE_REVIEW"); if (!r.client) why.push("CLIENT_IDENTITY_UNKNOWN"); if (r.retrieval !== "CONNECTOR") why.push("NOT_A_LIVE_CONNECTOR_RETRIEVAL:" + r.retrieval);
       h.requiresOwnerApproval = true; h.approvalReasons = why; step(h, "APPROVAL_DECIDED"); }
     // 10 route to the execution planning workflow (stage VERIFY -> QUALIFY ... planning still needs ESTIMATE; no jump to EXECUTE)
-    if (h.state === "APPROVAL_DECIDED") { const o = registry.get(h.opportunityId); if (o.stage === "DISCOVER") registry.setStage(h.opportunityId, "VERIFY", "MASTER", "intake checks passed"); return finish(h, "ROUTED", null, { opportunityId: h.opportunityId }); }
+    if (h.state === "APPROVAL_DECIDED") { const o = registry.get(h.opportunityId); if (o.stage === "DISCOVER") registry.setStage(h.opportunityId, "VERIFY", "MASTER", "intake checks passed", { internal: true }); return finish(h, "ROUTED", null, { opportunityId: h.opportunityId }); }
     return view(h);
   }
   /** Re-drive every unfinished hand-off from its last checkpoint (restart recovery). Terminal ones are untouched. */

@@ -1,7 +1,11 @@
 # ATLASZ V7.3 — RESUME CHECKPOINT
 - Branch: `atlasz-v73-integration` (remote `github` only; never `origin`, never `main`)
-- Last verified: Batch 8 Phase A + C + demonstrations — gate 2160/2160 (previous: 7 A/B/D 2133, Phase A 2148). Exact commit id: `git log -1` / `git ls-remote github atlasz-v73-integration`.
+- Last verified: Batch 8 Phase A + C + E-slice + UI — gate 2163/2163 (previous: Phase C 2160, Phase A 2148). Exact commit id: `git log -1` / `git ls-remote github atlasz-v73-integration`.
 - Current batch: 6 complete → next: Batch 7 (real authorized AI model connectivity), then Batch 8–14.
+
+## Completed (Batch 8 Phase E slice + UI)
+- `workflow-stages.mjs`: entry criteria (required evidence) for the 14 stages; `registry.setStage` refuses skip/reverse/unverified evidence. Only OWNER_APPROVAL authority connected (real signature, single use). Delivery/invoice/payment authority wiring is the next step (those stages remain refused until connected).
+- Control Center: Opportunity Pipeline page, network supervision section, model inventory rows (12 facts).
 
 ## Completed (Batch 8 Phase C + demonstrations)
 - `opportunity-intake.mjs`: common opportunity record (directive 5.3; unknown stays null), durable update-aware registry, SEARCH->Master hand-off with 10 checks + checkpoints + resume, source inventory (10 facts). Wired in Control Center (`masterIntake`, `opportunityRegistry`), broker module `opportunity-intake`, AURÓRA reports registry items with FIXTURE/OPERATOR/live labels.
@@ -44,6 +48,8 @@ Dockerfile.worker still launches legacy supervisor.js (B6-005); 86 non-133 modul
 Owner key provisioning; host approvals; provider credentials + `ATLASZ_VAULT_KEY`; malware scanner choice; D12 signature (optional); legacy runtime removal; manual Windows installer run; enable auto-update policy; real USB backup rehearsal; Stripe awaits Astra package (deferred).
 
 ## Exact next action
-(7A/7B/7D done; see above.) Remaining: 7E financial event tracking dashboard wiring, backup rehearsal on owner device, broker registration of AURORA read-only status, real credentials/voice test by owner.
+(Batch 8 A/C/E-slice done.) Next: connect DELIVERY_RECORD / INVOICE_RECORD / PAYMENT_VERIFIED authorities to the stage gate (money-engine, payment-events), proposal-draft stage from the workforce executors, wire a first authorised live source once the owner signs a host approval, Windows update CI + real smoke test (owner machine), physical backup rehearsal (owner device).
+
+Older: (7A/7B/7D done; see above.) Remaining: 7E financial event tracking dashboard wiring, backup rehearsal on owner device, broker registration of AURORA read-only status, real credentials/voice test by owner.
 
 Older note: (Security directive and Batch 7a done.) Batch 7 remainder: system principals (MASTER/BRAIN) in the model registry; scheduled catalog refresh; credential retrieval via the vault; routing/failover/spend caps/usage accounting; live probes only with credentials the owner has authorised (none exist → models stay NOT LIVE).
