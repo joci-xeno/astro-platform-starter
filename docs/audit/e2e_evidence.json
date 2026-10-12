@@ -1,0 +1,22 @@
+{
+  "_note": "Modules whose real code path is executed end to end by the named test (the test must import/reference the module file; the script verifies that). END_TO_END_VERIFIED is never inferred from registration or a self-test.",
+  "atlasz-addons/business/money-engine.mjs": "atlasz-tests/money-engine-sandbox.test.mjs",
+  "atlasz-addons/business/deal-pipeline.mjs": "atlasz-tests/money-engine-sandbox.test.mjs",
+  "atlasz-addons/business/job-system.mjs": "atlasz-tests/money-engine-sandbox.test.mjs",
+  "atlasz-addons/business/communication-center.mjs": "atlasz-tests/money-engine-sandbox.test.mjs",
+  "atlasz-addons/business/invoice-service.mjs": "atlasz-tests/money-engine-sandbox.test.mjs",
+  "atlasz-addons/business/payment-verification.mjs": "atlasz-tests/money-engine-sandbox.test.mjs",
+  "atlasz-addons/business/delivery-service.mjs": "atlasz-tests/money-engine-sandbox.test.mjs",
+  "atlasz-addons/business/artifact-registry.mjs": "atlasz-tests/money-engine-sandbox.test.mjs",
+  "atlasz-addons/business/qa-factory.mjs": "atlasz-tests/money-engine-sandbox.test.mjs",
+  "atlasz-addons/business/judge.mjs": "atlasz-tests/money-engine-sandbox.test.mjs",
+  "atlasz-addons/brain/brain-system.mjs": "atlasz-tests/brain-failure-modes.test.mjs",
+  "atlasz-addons/brain-master-bridge.mjs": "atlasz-tests/brain-failure-modes.test.mjs",
+  "atlasz-addons/master-coordinator.mjs": "atlasz-tests/brain-failure-modes.test.mjs",
+  "atlasz-addons/agent-workforce.mjs": "atlasz-tests/brain-failure-modes.test.mjs",
+  "atlasz-addons/agent-executors.mjs": "atlasz-tests/brain-failure-modes.test.mjs",
+  "atlasz-addons/global-discovery.mjs": "atlasz-tests/brain-failure-modes.test.mjs",
+  "atlasz-addons/agent-registry.mjs": "atlasz-tests/brain-failure-modes.test.mjs",
+  "atlasz-addons/portable-backup.mjs": "atlasz-tests/portable-backup.test.mjs",
+  "atlasz-addons/owner-auth.mjs": "atlasz-tests/money-engine-sandbox.test.mjs"
+}

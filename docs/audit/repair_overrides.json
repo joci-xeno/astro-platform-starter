@@ -1,5 +1,5 @@
 {
- "gate": "gate 2014/2014 at batch-4 commit (see git log)",
+ "gate": "gate: see ATLASZ_V73_RESUME_CHECKPOINT.md (Batch 6)",
  "modules": {},
  "defects": [
   {
@@ -353,6 +353,72 @@
    "test": "master-security-probe.test.mjs",
    "status": "FIXED_VERIFIED",
    "verification_result": "passes in gate"
+  },
+  {
+   "defect_id": "B6-001",
+   "severity": "HIGH",
+   "title": "Invalid tool response (non-map files) crashed the checker/verifier path instead of failing the task",
+   "owner": "Claude Code",
+   "reproduction_evidence": "brain-failure-modes.test.mjs (invalid tool response)",
+   "proposed_fix": "validateToolOutput in agent-workforce (non-retryable INVALID_TOOL_RESPONSE) + guarded recompute + bridge exception wrapper",
+   "test": "brain-failure-modes.test.mjs",
+   "status": "FIXED_VERIFIED",
+   "verification_result": "passes in gate"
+  },
+  {
+   "defect_id": "B6-002",
+   "severity": "MEDIUM",
+   "title": "Brain-Master bridge let unexpected exceptions escape as unhandled rejections",
+   "owner": "Claude Code",
+   "reproduction_evidence": "brain-failure-modes.test.mjs",
+   "proposed_fix": "runWorkflow wrapper records WORKFLOW_EXCEPTION in the trace and returns a named failure",
+   "test": "brain-failure-modes.test.mjs",
+   "status": "FIXED_VERIFIED",
+   "verification_result": "passes in gate"
+  },
+  {
+   "defect_id": "B6-003",
+   "severity": "HIGH",
+   "title": "Owner key could be provisioned inside the Git working tree",
+   "owner": "Claude Code",
+   "reproduction_evidence": "repo-secret-scan.test.mjs",
+   "proposed_fix": "provisionOwnerKey refuses KEY_DIR_INSIDE_REPOSITORY; .gitignore for keys/backups/vault/.env; tracked-file secret scan test",
+   "test": "repo-secret-scan.test.mjs",
+   "status": "FIXED_VERIFIED",
+   "verification_result": "passes in gate"
+  },
+  {
+   "defect_id": "B6-004",
+   "severity": "MEDIUM",
+   "title": "Dead-letter module is in-memory only (items lost on restart)",
+   "owner": "JOCI",
+   "reproduction_evidence": "code inspection (dead-letter-queue.mjs)",
+   "proposed_fix": "Persisted DEAD state of the durable queue is the authority; decide whether to supersede the in-memory module",
+   "test": "none yet",
+   "status": "OWNER_DECISION_PENDING",
+   "verification_result": "documented in gap analysis"
+  },
+  {
+   "defect_id": "B6-005",
+   "severity": "LOW",
+   "title": "Legacy competition runtime files remain in the tree",
+   "owner": "JOCI",
+   "reproduction_evidence": "policy-guards.test.mjs",
+   "proposed_fix": "Quarantined: excluded by policy, never registered/activated/deleted; removal needs owner decision",
+   "test": "policy-guards.test.mjs",
+   "status": "OWNER_DECISION_PENDING",
+   "verification_result": "quarantine record docs/audit/LEGACY_QUARANTINE.md"
+  },
+  {
+   "defect_id": "B6-006",
+   "severity": "MEDIUM",
+   "title": "Brain reasoning model adapter uses principal MASTER which the model registry refuses (fails closed, no model reasoning)",
+   "owner": "Claude Code",
+   "reproduction_evidence": "code inspection",
+   "proposed_fix": "Batch 7: system principals with role defaults in the model registry",
+   "test": "none yet",
+   "status": "OPEN",
+   "verification_result": "fails closed today"
   }
  ],
  "gaps": [

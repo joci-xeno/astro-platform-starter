@@ -132,3 +132,14 @@ export const configureOwnerAuth = opts => defaultAuth.configure(opts);
 export const ownerAuthStatus = () => defaultAuth.status();
 export const verifyOwnerApproval = (a, o) => defaultAuth.verifyApproval(a, o);
 export const ownerGranted = (approval, action, subject) => defaultAuth.granted(approval, action, subject);
+
+/** Signature-only check for DURABLE owner decisions (e.g. a policy activation record): the approval was really signed by the owner key for exactly this action+subject.
+ *  It deliberately ignores expiry and the nonce store (the live approval was already consumed once); never use it to authorize a new action. */
+export function verifyDurableDecision(approval, { publicKeyB64, ownerId = "JOCI", action, subject } = {}) {
+  try {
+    if (!approval || typeof approval !== "object" || !publicKeyB64) return false;
+    if (approval.version !== APPROVAL_VERSION || approval.ownerId !== ownerId || canon(approval.action) !== canon(action) || (approval.subject ?? null) !== (subject ?? null)) return false;
+    const pub = createPublicKey({ key: Buffer.from(publicKeyB64, "base64"), format: "der", type: "spki" });
+    return pub.asymmetricKeyType === "ed25519" && verify(null, Buffer.from(messageOf(approval)), pub, Buffer.from(String(approval.signature), "base64"));
+  } catch { return false; }
+}

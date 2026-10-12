@@ -50,11 +50,25 @@ const rows = M.rows.map(r => {
     owner_approval_required: ov.owner_approval_required ?? own, blocker_reason: ov.blocker_reason ?? "", github_commit: ov.github_commit ?? ""
   };
 });
+// evidence levels + final dispositions of the original 133 findings (computed by scripts/module-evidence.mjs; never typed by hand)
+const DISP = fs.existsSync(A("module_dispositions.json")) ? new Map(JSON.parse(fs.readFileSync(A("module_dispositions.json"), "utf8")).modules.map(x => [x.source, x])) : new Map();
+for (const r of rows) {
+  const d = DISP.get(r.source_path); r.original_133_finding = d?.original133 ? "YES" : "NO"; r.evidence_level = d?.level ?? "UNKNOWN"; r.disposition = d?.disposition ?? ""; r.evidence_ref = d?.e2eTest ?? (d?.id ? "module-broker:" + d.id + " (" + (d.health ?? "") + ")" : "");
+  if (d?.original133) {
+    r.runtime_reachability = d.disposition === "EXCLUDED_LEGACY_QUARANTINED" ? "QUARANTINED_NOT_ACTIVE" : "BROKER_" + d.level;
+    r.repair_status = d.disposition === "EXCLUDED_LEGACY_QUARANTINED" ? "OWNER_DECISION_PENDING" : d.disposition === "UNRESOLVED" ? "OPEN" : "DISPOSITION_ASSIGNED";
+    r.missing_functionality = d.disposition === "EXCLUDED_LEGACY_QUARANTINED" ? d.why : (["REGISTERED", "SELF_TESTED"].includes(d.level) ? "Registered/self-tested only: not yet driven by a standing runtime flow or end-to-end test. " : "") + (d.health === "LOADED_NEEDS_DEPENDENCY" ? d.why : "");
+    r.blocker_reason = d.disposition === "EXCLUDED_LEGACY_QUARANTINED" ? "OWNER_DECISION: remove or keep quarantined (never activated)" : r.blocker_reason;
+  }
+}
 // non-module gaps (components the audits name that do NOT exist as files) - never claimed to exist
 const gaps = (O.gaps ?? []).map(g => ({ module_id: g.id, module_name: g.name, source_path: "NONE", category: g.category, current_status: g.status ?? "MISSING", master_connection: "NONE", manager_connection: "NONE (target " + g.manager + ")", agent_connection: "NONE", control_center_connection: "NONE", runtime_reachability: "NOT_IMPLEMENTED", required_dependencies: g.deps ?? "", missing_functionality: g.missing, security_risk: g.risk ?? "MEDIUM", defect_description: g.defect ?? g.missing, required_repair: g.repair, integration_target: g.manager, implementation_priority: g.priority ?? "P3", assigned_phase: g.phase, repair_status: g.repair_status ?? (/BLOCKED/.test(g.status ?? "") ? g.status : "OPEN"), test_file: g.test_file ?? "", test_result: g.test_result ?? "NO_TEST", runtime_evidence: g.runtime_evidence ?? "none", owner_approval_required: g.owner ?? "NO", blocker_reason: g.blocker ?? "", github_commit: g.github_commit ?? "" }));
 const known = new Set(rows.map(r => r.module_id)); const removed = Object.keys(O.modules).filter(k => !known.has(k)).map(k => ({ module_id: k, module_name: k, source_path: "REMOVED_FROM_MATRIX", category: "REMOVED", current_status: "REMOVED_FROM_MATRIX", master_connection: "", manager_connection: "", agent_connection: "", control_center_connection: "", runtime_reachability: "", required_dependencies: "", missing_functionality: "module no longer present in the matrix", security_risk: "", defect_description: "", required_repair: "confirm intentional removal", integration_target: "", implementation_priority: "", assigned_phase: "", repair_status: "REVIEW", test_file: "", test_result: "", runtime_evidence: "", owner_approval_required: "", blocker_reason: "", github_commit: "" }));
-const all = [...rows, ...gaps, ...removed];
+const all = [...rows, ...gaps, ...removed].map(r => ({ original_133_finding: "NO", evidence_level: "", disposition: "", evidence_ref: "", ...r }));
 fs.writeFileSync(A("ATLASZ_V73_TOTAL_INTEGRATION_REPAIR.csv"), csv(all));
-const D = (O.defects ?? []); if (D.length) fs.writeFileSync(A("ATLASZ_V73_DEFECT_REGISTER.csv"), csv(D));
+const D = (O.defects ?? []);
+const orig = rows.filter(r => r.original_133_finding === "YES");
+const by = k => orig.reduce((o, r) => (o[r[k]] = (o[r[k]] ?? 0) + 1, o), {});
+fs.writeFileSync(A("original_133_resolution.json"), JSON.stringify({ total: orig.length, by_evidence_level: by("evidence_level"), by_disposition: Object.fromEntries(Object.entries(by("disposition")).map(([k, v]) => [k.split(":")[0], 0]).map(([k]) => [k, orig.filter(r => r.disposition.startsWith(k)).length])), by_repair_status: by("repair_status"), rule: "No finding is closed by registration alone: see evidence_level. LIVE_OPERATIONAL requires authenticated real-service evidence (docs/audit/live_evidence.json)." }, null, 1)); if (D.length) fs.writeFileSync(A("ATLASZ_V73_DEFECT_REGISTER.csv"), csv(D));
 const tally = k => all.reduce((o, r) => (o[r[k]] = (o[r[k]] ?? 0) + 1, o), {});
 console.log(JSON.stringify({ modules: rows.length, gaps: gaps.length, defects: D.length, unreachable: rows.filter(r => r.runtime_reachability === "UNREACHABLE").length, repair_status: tally("repair_status"), categories: tally("category") }));

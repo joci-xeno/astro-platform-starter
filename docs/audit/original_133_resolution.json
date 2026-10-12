@@ -1,0 +1,24 @@
+{
+ "total": 133,
+ "by_evidence_level": {
+  "SELF_TESTED": 86,
+  "RUNTIME_CONNECTED": 17,
+  "REGISTERED": 25,
+  "END_TO_END_VERIFIED": 2,
+  "NOT_REGISTERED": 3
+ },
+ "by_disposition": {
+  "REAL_RUNTIME_PATH_VIA_BROKER": 86,
+  "OPERATIONAL_PARENT": 20,
+  "REAL_RUNTIME_PATH_CONTINUOUS": 6,
+  "DOCUMENTED_OWNER_ACTIVATION": 6,
+  "SUPERSEDED_BY": 11,
+  "DOCUMENTED_BUILD_ONLY": 1,
+  "EXCLUDED_LEGACY_QUARANTINED": 3
+ },
+ "by_repair_status": {
+  "DISPOSITION_ASSIGNED": 130,
+  "OWNER_DECISION_PENDING": 3
+ },
+ "rule": "No finding is closed by registration alone: see evidence_level. LIVE_OPERATIONAL requires authenticated real-service evidence (docs/audit/live_evidence.json)."
+}

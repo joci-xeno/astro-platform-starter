@@ -28,3 +28,14 @@ node_modules/
 # python caches
 __pycache__/
 *.pyc
+
+# ATLASZ secrets and backups: never commit
+.env*
+*.pem
+*.enc.pem
+owner-private-key*
+*.atlbak
+*.atlbak.partial
+atlasz-vault/
+vault/
+secrets/

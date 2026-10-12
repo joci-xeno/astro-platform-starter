@@ -258,3 +258,36 @@ test("REVENUE OPS DASHBOARD: every stage count follows the real engine state; SA
     assert.equal(r.projectedAddedToCollected, false);
   } finally { w.done(); }
 });
+
+test("ADVERSARIAL APPROVAL BYPASS: no forged, foreign-key, tampered, wrong-action, wrong-subject, expired, replayed or missing approval releases outreach, deal acceptance, delivery or invoice issue", async () => {
+  const { generateOwnerKeyPair, issueOwnerApproval } = await import("../atlasz-addons/owner-auth.mjs");
+  const stranger = generateOwnerKeyPair(), w = await world(); const { m, steps } = w;
+  const foreign = (a, s) => issueOwnerApproval({ privateKeyPem: stranger.privateKeyPem, action: a, subject: s });
+  const tampered = (a, s) => { const x = sign(a, s); x.expiresAt = new Date(Date.now() + 3600e3).toISOString(); return x; };      // extended lifetime, signature no longer matches
+  const swapped = (a, s) => { const x = sign(a, s); x.subject = "other"; return x; };
+  const variants = (action, subject) => [["missing", null], ["string", "I approve"], ["empty object", {}], ["foreign key", foreign(action, subject)], ["tampered expiry", tampered(action, subject)], ["swapped subject", swapped(action, subject)],
+    ["wrong action", sign("SOMETHING_ELSE", subject)], ["wrong subject", sign(action, subject + "-x")], ["expired", sign(action, subject, { now: Date.now() - 300000, ttlMs: 60000 })], ["another agent claims owner", { ownerId: "JOCI", agent: "EXECUTION-1", approved: true }]];
+  try {
+    const d = await steps.toFeasible(); const p = m.prepareOutreach(d.dealId, { buyerRef: "c1", to: "b@example.invalid", subject: "S", body: "B" });
+    for (const [n, a] of variants(p.approvalRequest.action, p.approvalRequest.approvalSubject)) { let r; try { r = await m.sendOutreach(d.dealId, a); } catch { r = { stage: "REFUSED" }; } assert.notEqual(r?.stage, "SENT", "outreach bypass: " + n); }
+    assert.equal(w.sentMail.length, 0); assert.notEqual(m.engines.deals.get(d.dealId).status, "SENT");
+    const replayable = sign(p.approvalRequest.action, p.approvalRequest.approvalSubject);
+    assert.equal((await m.sendOutreach(d.dealId, replayable)).stage, "SENT"); assert.equal(w.sentMail.length, 1);
+    // the very same approval cannot send a second message (single use)
+    try { await m.sendOutreach(d.dealId, replayable); } catch { /* refused */ } assert.equal(w.sentMail.length, 1, "replayed approval sent a second message");
+    m.recordReply(d.dealId, { reference: "in-1", receivedAt: new Date().toISOString() });
+    const acc = { kind: "CUSTOMER_ACCEPTANCE", reference: "acc-1", evidence: ev() };
+    for (const [n, a] of variants("ACCEPT_DEAL_TERMS", d.dealId + ":acc-1")) { let r; try { r = await m.win(d.dealId, { acceptance: acc, ownerApproval: a, goal: "Deliver scoped website review", scope: "scope review document", deliverables: ["scope review"] }); } catch { r = { refused: true }; } assert.ok(!r?.jobId, "win bypass: " + n); }
+    assert.notEqual(m.engines.deals.get(d.dealId).status, "WON");
+    // a valid approval for a DIFFERENT action cannot be reused here
+    await assert.rejects(async () => m.win(d.dealId, { acceptance: acc, ownerApproval: sign("APPROVE_DELIVERY", d.dealId + ":acc-1"), goal: "Deliver scoped website review", scope: "scope review document", deliverables: ["scope review"] }));
+    const won = await m.win(d.dealId, { acceptance: acc, ownerApproval: sign("ACCEPT_DEAL_TERMS", d.dealId + ":acc-1"), goal: "Deliver scoped website review", scope: "scope review document", deliverables: ["scope review"] }); assert.ok(won.jobId);
+    await steps.toExecuted(won.jobId); await steps.toVerified(won.jobId); const dp = m.prepareDelivery(won.jobId, { recipient: "buyer@example.invalid" });
+    for (const [n, a] of variants("APPROVE_DELIVERY", dp.deliveryId)) { let r; try { r = await m.deliver(won.jobId, dp.deliveryId, a); } catch { r = { ok: false }; } assert.notEqual(r?.ok, true, "delivery bypass: " + n); }
+    assert.equal(w.delivered.length, 0);
+    assert.equal((await m.deliver(won.jobId, dp.deliveryId, sign("APPROVE_DELIVERY", dp.deliveryId))).ok, true);
+    const inv = m.draftInvoice(won.jobId, { customerId: "c", items: [{ description: "x", quantity: 1, unitPrice: 10 }], dueDate: "2026-12-31" });
+    for (const [n, a] of variants(inv.action, inv.approvalSubject)) { let issued = true; try { m.issueInvoice(won.jobId, inv.invoiceId, a); } catch { issued = false; } assert.equal(issued, false, "invoice bypass: " + n); }
+    assert.equal(m.engines.invoices.get(inv.invoiceId).status === "ISSUED", false);
+  } finally { w.done(); }
+});

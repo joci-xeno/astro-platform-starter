@@ -226,6 +226,7 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
       const t0 = clock();
       try {
         const out = await withTimeout(Promise.resolve().then(() => ex.run(task.input, ctxFor(task))), prof.limits.taskTimeoutMs);
+        validateToolOutput(out);
         const art = writeArtifact(task.taskId, out.files, { executor: task.executor, agentId: task.agentId, provenance: out.provenance ?? "REAL_LOCAL_TOOL", inputSha256: task.inputSha, meta: out.meta ?? null });
         task.attempts.push({ n, at: now(), ok: true, ms: clock() - t0 }); touch(task, { provenance: out.provenance ?? "REAL_LOCAL_TOOL", resultSha256: art.resultSha256 });
         ev("ARTIFACT_WRITTEN", { taskId: task.taskId, agentId: task.agentId, files: art.manifest.files.length, resultSha256: art.resultSha256 });
@@ -244,6 +245,14 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
       }
     }
     return failTask(task, h, new Error("EXHAUSTED"), { exhausted: true });
+  }
+  /** A tool response is DATA from an untrusted component: it must be {files: {name: string|Buffer}} with bounded, safe names, otherwise the attempt fails with a non-retryable code (never reaches the artifact writer or the checker). */
+  function validateToolOutput(out) {
+    const bad = m => { throw Object.assign(new Error(m), { code: "INVALID_TOOL_RESPONSE", detail: m }); };
+    if (!out || typeof out !== "object" || Array.isArray(out)) bad("TOOL_RESPONSE_NOT_AN_OBJECT");
+    const f = out.files; if (!f || typeof f !== "object" || Array.isArray(f) || Buffer.isBuffer(f)) bad("TOOL_RESPONSE_FILES_NOT_A_MAP");
+    const names = Object.keys(f); if (!names.length || names.length > 50) bad("TOOL_RESPONSE_FILE_COUNT");
+    for (const n of names) { if (!/^[A-Za-z0-9._-]{1,120}$/.test(n) || n.startsWith(".")) bad("TOOL_RESPONSE_FILE_NAME"); if (typeof f[n] !== "string" && !Buffer.isBuffer(f[n])) bad("TOOL_RESPONSE_FILE_CONTENT"); }
   }
   function withTimeout(p, ms) { let t; return Promise.race([p, new Promise((_, rej) => { t = setTimeout(() => rej(Object.assign(new Error("TIMEOUT"), { code: "TIMEOUT" })), ms); t.unref?.(); })]).finally(() => clearTimeout(t)); }
   function blockTask(task, h, code) { coordinator.abandon(task.taskId, code); touch(task, { status: "BLOCKED", blocker: code }); ev("TASK_BLOCKED", { taskId: task.taskId, agentId: task.agentId, code }); return R(code, { taskId: task.taskId, status: "BLOCKED" }); }
@@ -321,6 +330,7 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
     if (typeof ex.verifyFiles === "function") { const v = await ex.verifyFiles(Object.fromEntries(Object.entries(art.files))); evidence.rerun = v.evidence; if (v.blocked) out.push("CHECKER_SANDBOX_UNAVAILABLE"); else if (!v.ok) out.push("INDEPENDENT_RERUN_FAILED"); }
     else {
       let again; try { again = await ex.run(t.input, ctxFor(t)); } catch (e) { return [...out, "INDEPENDENT_RECOMPUTE_FAILED:" + String(e.code ?? e.message).slice(0, 30)]; }
+      try { validateToolOutput(again); } catch (e) { return [...out, "INDEPENDENT_RECOMPUTE_INVALID_RESPONSE"]; }
       for (const [name, content] of Object.entries(again.files)) { const mine = art.files[name]; if (!mine || sha(mine) !== sha(Buffer.isBuffer(content) ? content : Buffer.from(String(content)))) out.push("OUTPUT_DIFFERS_ON_RECOMPUTE:" + name); }
       for (const name of Object.keys(art.files)) if (!(name in again.files)) out.push("UNEXPECTED_FILE:" + name);
     }

@@ -53,7 +53,9 @@ import { createSourceAllowlist } from "../atlasz-addons/source-allowlist.mjs";
 import { createCapabilityProfileStore } from "../atlasz-addons/eligibility-model.mjs";
 import { registerAgents } from "../atlasz-addons/registrations/agents.mjs";
 import { createAgentToolBroker } from "../atlasz-addons/agent-tool-broker.mjs";
-import { COMBINED_POLICY } from "../atlasz-addons/agent-tool-policy-ext.mjs";
+import { COMBINED_POLICY, EXTENSION_SHA, D12_ACTION } from "../atlasz-addons/agent-tool-policy-ext.mjs";
+import { TOOL_POLICY } from "../atlasz-addons/agent-tool-policy.mjs";
+import { verifyDurableDecision } from "../atlasz-addons/owner-auth.mjs";
 import { approvalActionName } from "../atlasz-addons/owner-control/owner-authority.mjs";
 import { registerWorkflow } from "../atlasz-addons/registrations/workflow.mjs";
 import { registerBusiness } from "../atlasz-addons/registrations/business.mjs";
@@ -255,7 +257,11 @@ export function createControlCenterCore({ ollamaFetch = null, cloudFetch = null,
     return store.decide({ id, decision: "APPROVED", approval: sign(passphrase, req.action, req.subject), reason });
   }
   // ---- owner key ----
-  function provisionOwnerKey({ passphrase }) { const r = createOwnerKeystore(configDir, passphrase); ocCache = null; brokerCache = null; toolsCache = null; schedCache = null; credBroker = null; brainCache = null; bridgeCache = null; moneyCache = null; inboxPipeCache = null; revPersistCache = null; srcAllowCache = null; capProfCache = null; twinCache = null; agentToolCache = null; return { publicKeyB64: r.publicKeyB64, next: "The Control Center passes this public key to the runtime it starts. Back up the key file offline." }; }
+  function provisionOwnerKey({ passphrase }) {
+    // the owner's key must never be created where Git could track it
+    const repoRoot = path.resolve(HERE, ".."), cfg = path.resolve(configDir);
+    if (cfg === repoRoot || cfg.startsWith(repoRoot + path.sep)) throw new Error("KEY_DIR_INSIDE_REPOSITORY: choose a configuration directory outside the source tree");
+    const r = createOwnerKeystore(configDir, passphrase); ocCache = null; brokerCache = null; toolsCache = null; schedCache = null; credBroker = null; brainCache = null; bridgeCache = null; moneyCache = null; inboxPipeCache = null; revPersistCache = null; srcAllowCache = null; capProfCache = null; twinCache = null; agentToolCache = null; return { publicKeyB64: r.publicKeyB64, next: "The Control Center passes this public key to the runtime it starts. Back up the key file offline." }; }
 
   // ---- owner controls ----
   function setEmergency({ mode, passphrase, reason = "Control Center", confirm = null }) {
@@ -301,6 +307,20 @@ export function createControlCenterCore({ ollamaFetch = null, cloudFetch = null,
   function drill() { const r = recoveryDrill({ srcDir: stateDir, backupRoot, scratchDir: path.join(configDir, "drill-scratch") }); fs.appendFileSync(drillLog, JSON.stringify({ at: new Date().toISOString(), ok: r.passed === true, files: r.files }) + "\n"); return r; }
 
   const revenueOps = () => buildRevenueOps({ money: money(), pending: () => approvalStore().pending(), workforceTasks: () => { try { return agentsPanel.workforce()?.listTasks?.() ?? []; } catch { return []; } }, deadLetters: () => { try { return listDeadLetters("OPEN").length; } catch { return 0; } }, revenuePersistence: revenuePersistence() });
+  // ---- D12: the agent tool policy EXTENSION stays inactive until the owner signs an approval bound to its exact fingerprint (durable record re-verified against the owner public key on every start) ----
+  const d12File = () => path.join(stateDir, "policy", "d12-approval.json");
+  function d12Active() {
+    try { const r = JSON.parse(fs.readFileSync(d12File(), "utf8")), pk = keystoreStatus(configDir).publicKeyB64;
+      return r.extensionSha === EXTENSION_SHA && verifyDurableDecision(r.approval, { publicKeyB64: pk, action: D12_ACTION, subject: EXTENSION_SHA }); } catch { return false; }
+  }
+  function d12Status() { return { state: d12Active() ? "ACTIVE" : "PENDING_OWNER_APPROVAL", extensionSha: EXTENSION_SHA, action: D12_ACTION, subject: EXTENSION_SHA, effect: d12Active() ? "Extension rows are enforced (still re-validated per call)." : "Only the base 34-tool policy is enforced; extension tools are DENIED for every agent." }; }
+  function activateD12({ ownerApproval } = {}) {
+    const v = ownerAuth().verifyApproval(ownerApproval, { action: D12_ACTION, subject: EXTENSION_SHA });
+    if (!v.allowed) throw new Error("OWNER_APPROVAL_REQUIRED:" + v.reason);
+    fs.mkdirSync(path.dirname(d12File()), { recursive: true, mode: 0o700 }); fs.writeFileSync(d12File(), JSON.stringify({ extensionSha: EXTENSION_SHA, approvedAt: new Date().toISOString(), approval: ownerApproval }), { mode: 0o600 });
+    agentToolCache = null; try { ocBlackBox.record({ kind: "D12_POLICY_ACTIVATED", decision: "ACTIVE", reason: EXTENSION_SHA.slice(0, 16) }); } catch { /* audit is best effort */ }
+    return d12Status();
+  }
   // ---- portable encrypted backup (OWNER surface only: the passphrase is supplied by the owner per call and is never stored, logged or exposed through the module broker) ----
   const portableSets = (tmp) => {
     const root = path.resolve(HERE, ".."), sets = [{ name: "state", dir: stateDir }, { name: "config", dir: configDir, exclude: ["backups", "drill-scratch"] }];
@@ -762,7 +782,7 @@ export function createControlCenterCore({ ollamaFetch = null, cloudFetch = null,
   const sourceAllowlist = () => (srcAllowCache ??= createSourceAllowlist({ ownerAuth: ownerAuth(), stateDir: path.join(stateDir, "source-allowlist"), isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL", hasCredential: n => { try { return !!vaultOrNull()?.has(n); } catch { return false; } } }));
   const capabilityProfiles = () => (capProfCache ??= createCapabilityProfileStore({ ownerAuth: ownerAuth(), dir: path.join(stateDir, "capability-profile") }));
   let agentToolCache = null; const agentToolSignals = [];
-  const agentToolBroker = () => (agentToolCache ??= (() => { const oc = ownerControl(); return createAgentToolBroker({ tools: toolRegistry(), blackBox: ocBlackBox, approvalRequests: approvalStore(), approvalAction: approvalActionName, approvalSubject: (op, p, spend) => oc.chain.subjectFor(op, p, spend), isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL", onSignal: sig => { agentToolSignals.push({ at: new Date().toISOString(), ...sig }); if (agentToolSignals.length > 100) agentToolSignals.shift(); }, policy: COMBINED_POLICY }); })());
+  const agentToolBroker = () => (agentToolCache ??= (() => { const oc = ownerControl(); return createAgentToolBroker({ tools: toolRegistry(), blackBox: ocBlackBox, approvalRequests: approvalStore(), approvalAction: approvalActionName, approvalSubject: (op, p, spend) => oc.chain.subjectFor(op, p, spend), isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL", onSignal: sig => { agentToolSignals.push({ at: new Date().toISOString(), ...sig }); if (agentToolSignals.length > 100) agentToolSignals.shift(); }, policy: d12Active() ? COMBINED_POLICY : TOOL_POLICY }); })());
   const moduleBroker = () => (brokerCache ??= (() => {
     const b = createModuleBroker({ tools: toolRegistry(), managers: MANAGER_IDS, audit: (e, d) => { try { agentsPanel.loopEvent("MODULE:" + e, d); } catch { /* audit is best-effort here; the control chain audits the decision itself */ } } });
     const ctx = { modelPanel: () => modelRegPanel, runtimeStatus: async () => (await status()).runtime, runtimeRunning: () => Boolean(child && child.exitCode === null && child.signalCode === null), ownerAuthOrNull: () => { try { return ownerAuth(); } catch { return null; } }, brainSystem, digitalTwin, modelAdapter, usableModelCount, sourceAllowlist, capabilityProfiles, agentToolBroker, workforceTasks: () => { try { return agentsPanel.workforce()?.listTasks?.() ?? []; } catch { return []; } }, money, inboxPipeline, revenuePersistence, backups: () => backups(), backupNow: a => backupNow(a), drill: () => drill(), lastDrill: () => drills().at(-1) ?? null, ownerControl, stateDir, appDir: path.resolve(HERE, ".."), credentialBroker, scheduler, superviseNow: () => agentsPanel.superviseNow() };
@@ -794,6 +814,6 @@ export function createControlCenterCore({ ollamaFetch = null, cloudFetch = null,
   const tradingPanel = createTradingPanel({ stateDir, ownerAuth: () => ownerAuth(), sign: (p, a, s) => sign(p, a, s), isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL" });
   const trading = () => tradingPanel.view(), tradingCandles = q => tradingPanel.candles(q ?? {}), tradingAction = b => tradingPanel.action(b ?? {}), tradingTick = () => tradingPanel.tick({ candlesPerStrategy: 1 });
   const ops = createOpsViews({ stateDir, status, finance, approvals, tradingView: trading, memoryView: memory, ledgerEntries: () => createFinancialLedger({ dir: path.join(stateDir, "ledger") }).entries() });
-  return { revenueOps, portableBackup, portableVerify, portableRestoreRehearsal, agentToolBroker, trading, tradingCandles, tradingAction, tradingTick, agentsActivity: ops.agents, agentActivityOne: ops.agent, operations: ops.operations, revenueDashboard: ops.revenue, memory, memoryAction, modelRegistry, modelRegistryAction, security, securityAction, agents30, agents30Action, superviseMaster, startMasterLoop, stopMasterLoop, masterLoopStatus, money, brainSystem, brainWorkflow, brainWorkflows, runDueSchedules, moduleBroker, modules, scheduler, credentialBroker, vaultView, vaultAction, chatProviders, chatProvidersAction, prototypes, prototypeActions, pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, workbench, workbenchAction, a11yAudit, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => pluginView(), mcp, mcpActions, repos, repoActions, theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { d12Status, activateD12, revenueOps, portableBackup, portableVerify, portableRestoreRehearsal, agentToolBroker, trading, tradingCandles, tradingAction, tradingTick, agentsActivity: ops.agents, agentActivityOne: ops.agent, operations: ops.operations, revenueDashboard: ops.revenue, memory, memoryAction, modelRegistry, modelRegistryAction, security, securityAction, agents30, agents30Action, superviseMaster, startMasterLoop, stopMasterLoop, masterLoopStatus, money, brainSystem, brainWorkflow, brainWorkflows, runDueSchedules, moduleBroker, modules, scheduler, credentialBroker, vaultView, vaultAction, chatProviders, chatProvidersAction, prototypes, prototypeActions, pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, workbench, workbenchAction, a11yAudit, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => pluginView(), mcp, mcpActions, repos, repoActions, theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }

@@ -16,7 +16,12 @@ export function createBrainMasterBridge({ master, brain, dir, now = () => new Da
   const trace = createAuditChain({ filePath: path.join(dir, "brain-master-workflows.jsonl"), headPinFile: path.join(dir, "brain-master-workflows.headpin.json"), now });
   const R = (stage, reason, extra = {}) => ({ ok: false, failedStage: stage, reason, ...extra });
 
-  async function runWorkflow({ requestedBy, request, planId, stepId, priority = 9 } = {}) {
+  /** Any unexpected exception becomes a recorded, named failure (never an unhandled rejection and never a silent half-run). */
+  async function runWorkflow(args = {}) {
+    try { return await runWorkflowInner(args); }
+    catch (e) { const reason = "WORKFLOW_EXCEPTION:" + String(e?.code ?? e?.message ?? e).slice(0, 80); try { trace.append("WORKFLOW_STAGE", { workflowId: "wf-exception", stage: "INTERNAL", ok: false, reason }); } catch { /* trace unwritable: the caller still gets the failure */ } return R("INTERNAL", reason, { workflowId: null, stages: [] }); }
+  }
+  async function runWorkflowInner({ requestedBy, request, planId, stepId, priority = 9 } = {}) {
     const wf = "wf-" + crypto.randomBytes(5).toString("hex"), stages = [];
     const mark = (stage, ok, detail = {}) => { stages.push({ stage, ok, at: now(), ...detail }); trace.append("WORKFLOW_STAGE", { workflowId: wf, stage, ok, ...detail }); try { brain.blackBox.record({ kind: "WORKFLOW_" + stage, correlationId: wf, decision: ok ? "OK" : "STOP", reason: detail.reason ?? null }); } catch { /* the trace above is the evidence; black box is secondary */ } };
     const stop = (stage, reason, extra = {}) => { mark(stage, false, { reason, ...extra }); return { ...R(stage, reason, extra), workflowId: wf, stages }; };

@@ -1,0 +1,6 @@
+# Owner key setup (secure procedure)
+1. Do this on YOUR computer, in the ATLASZ Control Center ("Owner Controls" → provision owner key). Choose a passphrase of at least 10 characters that only you know. ATLASZ never stores or logs it.
+2. The Ed25519 private key is created locally, encrypted with your passphrase (PKCS#8, AES-256) and saved as `owner-private-key.enc.pem` in the Control Center *configuration* directory (e.g. `%APPDATA%\ATLASZ\config`). Only the public key is given to the runtime.
+3. The Control Center refuses to create the key inside the source/repository folder, and `.gitignore` plus an automated scan keep key files, `.env`, vault files and `*.atlbak` backups out of Git. Never copy the key into chat, e-mail or GitHub.
+4. Back the key up only inside the encrypted portable backup (`.atlbak`) or on a device you control; losing the passphrase means the key cannot be recovered and a new key must be provisioned (all earlier approvals then become invalid).
+5. Every consequential action (sending a proposal, accepting terms, delivery, issuing an invoice, restoring over existing data, enabling the D12 tool policy …) needs a fresh, single-use, subject-bound approval signed with this key. Until the key exists the Security & Approval manager stays in its restricted state and all such actions are denied.

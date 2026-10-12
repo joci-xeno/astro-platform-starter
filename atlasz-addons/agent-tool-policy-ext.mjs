@@ -25,3 +25,8 @@ export const EXTENSION_ROWS = Object.freeze([
 export const EXTENSION_POLICY = Object.freeze(Object.fromEntries(EXTENSION_ROWS.map(([tool, SEARCH, EXECUTION, operation, dataRisk, write = false]) => [tool, Object.freeze({ tool, SEARCH, EXECUTION, operation, dataRisk, write, disabled: null, note: "D12_PENDING_OWNER_REVIEW" })])));
 /** The policy the Control Center's Agent Tool Broker uses: the base table plus the reviewed-pending extension. Extension rows can never override a base row. */
 export const COMBINED_POLICY = Object.freeze({ ...EXTENSION_POLICY, ...TOOL_POLICY });
+
+import { createHash } from "node:crypto";
+/** Exact fingerprint of the pending extension: the owner approval for D12 is bound to it, so any later change to a row needs a NEW approval. */
+export const EXTENSION_SHA = createHash("sha256").update(JSON.stringify(EXTENSION_ROWS)).digest("hex");
+export const D12_ACTION = "APPROVE_AGENT_TOOL_POLICY_D12";
