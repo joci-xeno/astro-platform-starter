@@ -617,6 +617,50 @@
    "test": "execution-boundary.test.mjs",
    "status": "TESTED",
    "verification_result": "direct registry, module-broker, concurrent, restart, relabelled-metadata cases refused"
+  },
+  {
+   "defect_id": "C-001",
+   "severity": "HIGH",
+   "title": "No common opportunity record with provenance, update-aware de-duplication or resumable Master hand-off",
+   "owner": "Claude Code",
+   "reproduction_evidence": "directive Batch 8-9",
+   "proposed_fix": "opportunity-intake.mjs: normalizeOpportunity, durable registry, 10-check Master intake with checkpoints",
+   "test": "opportunity-intake.test.mjs",
+   "status": "TESTED",
+   "verification_result": "fixture/operator/connector labels preserved; unknown stays null; injected text is data; crash-resume routes exactly once"
+  },
+  {
+   "defect_id": "C-002",
+   "severity": "HIGH",
+   "title": "No live discovery source authorised",
+   "owner": "Claude Code",
+   "reproduction_evidence": "directive Batch 8-9",
+   "proposed_fix": "Source inventory (10 facts per source); owner must sign host egress approval",
+   "test": "opportunity-intake.test.mjs (inventory); demonstrations A",
+   "status": "BLOCKED",
+   "verification_result": "0 sources CONNECTED_VERIFIED; live retrieval blocked on owner-signed egress approval"
+  },
+  {
+   "defect_id": "SEC-C-1",
+   "severity": "HIGH",
+   "title": "Real malware engine not exercised",
+   "owner": "Claude Code",
+   "reproduction_evidence": "directive Batch 8-9",
+   "proposed_fix": "scripts/validate-malware-scanner.mjs (EICAR detection proof) + docs/MALWARE_SCANNER_VALIDATION.md",
+   "test": "execution-boundary.test.mjs (script logic)",
+   "status": "BLOCKED",
+   "verification_result": "no engine in sandbox (apt/pip unreachable); adapter fails closed; owner runs the script"
+  },
+  {
+   "defect_id": "DEMO-001",
+   "severity": "MEDIUM",
+   "title": "Directive demonstrations A-H lacked reproducible evidence",
+   "owner": "Claude Code",
+   "reproduction_evidence": "directive Batch 8-9",
+   "proposed_fix": "scripts/demonstrations.mjs + docs/audit/demonstrations_evidence.json",
+   "test": "demonstrations.test.mjs",
+   "status": "TESTED",
+   "verification_result": "A,F,G carry explicit blockers; origin of data stated per demonstration"
   }
  ],
  "gaps": [

@@ -18,6 +18,10 @@ export function registerDiscovery(broker, ctx) {
       cap("dry_check", "READ_STATUS", a => plain(ctx.sourceAllowlist().check(a.sourceId, a.url, { consume: false })), { input: obj({ sourceId: str({ maxLength: 48 }), url: str({ maxLength: 2048 }) }, ["sourceId", "url"]), description: "Would this fetch be allowed? No rate-limit slot is used." })
     ],
     selfTest: { capability: "dry_check", args: { sourceId: "selftest-unlisted", url: "https://example.invalid/x" }, expect: r => (r.allowed === false ? true : "an unlisted source must be denied") } });
+  broker.register({ id: "opportunity-intake", source: "atlasz-addons/opportunity-intake.mjs", manager: "SEARCH_AGENT_MANAGER", lifecycle: "ON_DEMAND", policy: POLICY.low,
+    purpose: "Common opportunity record, update-aware de-duplication and the resumable SEARCH-to-Master hand-off (ten checks). Read-only status here: no outreach, acceptance or payment exists in this module; fixtures and operator captures stay labelled.",
+    capabilities: [cap("summary", "READ_STATUS", () => plain({ opportunities: ctx.opportunityRegistry().counts(), handoffs: ctx.masterIntake().summary(), registryChain: ctx.opportunityRegistry().verify(), handoffChain: ctx.masterIntake().verify() }), { description: "Counts by stage / retrieval label and hand-off states." })],
+    selfTest: { capability: "summary", expect: r => (typeof r.opportunities?.total === "number" ? true : "intake summary missing") } });
   broker.register({ id: "source-adapters", source: "atlasz-addons/source-adapters.mjs", manager: "SEARCH_AGENT_MANAGER", lifecycle: "ON_DEMAND", policy: POLICY.low,
     purpose: "Source adapter framework: parses raw notices/feeds/listings into strictly validated records with provenance and explicit unknown fields (a missing amount is never 0). `normalize` is pure; the network `ingest` path takes an injected fetch and the allowlist and is used by the discovery service, never by a tool caller. The reference adapters parse synthetic fixture formats, not real portals.",
     capabilities: [

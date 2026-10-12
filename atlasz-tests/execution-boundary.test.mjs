@@ -167,3 +167,10 @@ test("hosted: the real Control Center wires one boundary + one supervisor; a con
     assert.ok(c.networkSupervisor.summary().events >= 0);
   } finally { rm(d); }
 });
+test("scanner validation script: no engine = BLOCKED (exit 2); engine that misses the EICAR string = FAIL; engine that detects it = PASS; benign file must be clean", async () => {
+  const { validateScanner } = await import("../scripts/validate-malware-scanner.mjs");
+  assert.equal((await validateScanner({ scanner: null })).exitCode, 2);
+  const mkScan = detects => ({ name: "FakeEngine", command: "fake", scan: async f => ({ verdict: detects && /eicar-test/.test(f) ? "INFECTED" : "NO_DETECTION" }) });
+  assert.equal((await validateScanner({ scanner: mkScan(true) })).status, "PASS"); assert.equal((await validateScanner({ scanner: mkScan(false) })).status, "FAIL");
+  assert.equal((await validateScanner({ scanner: { name: "Broken", scan: async () => ({ verdict: "INFECTED" }) } })).status, "FAIL", "an engine that flags a benign file is not trustworthy");
+});

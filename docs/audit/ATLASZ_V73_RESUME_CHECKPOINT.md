@@ -1,7 +1,13 @@
 # ATLASZ V7.3 — RESUME CHECKPOINT
 - Branch: `atlasz-v73-integration` (remote `github` only; never `origin`, never `main`)
-- Last verified: Batch 7 A/B/D (AURORA directive) — gate 2133/2133 (previous: 7a 2091, security 2088, Batch 6 2049). Exact commit id: `git log -1` / `git ls-remote github atlasz-v73-integration`.
+- Last verified: Batch 8 Phase A + C + demonstrations — gate 2160/2160 (previous: 7 A/B/D 2133, Phase A 2148). Exact commit id: `git log -1` / `git ls-remote github atlasz-v73-integration`.
 - Current batch: 6 complete → next: Batch 7 (real authorized AI model connectivity), then Batch 8–14.
+
+## Completed (Batch 8 Phase C + demonstrations)
+- `opportunity-intake.mjs`: common opportunity record (directive 5.3; unknown stays null), durable update-aware registry, SEARCH->Master hand-off with 10 checks + checkpoints + resume, source inventory (10 facts). Wired in Control Center (`masterIntake`, `opportunityRegistry`), broker module `opportunity-intake`, AURÓRA reports registry items with FIXTURE/OPERATOR/live labels.
+- `scripts/demonstrations.mjs` (+ `docs/audit/demonstrations_evidence.json`, test): demos A-H run locally; A (live retrieval), F (model call) and G (real audio) carry explicit blockers.
+- `scripts/validate-malware-scanner.mjs` + `docs/MALWARE_SCANNER_VALIDATION.md`: owner proves the engine detects EICAR; until then BLOCKED.
+- Existing and re-used (not rebuilt): agent-workforce real executors with maker-checker (Phase D slice), brain-failure-modes, payment-events (Phase E/H slice).
 
 ## Completed (Batch 8 Phase A — security closure)
 - `execution-boundary.mjs`: one independent incident/stop check at the typed tool registry (every module capability and agent tool call), credential broker, model egress, quarantine release, connectors and the SEARCH-agent fetch. `network-supervisor.mjs`: per-agent/task/tool/host attribution + detectors (broker bypass = CONFIRMED, contains the agent). Runtime supervisor wired with its own incident controller. Reach and limits: `docs/audit/enforcement_coverage.json` (+ test). SEC-GAP-1 closed on wired paths, SEC-GAP-2 narrowed, SEC-GAP-5 (local child processes) open. No OS-level isolation; no universal-isolation claim. Gate 2148/2148.

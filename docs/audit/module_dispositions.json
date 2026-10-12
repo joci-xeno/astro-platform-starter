@@ -1,10 +1,10 @@
 {
  "summary": {
-  "generatedAt": "2026-10-12T22:47:57.659Z",
-  "modules": 264,
+  "generatedAt": "2026-10-12T22:57:41.531Z",
+  "modules": 265,
   "levels": {
    "SELF_TESTED": 87,
-   "RUNTIME_CONNECTED": 102,
+   "RUNTIME_CONNECTED": 103,
    "END_TO_END_VERIFIED": 10,
    "STATIC_IMPORT_ONLY": 37,
    "REGISTERED": 25,
@@ -2923,6 +2923,17 @@
   {
    "source": "atlasz-addons/registrations/agents.mjs",
    "id": "agent-tool-catalog",
+   "original133": false,
+   "lifecycle": "ON_DEMAND",
+   "health": "HEALTHY",
+   "level": "RUNTIME_CONNECTED",
+   "disposition": "REAL_RUNTIME_PATH_VIA_BROKER",
+   "why": "SELF_TEST_OK:summary",
+   "e2eTest": null
+  },
+  {
+   "source": "atlasz-addons/opportunity-intake.mjs",
+   "id": "opportunity-intake",
    "original133": false,
    "lifecycle": "ON_DEMAND",
    "health": "HEALTHY",

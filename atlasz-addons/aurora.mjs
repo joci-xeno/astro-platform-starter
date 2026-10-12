@@ -127,7 +127,7 @@ export function createAurora({ facts = () => ({}), gate = () => ({ allowed: true
     const items = (s.items ?? []).slice(0, 5);
     const head = l === "hu" ? `Munkalehetőségek${tag(t, s)}: ${num(s.total) ?? t.unknown} rögzítve, ebből minősített: ${num(s.qualified) ?? t.unknown}.` : `Opportunities${tag(t, s)}: ${num(s.total) ?? t.unknown} recorded, qualified: ${num(s.qualified) ?? t.unknown}.`;
     if (!items.length) return head + (l === "hu" ? " Jelenleg nincs megmutatható lehetőség." : " Nothing to show right now.");
-    return head + "\n" + items.map(i => `  • ${scrub(String(i.title ?? "?")).slice(0, 120)}${Number.isFinite(i.score) ? " (" + (l === "hu" ? "pontszám" : "score") + " " + i.score + ")" : ""}`).join("\n") + "\n" + (l === "hu" ? "Ezek jelöltek, nem szerződések és nem bevétel." : "These are candidates, not contracts and not revenue.");
+    return head + "\n" + items.map(i => `  • ${scrub(String(i.title ?? "?")).slice(0, 120)}${Number.isFinite(i.score) ? " (" + (l === "hu" ? "pontszám" : "score") + " " + i.score + ")" : ""}${i.label ? " [" + scrub(String(i.label)).slice(0, 40) + "]" : ""}`).join("\n") + (s.fixtureOnly ? "\n" + (l === "hu" ? "Figyelem: minden felsorolt elem MINTA/OPERÁTORI adat, nem élő forrásból lekérdezett." : "Note: every listed item is FIXTURE/OPERATOR data, not retrieved from a live source.") : "") + "\n" + (l === "hu" ? "Ezek jelöltek, nem szerződések és nem bevétel." : "These are candidates, not contracts and not revenue.");
   }
   function agentsText(t, f, l) {
     const s = section(f, "agents"); if (!s) return l === "hu" ? `Ügynökök: ${t.unavailable}.` : `Agents: ${t.unavailable}.`;

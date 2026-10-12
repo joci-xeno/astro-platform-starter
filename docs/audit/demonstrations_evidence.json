@@ -1,0 +1,268 @@
+{
+ "generatedAt": "2026-10-12T22:56:44.220Z",
+ "note": "Local, isolated runs. A passing demonstration here is NOT live external verification: see each origin and blocker.",
+ "demonstrations": [
+  {
+   "id": "A",
+   "title": "Safe discovery",
+   "origin": "FIXTURE (clearly labelled); live retrieval BLOCKED",
+   "checks": [
+    {
+     "name": "no source is connected or approved for live retrieval",
+     "ok": true
+    },
+    {
+     "name": "normalised with provenance and FIXTURE label",
+     "ok": true
+    },
+    {
+     "name": "handed to the Master and ROUTED to planning, owner approval stated",
+     "ok": true,
+     "detail": "OUTREACH_AND_CONTRACT_ACCEPTANCE_ALWAYS_NEED_SIGNED_OWNER_APPROVAL;NOT_A_LIVE_CONNECTOR_RETRIEVAL:FIXTURE"
+    },
+    {
+     "name": "same record again is a duplicate, no second opportunity",
+     "ok": true
+    },
+    {
+     "name": "presented to the owner as fixture, not live and not revenue",
+     "ok": true
+    }
+   ],
+   "blocker": "No owner-signed egress approval for any discovery host exists, so no live retrieval was performed. Approve the exact host(s) of one source (signed), then run the connector.",
+   "passed": true,
+   "checksPassed": 5,
+   "checksTotal": 5
+  },
+  {
+   "id": "B",
+   "title": "Real internal digital work",
+   "origin": "REAL internal task on owner-provided synthetic input; no external contact",
+   "checks": [
+    {
+     "name": "an EXECUTION agent produced an artifact with a fixed hash",
+     "ok": true,
+     "detail": "{\"ok\":true,\"taskId\":\"exec-8f60d91801\",\"status\":\"SUBMITTED_AWAITING_INDEPENDENT_CHECK\",\"checker\":\"EXECUTION-10\",\"provenan"
+    },
+    {
+     "name": "artifact content is the correct conversion",
+     "ok": true
+    },
+    {
+     "name": "independent checker is a different agent",
+     "ok": true,
+     "detail": "EXECUTION-10"
+    },
+    {
+     "name": "QA recomputes and ACCEPTS; task VERIFIED",
+     "ok": true
+    },
+    {
+     "name": "no revenue is claimed for internal work",
+     "ok": true
+    },
+    {
+     "name": "without authorization the same task is refused",
+     "ok": true,
+     "detail": "AUTHORIZATION_REQUIRED"
+    }
+   ],
+   "blocker": null,
+   "passed": true,
+   "checksPassed": 6,
+   "checksTotal": 6
+  },
+  {
+   "id": "C",
+   "title": "Approval protection",
+   "origin": "REAL enforcement path (control chain + Ed25519 owner approvals); synthetic key",
+   "checks": [
+    {
+     "name": "sensitive external action without approval is REFUSED, nothing sent",
+     "ok": true,
+     "detail": "REQUIRES_APPROVAL:NO_OWNER_APPROVAL_PRESENTED"
+    },
+    {
+     "name": "a forged approval is refused",
+     "ok": true,
+     "detail": "DENIED"
+    },
+    {
+     "name": "an approval bound to another target is refused",
+     "ok": true,
+     "detail": "DENIED"
+    },
+    {
+     "name": "a valid scoped approval through the REAL mechanism lets exactly that action run",
+     "ok": true,
+     "detail": "OK:"
+    },
+    {
+     "name": "replaying the same approval is refused (single use)",
+     "ok": true,
+     "detail": "DENIED"
+    }
+   ],
+   "blocker": null,
+   "passed": true,
+   "checksPassed": 5,
+   "checksTotal": 5
+  },
+  {
+   "id": "D",
+   "title": "Security incident",
+   "origin": "REAL incident controller + execution boundary + network supervisor; synthetic incident",
+   "checks": [
+    {
+     "name": "before the incident the agent may act",
+     "ok": true
+    },
+    {
+     "name": "DETECT+CLASSIFY: broker bypass is a CONFIRMED CRITICAL finding",
+     "ok": true
+    },
+    {
+     "name": "BLOCK: the agent is refused at the boundary",
+     "ok": true
+    },
+    {
+     "name": "ISOLATE: the agent is paused and tasks suspended",
+     "ok": true
+    },
+    {
+     "name": "PRESERVE: evidence bundle with manifest hashes written",
+     "ok": true
+    },
+    {
+     "name": "ALERT: the owner was alerted",
+     "ok": true
+    },
+    {
+     "name": "no automatic restoration",
+     "ok": true
+    },
+    {
+     "name": "AUTHORIZE+RESTORE: signed single-use owner approval clears it",
+     "ok": true
+    },
+    {
+     "name": "replay of the same approval is refused",
+     "ok": true
+    },
+    {
+     "name": "VERIFY: audit chains intact",
+     "ok": true
+    }
+   ],
+   "blocker": null,
+   "passed": true,
+   "checksPassed": 10,
+   "checksTotal": 10
+  },
+  {
+   "id": "E",
+   "title": "Restart recovery",
+   "origin": "REAL modules, simulated process crash after a checkpoint",
+   "checks": [
+    {
+     "name": "the process 'crashed' mid hand-off",
+     "ok": true
+    },
+    {
+     "name": "state restored from disk: the hand-off is pending at its checkpoint",
+     "ok": true
+    },
+    {
+     "name": "resume completes it",
+     "ok": true
+    },
+    {
+     "name": "no unauthorised duplicate action: one opportunity, routed exactly once",
+     "ok": true
+    }
+   ],
+   "blocker": null,
+   "passed": true,
+   "checksPassed": 4,
+   "checksTotal": 4
+  },
+  {
+   "id": "F",
+   "title": "Model connection",
+   "origin": "REAL registry state; no authorised credential exists",
+   "checks": [
+    {
+     "name": "zero models are LIVE (no authenticated real call has happened)",
+     "ok": true,
+     "detail": "live=0"
+    }
+   ],
+   "blocker": "No owner-authorised provider credential and no running local model server. Provide a credential via the vault (owner action) and approve the provider host; then run the probe.",
+   "passed": true,
+   "checksPassed": 1,
+   "checksTotal": 1
+  },
+  {
+   "id": "G",
+   "title": "AURÓRA voice",
+   "origin": "REAL refusal logic; audio hardware/browser not available here",
+   "checks": [
+    {
+     "name": "a spoken payment command is refused with a fixed reply and no action",
+     "ok": true
+    },
+    {
+     "name": "Hungarian greeting produces the briefing from records",
+     "ok": true
+    },
+    {
+     "name": "frustrated user: calm help, conversation continues",
+     "ok": true
+    },
+    {
+     "name": "voice status is NOT_TESTED (no real audio in/out verified)",
+     "ok": true
+    }
+   ],
+   "blocker": "Real speech recognition/synthesis needs the owner's browser with a microphone and speakers. Open the Control Center AURÓRA page, speak a Hungarian greeting and confirm both directions.",
+   "passed": true,
+   "checksPassed": 4,
+   "checksTotal": 4
+  },
+  {
+   "id": "H",
+   "title": "Financial integrity",
+   "origin": "SYNTHETIC signed test events (synthetic secret, isolated store); no real payment activity",
+   "checks": [
+    {
+     "name": "authentic signature is processed",
+     "ok": true
+    },
+    {
+     "name": "duplicate delivery is rejected as DUPLICATE",
+     "ok": true
+    },
+    {
+     "name": "a wrong-secret signature is rejected",
+     "ok": true
+    },
+    {
+     "name": "payment succeeded is processor-confirmed only; fees unknown => net UNKNOWN (not zero)",
+     "ok": true
+    },
+    {
+     "name": "refund handling does not crash and the ledger stays verifiable",
+     "ok": true
+    },
+    {
+     "name": "payout is kept apart and NOT a bank receipt",
+     "ok": true
+    }
+   ],
+   "blocker": null,
+   "passed": true,
+   "checksPassed": 6,
+   "checksTotal": 6
+  }
+ ]
+}
