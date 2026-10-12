@@ -35,7 +35,7 @@ export function registerRuntime(broker, ctx) {
     capabilities: [
       cap("supervise", "INTERNAL_COMPUTE", async () => { const r = await ctx.superviseNow(); return { ok: true, at: new Date().toISOString(), managers: r?.managers?.length ?? r?.summary ?? null }; }, { description: "One Master supervision pass.", timeoutMs: 60000 }),
       cap("status", "READ_STATUS", () => ({ modules: broker.summary().modules, tools: broker.summary().tools }), { description: "Module/tool counts (cheap, used as this module's self-test so a health sweep cannot recurse)." }),
-      cap("module_health", "READ_STATUS", async () => { const out = (await broker.healthAll()).filter(o => o.id !== "master-runtime"); const bad = out.filter(o => !["HEALTHY", "VIA_CONSUMER", "OFFLINE_BY_DESIGN", "SUPERSEDED"].includes(o.state)); return { checked: out.length, unhealthy: bad.map(b => ({ id: b.id, state: b.state, detail: b.detail })) }; }, { description: "Self-test every registered module and list the unhealthy ones.", timeoutMs: 60000 })
+      cap("module_health", "READ_STATUS", async () => { const out = (await broker.healthAll()).filter(o => o.id !== "master-runtime"); const bad = out.filter(o => !["HEALTHY", "LOADED_NEEDS_DEPENDENCY", "VIA_CONSUMER", "OFFLINE_BY_DESIGN", "SUPERSEDED"].includes(o.state)); return { checked: out.length, unhealthy: bad.map(b => ({ id: b.id, state: b.state, detail: b.detail })) }; }, { description: "Self-test every registered module and list the unhealthy ones.", timeoutMs: 60000 })
     ],
     selfTest: { capability: "status", expect: r => (r.modules >= 1 ? true : "no modules") } });
 }

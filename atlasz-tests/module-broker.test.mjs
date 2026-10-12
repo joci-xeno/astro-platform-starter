@@ -2,7 +2,7 @@ import test from "node:test"; import assert from "node:assert/strict";
 import fs from "node:fs"; import os from "node:os"; import path from "node:path";
 import { createControlCenterCore } from "../atlasz-control-center/core.mjs";
 const mk = () => { const d = fs.mkdtempSync(path.join(os.tmpdir(), "mb-")); return createControlCenterCore({ stateDir: path.join(d, "s"), configDir: path.join(d, "c") }); };
-const OK = new Set(["HEALTHY", "VIA_CONSUMER", "OFFLINE_BY_DESIGN", "SUPERSEDED"]);
+const OK = new Set(["HEALTHY", "LOADED_NEEDS_DEPENDENCY", "VIA_CONSUMER", "OFFLINE_BY_DESIGN", "SUPERSEDED"]);
 
 test("every registered module is healthy through the real control chain, or documented as offline/consumed/superseded", async () => {
   const c = mk(); const r = await c.modules({ health: true });

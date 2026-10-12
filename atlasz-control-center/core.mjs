@@ -39,6 +39,11 @@ import { createModuleBroker } from "../atlasz-addons/module-broker.mjs";
 import { MANAGER_IDS } from "../atlasz-addons/master-coordinator.mjs";
 import { createBrainSystem } from "../atlasz-addons/brain/brain-system.mjs";
 import { createBrainMasterBridge } from "../atlasz-addons/brain-master-bridge.mjs";
+import { registerBusiness } from "../atlasz-addons/registrations/business.mjs";
+import { createMoneyEngine } from "../atlasz-addons/business/money-engine.mjs";
+import { createInboxPipeline } from "../atlasz-addons/business/inbox-pipeline.mjs";
+import { createRevenuePersistence } from "../atlasz-addons/revenue-persistence.mjs";
+import { qualify } from "../atlasz-addons/lead-qualifier.mjs";
 import { registerRuntime } from "../atlasz-addons/registrations/runtime.mjs";
 import { createScheduler } from "../atlasz-addons/scheduler.mjs";
 import { createCredentialBroker } from "../atlasz-addons/credential-broker.mjs";
@@ -184,7 +189,13 @@ export function createControlCenterCore({ ollamaFetch = null, cloudFetch = null,
   // Personal Command Center: tasks / reminders / deadlines. The owner's local day comes from the saved preference (utcOffsetMinutes), default UTC.
   const pccFile = path.join(stateDir, "pcc", "items.json");
   const pccInst = () => createPersonalCommandCenter({ file: pccFile, utcOffsetMinutes: Number(prefs().utcOffsetMinutes) || 0 });
-  const schedules = () => { const f = path.join(stateDir, "scheduler", "schedules.json"); if (!fs.existsSync(f)) return { state: "NOT_CONNECTED", note: "No schedules recorded.", jobs: [] }; try { const j = Object.values(JSON.parse(fs.readFileSync(f, "utf8")).jobs ?? {}); return { state: "CONNECTED", delivery: "AT_LEAST_ONCE", jobs: j.map(x => ({ id: x.id, name: x.name, kind: x.kind, tool: x.tool, state: x.state, nextRunAt: x.nextRunAt, lastStatus: x.lastResult?.status ?? null, missedRuns: x.missedRuns, interruptedRuns: x.interruptedRuns ?? 0 })) }; } catch { return { state: "UNREADABLE", jobs: [] }; } };
+  // Two schedulers may exist: the runtime child's (schedules.json) and the Master's (schedules-cc.json). Each process owns exactly one file; this view merges them and says which is which.
+  const schedules = () => {
+    const rd = (f, source) => { const file = path.join(stateDir, "scheduler", f); if (!fs.existsSync(file)) return { source, state: "NOT_CONNECTED", jobs: [] }; try { return { source, state: "CONNECTED", jobs: Object.values(JSON.parse(fs.readFileSync(file, "utf8")).jobs ?? {}).map(x => ({ id: x.id, name: x.name, kind: x.kind, tool: x.tool, state: x.state, nextRunAt: x.nextRunAt, lastStatus: x.lastResult?.status ?? null, missedRuns: x.missedRuns, interruptedRuns: x.interruptedRuns ?? 0, source })) }; } catch { return { source, state: "UNREADABLE", jobs: [] }; } };
+    const parts = [rd("schedules-cc.json", "MASTER"), rd("schedules.json", "RUNTIME")], bad = parts.find(x => x.state === "UNREADABLE");
+    const live = parts.filter(x => x.state === "CONNECTED");
+    return live.length ? { state: bad ? "UNREADABLE" : "CONNECTED", delivery: "AT_LEAST_ONCE", sources: parts.map(x => ({ source: x.source, state: x.state, jobs: x.jobs.length })), jobs: live.flatMap(x => x.jobs) } : { state: bad ? "UNREADABLE" : "NOT_CONNECTED", note: "No schedules recorded.", jobs: [] };
+  };
   const pcc = () => { try { const c = pccInst(); return { state: "CONNECTED", agenda: c.agenda(), open: c.list({ status: "OPEN" }), summary: c.summary(), schedules: schedules() }; } catch (e) { return { state: "UNREADABLE", error: String(e.message) }; } };
   function pccAction({ op, id, ...rest } = {}) {
     const c = pccInst();
@@ -227,7 +238,7 @@ export function createControlCenterCore({ ollamaFetch = null, cloudFetch = null,
     return store.decide({ id, decision: "APPROVED", approval: sign(passphrase, req.action, req.subject), reason });
   }
   // ---- owner key ----
-  function provisionOwnerKey({ passphrase }) { const r = createOwnerKeystore(configDir, passphrase); ocCache = null; brokerCache = null; toolsCache = null; schedCache = null; credBroker = null; brainCache = null; bridgeCache = null; return { publicKeyB64: r.publicKeyB64, next: "The Control Center passes this public key to the runtime it starts. Back up the key file offline." }; }
+  function provisionOwnerKey({ passphrase }) { const r = createOwnerKeystore(configDir, passphrase); ocCache = null; brokerCache = null; toolsCache = null; schedCache = null; credBroker = null; brainCache = null; bridgeCache = null; moneyCache = null; inboxPipeCache = null; revPersistCache = null; return { publicKeyB64: r.publicKeyB64, next: "The Control Center passes this public key to the runtime it starts. Back up the key file offline." }; }
 
   // ---- owner controls ----
   function setEmergency({ mode, passphrase, reason = "Control Center", confirm = null }) {
@@ -682,16 +693,21 @@ export function createControlCenterCore({ ollamaFetch = null, cloudFetch = null,
   const brainSystem = () => (brainCache ??= createBrainSystem({ dir: path.join(ccBrainDir, "brain"), ownerAuth: ownerAuth(), roster: AGENT_ROSTER.map(id => ({ id, team: id.startsWith("SEARCH") ? "SEARCH" : "EXECUTION" })), gate: x => emergency().gate(x), safeMode: { gate: o => safeMode().gate(o), status: () => safeMode().status() }, chain: ownerControl().chain }));
   const brainBridge = () => (bridgeCache ??= createBrainMasterBridge({ master: agentsPanel.masterRef(), brain: brainSystem(), dir: path.join(ccBrainDir, "bridge") }));
   const brainWorkflow = a => brainBridge().runWorkflow(a), brainWorkflows = () => brainBridge().workflows();
+  // MONEY ENGINE (Phase 9): hosted by the Control Center in its own store (<state>/money-cc) so it never shares files with the runtime child's <state>/money. LIVE label, NO send/deliver adapters: nothing can leave the machine from here.
+  let moneyCache = null, inboxPipeCache = null, revPersistCache = null;
+  const money = () => (moneyCache ??= createMoneyEngine({ dir: path.join(stateDir, "money-cc"), ownerAuth: ownerAuth(), brain: brainSystem(), environment: "LIVE", adapters: {}, extract: raw => qualify({ title: raw.title, description: raw.text, published: raw.published }) }));
+  const inboxPipeline = () => (inboxPipeCache ??= createInboxPipeline({ inbox: inboxMod(), security: brainSystem().security, graph: brainSystem().entityGraph, tenantId: "ATLASZ", file: path.join(stateDir, "inbox", "pipeline-cc.json"), blackBox: brainSystem().blackBox, lookups: { deal: id => money().engines.deals.get(id), job: id => money().engines.jobs.get(id) }, handlers: { recordReply: (dealId, inbound) => money().recordReply(dealId, inbound) } }));
+  const revenuePersistence = () => (revPersistCache ??= createRevenuePersistence({ dir: path.join(stateDir, "revenue-persistence"), ownerAuth: ownerAuth() }));
   // MODULE BROKER (Phase 2/3): modules register a spec + typed capabilities; every call goes through the typed-tool registry -> unified control chain. Built lazily so start-up cost is nil.
   let brokerCache = null, toolsCache = null, schedCache = null, credBroker = null;
   const toolRegistry = () => (toolsCache ??= (() => { const oc = ownerControl(); return createToolRegistry({ chain: oc.chain, blackBox: ocBlackBox }); })());
-  const scheduler = () => (schedCache ??= createScheduler({ file: path.join(stateDir, "scheduler", "schedules.json"), tools: toolRegistry(), gate: x => emergency().gate(x), blackBox: (ownerControl(), ocBlackBox) }));
+  const scheduler = () => (schedCache ??= createScheduler({ file: path.join(stateDir, "scheduler", "schedules-cc.json"), tools: toolRegistry(), gate: x => emergency().gate(x), blackBox: (ownerControl(), ocBlackBox) }));
   // The credential broker is the ONLY path from an agent to a vault secret: grant-bound (host, method, agent/role, expiry), spend-free, audited, with the vault read through the same sealed vault the owner manages.
   const credentialBroker = () => (credBroker ??= createCredentialBroker({ vault: { has: n => { try { return !!vaultOrNull()?.has(n); } catch { return false; } }, get: (n, o) => vaultOrNull().get(n, o) }, ownerAuth: ownerAuth(), fetchImpl, gate: x => emergency().gate(x), stateDir: path.join(stateDir, "credential-broker"), isKnownAgent: id => AGENT_ROSTER.includes(id) }));
   const moduleBroker = () => (brokerCache ??= (() => {
     const b = createModuleBroker({ tools: toolRegistry(), managers: MANAGER_IDS, audit: (e, d) => { try { agentsPanel.loopEvent("MODULE:" + e, d); } catch { /* audit is best-effort here; the control chain audits the decision itself */ } } });
-    const ctx = { backups: () => backups(), backupNow: a => backupNow(a), drill: () => drill(), lastDrill: () => drills().at(-1) ?? null, ownerControl, stateDir, appDir: path.resolve(HERE, ".."), credentialBroker, scheduler, superviseNow: () => agentsPanel.superviseNow() };
-    registerSafety(b, ctx); registerRuntime(b, ctx); return b;
+    const ctx = { money, inboxPipeline, revenuePersistence, backups: () => backups(), backupNow: a => backupNow(a), drill: () => drill(), lastDrill: () => drills().at(-1) ?? null, ownerControl, stateDir, appDir: path.resolve(HERE, ".."), credentialBroker, scheduler, superviseNow: () => agentsPanel.superviseNow() };
+    registerSafety(b, ctx); registerRuntime(b, ctx); registerBusiness(b, ctx); return b;
   })());
   const modules = async ({ health = false } = {}) => { const b = moduleBroker(); if (health) await b.healthAll(); return { summary: b.summary(), catalog: b.catalog() }; };
   const superviseMaster = () => agentsPanel.superviseNow();
@@ -719,6 +735,6 @@ export function createControlCenterCore({ ollamaFetch = null, cloudFetch = null,
   const tradingPanel = createTradingPanel({ stateDir, ownerAuth: () => ownerAuth(), sign: (p, a, s) => sign(p, a, s), isStopped: () => emergency().status().mode !== "RUNNING" || safeMode().status().mode !== "NORMAL" });
   const trading = () => tradingPanel.view(), tradingCandles = q => tradingPanel.candles(q ?? {}), tradingAction = b => tradingPanel.action(b ?? {}), tradingTick = () => tradingPanel.tick({ candlesPerStrategy: 1 });
   const ops = createOpsViews({ stateDir, status, finance, approvals, tradingView: trading, memoryView: memory, ledgerEntries: () => createFinancialLedger({ dir: path.join(stateDir, "ledger") }).entries() });
-  return { trading, tradingCandles, tradingAction, tradingTick, agentsActivity: ops.agents, agentActivityOne: ops.agent, operations: ops.operations, revenueDashboard: ops.revenue, memory, memoryAction, modelRegistry, modelRegistryAction, security, securityAction, agents30, agents30Action, superviseMaster, startMasterLoop, stopMasterLoop, masterLoopStatus, brainSystem, brainWorkflow, brainWorkflows, runDueSchedules, moduleBroker, modules, scheduler, credentialBroker, vaultView, vaultAction, chatProviders, chatProvidersAction, prototypes, prototypeActions, pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, workbench, workbenchAction, a11yAudit, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => pluginView(), mcp, mcpActions, repos, repoActions, theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
+  return { trading, tradingCandles, tradingAction, tradingTick, agentsActivity: ops.agents, agentActivityOne: ops.agent, operations: ops.operations, revenueDashboard: ops.revenue, memory, memoryAction, modelRegistry, modelRegistryAction, security, securityAction, agents30, agents30Action, superviseMaster, startMasterLoop, stopMasterLoop, masterLoopStatus, money, brainSystem, brainWorkflow, brainWorkflows, runDueSchedules, moduleBroker, modules, scheduler, credentialBroker, vaultView, vaultAction, chatProviders, chatProvidersAction, prototypes, prototypeActions, pcc, pccAction, knowledge, knowledgeAction, research, researchAction, observations, observationsAction, voiceAction, workbench, workbenchAction, a11yAudit, media, sandbox, sandboxRun, moneyEngine: () => moneyViews.money(), moneyJobs: () => moneyViews.jobs(), moneyAgents: () => moneyViews.agents(), moneyRecurring: () => moneyViews.recurring(), crmInbox: () => moneyViews.crmInbox(), ownerSafety, ownerSafetyAction, doctorV2, brain: () => brainViews.all(), brainCommand, documents, inbox, voice, connectors, techWatch, mobile: req => mobile().handle(req), brief, chat, prefs, setPrefs, plugins: () => pluginView(), mcp, mcpActions, repos, repoActions, theme: () => plugins().activeTheme(), pluginActions, finance, evidence, status, opportunities, approvals, decideApproval, provisionOwnerKey, setEmergency, exitSafeMode, startRuntime, stopRuntime, backups, backupNow, drill, markLastKnownGood,
     restoreLastKnownGood, restoreFromBackup, doctor, updates, updateActions, LKG_CRITERIA };
 }

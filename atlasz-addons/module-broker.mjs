@@ -5,6 +5,8 @@
 // -> handler -> output schema validation -> audit. The chain can only make a decision stricter; a module can never loosen it.
 // Health is a REAL self-test: the module's own code is executed on a fixed input and the result compared; a module with no self-test is reported NO_PROBE, never HEALTHY.
 // SUPERSEDED = a small legacy module whose function is fully covered by a registered, tested replacement (named in `supersededBy`, with the reason): it is deliberately NOT activated (no duplicate runtime, no second state), and the Master reports it as such.
+// selfTest.needs (optional string): the module loads and its own validation/limit path answers correctly, but its real function needs a dependency that is not available yet
+// (a usable model, a verified rule store ...). That is reported as LOADED_NEEDS_DEPENDENCY with the dependency named, never as HEALTHY.
 // Lifecycles: ON_DEMAND (invoked through a capability), CONTINUOUS (a supervised service, health required), OFFLINE_ACTIVATED (only under documented conditions: the activation path is part of the spec),
 // BUILD_ONLY (used at build/test time, never at runtime: documented), INTERNAL_LIBRARY (only consumed by another registered module: names its consumer).
 const R = (reason, extra = {}) => ({ ok: false, reason, ...extra });
@@ -53,7 +55,7 @@ export function createModuleBroker({ tools, managers = [], audit = () => {}, now
     if (m.selfTest) {
       // the self-test goes through the SAME path as every real call (typed tool -> control chain -> handler -> output schema), so it proves reachability, not just that the code runs
       const t0 = clock(); const r = await tools.invoke(slug(id) + "." + m.selfTest.capability, m.selfTest.args ?? {}, { actor: { type: "SYSTEM", id: "HEALTH_SELF_TEST" } });
-      if (r.status === "OK") { let ok = true, why = "SELF_TEST_OK:" + m.selfTest.capability; try { if (typeof m.selfTest.expect === "function") { const e = m.selfTest.expect(r.result); if (e !== true) { ok = false; why = "SELF_TEST_RESULT_MISMATCH:" + String(e).slice(0, 80); } } } catch (e) { ok = false; why = "SELF_TEST_EXPECT_THREW:" + String(e?.message ?? e).slice(0, 80); } h = { state: ok ? "HEALTHY" : "FAILED", detail: why }; }
+      if (r.status === "OK") { let ok = true, why = "SELF_TEST_OK:" + m.selfTest.capability; try { if (typeof m.selfTest.expect === "function") { const e = m.selfTest.expect(r.result); if (e !== true) { ok = false; why = "SELF_TEST_RESULT_MISMATCH:" + String(e).slice(0, 80); } } } catch (e) { ok = false; why = "SELF_TEST_EXPECT_THREW:" + String(e?.message ?? e).slice(0, 80); } h = { state: !ok ? "FAILED" : m.selfTest.needs ? "LOADED_NEEDS_DEPENDENCY" : "HEALTHY", detail: ok && m.selfTest.needs ? why + "; NEEDS: " + m.selfTest.needs : why }; }
       else h = { state: ["DENIED", "REQUIRES_APPROVAL"].includes(r.status) ? "BLOCKED_BY_CONTROL_CHAIN" : "FAILED", detail: r.status + (r.reason ? ":" + r.reason : r.error ? ":" + r.error : "") };
       h.ms = clock() - t0;
     } else if (typeof m.health !== "function") h = { state: m.lifecycle === "OFFLINE_ACTIVATED" || m.lifecycle === "BUILD_ONLY" ? "OFFLINE_BY_DESIGN" : m.lifecycle === "INTERNAL_LIBRARY" ? "VIA_CONSUMER" : m.lifecycle === "SUPERSEDED" ? "SUPERSEDED" : "NO_PROBE", detail: m.activation ?? (m.consumer ? "consumed by " + m.consumer : m.supersededBy ? "superseded by " + m.supersededBy + ": " + m.rationale : "no self-test registered") };

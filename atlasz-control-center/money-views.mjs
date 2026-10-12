@@ -10,7 +10,7 @@ const count = (list, key) => list.reduce((m, x) => (m[x[key]] = (m[x[key]] || 0)
 const sum = a => a.reduce((s, n) => s + (Number.isFinite(n) ? n : 0), 0);
 
 export function createMoneyViews({ stateDir }) {
-  const mdir = path.join(stateDir, "money"), bdir = path.join(stateDir, "brain");
+  const mdir = fs.existsSync(path.join(stateDir, "money-cc")) ? path.join(stateDir, "money-cc") : path.join(stateDir, "money"), bdir = path.join(stateDir, "brain");
   const load = n => read(path.join(mdir, n));
   function money() {
     if (!fs.existsSync(mdir)) return { state: "NOT_CONNECTED", note: "No Money Engine state exists. Nothing has been discovered, sent, won, delivered, invoiced or paid; all figures are unknown, not zero revenue.", live: null, sandbox: null };
