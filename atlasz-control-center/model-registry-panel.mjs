@@ -2,6 +2,7 @@
 // A thin layer over atlasz-addons/model-registry.mjs: nothing is invented, LIVE is only ever the gateway's own probe evidence (no provider adapter is attached to this app, so nothing is LIVE),
 // credentials are shown only as "reference configured / not configured" (the vault resolves them; no value passes through here), and every approval-gated change is signed from the keystore passphrase
 // bound to the exact subject, like the other owner actions.
+import { createModelEvidenceLedger, deriveEvidence } from "../atlasz-addons/model-evidence.mjs";
 import path from "node:path";
 import { createModelRegistry } from "../atlasz-addons/model-registry.mjs";
 import { createModelRoutingBridge, createOllamaAdapter } from "../atlasz-addons/model-routing-bridge.mjs";
@@ -49,11 +50,19 @@ export function createModelRegistryPanel({ stateDir, ownerAuth, sign, liveStatus
     return (stack = { egress, pe, gw, bridge });
   }
   const need = (v, w) => { if (typeof v !== "string" || !v) throw new Error(w + "_REQUIRED"); return v; };
+  // ---- evidence ladder (REGISTERED -> CONFIGURED -> AUTHENTICATED -> CALL_VERIFIED -> LIVE_OPERATIONAL / BLOCKED), derived from a hash-chained ledger of REAL calls; injected (fixture) transports never count ----
+  let ledgerCache = null; const ledger = () => (ledgerCache ??= createModelEvidenceLedger({ dir: path.join(stateDir, "models", "evidence") }));
+  const transportOf = kind => (adapters !== null || (kind === "LOCAL" ? ollamaFetch : cloudFetch) ? "FIXTURE" : "REAL");
+  const providerKind = (r, id) => r.listProviders().find(p => p.id === id)?.kind ?? "CLOUD";
+  function evidenceAll(r, c) {
+    const events = ledger().events(), proposals = c.pe.proposals(), health = c.gw.health();
+    return r.listModels().map(m => deriveEvidence({ model: m, events, facts: { enabled: m.enabled === true, egressApproved: proposals.find(p => p.providerId === m.providerId)?.action === "NONE", credentialNeeded: m.credentialRef !== null, credentialPresent: !m.blockers.includes("NO_CREDENTIAL"), adapter: adapterFor(r, m.providerId) !== null, transport: transportOf(m.kind ?? providerKind(r, m.providerId)), breakerOpen: /OPEN|DEGRADED/.test(String(health.find(h => h.id === m.id)?.state ?? "")) } }));
+  }
   function view() {
     const r = open(), st = r.status();
     const c = chain(); c.bridge.syncGateway();
     const ladder = r.listProviders().map(p => { const live = r.listModels().some(m => m.providerId === p.id && m.live === true), adapter = adapterFor(r, p.id) !== null; return { id: p.id, name: p.displayName ?? p.id, kind: p.kind, registered: true, adapterImplemented: adapter, credentialsConfigured: p.credentialConfigured === true, authenticatedLiveTestPassed: live, productionReady: false, stage: live ? "LIVE_PROBE_PASSED" : p.credentialConfigured === true ? "CREDENTIALS_CONFIGURED" : adapter ? "ADAPTER_IMPLEMENTED" : "REGISTERED", note: "productionReady stays false until you confirm it; a provider is never LIVE without its own passing probe." }; });
-    return { state: "CONNECTED", usage: r.billing.usage(), providerLadder: ladder, routing: c.bridge.status(), egressProposals: c.pe.proposals().map(({ policy, ...p }) => ({ ...p, hosts: policy?.hosts ?? [] })), gatewayHealth: c.gw.health(), status: st, providers: r.listProviders(), models: r.listModels(), assignments: r.assignments(), roleDefaults: r.roleDefaults(), agents: r.agents(), snapshots: r.snapshots().slice(-10),
+    return { state: "CONNECTED", usage: r.billing.usage(), providerLadder: ladder, routing: c.bridge.status(), egressProposals: c.pe.proposals().map(({ policy, ...p }) => ({ ...p, hosts: policy?.hosts ?? [] })), gatewayHealth: c.gw.health(), status: st, providers: r.listProviders(), models: r.listModels(), evidence: (() => { const ev = evidenceAll(r, c); const by = {}; for (const e of ev) by[e.state] = (by[e.state] ?? 0) + 1; return { models: ev, counts: by, liveOperational: ev.filter(e => e.state === "LIVE_OPERATIONAL").length, ledger: ledger().verify(), meaning: "Only a REAL authenticated call counts. Probes and calls through injected test transports are ignored." }; })(), assignments: r.assignments(), roleDefaults: r.roleDefaults(), agents: r.agents(), snapshots: r.snapshots().slice(-10),
       note: "Configuration only. A model is LIVE only after the gateway's own passing probe; no provider adapter is attached to this app, so nothing here is LIVE. Enabling a cloud or paid model needs your signed approval; enabling a free local model changes configuration only and downloads nothing." };
   }
   async function action({ op, ...a } = {}) {
@@ -74,8 +83,10 @@ export function createModelRegistryPanel({ stateDir, ownerAuth, sign, liveStatus
       case "setAssignment": return r.setAssignment(need(a.agentId, "AGENT_ID"), { primary: a.primary, fallbacks: a.fallbacks ?? [], capability: a.capability ?? "text" });
       case "clearAssignment": return r.clearAssignment(need(a.agentId, "AGENT_ID"));
       case "setRoleDefault": return r.setRoleDefault(a.role, a.models ?? []);
-      case "probe": return { ok: true, results: await chain().bridge.probeAll() };
-      case "ask": { need(a.prompt, "PROMPT"); return chain().bridge.complete({ agentId: need(a.agentId, "AGENT_ID"), prompt: a.prompt, capability: a.capability ?? "text", maxCostUsd: Number(a.maxCostUsd ?? 0) }); }
+      case "probe": { const res = await chain().bridge.probeAll(); try { for (const m of r.listModels()) if (Object.hasOwn(res ?? {}, m.id)) ledger().record({ kind: "PROBE", modelId: m.id, ok: res[m.id] === "PASS", transport: transportOf(m.kind ?? providerKind(r, m.providerId)), reason: res[m.id] === "PASS" ? null : String(res[m.id]) }); } catch { /* the ledger is evidence, never a reason to fail a probe */ } return { ok: true, results: res }; }
+      case "ask": { need(a.prompt, "PROMPT"); const out = await chain().bridge.complete({ agentId: need(a.agentId, "AGENT_ID"), prompt: a.prompt, capability: a.capability ?? "text", maxCostUsd: Number(a.maxCostUsd ?? 0) });
+        try { if (out?.ok && out.modelId) { const m = r.getModel(out.modelId); ledger().record({ kind: "CALL", modelId: out.modelId, ok: typeof out.output === "string" && out.output.length > 0, transport: transportOf(m?.kind ?? providerKind(r, out.providerId)), costUsd: out.costKnown ? out.costUsd : (m && m.costClass === "FREE" ? 0 : null) }); } else for (const t of out?.tried ?? []) if (t?.id) ledger().record({ kind: "CALL", modelId: t.id, ok: false, transport: transportOf(providerKind(r, r.getModel(t.id)?.providerId)), reason: t.reason }); } catch { /* evidence is best effort and can only lower the state */ }
+        return out; }
       case "egressApply": { const id = need(a.providerId, "PROVIDER_ID"), p = chain().pe.proposals().find(x => x.providerId === id); if (!p || p.action === "NONE") return { ok: false, reason: "NOTHING_TO_APPLY" };
         need(a.passphrase, "PASSPHRASE"); return chain().pe.applyProposal(id, { ownerApproval: sign(a.passphrase, p.action, p.subject) }); }
       case "resolve": return r.resolve({ agentId: a.agentId, capability: a.capability ?? "text", maxCostUsd: Number(a.maxCostUsd ?? 0) });

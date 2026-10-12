@@ -62,3 +62,15 @@ test("pinned transport: only the addresses the caller passes (pinTo) are connect
   assert.equal(typeof a.resolveAddresses, "function");
   await assert.rejects(() => a.invoke({ model: "m", prompt: "q" }), /ADDRESS_NOT_PINNED/, "without the checked addresses nothing is sent");
 });
+
+test("Batch 7B: whatever a transport puts into an error (even a key that no pattern recognises), the credential never leaves the adapter; invalid credentials surface as HTTP_401 only", async () => {
+  const ODD = "plain-odd-credential-" + "z".repeat(20);
+  const leaky = async () => { throw new Error("socket hang up while sending Authorization: Bearer " + ODD); };
+  const a = mk("openai", leaky, ODD);
+  await assert.rejects(a.invoke({ model: "m", prompt: "p", pin: ["93.184.216.34"] }), e => !String(e.message).includes(ODD) && /redacted/.test(e.message));
+  const pr = await mk("openai", leaky, ODD).probe({ pin: ["93.184.216.34"] }); assert.equal(pr.ok, false); assert.ok(!JSON.stringify(pr).includes(ODD));
+  const ds = await mk("openai", leaky, ODD).discover({ pin: ["93.184.216.34"] }); assert.ok(!JSON.stringify(ds).includes(ODD));
+  const unauthorized = mk("openai", rec({ error: "invalid key " + ODD }, false), ODD);
+  await assert.rejects(unauthorized.invoke({ model: "m", prompt: "p", pin: ["93.184.216.34"] }), e => e.message === "HTTP_401");
+  const p401 = await unauthorized.probe({ pin: ["93.184.216.34"] }); assert.deepEqual([p401.ok, p401.reason], [false, "HTTP_401"]);
+});

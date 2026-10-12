@@ -90,3 +90,12 @@ test("the Ollama adapter refuses non-loopback base URLs and malformed or oversiz
   const big = createOllamaAdapter({ fetchImpl: async () => ({ ok: true, text: async () => "x".repeat(2 * 1024 * 1024) }) }); await assert.rejects(() => big.invoke({ model: "m", prompt: "p" }), /RESPONSE_TOO_LARGE/);
   const http500 = createOllamaAdapter({ fetchImpl: async () => ({ ok: false, status: 500 }) }); assert.deepEqual(await http500.probe(), { ok: false });
 });
+
+test("Batch 7B: a prompt that contains a credential is refused before routing, billing or any adapter call; a clean prompt still works", async () => {
+  const t = mk(); try {
+    t.reg.enable("llama-local"); t.apply("ollama-local"); await t.bridge.probeAll(); const before = t.calls.fetch.length;
+    for (const bad of ["use this key sk-ant-" + "A1b2C3d4".repeat(5) + " to log in", "token ghp_" + "Ab1".repeat(14), "password=Tr0ub4dor&3xyz99"]) { const r = await t.bridge.complete({ agentId: ROSTER[0], prompt: bad }); assert.equal(r.ok, false); assert.equal(r.reason, "PROMPT_CONTAINS_SECRET"); assert.equal(r.notSent, true); }
+    assert.equal(t.calls.fetch.length, before, "nothing was sent");
+    assert.equal((await t.bridge.complete({ agentId: ROSTER[0], prompt: "say hello" })).ok, true);
+  } finally { t.done(); }
+});

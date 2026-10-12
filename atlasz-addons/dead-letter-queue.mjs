@@ -1,4 +1,10 @@
-const queue=[];
-export function deadLetter({item,error,attempts,traceId}={}){const count=Number(attempts);if(!Number.isInteger(count)||count<0)throw new Error("INVALID_DEAD_LETTER_ATTEMPTS");const e={id:crypto.randomUUID(),item,error:String(error?.message||error||"UNKNOWN"),attempts:count,traceId:traceId||null,status:"OPEN",createdAt:new Date().toISOString()};queue.push(e);return e;}
-export function listDeadLetters(status="OPEN"){return queue.filter(x=>!status||x.status===status);}
-export function resolveDeadLetter(id,note){const x=queue.find(q=>q.id===id);if(!x)throw new Error("DEAD_LETTER_NOT_FOUND");x.status="RESOLVED";x.resolution=note;x.resolvedAt=new Date().toISOString();return x;}
+// Compatibility API (deadLetter / listDeadLetters / resolveDeadLetter) over the DURABLE store (durable-dead-letters.mjs).
+// There is no in-memory fallback: a process that never configured a store gets an error instead of a queue that would lose failures on restart.
+import { createDurableDeadLetters } from "./durable-dead-letters.mjs";
+let store = null;
+export function configureDeadLetters(options) { store = options && typeof options.deadLetter === "function" ? options : createDurableDeadLetters(options); return store; }
+const need = () => { if (!store) throw new Error("DEAD_LETTER_STORE_NOT_CONFIGURED"); return store; };
+export const deadLetter = a => need().deadLetter(a);
+export const listDeadLetters = status => need().list(status);
+export const resolveDeadLetter = (id, note) => need().resolve(id, note);
+export const deadLetterStore = () => need();

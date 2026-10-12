@@ -1,20 +1,20 @@
 {
  "summary": {
-  "generatedAt": "2026-10-12T18:14:03.867Z",
-  "modules": 261,
+  "generatedAt": "2026-10-12T18:42:03.961Z",
+  "modules": 262,
   "levels": {
-   "SELF_TESTED": 86,
-   "RUNTIME_CONNECTED": 99,
+   "SELF_TESTED": 87,
+   "RUNTIME_CONNECTED": 100,
    "END_TO_END_VERIFIED": 10,
    "STATIC_IMPORT_ONLY": 37,
-   "REGISTERED": 26,
+   "REGISTERED": 25,
    "NOT_REGISTERED": 3
   },
   "original133": 133,
   "original133Levels": {
    "SELF_TESTED": 86,
-   "RUNTIME_CONNECTED": 17,
-   "REGISTERED": 25,
+   "RUNTIME_CONNECTED": 18,
+   "REGISTERED": 24,
    "END_TO_END_VERIFIED": 2,
    "NOT_REGISTERED": 3
   },
@@ -933,11 +933,11 @@
    "source": "atlasz-addons/dead-letter-queue.mjs",
    "id": "dead-letter-queue",
    "original133": true,
-   "lifecycle": "SUPERSEDED",
-   "health": "SUPERSEDED",
-   "level": "REGISTERED",
-   "disposition": "SUPERSEDED_BY:master-runtime",
-   "why": "superseded by master-runtime: The Master queue keeps failed and escalated jobs durably in its hash-chained job store (status, reason, reassign/cancel); an in-memory list would silently lose dead letters on restart, so it",
+   "lifecycle": "ON_DEMAND",
+   "health": "HEALTHY",
+   "level": "RUNTIME_CONNECTED",
+   "disposition": "REAL_RUNTIME_PATH_VIA_BROKER",
+   "why": "SELF_TEST_OK:status",
    "e2eTest": null
   },
   {
@@ -2885,6 +2885,17 @@
    "level": "RUNTIME_CONNECTED",
    "disposition": "REAL_RUNTIME_PATH_CONTINUOUS",
    "why": "SELF_TEST_OK:status",
+   "e2eTest": null
+  },
+  {
+   "source": "atlasz-addons/durable-dead-letters.mjs",
+   "id": "durable-dead-letters",
+   "original133": false,
+   "lifecycle": "INTERNAL_LIBRARY",
+   "health": "VIA_CONSUMER",
+   "level": "SELF_TESTED",
+   "disposition": "OPERATIONAL_PARENT:dead-letter-queue",
+   "why": "consumed by dead-letter-queue",
    "e2eTest": null
   },
   {

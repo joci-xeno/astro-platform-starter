@@ -393,10 +393,10 @@
    "title": "Dead-letter module is in-memory only (items lost on restart)",
    "owner": "JOCI",
    "reproduction_evidence": "code inspection (dead-letter-queue.mjs)",
-   "proposed_fix": "Persisted DEAD state of the durable queue is the authority; decide whether to supersede the in-memory module",
-   "test": "none yet",
-   "status": "OWNER_DECISION_PENDING",
-   "verification_result": "documented in gap analysis"
+   "proposed_fix": "Durable event-sourced dead-letter store (hash-chained, owner-approved single-use retry, restart recovery) replaces the in-memory queue; compatibility API kept",
+   "test": "durable-dead-letters.test.mjs; runtime-restart-recovery.test.mjs",
+   "status": "TESTED",
+   "verification_result": "items survive restart; tamper detected; retry needs owner Ed25519 approval bound to action+subject"
   },
   {
    "defect_id": "B6-005",
@@ -407,7 +407,7 @@
    "proposed_fix": "Quarantined: excluded by policy, never registered/activated/deleted; removal needs owner decision",
    "test": "policy-guards.test.mjs",
    "status": "OWNER_DECISION_PENDING",
-   "verification_result": "quarantine record docs/audit/LEGACY_QUARANTINE.md"
+   "verification_result": "runtime start script now node supervisor-safe.mjs (legacy supervisor.js no longer started by npm start); Dockerfile.worker still launches legacy supervisor.js: owner/dependency decision; files remain quarantined"
   },
   {
    "defect_id": "B6-006",
@@ -540,6 +540,61 @@
    "test": "none",
    "status": "OWNER_DECISION_PENDING",
    "verification_result": "the suite attacks known classes only"
+  },
+  {
+   "defect_id": "B7-001",
+   "severity": "HIGH",
+   "title": "Provider error text could leak the API key into results and logs",
+   "owner": "Claude Code",
+   "reproduction_evidence": "code inspection + failing test first",
+   "proposed_fix": "Adapter safeMsg exact-credential redaction + bridge scrub",
+   "test": "provider-adapters.test.mjs; model-routing-bridge.test.mjs",
+   "status": "TESTED",
+   "verification_result": "key never present in error output"
+  },
+  {
+   "defect_id": "B7-002",
+   "severity": "HIGH",
+   "title": "Prompts sent to models were not screened for secrets",
+   "owner": "Claude Code",
+   "reproduction_evidence": "code inspection + failing test first",
+   "proposed_fix": "PROMPT_CONTAINS_SECRET refusal (scrub(prompt)!==prompt)",
+   "test": "model-routing-bridge.test.mjs",
+   "status": "TESTED",
+   "verification_result": "secret-bearing prompts refused before any transport"
+  },
+  {
+   "defect_id": "B7-003",
+   "severity": "MEDIUM",
+   "title": "No honest model evidence ladder (fixtures could look live)",
+   "owner": "Claude Code",
+   "reproduction_evidence": "code inspection + failing test first",
+   "proposed_fix": "model-evidence ledger: REGISTERED/CONFIGURED/AUTHENTICATED/CALL_VERIFIED/LIVE_OPERATIONAL/BLOCKED derived from REAL transports only",
+   "test": "model-evidence.test.mjs; model-registry.test.mjs",
+   "status": "TESTED",
+   "verification_result": "0 models LIVE_OPERATIONAL: no owner-authorised credentials; fixtures never count"
+  },
+  {
+   "defect_id": "D7-001",
+   "severity": "MEDIUM",
+   "title": "Human-facing interface (AURORA) with emotional handling, voice settings and honest briefing",
+   "owner": "Claude Code",
+   "reproduction_evidence": "code inspection + failing test first",
+   "proposed_fix": "aurora.mjs (no authority, fixed-reply refusals, real data only with freshness classes), Control Center routes + UI",
+   "test": "aurora.test.mjs; human-core tests",
+   "status": "TESTED",
+   "verification_result": "voice stays NOT_TESTED until owner confirms real audio in/out in their browser; speech never approves/pays/changes anything"
+  },
+  {
+   "defect_id": "D7-002",
+   "severity": "LOW",
+   "title": "Agent status vocabulary not normalised for supervision",
+   "owner": "Claude Code",
+   "reproduction_evidence": "code inspection + failing test first",
+   "proposed_fix": "agent-status.mjs + supervision byStatus; completion requires verification",
+   "test": "aurora.test.mjs; security tests",
+   "status": "TESTED",
+   "verification_result": "8 statuses, COMPLETED_VERIFIED only after verification"
   }
  ],
  "gaps": [

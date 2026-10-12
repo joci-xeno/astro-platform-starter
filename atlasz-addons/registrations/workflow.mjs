@@ -112,8 +112,13 @@ export function registerWorkflow(broker, ctx) {
       cap("acquire", "INTERNAL_COMPUTE", a => plain(acquire(a.key, a.cost ?? 1)), { input: obj({ key: str({ maxLength: 80 }), cost: num({ minimum: 0.000001 }) }, ["key"]) })
     ],
     selfTest: { capability: "acquire", args: { key: "__selftest_unconfigured__" }, expect: r => (r.allowed === false && r.reason === "LIMIT_NOT_CONFIGURED" ? true : "unconfigured limit must deny") } });
-  broker.register({ id: "dead-letter-queue", source: "atlasz-addons/dead-letter-queue.mjs", manager: "TASK_SCHEDULER", lifecycle: "SUPERSEDED", supersededBy: "master-runtime", policy: POLICY.low,
-    purpose: "In-memory dead-letter list (lost on restart).", rationale: "The Master queue keeps failed and escalated jobs durably in its hash-chained job store (status, reason, reassign/cancel); an in-memory list would silently lose dead letters on restart, so it is not activated." });
+  broker.register({ id: "dead-letter-queue", source: "atlasz-addons/dead-letter-queue.mjs", manager: "TASK_SCHEDULER", lifecycle: "ON_DEMAND", policy: POLICY.low,
+    purpose: "Dead-letter API (deadLetter/list/resolve) over the DURABLE store: failed work survives restarts and crashes. No in-memory fallback. Read-only here: retry and store recovery need a signed owner approval outside the broker.",
+    capabilities: [
+      cap("status", "READ_STATUS", () => { const s = ctx.deadLetterStore(); return { ...s.status(), chain: s.verify() }; }, { description: "Store state (OK/CORRUPT), open count, chain integrity." }),
+      cap("list", "READ_STATUS", () => ({ open: ctx.deadLetterStore().list("OPEN").slice(0, 100).map(r => ({ id: r.id, taskId: r.taskId, error: r.error, attempts: r.attempts, occurrences: r.occurrences, interruptedRetry: Boolean(r.interruptedRetry), createdAt: r.createdAt })) }), { description: "Open dead letters (no item payloads)." })],
+    selfTest: { capability: "status", expect: r => (r.durable === true && r.state === "OK" && r.chain?.ok === true ? true : "dead-letter store not durable/healthy") } });
+  broker.register({ id: "durable-dead-letters", source: "atlasz-addons/durable-dead-letters.mjs", manager: "TASK_SCHEDULER", lifecycle: "INTERNAL_LIBRARY", consumer: "dead-letter-queue", policy: POLICY.low, purpose: "Hash-chained, fsynced, head-pinned dead-letter journal with authorised single-run retry, interrupted-retry recovery and fail-closed corruption handling." });
   broker.register({ id: "observability-black-box", source: "atlasz-addons/observability-black-box.mjs", manager: "SECURITY_APPROVAL_MANAGER", lifecycle: "SUPERSEDED", supersededBy: "owner-control", policy: POLICY.low,
     purpose: "In-memory black box event list.", rationale: "owner-control hosts the hash-chained, tamper-evident black box (ocBlackBox) that the control chain writes to on every decision; the in-memory variant has no integrity protection and would duplicate state." });
 

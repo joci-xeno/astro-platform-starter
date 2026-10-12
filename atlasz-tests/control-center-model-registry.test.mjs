@@ -118,3 +118,41 @@ test("Batch 7: MASTER and BRAIN reach a model through the same chain (fixture Ol
     assert.equal((await c.view()).agents.length, 30);
   } finally { await c.close?.(); rm(c.base); }
 });
+
+test("Batch 7B: provider failures (401, 429, 500, malformed, network error) are classified, never billed as success, never leak the key, and are recorded as evidence; fixture transports cap the ladder (0 LIVE_OPERATIONAL)", async () => {
+  const { createSecretVault, generateVaultKey } = await import("../atlasz-addons/secret-vault.mjs");
+  const vk = generateVaultKey(), prev = process.env.ATLASZ_VAULT_KEY; process.env.ATLASZ_VAULT_KEY = vk;
+  const SECRET = "synthetic-key-" + "q".repeat(24); let mode = "ok"; const bodies = [];
+  const cloudFetch = async (u, init) => {
+    bodies.push(String(init.body ?? ""));
+    if (u.endsWith("/models")) return mode === "auth" ? { ok: false, status: 401, text: async () => '{"error":"bad key ' + SECRET + '"}' } : { ok: true, text: async () => '{"data":[{"id":"deepseek-chat"}]}' };
+    if (mode === "429") return { ok: false, status: 429, text: async () => "slow down" };
+    if (mode === "500") return { ok: false, status: 500, text: async () => "boom " + SECRET };
+    if (mode === "malformed") return { ok: true, text: async () => "<html>not json</html>" };
+    if (mode === "wrongshape") return { ok: true, text: async () => '{"choices":[]}' };
+    if (mode === "network") throw new Error("ECONNRESET " + SECRET);
+    return { ok: true, text: async () => '{"choices":[{"message":{"content":"fine"}}],"usage":{"prompt_tokens":10,"completion_tokens":10}}' };
+  };
+  const c = await boot({ cloudFetch, cloudResolve: async () => ["93.184.216.34"] });
+  try {
+    await c.key(); await c.act({ op: "seed" });
+    await c.act({ op: "addModel", model: { id: "ds-chat", providerId: "deepseek", providerModel: "deepseek-chat", version: "1.0.0", costClass: "PAID", costPer1kTokensUsd: 0.01, capabilities: ["text"] } });
+    await c.act({ op: "enable", id: "ds-chat", passphrase: PW }); await c.act({ op: "setAssignment", agentId: "EXECUTION-3", primary: "ds-chat" }); await c.act({ op: "egressApply", providerId: "deepseek", passphrase: PW });
+    const vault = createSecretVault({ dir: path.join(c.stateDir, "vault"), keyB64: vk, ownerAuth: { verifyApproval: () => ({ allowed: true }) } }); vault.set("DEEPSEEK_API_KEY", SECRET, { ownerApproval: { nonce: "t" } });
+    mode = "auth"; assert.equal((await c.act({ op: "probe" })).result.results["ds-chat"], "FAIL", "invalid credentials: probe fails");
+    mode = "ok"; assert.equal((await c.act({ op: "probe" })).result.results["ds-chat"], "PASS");
+    for (const m of ["429", "500", "malformed", "wrongshape", "network"]) {
+      mode = m; const a = await c.act({ op: "ask", agentId: "EXECUTION-3", prompt: "hello " + m, maxCostUsd: 1 });
+      assert.equal(a.result.ok, false, m); assert.ok(!JSON.stringify(a).includes(SECRET), m + ": the key never appears in the answer"); assert.equal(a.result.output, undefined);
+    }
+    const v = await c.view(); assert.ok(!JSON.stringify(v).includes(SECRET));
+    assert.ok(v.usage.totalUsd < 0.5 && v.usage.billedRequests <= 5, "failed calls are not billed as successes");
+    const e = v.evidence.models.find(x => x.modelId === "ds-chat");
+    assert.equal(e.realCalls, 0); assert.equal(v.evidence.liveOperational, 0, "fixture transport: nothing can be LIVE_OPERATIONAL");
+    assert.equal(e.state, "BLOCKED"); assert.ok(e.blockers.includes("FIXTURE_TRANSPORT_ONLY")); assert.equal(v.evidence.ledger.ok, true);
+    const ledgerText = fs.readFileSync(path.join(c.stateDir, "models", "evidence", "model-evidence.jsonl"), "utf8");
+    assert.ok(!ledgerText.includes(SECRET)); assert.ok(ledgerText.includes("MODEL_CALL") && ledgerText.includes("MODEL_PROBE") && ledgerText.includes('"transport":"FIXTURE"'));
+    mode = "ok"; const okAsk = await c.act({ op: "ask", agentId: "EXECUTION-3", prompt: "works", maxCostUsd: 1 }); assert.equal(okAsk.result.ok, true, JSON.stringify(okAsk.result));
+    assert.equal((await c.view()).evidence.liveOperational, 0, "even a successful fixture call does not make a model LIVE_OPERATIONAL");
+  } finally { if (prev === undefined) delete process.env.ATLASZ_VAULT_KEY; else process.env.ATLASZ_VAULT_KEY = prev; await c.close?.(); rm(c.base); }
+});

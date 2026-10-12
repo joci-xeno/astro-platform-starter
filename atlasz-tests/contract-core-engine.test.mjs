@@ -1,3 +1,4 @@
+import fs from "node:fs"; import os from "node:os"; import path from "node:path";
 // Contract tests for pre-existing core-engine modules (V7.3 §3, §10, §15, §52). Mechanism only; not live operation.
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -22,7 +23,9 @@ test("checkpoint: snapshot is a deep copy and resume restores it; invalid checkp
   assert.equal(cp.resume(c).state.a.n, 1); assert.equal(cp.resume(c).step, 2);
   assert.throws(() => cp.checkpoint(s, {}), /WORKFLOW_ID_REQUIRED/); assert.throws(() => cp.resume({}), /INVALID_CHECKPOINT/);
 });
-test("dead-letter queue (in-memory): open/resolve lifecycle, invalid attempts refused", () => {
+test("dead-letter queue (durable via configureDeadLetters; no in-memory fallback): open/resolve lifecycle, invalid attempts refused", () => {
+  assert.throws(() => dlq.deadLetter({ item: 1, attempts: 0 }), /DEAD_LETTER_STORE_NOT_CONFIGURED/);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "dlq-")); dlq.configureDeadLetters({ dir });
   const e = dlq.deadLetter({ item: { id: 1 }, error: new Error("x"), attempts: 3 });
   assert.equal(dlq.listDeadLetters().some(x => x.id === e.id), true);
   dlq.resolveDeadLetter(e.id, "fixed"); assert.equal(dlq.listDeadLetters("OPEN").some(x => x.id === e.id), false);

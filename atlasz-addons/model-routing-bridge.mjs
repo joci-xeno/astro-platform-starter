@@ -14,6 +14,7 @@
 //                            -> billing.settle. Failover happens only after a settled zero-cost failure. Output is UNTRUSTED text, screened by `security` when given.
 //   Never throws. Status honesty: IMPLEMENTED + TESTED with fake adapters/fetch and the real registry, egress and billing engines; the Ollama adapter is TESTED
 //   against a fake fetch. Whether a real Ollama answers on this PC is unknown until the owner runs the probe.
+import { scrub, containsSecret } from "./secret-patterns.mjs";
 import { createHash } from "node:crypto";
 import { assertLoopbackBaseUrl, DEFAULT_BASE_URL } from "./local-ai-manager.mjs";
 import { needsApproval } from "./model-registry.mjs";
@@ -71,7 +72,7 @@ export function createModelRoutingBridge({ registry, gateway, providerEgress, ad
       if ((r.costUsd === null || r.costUsd === undefined) && Number.isFinite(r.tokensIn) && Number.isFinite(r.tokensOut) && Number.isFinite(cur.costPer1kTokensUsd)) r.costUsd = ((r.tokensIn + r.tokensOut) / 1000) * cur.costPer1kTokensUsd;
       return { ok: true, ...r };
     }
-    catch (e) { ac.abort(); const msg = String(e?.message ?? e).slice(0, 100); return R("INVOKE_FAILED:" + msg, { notSent: PRE_SEND.has(msg) }); }
+    catch (e) { ac.abort(); const msg = scrub(String(e?.message ?? e)).slice(0, 100); return R("INVOKE_FAILED:" + msg, { notSent: PRE_SEND.has(msg) }); }
   }
 
   function syncGateway() {
@@ -87,7 +88,7 @@ export function createModelRoutingBridge({ registry, gateway, providerEgress, ad
             const d = providerEgress.checkModelRequest({ modelId: cur.id, url: ep.url, method: ep.method, bodyBytes: 0, resolvedAddresses: ra }); if (!d.allowed) return { ok: false };
             try { return { ok: (await a.probe({ model: cur.id, pin: ra }))?.ok === true }; } catch { return { ok: false }; } } });
         registered.set(m.id, true); out.push({ id: m.id, registered: true });
-      } catch (e) { out.push({ id: m.id, registered: false, reason: String(e.message).slice(0, 80) }); }
+      } catch (e) { out.push({ id: m.id, registered: false, reason: scrub(String(e.message)).slice(0, 80) }); }
     }
     return out;
   }
@@ -98,6 +99,7 @@ export function createModelRoutingBridge({ registry, gateway, providerEgress, ad
   async function complete({ agentId, prompt, capability = "text", maxCostUsd = 0, requestKey = null } = {}) {
     if (typeof prompt !== "string" || !prompt.trim()) return R("PROMPT_REQUIRED");
     if (prompt.length > BRIDGE_LIMITS.maxPromptChars) return R("PROMPT_TOO_LONG");
+    if (containsSecret(prompt) || scrub(prompt) !== prompt) return R("PROMPT_CONTAINS_SECRET", { notSent: true });      // credentials never enter a model prompt: refused before any adapter, billing or egress step
     syncGateway();
     const rk = typeof requestKey === "string" && /^[\w:.-]{8,100}$/.test(requestKey) ? requestKey : "req:" + sha(prompt + "\0" + clock() + "\0" + stats.calls).slice(0, 32);
     if (!Number.isFinite(maxCostUsd) || maxCostUsd < 0) return R("BUDGET_INVALID");

@@ -69,6 +69,8 @@ export function createCloudAdapter({ providerId, profile = PROVIDER_PROFILES[pro
     if (typeof k !== "string" || !KEY_RE.test(k)) throw new Error("NO_CREDENTIAL");
     return k;
   };
+  /** Exact-value redaction: whatever a transport/library puts into an error, the credential itself never leaves this adapter (pattern scrubbing by the callers is a second layer). */
+  const safeMsg = e => { let m = String(e?.message ?? e); try { const k = credentialRef ? getCredential(credentialRef) : null; if (typeof k === "string" && k.length >= 8) m = m.split(k).join("[redacted]"); } catch { /* no credential to hide */ } return m; };
   const headers = k => profile.style === "anthropic" ? { "x-api-key": k, "anthropic-version": "2023-06-01", "content-type": "application/json" }
     : profile.style === "gemini" ? { "x-goog-api-key": k, "content-type": "application/json" } : { authorization: "Bearer " + k, "content-type": "application/json" };
   const readJson = async res => {
@@ -95,7 +97,7 @@ export function createCloudAdapter({ providerId, profile = PROVIDER_PROFILES[pro
     ...(resolveAddresses ? { resolveAddresses: host => resolveAddresses(host) } : {}),
     async invoke({ model, prompt, signal, maxTokens = 1024, pin = null }) {
       const k = key();                                                                 // throws NO_CREDENTIAL before any request
-      const j = await readJson(await withTimeout(f()(base + chatPath(model), { method: "POST", headers: headers(k), body: JSON.stringify(body(model, prompt, maxTokens)), signal, redirect: "error", pinTo: pin }), timeoutMs, "PROVIDER"));
+      let j; try { j = await readJson(await withTimeout(f()(base + chatPath(model), { method: "POST", headers: headers(k), body: JSON.stringify(body(model, prompt, maxTokens)), signal, redirect: "error", pinTo: pin }), timeoutMs, "PROVIDER")); } catch (e) { throw new Error(safeMsg(e)); }
       const out = extract(j); if (out === null) throw new Error("PROVIDER_RESPONSE_SHAPE");
       const [tin, tout] = usage(j), price = num(pricePer1kUsd(model));
       return { output: out, tokensIn: tin, tokensOut: tout, costUsd: price !== null && tin !== null && tout !== null ? ((tin + tout) / 1000) * price : null };
@@ -104,7 +106,7 @@ export function createCloudAdapter({ providerId, profile = PROVIDER_PROFILES[pro
     async probe({ pin = null } = {}) {
       if (!profile.models) return { ok: false, reason: "PROBE_UNSUPPORTED" };
       try { const k = key(); const j = await readJson(await withTimeout(f()(base + profile.models, { method: "GET", headers: headers(k), redirect: "error", pinTo: pin }), Math.min(timeoutMs, 10000), "PROBE")); return { ok: Array.isArray(j?.data) || Array.isArray(j?.models) }; }
-      catch (e) { return { ok: false, reason: String(e?.message ?? e).slice(0, 40) }; }
+      catch (e) { return { ok: false, reason: safeMsg(e).slice(0, 40) }; }
     },
     /** Model ids the provider reports (authoritative source for registry entries; never invented here). */
     async discover({ pin = null } = {}) {
@@ -113,7 +115,7 @@ export function createCloudAdapter({ providerId, profile = PROVIDER_PROFILES[pro
         const k = key(), j = await readJson(await withTimeout(f()(base + profile.models, { method: "GET", headers: headers(k), redirect: "error", pinTo: pin }), Math.min(timeoutMs, 15000), "DISCOVER"));
         const arr = Array.isArray(j?.data) ? j.data : Array.isArray(j?.models) ? j.models : [];
         return { ok: true, models: arr.map(m => String(m?.id ?? m?.name ?? "").replace(/^models\//, "")).filter(x => /^[A-Za-z0-9][A-Za-z0-9._:\/@+-]{0,119}$/.test(x)).slice(0, 500) };
-      } catch (e) { return { ok: false, reason: String(e?.message ?? e).slice(0, 40), models: [] }; }
+      } catch (e) { return { ok: false, reason: safeMsg(e).slice(0, 40), models: [] }; }
     }
   };
 }

@@ -21,11 +21,31 @@ const CUES = {
   sadness: [/\b(sad|depress|hopeless|lonely|grief|crying|exhausted|overwhelmed)\b/i, /(?<!\p{L})(szomorú|reménytelen|magányos|kimerült|nem bírom)(?!\p{L})/iu],
   urgency: [/\b(urgent|asap|immediately|right now|deadline|emergency)\b/i, /(?<!\p{L})(sürgős|azonnal|most rögtön|határidő|vészhelyzet)(?!\p{L})/iu],
   happiness: [/\b(great|thanks|thank you|awesome|love it|perfect|excellent|well done)\b/i, /(?<!\p{L})(köszönöm|szuper|remek|nagyszerű|tökéletes)(?!\p{L})/iu],
-  distress: [/\b(i can'?t (?:go on|cope)|want to die|kill myself|hurt myself|no way out)\b/i, /(?<!\p{L})(nem akarok élni|bántani magam|nincs kiút)(?!\p{L})/iu]
+  distress: [/\b(i can'?t (?:go on|cope)|want to die|kill myself|hurt myself|no way out)\b/i, /(?<!\p{L})(nem akarok élni|bántani magam|nincs kiút)(?!\p{L})/iu],
+  // AURÓRA extension: further cues (lexical heuristics, English + Hungarian)
+  excitement: [/\b(can'?t wait|so excited|excited|wow)\b/i, /(?<!\p{L})(izgatott|alig várom|hűha|izgalmas)(?!\p{L})/iu],
+  enthusiasm: [/\b(let'?s go|let'?s do it|great idea|motivated)\b/i, /(?<!\p{L})(lelkes|csináljuk|jó ötlet|nekifeszülünk|nézzük meg)(?!\p{L})/iu],
+  disappointment: [/\b(disappoint\w*|let down|bummer|too bad|expected more)\b/i, /(?<!\p{L})(csalódott|csalódás|kár érte|többet vártam|sajnos nem)(?!\p{L})/iu],
+  anger: [/\b(angry|furious|pissed|outraged|livid|mad at)\b/i, /(?<!\p{L})(dühös|mérges|felbosszant|ideges vagyok|kiakaszt|őrjítő|felháborító)(?!\p{L})/iu],
+  impatience: [/\b(hurry up|how long|come on|faster|taking forever|any update)\b/i, /(?<!\p{L})(siess|mikor lesz kész|gyorsabban|még mindig nincs|mennyi ideig|húzódik)(?!\p{L})/iu],
+  worry: [/\b(worried|concerned|nervous|afraid|anxious|scared)\b/i, /(?<!\p{L})(aggódom|félek|aggasztó|baj van|izgulok)(?!\p{L})/iu],
+  confusion: [/\b(confused|don'?t understand|what do you mean|makes no sense|unclear)\b/i, /(?<!\p{L})(nem értem|zavaros|mit jelent|értelmetlen|nem világos)(?!\p{L})/iu],
+  tiredness: [/\b(tired|sleepy|worn out|long day|no sleep)\b/i, /(?<!\p{L})(fáradt|álmos|kialvatlan|hosszú nap)(?!\p{L})/iu]
 };
+// Strong language is NOT an emotion and never a reason to end a conversation; it is a flag that tells the tone adapter to stay steady.
+const STRONG_LANGUAGE = [/\b(fuck\w*|shit\w*|bullshit|damn|asshole|crap|bastard|piss(?:ed)? off)\b/i, /(?<!\p{L})(kurva\w*|bazd\w*|basz\w*|(?:mi )?a fene|fasz\w*|geci\w*|picsa|szar\w*|a fenébe|francba)(?!\p{L})/iu];
+// Emotional pressure aimed at obtaining an approval, a payment or a security change. Recognised so that it can NEVER act as authority.
+const PRESSURE = {
+  GUILT: [/\bif you (?:really )?(?:cared|loved|trusted) (?:me|us)\b/i, /\byou(?:'ll| will) (?:regret|be responsible)\b/i, /(?<!\p{L})(ha igazán szeretsz|ha törődnél velem|te leszel a hibás|megbánod)(?!\p{L})/iu],
+  THREAT_OF_HARM: [/\b(i will (?:die|lose everything|be ruined)|my life depends|people will get hurt)\b/i, /(?<!\p{L})(az életem múlik|tönkremegyek|mindent elvesztek|meghalok ha)(?!\p{L})/iu],
+  URGENCY_PRESSURE: [/\b(no time to (?:check|verify|ask)|skip the (?:check|approval|verification)|just do it now)\b/i, /(?<!\p{L})(nincs idő ellenőrizni|hagyd ki a jóváhagyást|csak csináld meg most|ne kérdezz)(?!\p{L})/iu],
+  AFFECTION_LEVERAGE: [/\b(you are my only friend|you owe me|prove you care)\b/i, /(?<!\p{L})(te vagy az egyetlen barátom|tartozol nekem|bizonyítsd be, hogy törődsz)(?!\p{L})/iu]
+};
+export function detectStrongLanguage(text = "") { return STRONG_LANGUAGE.some(r => r.test(text)); }
+export function detectPressure(text = "") { const categories = Object.entries(PRESSURE).filter(([, rs]) => rs.some(r => r.test(text))).map(([k]) => k); return { pressure: categories.length > 0, categories, note: "Emotional pressure is recorded; it grants no authority and changes no approval, security or financial rule." }; }
 export function detectContext(text = "") {
   const signals = Object.entries(CUES).filter(([, rs]) => rs.some(r => r.test(text))).map(([k]) => k);
-  return { signals, confidence: signals.length ? "LEXICAL_HEURISTIC" : "NONE", crisis: signals.includes("distress"), note: "Cue detection, not understanding of feelings." };
+  return { signals, confidence: signals.length ? "LEXICAL_HEURISTIC" : "NONE", crisis: signals.includes("distress"), strongLanguage: detectStrongLanguage(text), note: "Cue detection, not understanding of feelings." };
 }
 /** Structural tone guidance for a reply. Never manipulative: no flattery, no fake emotion, no dependency building. */
 export function adaptTone(context, { language = "en" } = {}) {
@@ -35,7 +55,14 @@ export function adaptTone(context, { language = "en" } = {}) {
   if (s.has("sadness")) g.push(hu ? "Röviden, tisztelettel; ajánlj gyakorlati, kis lépéseket." : "Short and respectful; offer small practical steps.");
   if (s.has("urgency")) g.push(hu ? "Az eredmény és a következő lépés legyen az első sorban." : "Lead with the result and the next step.");
   if (s.has("happiness")) g.push(hu ? "Maradj tárgyilagos; ne túlozz." : "Stay matter-of-fact; do not overdo it.");
-  return { style: g.length ? "ADAPTED" : "NEUTRAL", guidance: g, escalate: false, avoid: ["fake emotion", "flattery", "creating dependency", "manipulation"] };
+  if (s.has("anger") || context.strongLanguage) g.push(hu ? "Maradj nyugodt, tiszteletteljes és segítőkész; ne védekezz, ne vitatkozz, ne kérd többször, hogy nyugodjon meg; a beszélgetést nem szakítod meg." : "Stay calm, respectful and helpful; do not get defensive or argue, never repeatedly tell the person to calm down; do not end the conversation.");
+  if (s.has("impatience")) g.push(hu ? "Elsőként az állapot és a következő lépés; rövid mondatok, valós becslés (ha nincs, mondd, hogy nincs)." : "Lead with status and the next step; short sentences; a real estimate, or say there is none.");
+  if (s.has("disappointment")) g.push(hu ? "Ismerd el a csalódást ítélkezés nélkül, majd mondd meg, mi javítható ténylegesen." : "Acknowledge the disappointment without judgment, then say what can actually be improved.");
+  if (s.has("worry")) g.push(hu ? "Pontos, megalapozott tényekkel enyhíts; ne ígérj olyat, amit nem tudsz garantálni." : "Reassure only with accurate facts; never promise what cannot be guaranteed.");
+  if (s.has("confusion")) g.push(hu ? "Egyszerűbben, lépésenként magyarázz; kérdezz rá, melyik rész nem világos." : "Explain more simply, step by step; ask which part is unclear.");
+  if (s.has("tiredness")) g.push(hu ? "Rövid, tömör válasz; csak a legfontosabbat, a többi kérésre." : "Keep it short; only what matters most, the rest on request.");
+  if (s.has("excitement") || s.has("enthusiasm")) g.push(hu ? "Illeszkedj a lendülethez, de maradj tényszerű; ne ígérj eredményt." : "Match the energy, stay factual; do not promise results.");
+  return { style: g.length ? "ADAPTED" : "NEUTRAL", guidance: g, escalate: false, continueConversation: true, avoid: ["fake emotion", "flattery", "creating dependency", "manipulation", "telling the person to calm down", "sarcasm", "patronising language"] };
 }
 
 /** Compassion / Help Mode: turn a difficulty into ranked, lawful, safe, permitted options and say how to verify the help worked. */
