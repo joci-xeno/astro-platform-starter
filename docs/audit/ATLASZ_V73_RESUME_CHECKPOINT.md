@@ -1,6 +1,6 @@
 # ATLASZ V7.3 — RESUME CHECKPOINT
 - Branch: `atlasz-v73-integration` (remote `github` only; never `origin`, never `main`)
-- Last verified: Batch 8 Phase A + C + E (stage authorities) + UI — gate 2165/2165 (previous: 2163, 2160, 2148). Exact commit id: `git log -1` / `git ls-remote github atlasz-v73-integration`.
+- Last verified: Batch 8 Phase A + C + E (stage authorities + proposal-draft stage `atlasz-addons/proposal-stage.mjs`, owner-panel `/api/proposal/draft`, drafts are DRAFT_NOT_SENT, checker-verified) + UI — gate 2168/2168 (previous: 2165, 2163, 2160, 2148). Exact commit id: `git log -1` / `git ls-remote github atlasz-v73-integration`.
 - Current batch: 6 complete → next: Batch 7 (real authorized AI model connectivity), then Batch 8–14.
 
 ## Completed (Batch 8 Phase E slice + UI)
