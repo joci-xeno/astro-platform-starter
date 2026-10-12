@@ -416,9 +416,9 @@
    "owner": "Claude Code",
    "reproduction_evidence": "code inspection",
    "proposed_fix": "Batch 7: system principals with role defaults in the model registry",
-   "test": "none yet",
-   "status": "OPEN",
-   "verification_result": "fails closed today"
+   "test": "model-registry.test.mjs (system principals); control-center-model-registry.test.mjs (Batch 7)",
+   "status": "TESTED",
+   "verification_result": "MASTER/BRAIN resolve through the registry under the same no-spend/LIVE/credential rules; without a LIVE model the Brain fails closed with NO_ELIGIBLE_MODEL (0 models LIVE: no owner-authorised credential)"
   },
   {
    "defect_id": "SEC-001",

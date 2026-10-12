@@ -224,3 +224,20 @@ test("spend cap: open requests reserve against the cap (no parallel overshoot); 
     fs.rmSync(path.join(t.dir, "spend-cap.json")); assert.equal(b.spendCap().valid, false); assert.equal(b.spendCap().reason, "SPEND_CAP_FILE_MISSING_AFTER_BEING_SET"); assert.equal(b.begin("req-20261011-1005", "llama-local").reason, "SPEND_CAP_REACHED");
   } finally { t.done(); }
 });
+
+test("system principals MASTER and BRAIN may resolve a model, but are not agents: roster stays 30, others are refused, a NOT_LIVE model is never offered", () => {
+  const w = mk(); try {
+    assert.equal(w.reg.agents().length, 30); assert.ok(!w.reg.agents().includes("MASTER"));
+    for (const p of ["MASTER", "BRAIN"]) { const r = w.reg.resolve({ agentId: p, capability: "text", maxCostUsd: 0 }); assert.equal(r.ok, true, p); assert.deepEqual(r.candidates, [], "nothing is LIVE, so nothing is offered"); }
+    for (const bad of ["master", "OWNER", "SYSTEM", "EXECUTION-26", ""]) assert.equal(w.reg.resolve({ agentId: bad }).ok, false, bad);
+    assert.throws(() => createModelRegistry({ dir: w.dir + "-x", roster: [...ROSTER.slice(1), "MASTER"] }), /ROSTER_MUST_BE_EXACTLY_30/);
+  } finally { w.done(); }
+});
+test("system principals only ever get a model that is enabled, credentialed and LIVE within the budget (same rules as agents; no-spend default)", () => {
+  const w = mk(); try {
+    w.live.add("llama-local");
+    const free = w.reg.resolve({ agentId: "BRAIN", capability: "text", maxCostUsd: 0 }); assert.equal(free.ok, true);
+    assert.ok(free.candidates.every(c => c.id !== "gpt-x"), "a PAID model is never chosen under a zero budget");
+    assert.ok(free.skipped.some(s => s.id === "gpt-x"));
+  } finally { w.done(); }
+});

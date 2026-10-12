@@ -27,6 +27,8 @@ import { ROSTER } from "./agent-activity.mjs";
 export const SCHEMA_VERSION = 1;
 export const LIMITS = Object.freeze({ maxProviders: 100, maxModels: 500, maxCapabilities: 40, maxSnapshots: 25, maxBillingKeys: 5000, maxHosts: 20, maxFallbacks: 5, maxText: 200 });
 export const COST_CLASSES = Object.freeze(["FREE", "PAID", "UNKNOWN"]);
+/** System principals: the Master and the Brain call models too, but they are NOT agents (the roster stays exactly 30). They use the EXECUTION role defaults and may have their own owner-set assignment; every other limit (no-spend default, live probe, credential, approval) applies unchanged. */
+export const SYSTEM_PRINCIPALS = Object.freeze(["MASTER", "BRAIN"]);
 export const KINDS = Object.freeze(["CLOUD", "LOCAL"]);
 const ID_RE = /^[a-z0-9][a-z0-9._-]{0,63}$/, HOST_RE = /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
 const PM_RE = /^[A-Za-z0-9][A-Za-z0-9._:\/@+-]{0,119}$/;
@@ -59,8 +61,8 @@ export function createModelRegistry({ dir, ownerAuth = null, gate = emergencyGat
   if (!dir) throw new Error("DIR_REQUIRED");
   fs.mkdirSync(path.join(dir, "snapshots"), { recursive: true });
   const FILE = path.join(dir, "registry.json"), audit = createAuditChain({ filePath: path.join(dir, "registry-audit.jsonl") }), BILL = path.join(dir, "billing.json"), CAPF = path.join(dir, "spend-cap.json");
-  const agentSet = new Set(roster);
-  if (agentSet.size !== 30) throw new Error("ROSTER_MUST_BE_EXACTLY_30");
+  const agentSet = new Set(roster), principalSet = new Set([...roster, ...SYSTEM_PRINCIPALS]);
+  if (agentSet.size !== 30 || roster.some(r => SYSTEM_PRINCIPALS.includes(r))) throw new Error("ROSTER_MUST_BE_EXACTLY_30");
   const fresh = () => ({ schemaVersion: SCHEMA_VERSION, revision: 0, providers: {}, models: {}, assignments: {}, roleDefaults: { SEARCH: [], EXECUTION: [] } });
   const MIGRATIONS = {};      // from schemaVersion N -> N+1: (state) => state ; none exist yet (version 1 is the first)
   let state = fresh(), integrity = "NEW", readOnly = false, note = null;
@@ -209,17 +211,17 @@ export function createModelRegistry({ dir, ownerAuth = null, gate = emergencyGat
   }
   function setAssignment(agentId, { primary, fallbacks = [], capability = "text" } = {}) {
     return mutate("ASSIGNMENT_SET", { agentId, primary }, () => {
-      if (!agentSet.has(agentId)) return refuse("NOT_ONE_OF_THE_30_PERMANENT_AGENTS");
+      if (!principalSet.has(agentId)) return refuse("NOT_ONE_OF_THE_30_PERMANENT_AGENTS");
       if (typeof primary !== "string" || !Object.hasOwn(state.models, primary)) return refuse("UNKNOWN_MODEL"); if (!Array.isArray(fallbacks) || fallbacks.length > LIMITS.maxFallbacks || fallbacks.some(f => typeof f !== "string" || !Object.hasOwn(state.models, f) || f === primary)) return refuse("FALLBACKS_INVALID");
       if (!CAP_RE.test(capability)) return refuse("CAPABILITY_INVALID"); for (const id of [primary, ...fallbacks]) if (!state.models[id].capabilities.includes(capability)) return refuse("MODEL_LACKS_CAPABILITY", { model: id });
       state.assignments[agentId] = { primary, fallbacks: [...fallbacks], capability, setAt: now() };
     });
   }
-  function clearAssignment(agentId) { return mutate("ASSIGNMENT_CLEARED", { agentId }, () => { if (!agentSet.has(agentId)) return refuse("NOT_ONE_OF_THE_30_PERMANENT_AGENTS"); delete state.assignments[agentId]; }); }
+  function clearAssignment(agentId) { return mutate("ASSIGNMENT_CLEARED", { agentId }, () => { if (!principalSet.has(agentId)) return refuse("NOT_ONE_OF_THE_30_PERMANENT_AGENTS"); delete state.assignments[agentId]; }); }
   function setRoleDefault(role, modelIds) {
     return mutate("ROLE_DEFAULT_SET", { role }, () => { if (!["SEARCH", "EXECUTION"].includes(role)) return refuse("ROLE_INVALID"); if (!Array.isArray(modelIds) || modelIds.length > LIMITS.maxFallbacks + 1 || modelIds.some(i => typeof i !== "string" || !Object.hasOwn(state.models, i))) return refuse("MODELS_INVALID"); state.roleDefaults[role] = [...modelIds]; });
   }
-  const roleOf = id => id.split("-")[0];
+  const roleOf = id => (SYSTEM_PRINCIPALS.includes(id) ? "EXECUTION" : id.split("-")[0]);
   function describe(m) {
     const live = Boolean(liveStatus(m.id)), cred = m.credentialRef === null ? true : Boolean(hasCredential(m.credentialRef));
     const blockers = []; if (!m.enabled) blockers.push("DISABLED"); if (!cred) blockers.push("NO_CREDENTIAL"); if (!live) blockers.push("NOT_LIVE_NO_PASSING_PROBE");
@@ -227,7 +229,7 @@ export function createModelRegistry({ dir, ownerAuth = null, gate = emergencyGat
   }
   /** Ordered candidates for an agent. maxCostUsd=0 means no-spend: only costPer1kTokensUsd===0 models qualify. Unusable models are listed in `skipped` with the reason. */
   function resolve({ agentId, capability = "text", maxCostUsd = 0, estimateTokens = 1000 } = {}) {
-    if (!agentSet.has(agentId)) return refuse("NOT_ONE_OF_THE_30_PERMANENT_AGENTS");
+    if (!principalSet.has(agentId)) return refuse("NOT_ONE_OF_THE_30_PERMANENT_AGENTS");
     if (readOnly && (integrity === "MISMATCH" || integrity === "UNCHAINED")) return refuse("REGISTRY_UNTRUSTED:" + integrity, { note });      // fail closed: a hand-edited registry routes nothing until the owner rolls back to a verified snapshot
     if (!Number.isFinite(maxCostUsd) || maxCostUsd < 0) return refuse("BUDGET_INVALID"); if (!Number.isFinite(estimateTokens) || estimateTokens < 0) return refuse("ESTIMATE_INVALID");
     const a = state.assignments[agentId], order = [...(a && a.capability === capability ? [a.primary, ...a.fallbacks] : []), ...state.roleDefaults[roleOf(agentId)], ...Object.keys(state.models)];

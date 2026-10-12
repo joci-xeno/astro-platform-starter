@@ -102,3 +102,19 @@ test("costs/usage, the spending cap and the provider readiness ladder over HTTP:
     const ok = await c.act({ op: "setSpendCap", usd: 5, passphrase: PW }); assert.equal(ok.result.ok, true, JSON.stringify(ok)); v = await c.view(); assert.equal(v.usage.cap.usd, 5); assert.equal(v.usage.cap.valid, true);
   } finally { await c.close?.(); rm(c.base); }
 });
+
+test("Batch 7: MASTER and BRAIN reach a model through the same chain (fixture Ollama on loopback) only after enable + egress approval + passing probe; the answer is untrusted; ids that are not principals are still refused", async () => {
+  const urls = []; const ollamaFetch = async (u) => { urls.push(u); return u.endsWith("/api/version") ? { ok: true, text: async () => '{"version":"0.5.1"}' } : { ok: true, text: async () => '{"message":{"content":"plan: step one"},"eval_count":4}' }; };
+  const c = await boot({ ollamaFetch });
+  try {
+    await c.key(); await c.act({ op: "seed" });
+    await c.act({ op: "addModel", model: { id: "llama-local", providerId: "ollama-local", version: "1.0.0", costClass: "FREE", capabilities: ["text"] } }); await c.act({ op: "enable", id: "llama-local" });
+    for (const p of ["MASTER", "BRAIN"]) assert.equal((await c.act({ op: "ask", agentId: p, prompt: "plan" })).result.reason, "NO_ELIGIBLE_MODEL", p + " cannot call anything before probe/egress");
+    assert.equal(urls.length, 0);
+    await c.act({ op: "egressApply", providerId: "ollama-local", passphrase: PW }); assert.equal((await c.act({ op: "probe" })).result.results["llama-local"], "PASS");
+    for (const p of ["MASTER", "BRAIN"]) { const a = await c.act({ op: "ask", agentId: p, prompt: "plan" }); assert.equal(a.result.ok, true, p); assert.equal(a.result.output, "plan: step one"); assert.equal(a.result.untrusted, true); }
+    const bad = await c.act({ op: "ask", agentId: "OWNER", prompt: "plan" }); assert.equal(bad.result.ok, false);
+    assert.ok(urls.every(u => u.startsWith("http://127.0.0.1:11434/")));
+    assert.equal((await c.view()).agents.length, 30);
+  } finally { await c.close?.(); rm(c.base); }
+});

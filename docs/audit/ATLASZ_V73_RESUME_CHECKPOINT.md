@@ -3,6 +3,9 @@
 - Last verified: Security directive (defence-in-depth) — gate 2088/2088 on top of Batch 6 (gate 2049/2049) (previous: 5c 0f12993, 5b 4acfc9d, 5a d578428). The exact commit id of Batch 6 is the one `git log -1` shows on this branch / `git ls-remote github atlasz-v73-integration`.
 - Current batch: 6 complete → next: Batch 7 (real authorized AI model connectivity), then Batch 8–14.
 
+## Completed (Batch 7a)
+- System principals MASTER/BRAIN in the model registry (`SYSTEM_PRINCIPALS`; roster stays exactly 30; EXECUTION role defaults; same no-spend/LIVE/credential rules); B6-006 TESTED. Still 0 models LIVE: needs owner-authorised credentials / a running local model + egress approval + probe.
+
 ## Completed (Security directive — defence in depth)
 - incident-response (containment independent of the Brain), file-intake + malware-scanner adapter (ClamAV/Defender; no engine here → files HELD), payment-events ledger (signature, dedupe, payout≠bank receipt), agent supervision view, broker output redaction + containment; all registered in the Module Broker (`registrations/security.mjs`).
 - `scripts/secret-history-scan.mjs` (0 non-synthetic secrets in history), `docs/SECURITY_LEAK_RESPONSE.md`, `atlasz-tests/security-adversarial.test.mjs` (16 attacks), `docs/audit/SECURITY_PROTECTION_MATRIX.md`, defects SEC-001..007 (TESTED) and SEC-GAP-1..4 (open).
@@ -26,4 +29,4 @@ B6-004 dead-letter module in-memory (owner decision); B6-006 Brain model adapter
 Owner key provisioning; host approvals; provider credentials + `ATLASZ_VAULT_KEY`; malware scanner choice; D12 signature (optional); legacy runtime removal; manual Windows installer run; enable auto-update policy; real USB backup rehearsal; Stripe awaits Astra package (deferred).
 
 ## Exact next action
-(Security directive done and pushed.) Batch 7: system principals (MASTER/BRAIN) in the model registry; scheduled catalog refresh; credential retrieval via the vault; routing/failover/spend caps/usage accounting; live probes only with credentials the owner has authorised (none exist → models stay NOT LIVE).
+(Security directive and Batch 7a done.) Batch 7 remainder: system principals (MASTER/BRAIN) in the model registry; scheduled catalog refresh; credential retrieval via the vault; routing/failover/spend caps/usage accounting; live probes only with credentials the owner has authorised (none exist → models stay NOT LIVE).
