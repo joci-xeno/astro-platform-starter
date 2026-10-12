@@ -74,7 +74,7 @@ test("as an authority for the payment-verification engine: only a processor-conf
   } finally { rm(d); }
 });
 test("the ledger can only RECEIVE: no money-moving API exists, no network/process module is imported, and a damaged store fails closed", () => {
-  const d = tmp("pe-"); try { const { L } = mk(d); assert.deepEqual(Object.keys(L).sort(), ["authority", "confirmedPayment", "ingest", "payment", "payout", "reconcileBank", "summary", "verify"]);
+  const d = tmp("pe-"); try { const { L } = mk(d); assert.deepEqual(Object.keys(L).sort(), ["authority", "confirmedPayment", "ingest", "listPayments", "payment", "payout", "reconcileBank", "summary", "verify"]);
     const src = fs.readFileSync(new URL("../atlasz-addons/business/payment-events.mjs", import.meta.url), "utf8"); assert.doesNotMatch(src.replace(/\/\/.*$/gm, ""), /node:(http|https|net|child_process|dns|tls)|fetch\(|XMLHttpRequest|refund\w*\(|createTransfer|createPayout/);
     fs.writeFileSync(path.join(d, "pe", "payment-events.json"), "{broken"); assert.throws(() => mk(d), /PAYMENT_EVENT_STORE_UNREADABLE/); } finally { rm(d); }
 });

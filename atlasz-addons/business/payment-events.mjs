@@ -114,5 +114,5 @@ export function createPaymentEventLedger({ dir, environment = "LIVE", secretFor 
     if (p.refundedMinor >= p.amountMinor) return { status: "FAILED", reason: "FULLY_REFUNDED" };
     return { status: "VERIFIED", amount: Number(c.amount), currency: String(c.currency).toUpperCase(), reference: p.key, environment, settledAt: new Date(p.at * 1000).toISOString() };
   } });
-  return { ingest, reconcileBank, summary, authority, confirmedPayment, payment: k => (S.payments[k] ? structuredClone(S.payments[k]) : null), payout: k => (S.payouts[k] ? structuredClone(S.payouts[k]) : null), verify: () => audit.verify() };
+  return { ingest, reconcileBank, summary, authority, confirmedPayment, listPayments: () => Object.values(S.payments).map(x => structuredClone(x)), payment: k => (S.payments[k] ? structuredClone(S.payments[k]) : null), payout: k => (S.payouts[k] ? structuredClone(S.payouts[k]) : null), verify: () => audit.verify() };
 }
