@@ -7,7 +7,12 @@ import { roleOf, permissionFor, TOOL_POLICY, DEFAULT_LIMITS, SAFE_AGENT_OPERATIO
 const HOUR = 3600000, MIN = 60000, DAY = 24 * HOUR;
 const hashOf = v => createHash("sha256").update(JSON.stringify(v ?? null)).digest("hex").slice(0, 16);
 
-export function createAgentToolBroker({ profileGate = null, tools, blackBox = null, approvalRequests = null, approvalAction = null, approvalSubject = null, isStopped = () => false, onSignal = () => {}, now = () => Date.now(), limits = DEFAULT_LIMITS, policy = TOOL_POLICY } = {}) {
+import { scrub, containsSecret } from "./secret-patterns.mjs";
+/** Deep-redact every string (and every KEY whose name looks secret) in a tool result before it can reach an agent, a prompt or a log. */
+function redactDeep(v, depth = 0) { if (depth > 12) return { value: "[depth-limit]", hit: false }; let hit = false;
+  const go = (x, d) => { if (typeof x === "string") { if (containsSecret(x)) hit = true; const y = scrub(x); if (y !== x) hit = true; return y; } if (Array.isArray(x)) return x.slice(0, 2000).map(e => go(e, d + 1)); if (x && typeof x === "object") { if (d > 12) return "[depth-limit]"; return Object.fromEntries(Object.entries(x).slice(0, 2000).map(([k, e]) => [k, go(e, d + 1)])); } return x; };
+  return { value: go(v, depth), hit }; }
+export function createAgentToolBroker({ profileGate = null, tools, blackBox = null, approvalRequests = null, approvalAction = null, approvalSubject = null, isStopped = () => false, onSignal = () => {}, now = () => Date.now(), limits = DEFAULT_LIMITS, policy = TOOL_POLICY, isBlocked = () => null } = {}) {
   if (!tools || typeof tools.invoke !== "function" || typeof tools.inspect !== "function") throw new Error("TOOLS_REQUIRED");
   const L = limits, win = new Map(), jobs = new Map(), consumed = new Map();
   let inflight = 0; const stats = { calls: 0, ok: 0, refused: 0, rateLimited: 0, pendingApproval: 0 };
@@ -48,6 +53,9 @@ export function createAgentToolBroker({ profileGate = null, tools, blackBox = nu
     if (!j) return out("INVALID_ARGUMENTS", { reason: "JOB_ID_REQUIRED" });
     if (typeof tool !== "string" || !tool) return out("INVALID_ARGUMENTS", { reason: "TOOL_REQUIRED" });
     if (j.suspended) return out("DENIED", { reason: "JOB_SUSPENDED" });
+    // incident containment (independent of the Brain and of the model): an isolated agent / blocked tool is refused before any other check, and a broken check fails closed
+    let blockedReason = null; try { blockedReason = isBlocked({ agentId, tool }); } catch { blockedReason = "BLOCK_CHECK_ERROR"; }
+    if (blockedReason) return out("DENIED", { reason: "INCIDENT_CONTAINMENT:" + String(blockedReason).slice(0, 60) });
     let stopped = false; try { stopped = Boolean(isStopped()); } catch { stopped = true; }
     if (stopped) return out("DENIED", { reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" });
     // every attempt counts against the agent's own windows, so a flood of refused calls cannot bypass the limit
@@ -104,8 +112,10 @@ export function createAgentToolBroker({ profileGate = null, tools, blackBox = nu
     if (r.status === "DENIED" || r.status === "INVALID_ARGUMENTS") streakKind = "REFUSAL"; else if (r.status === "OK") streakKind = "RESET";
     if (r.status !== "OK") return out(r.status, { ...(r.reason ? { reason: String(r.reason).slice(0, 200) } : {}), ...(r.errors ? { errors: r.errors.slice(0, 5) } : {}), ...(r.layer ? { layer: r.layer } : {}) });
     let size = 0; try { size = Buffer.byteLength(JSON.stringify(r.result ?? null)); } catch { size = Infinity; }
-    if (size > L.resultMaxBytes) { let preview = ""; try { preview = JSON.stringify(r.result).slice(0, 2000); } catch { /* unserialisable */ } return out("OK", { result: null, truncated: true, originalBytes: Number.isFinite(size) ? size : null, preview, untrusted: true }); }
-    return out("OK", { result: r.result, truncated: false });
+    if (size > L.resultMaxBytes) { let preview = ""; try { preview = scrub(JSON.stringify(r.result).slice(0, 2000)); } catch { /* unserialisable */ } return out("OK", { result: null, truncated: true, originalBytes: Number.isFinite(size) ? size : null, preview, untrusted: true }); }
+    const red = redactDeep(r.result);
+    if (red.hit) { try { onSignal({ type: "SECRET_IN_TOOL_OUTPUT", agentId: base.agentId, jobId: base.job, tool: base.tool }); } catch { /* signal is best effort */ } }
+    return out("OK", { result: red.value, truncated: false, untrusted: true, ...(red.hit ? { redacted: true } : {}) });
   }
   function endJob(jobId) { jobs.delete(jobId); }
   const statsOut = () => ({ ...stats, inflight, jobsTracked: jobs.size, suspendedJobs: [...jobs.values()].filter(x => x.suspended).length });

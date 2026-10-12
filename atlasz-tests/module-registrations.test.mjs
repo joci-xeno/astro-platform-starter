@@ -80,3 +80,44 @@ test("D12: the agent tool policy extension is INACTIVE until a signed owner appr
   const f = path.join(opts.stateDir, "policy", "d12-approval.json"), rec = JSON.parse(fs.readFileSync(f, "utf8")); rec.approval.subject = "x"; fs.writeFileSync(f, JSON.stringify(rec));
   assert.equal(createControlCenterCore(opts).d12Status().state, "PENDING_OWNER_APPROVAL");                      // a tampered record deactivates the extension
 });
+test("incident containment is wired into the hosted Agent Tool Broker: repeated policy-bypass attempts isolate the agent, preserve evidence, alert the owner, and the owner can release", async () => {
+  const { signWithKeystore } = await import("../atlasz-addons/owner-keystore.mjs");
+  const { CLEAR_ACTION, clearSubject } = await import("../atlasz-addons/incident-response.mjs");
+  const PASS = "a long enough passphrase", d = fs.mkdtempSync(path.join(os.tmpdir(), "ir-cc-")), opts = { stateDir: path.join(d, "s"), configDir: path.join(d, "c") };
+  const c = createControlCenterCore(opts); c.provisionOwnerKey({ passphrase: PASS });
+  const ab = c.agentToolBroker();
+  for (let i = 0; i < 12; i++) await ab.call({ agentId: "EXECUTION-7", jobId: "j-esc", tool: "money_engine.send_payment", args: {} });
+  const open = c.incidentResponse().open(); assert.equal(open.length, 1); assert.equal(open[0].kind, "REPEATED_POLICY_BYPASS_ATTEMPT"); assert.equal(open[0].state, "CONTAINED_AWAITING_OWNER");
+  assert.equal(c.ownerAlerts().length >= 1, true);
+  const other = await ab.call({ agentId: "EXECUTION-7", jobId: "j-new", tool: "agent_tool_catalog.plan", args: {} });
+  assert.equal(other.status, "DENIED"); assert.match(String(other.reason), /^INCIDENT_CONTAINMENT/);
+  assert.ok(c.incidentResponse().isBlocked({ agentId: "EXECUTION-7", tool: "anything" }));
+  assert.equal((await ab.call({ agentId: "EXECUTION-8", jobId: "j-ok", tool: "agent_tool_catalog.plan", args: {} })).reason?.startsWith?.("INCIDENT_CONTAINMENT") ?? false, false, "other agents are unaffected");
+  assert.equal(c.incidentResponse().verify().ok, true);
+  assert.equal(c.incidentResponse().clear(open[0].id, { ownerApproval: null }).ok, false);
+  assert.equal(c.incidentResponse().clear(open[0].id, { ownerApproval: signWithKeystore(opts.configDir, PASS, { action: CLEAR_ACTION, subject: clearSubject(open[0].id) }) }).ok, true);
+});
+test("hosted file intake: with no scanner installed every upload is HELD (fail closed), status says so honestly, and the owner is alerted", async () => {
+  const c = mk(); const st = c.intakeStatus();
+  const r = await c.intakeFile({ name: "offer.pdf", contentBase64: Buffer.from("%PDF-1.4 test").toString("base64") });
+  if (st.scanner === null) { assert.match(st.scannerState, /NO_SCANNER_INSTALLED/); assert.equal(r.state, "HELD_SCANNER_UNAVAILABLE"); } else assert.match(r.state, /^HELD|^BLOCKED/);
+  assert.equal(r.releasedToAgents, false); assert.ok(c.ownerAlerts().some(a => a.kind === "UNTRUSTED_FILE_HELD"));
+  assert.equal((await c.intakeFile({ name: "x", contentBase64: 5 })).ok, false);
+});
+test("hosted payment events: Stripe is not connected, so a signed-looking webhook is refused (SECRET_NOT_CONFIGURED) and the money engine's payment authority stays UNKNOWN", async () => {
+  const { createHmac } = await import("node:crypto"); const c = mk();
+  const body = JSON.stringify({ id: "evt_1", type: "payment_intent.succeeded", livemode: true, created: 1, data: { object: { object: "payment_intent", id: "pi_1", amount: 100, currency: "usd", metadata: { invoice_id: "inv" } } } });
+  const r = c.ingestPaymentWebhook({ rawBody: body, signatureHeader: "t=1,v1=" + createHmac("sha256", "guess").update("1." + body).digest("hex") });
+  assert.equal(r.status, "SECRET_NOT_CONFIGURED"); assert.equal(c.paymentEvents().summary().eventsProcessed, 0);
+  assert.ok(c.money().engines.payments.authorities().some(a => a.id === "stripe-webhook-ledger"));
+  const p = c.money().engines.payments.claim({ invoiceId: "inv", amount: 1, currency: "USD", claimant: "x" }); assert.notEqual((await c.money().engines.payments.verify(p.id, "stripe-webhook-ledger")).status, "VERIFIED");
+});
+test("agent supervision: 30 rows from real sources; tool-call counts follow the audited broker calls; a contained agent shows its incident and block", async () => {
+  const c = mk(); const ab = c.agentToolBroker();
+  let s = c.agentSupervision(); assert.equal(s.agents.length, 30); assert.equal(s.agents.filter(a => a.id.startsWith("SEARCH")).length, 5); assert.equal(s.totals.openIncidents, 0);
+  await ab.call({ agentId: "EXECUTION-2", jobId: "j1", tool: "agent_tool_catalog.plan", args: {} });
+  for (let i = 0; i < 7; i++) await ab.call({ agentId: "EXECUTION-9", jobId: "j9", tool: "money_engine.send_payment", args: {} });
+  s = c.agentSupervision(); const a9 = s.agents.find(a => a.id === "EXECUTION-9");
+  assert.ok(a9.toolCalls.denied >= 5); assert.equal(a9.blockedByIncident, true); assert.equal(a9.openIncidents.length, 1); assert.ok(s.totals.blocked >= 1); assert.ok(s.ownerAlerts.length >= 1);
+  assert.equal(s.agents.find(a => a.id === "EXECUTION-3").blockedByIncident, false);
+});

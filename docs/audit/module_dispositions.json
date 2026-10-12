@@ -1,10 +1,10 @@
 {
  "summary": {
-  "generatedAt": "2026-10-12T17:38:16.340Z",
-  "modules": 257,
+  "generatedAt": "2026-10-12T18:11:47.844Z",
+  "modules": 261,
   "levels": {
    "SELF_TESTED": 86,
-   "RUNTIME_CONNECTED": 95,
+   "RUNTIME_CONNECTED": 99,
    "END_TO_END_VERIFIED": 10,
    "STATIC_IMPORT_ONLY": 37,
    "REGISTERED": 26,
@@ -2819,6 +2819,50 @@
    "level": "NOT_REGISTERED",
    "disposition": "EXCLUDED_LEGACY_QUARANTINED",
    "why": "Legacy competition runtime: excluded by policy-guards, not registered, not deleted, not activated; removal needs an owner decision.",
+   "e2eTest": null
+  },
+  {
+   "source": "atlasz-addons/incident-response.mjs",
+   "id": "incident-response",
+   "original133": false,
+   "lifecycle": "ON_DEMAND",
+   "health": "HEALTHY",
+   "level": "RUNTIME_CONNECTED",
+   "disposition": "REAL_RUNTIME_PATH_VIA_BROKER",
+   "why": "SELF_TEST_OK:status",
+   "e2eTest": null
+  },
+  {
+   "source": "atlasz-addons/file-intake.mjs",
+   "id": "file-intake",
+   "original133": false,
+   "lifecycle": "ON_DEMAND",
+   "health": "HEALTHY",
+   "level": "RUNTIME_CONNECTED",
+   "disposition": "REAL_RUNTIME_PATH_VIA_BROKER",
+   "why": "SELF_TEST_OK:status",
+   "e2eTest": null
+  },
+  {
+   "source": "atlasz-addons/malware-scanner.mjs",
+   "id": "malware-scanner",
+   "original133": false,
+   "lifecycle": "INTERNAL_LIBRARY",
+   "health": "VIA_CONSUMER",
+   "level": "RUNTIME_CONNECTED",
+   "disposition": "OPERATIONAL_PARENT:file-intake",
+   "why": "consumed by file-intake",
+   "e2eTest": null
+  },
+  {
+   "source": "atlasz-addons/business/payment-events.mjs",
+   "id": "business/payment-events",
+   "original133": false,
+   "lifecycle": "ON_DEMAND",
+   "health": "HEALTHY",
+   "level": "RUNTIME_CONNECTED",
+   "disposition": "REAL_RUNTIME_PATH_VIA_BROKER",
+   "why": "SELF_TEST_OK:summary",
    "e2eTest": null
   },
   {

@@ -419,6 +419,127 @@
    "test": "none yet",
    "status": "OPEN",
    "verification_result": "fails closed today"
+  },
+  {
+   "defect_id": "SEC-001",
+   "severity": "HIGH",
+   "title": "Tool results were passed to agents unredacted (a secret returned by a tool reached the agent and the audit)",
+   "owner": "Claude Code",
+   "reproduction_evidence": "security directive review",
+   "proposed_fix": "Redact every result and error in the Agent Tool Broker; raise SECRET_IN_TOOL_OUTPUT; mark results untrusted",
+   "test": "security-adversarial.test.mjs EXFIL 1-3",
+   "status": "TESTED",
+   "verification_result": "atlasz-tests/security-adversarial.test.mjs"
+  },
+  {
+   "defect_id": "SEC-002",
+   "severity": "MEDIUM",
+   "title": "Preview of an oversized tool result was not scrubbed (secret smuggling through the truncated preview)",
+   "owner": "Claude Code",
+   "reproduction_evidence": "security directive review",
+   "proposed_fix": "scrub() the preview",
+   "test": "security-adversarial.test.mjs EXFIL 2",
+   "status": "TESTED",
+   "verification_result": "found by the adversarial suite, fixed in agent-tool-broker.mjs"
+  },
+  {
+   "defect_id": "SEC-003",
+   "severity": "HIGH",
+   "title": "No code-enforced containment independent of the Brain for a confirmed serious incident",
+   "owner": "Claude Code",
+   "reproduction_evidence": "security directive review",
+   "proposed_fix": "incident-response module: block, isolate, suspend, preserve evidence, alert owner; broker consults it before every call",
+   "test": "incident-response.test.mjs; module-registrations.test.mjs; security-adversarial.test.mjs ESCALATION 4",
+   "status": "TESTED",
+   "verification_result": "owner-signed single-use clearance"
+  },
+  {
+   "defect_id": "SEC-004",
+   "severity": "HIGH",
+   "title": "Untrusted files had no isolated intake / malware scanning path",
+   "owner": "Claude Code",
+   "reproduction_evidence": "security directive review",
+   "proposed_fix": "file-intake + malware-scanner adapter (ClamAV / Defender); fail closed to HELD; release needs owner approval",
+   "test": "file-intake.test.mjs",
+   "status": "TESTED",
+   "verification_result": "LIVE detection BLOCKED: no engine installed in this sandbox (adapter proven with stub engines only)"
+  },
+  {
+   "defect_id": "SEC-005",
+   "severity": "HIGH",
+   "title": "No verified payment-event ledger (signature, dedupe, payout vs bank receipt)",
+   "owner": "Claude Code",
+   "reproduction_evidence": "security directive review",
+   "proposed_fix": "payment-events ledger as payment-verification authority; receive-only",
+   "test": "payment-events.test.mjs; security-adversarial.test.mjs FINANCE 1-2",
+   "status": "TESTED",
+   "verification_result": "Stripe LIVE BLOCKED: no webhook secret / approved package"
+  },
+  {
+   "defect_id": "SEC-006",
+   "severity": "MEDIUM",
+   "title": "No per-agent supervision view (task, tool calls, model, cost, errors, warnings, blocks, recovery)",
+   "owner": "Claude Code",
+   "reproduction_evidence": "security directive review",
+   "proposed_fix": "agentSupervision() + /api/agents/supervision + Security & Supervision page",
+   "test": "module-registrations.test.mjs",
+   "status": "TESTED",
+   "verification_result": "suspicious network activity not yet aggregated per agent (SEC-GAP-1)"
+  },
+  {
+   "defect_id": "SEC-007",
+   "severity": "MEDIUM",
+   "title": "No scan of Git history for exposed secrets / no leak-response procedure",
+   "owner": "Claude Code",
+   "reproduction_evidence": "security directive review",
+   "proposed_fix": "scripts/secret-history-scan.mjs (all refs, added lines, commit messages) + docs/SECURITY_LEAK_RESPONSE.md",
+   "test": "scripts/secret-history-scan.mjs run: 0 non-synthetic hits",
+   "status": "TESTED",
+   "verification_result": "revocation/rotation remains an owner action at each provider"
+  },
+  {
+   "defect_id": "SEC-GAP-1",
+   "severity": "MEDIUM",
+   "title": "Suspicious network activity is not aggregated per agent in the supervision view",
+   "owner": "Claude Code",
+   "reproduction_evidence": "security directive review",
+   "proposed_fix": "Feed egress-policy denials (per provider, not per agent) into agentSupervision",
+   "test": "none yet",
+   "status": "OPEN",
+   "verification_result": "egress decisions are audited but not attributed to agent ids"
+  },
+  {
+   "defect_id": "SEC-GAP-2",
+   "severity": "MEDIUM",
+   "title": "Containment covers only call paths that consult the incident module (agent tool broker, intake release); other future paths must be wired",
+   "owner": "Claude Code",
+   "reproduction_evidence": "security directive review",
+   "proposed_fix": "Wire any new agent-reachable path through incidentResponse.isBlocked",
+   "test": "none yet",
+   "status": "OPEN",
+   "verification_result": "documented in SECURITY_PROTECTION_MATRIX.md"
+  },
+  {
+   "defect_id": "SEC-GAP-3",
+   "severity": "LOW",
+   "title": "Scanner signature freshness is not checked by ATLASZ (engine's own updater is trusted)",
+   "owner": "Claude Code",
+   "reproduction_evidence": "security directive review",
+   "proposed_fix": "Report engine signature age when the engine exposes it",
+   "test": "none yet",
+   "status": "OPEN",
+   "verification_result": "owner must keep ClamAV/Defender updated"
+  },
+  {
+   "defect_id": "SEC-GAP-4",
+   "severity": "MEDIUM",
+   "title": "No external penetration test or red-team of the whole system",
+   "owner": "Claude Code",
+   "reproduction_evidence": "security directive review",
+   "proposed_fix": "Owner-commissioned review",
+   "test": "none",
+   "status": "OWNER_DECISION_PENDING",
+   "verification_result": "the suite attacks known classes only"
   }
  ],
  "gaps": [
