@@ -1,0 +1,1126 @@
+{
+ "base": "http://127.0.0.1:39963",
+ "generatedAt": "2026-10-13T01:30:29.760Z",
+ "views": [
+  {
+   "view": "profit",
+   "title": "Daily Profit Target",
+   "route": "/api/profit/daily, /api/live",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Daily verified net profit Minimum target USD 500 per day (a floor, never a ceiling: work continues after it is reached). Only processor-confirmed payments minus refunds, chargebacks, fees and documented costs count. Forecasts are shown separately and never added. LIVE - server state synchronised 6:28:50 PM Below the USD 500 minimum for 2026-10-12 - remaining $0.00 Actual today (2026-10-12, America",
+   "labels": {
+    "LIVE": 1,
+    "UNKNOWN": 2
+   },
+   "note": ""
+  },
+  {
+   "view": "pipeline",
+   "title": "Opportunity Pipeline",
+   "route": "/api/opportunity-pipeline",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Opportunity Pipeline Items labelled FIXTURE or OPERATOR_TOOL were not retrieved by a live connector. Published budgets are not revenue. Proposal drafts and accepted projects appear only after their stage evidence exists. OPPORTUNITIES 0 freshness: REAL_TIME HAND-OFFS none SEARCH to Master, ten checks New discoveries (0) Nothing new recorded. Qualified / estimating / planned (0) None yet. Awaiting ",
+   "labels": {},
+   "note": ""
+  },
+  {
+   "view": "ops",
+   "title": "Operations Dashboard",
+   "route": "/api/operations, /api/live",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Operations Dashboard Every figure is read from the running system. Where a source is not connected it says so; it is never shown as zero or healthy. LIVE - server state synchronised 6:28:54 PM RUNTIME NOT_RUNNING ECONNREFUSED KILL SWITCH RUNNING SAFE MODE NORMAL OWNER KEY PLACEHOLDER_UNCONNECTED PERMANENT AGENTS 30 topology 0/5 SEARCH + 0/25 EXECUTION PENDING APPROVALS 0 REVENUE (VERIFIED RECEIPTS",
+   "labels": {
+    "LIVE": 1,
+    "SIMULATED": 1,
+    "UNAVAILABLE": 1,
+    "UNKNOWN": 1,
+    "Nothing to show": 2
+   },
+   "note": "badNotes: Agent states are UNKNOWN: COORDINATION_LEDGER_NOT_FOUND. Start the runtime to see real activity."
+  },
+  {
+   "view": "activity",
+   "title": "Live Agent Activity",
+   "route": "/api/agents/activity, /api/live",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Live Agent Activity States are derived only from tasks and heartbeats recorded by the coordinator. 'IDLE' means no open task is recorded; 'UNKNOWN' means no coordination state exists. Select an agent to inspect it. LIVE - server state synchronised 6:28:56 PM UNKNOWN: COORDINATION_LEDGER_NOT_FOUND. The runtime has not written any coordination state; agent states are UNKNOWN, not idle. UNKNOWN 30 AG",
+   "labels": {
+    "LIVE": 1,
+    "UNKNOWN": 34
+   },
+   "note": "badNotes: UNKNOWN: COORDINATION_LEDGER_NOT_FOUND. The runtime has not written any coordination state; agent states are UNKNOWN, not idle."
+  },
+  {
+   "view": "trading",
+   "title": "Trading & Crypto (simulated)",
+   "route": "/api/trading, /api/live",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Trading & Crypto (research and SIMULATED paper trading) LIVE - server state synchronised 6:28:56 PM Live market data: UNAVAILABLE. No live market-data provider is configured. A provider, its licence and a source allowlist need separate owner approval; until then every chart is HISTORICAL or SIMULATED and says so. SIMULATED PAPER TRADING - NOT REAL MONEY, NOT REAL REVENUE · Real-money trading, exch",
+   "labels": {
+    "LIVE": 1,
+    "SIMULATED": 3,
+    "UNAVAILABLE": 1,
+    "Nothing to show": 4
+   },
+   "note": "badNotes: Live market data: UNAVAILABLE. No live market-data provider is configured. A provider, its licence and a source allowlist need separate owner approval"
+  },
+  {
+   "view": "business",
+   "title": "Revenue & Business",
+   "route": "/api/revenue-dashboard, /api/live",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Revenue & Business Real business revenue and simulated paper trading are separate and are never added together. LIVE - server state synchronised 6:28:58 PM Real business (ledger-verified) financial ledger (hash-chained); PAID needs authoritative external evidence No payment evidence has been recorded: verified revenue is unknown/none - NOT a measured zero. VERIFIED RECEIVED $0.00 0 payment record(",
+   "labels": {
+    "LIVE": 1,
+    "SIMULATED": 3,
+    "Nothing to show": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "revenueops",
+   "title": "Revenue Operations",
+   "route": "/api/revenue-ops, /api/live",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Revenue Operations Counts are read from the Money Engine records. Projected / claimed money is never added to collected (verified) money; unknown stays unknown. LIVE - server state synchronised 6:29:00 PM Nothing has been discovered, sent, won, delivered, invoiced or paid in this installation. Money figures are UNKNOWN (null), not zero revenue. OPPORTUNITIES DISCOVERED 0 all deals ever recorded (a",
+   "labels": {
+    "LIVE": 6,
+    "UNKNOWN": 5
+   },
+   "note": ""
+  },
+  {
+   "view": "aurora",
+   "title": "AURÓRA",
+   "route": "/api/aurora/briefing, /api/aurora/voice",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "AURÓRA Auróra vagyok, az ATLASZ mesterséges intelligencia asszisztense. Nem vagyok ember, és nem állítom, hogy emberi érzéseim lennének; a nyelvemmel és a hangommal igyekszem melegen, figyelmesen segíteni. Nincs jogosultsága: nem hagy jóvá, nem fizet, nem ír alá, nem kapcsol ki védelmet. Minden adat a nyilvántartásból jön; ami nem elérhető, azt így mondja. A szín/felirat jelzi: élő (REAL_TIME), gy",
+   "labels": {
+    "UNAVAILABLE": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "supervision",
+   "title": "Security & Supervision",
+   "route": "/api/agents/supervision, /api/security/incidents, /api/intake/status",
+   "loads": false,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Security & Supervision Error: (sv.notes ?? []).map is not a function or its return value is not iterable",
+   "labels": {},
+   "note": "badNotes: Error: (sv.notes ?? []).map is not a function or its return value is not iterable renderError"
+  },
+  {
+   "view": "home",
+   "title": "Home",
+   "route": "/api/brief",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Home Szia Joci — Indul a mandula! Futás: az ATLASZ jelenleg nem fut Ma: nincs bejegyzett teendő jóváhagyásra vár: nincs Pénz: igazolt bevétel $0.00, dokumentált költség $0.00, igazolt nettó profit $0.00; nem igazolt (nem bevétel): $0.00 Money Engine: nincs csatlakoztatva — számot nem állítok Csak igazolt adatot mutatok; ami nincs bekötve, azt nem állítom. Brief built only from current state. No la",
+   "labels": {},
+   "note": ""
+  },
+  {
+   "view": "a11y",
+   "title": "Accessibility audit",
+   "route": "",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Accessibility audit (A13) Static source checks: contrast of declared colour pairs in both themes, page structure, control names. It reads only this console's own files or text you paste; it fetches no URL and runs no script. It cannot prove WCAG compliance. Audit this console Audit pasted text",
+   "labels": {},
+   "note": ""
+  },
+  {
+   "view": "pcc",
+   "title": "Tasks / Reminders",
+   "route": "/api/pcc",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Tasks / Reminders / Deadlines Computed from stored items only. Reminders are surfaced here and in the brief; no notification provider is connected, so none is pushed anywhere. Overdue 0 · due today 0 · upcoming 0 · reminders due 0 · undated tasks 0 TASK REMINDER DEADLINE Add Overdue TYPE TITLE WHEN PRIORITY PROJECT Nothing to show. Due today TYPE TITLE WHEN PRIORITY PROJECT Nothing to show. Remind",
+   "labels": {
+    "Nothing to show": 5
+   },
+   "note": ""
+  },
+  {
+   "view": "observations",
+   "title": "Observation Memory",
+   "route": "/api/observations",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Observation Memory Consent, retention, correction and real deletion for personal observations. Raw media is never stored - only text and metadata. Recall is keyword-based, not semantic. Research findings are VERIFIED_AT_CAPTURE only. Records 0 (expired 0) · deleted 0 · audit chain intact Remember Search Recent KIND MODALITY CLASS SCOPE TEXT VERIFICATION SOURCE KEEP UNTIL Nothing to show. Purge exp",
+   "labels": {
+    "Nothing to show": 2
+   },
+   "note": ""
+  },
+  {
+   "view": "media",
+   "title": "Multimodal",
+   "route": "/api/media",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Multimodal (documents, images, audio, video) Content understanding (OCR, speech-to-text, vision) needs an external provider; none is connected. Built in (no provider needed) format identification image/audio/video metadata EXIF presence flags (no coordinates) document text (DOCX/XLSX/PPTX/ODF/RTF/PDF text layer) Formats: png, jpeg, gif, webp, bmp, tiff(id only), wav, mp3, ogg, flac, mp4/mov, webm(",
+   "labels": {
+    "NOT_CONNECTED": 6,
+    "Nothing to show": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "sandbox",
+   "title": "Code Sandbox",
+   "route": "/api/sandbox",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Code Sandbox Separate-process sandbox; not a container or VM. Output is untrusted data. Isolation on this host: NAMESPACE (no network, own PID space) · Node fs permissions enforced · languages javascript · audit intact javascript Run in sandbox Recent runs # AT LANGUAGE STATUS ISOLATION MS ACTOR CODE SHA-256 Nothing to show.",
+   "labels": {
+    "Nothing to show": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "workbench",
+   "title": "Workbench",
+   "route": "/api/workbench",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Workbench No model provider is attached: asking a model returns NO_ELIGIBLE_PROVIDER. Analysis, rendering, chunking and policy tools run locally and spend nothing. Analyst (M07) Analyse (local, no code execution) Reasoning effort (C10) LOOKUP SUMMARISE TRANSFORM DRAFT ANALYSE PLAN CODE DECIDE FINANCIAL LOW MEDIUM HIGH CRITICAL Choose Large text (GE01) Plan chunks Annotation overlay (P18) Render ov",
+   "labels": {
+    "Nothing to show": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "projects",
+   "title": "Projects & Workflows",
+   "route": "/api/workbench/action",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Projects, notes and workflows Local, sandbox, no spend. Decisions are proposed by anyone but ADOPTED only here (owner). Workflows can only run registered actions; steps with outside effects cannot be rewound. Project memory and decision log (C07) ID NAME GOAL DECISIONS Nothing to show. Create project Propose List Adopt (owner) Revoke Verify log Notes, reading list, ideas (P03) Tags: none | Reading",
+   "labels": {
+    "Nothing to show": 5
+   },
+   "note": ""
+  },
+  {
+   "view": "research",
+   "title": "Research Ledger",
+   "route": "/api/research",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Research Ledger Findings are verified against the CURRENT sources on every view. A matching quotation is NOT semantic verification: such findings stay QUOTE_MATCHED until you confirm the evidence yourself. Only VERIFIED (owner-confirmed) findings are facts; unsupported claims, assumptions, outdated, conflicted and refuted findings are shown separately. Confidence = independent verified sources, no",
+   "labels": {
+    "Nothing to show": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "knowledge",
+   "title": "Knowledge Projects",
+   "route": "/api/knowledge",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Knowledge Projects Keyword retrieval over your documents, notes and web snapshots - NOT semantic search. Answers are copied passages with citations; unsupported questions are refused. SECRET sources are never searched. Create",
+   "labels": {},
+   "note": ""
+  },
+  {
+   "view": "memory",
+   "title": "Memory",
+   "route": "/api/memory",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Memory Real data from the memory store and the agent access log. Agents reach memory only through identity-bound handles; every read, write and forget request is audited. Retrieved text is untrusted data. NOTES 0 empty INDEX BACKEND SQLITE_FTS5 SQLite FTS5 (BM25) STORE CONSISTENT yes files 0 · indexed 0 · edited outside 0 · unreadable 0 AUDIT CHAINS verified store + access log QUARANTINED / TRASHE",
+   "labels": {
+    "Nothing to show": 4
+   },
+   "note": ""
+  },
+  {
+   "view": "modelreg",
+   "title": "Models & Providers",
+   "route": "/api/model-registry",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Models & Providers Configuration only. A model is LIVE only after the gateway's own passing probe; no provider adapter is attached to this app, so nothing here is LIVE. Enabling a cloud or paid model needs your signed approval; enabling a free local model changes configuration only and downloads nothing. REGISTRY revision 0 integrity NEW PROVIDERS / MODELS 0 / 0 0 enabled LIVE 0 only gateway probe",
+   "labels": {
+    "LIVE": 7,
+    "Nothing to show": 7
+   },
+   "note": ""
+  },
+  {
+   "view": "security",
+   "title": "Security Center",
+   "route": "/api/security",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Security Center Held files are never opened, executed or indexed. Releasing needs your signed approval for that exact file. HELD FILES 0 NO_SCANNER_CONFIGURED INTEGRITY OK audit chain intact What is connected CONTROL STATE NOTE Document ingest pre-scan CONNECTED Blocking archive/executable findings are held here instead of being stored. Malware scanner BLOCKED_NO_SCANNER_CHOSEN Only structural che",
+   "labels": {
+    "NOT_CONNECTED": 2,
+    "Nothing to show": 2
+   },
+   "note": ""
+  },
+  {
+   "view": "agents30",
+   "title": "30 Agents (workforce)",
+   "route": "/api/agents30",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "30 Agents Estimated opportunity values are never revenue. Verified revenue comes only from the ledger (PAID with external evidence). Simulated results are listed separately. REGISTERED 30 5 SEARCH + 25 EXECUTION; integrity OK WORKING NOW 0 only agents with a RUNNING task WAITING 0 submitted / interrupted FAILED OR BLOCKED 0 dead-letter 0, blocked 0 VERIFIED REVENUE (USD) 0 receipts with external e",
+   "labels": {
+    "LIVE": 3,
+    "UNAVAILABLE": 1,
+    "UNKNOWN": 2,
+    "NOT_CONNECTED": 3,
+    "Nothing to show": 13
+   },
+   "note": ""
+  },
+  {
+   "view": "vault",
+   "title": "API Key Vault",
+   "route": "/api/vault",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "API Key Vault No host key is configured, so the vault is LOCKED and cannot store anything. Set ATLASZ_VAULT_KEY on this machine (a 32-byte base64 key, kept outside this folder) and restart. Nothing was stored. VAULT LOCKED no host key STORED 0 values are never shown REVOKED 0 AUDIT CHAIN OK Credentials the system looks for NAME USED BY STORED OPENAI_API_KEY model provider openai not stored ANTHROP",
+   "labels": {
+    "Nothing to show": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "chatproviders",
+   "title": "Chat Providers",
+   "route": "/api/chat-providers",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Chat Providers Nothing is connected, listening or sending: no connector adapter exists in this repository, and nothing is LIVE. Recording an account only stores which vault entry it would use. Platforms with only unofficial automation stay UNAVAILABLE. Incoming text would be treated as untrusted data; sending would need your signed approval per draft. PLATFORMS 21 18 available CONNECTED 0 adapters",
+   "labels": {
+    "LIVE": 2,
+    "UNAVAILABLE": 7
+   },
+   "note": ""
+  },
+  {
+   "view": "owner_safety",
+   "title": "OWNER SAFETY / CONTROL",
+   "route": "/api/owner-safety",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Owner Safety / Control Joci is the final authority. Layers: owner authority → kill switch → security brain → financial firewall → independent verification → black box → safe mode → last known good → backup/restore → disaster recovery. Unknown stays UNKNOWN — never shown as healthy. Kill switch armed — system RUNNING. EMERGENCY STOP PAUSE EXTERNAL ACTIONS RESUME OWNER AUTHORITY PLACEHOLDER_UNCONNEC",
+   "labels": {
+    "UNKNOWN": 7
+   },
+   "note": ""
+  },
+  {
+   "view": "overview",
+   "title": "Overview",
+   "route": "",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "System status Honest status: nothing is shown LIVE without evidence. RUNTIME NOT_RUNNING ECONNREFUSED TOPOLOGY Not running required 5 SEARCH + 25 EXECUTION = 30 OWNER KEY NOT_PROVISIONED Owner Controls → create key EMERGENCY STOP RUNNING SAFE MODE NORMAL UPTIME — runtime not running DURABLE QUEUE — runtime not reachable Start ATLASZ Stop ATLASZ",
+   "labels": {
+    "LIVE": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "plugins",
+   "title": "Plugins / Themes",
+   "route": "/api/plugins, /api/mcp, /api/repos, /api/prototypes",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Plugins / Extensions / Themes Plugin code runs in isolated child processes with no secrets; themes are data only. NAME KIND VERSION PERMISSIONS STATUS ACTIONS Nothing to show. Install a package Put a package folder (plugin.json + files) into the plugin-inbox folder of your config directory. Installing needs your passphrase and is bound to the exact file contents (hash). New and upgraded plugins st",
+   "labels": {
+    "Nothing to show": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "finance",
+   "title": "Revenue / Costs / Profit",
+   "route": "/api/finance",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Revenue / Costs / Profit Opportunity value, invoices and customer claims are not revenue. Figures are 0 when no authoritative evidence has been recorded. VERIFIED REVENUE $0.00 NO_REVENUE_EVIDENCE_NOT_CONNECTED UNCONFIRMED PIPELINE (NOT REVENUE) $0.00 invoiced/agreed, not received DOCUMENTED COSTS $0.00 0 cost records VERIFIED NET PROFIT $0.00 VERIFIED_RECEIPTS_MINUS_DOCUMENTED_COSTS TOKENS IN / O",
+   "labels": {
+    "NOT_CONNECTED": 1,
+    "Nothing to show": 2
+   },
+   "note": ""
+  },
+  {
+   "view": "evidence",
+   "title": "Evidence / Audit",
+   "route": "/api/evidence, /api/stream",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Live tool and progress feed Read-only stream of the Black Box (secrets redacted). It cannot change anything. Live: connected (read-only). Evidence / audit logs SANDBOX evidence is never LIVE evidence. Hash-chained logs LOG PRESENT INTACT ENTRIES HEAD owner-auth-audit.jsonl no — safe-mode-audit.jsonl no — emergency-audit.jsonl no — ledger/ledger.jsonl no — vault/vault-audit.jsonl no — Evidence reco",
+   "labels": {
+    "LIVE": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "agents",
+   "title": "Agents (5+25)",
+   "route": "",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Agents 5 SEARCH/SALES + 25 EXECUTION = 30 (fixed). SEARCH / SALES (0) AGENT STATUS TASK RESULTS BLOCKER Nothing to show. EXECUTION (0) AGENT STATUS TASK RESULTS BLOCKER Nothing to show.",
+   "labels": {
+    "Nothing to show": 2
+   },
+   "note": ""
+  },
+  {
+   "view": "jobs",
+   "title": "Jobs / Opportunities",
+   "route": "/api/opportunities",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Jobs / opportunities Leads need verification before any offer. Nothing here has been sent or won. TITLE SCORE OUTREACH PROJECT SOURCE Nothing to show.",
+   "labels": {
+    "Nothing to show": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "money",
+   "title": "Money Engine",
+   "route": "/api/money-engine, /api/money-jobs, /api/money-agents, /api/money-recurring",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Money Engine Verified revenue counts ONLY with authoritative payment evidence recorded in the ledger. CONFIRMED PAID (USD) $0 needs provider + signature + evidence CANDIDATES FOUND 0 ACTIVE LEADS 0 OUTREACH SENT 0 WON 0 SCOPE REVIEWS 0 Engine ledger (recorded state) NOT_CONNECTED: No Money Engine state exists. Nothing has been discovered, sent, won, delivered, invoiced or paid; all figures are unk",
+   "labels": {
+    "NOT_CONNECTED": 4,
+    "Nothing to show": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "crm_inbox",
+   "title": "CRM / Graph / Inbox",
+   "route": "/api/crm-inbox",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "CRM / Entity Graph / Inbox Read-only. Replies count only with provider evidence; payment messages are claims; nothing here sends anything. Entity graph NOT_CONNECTED: undefined Follow-ups NOT_CONNECTED: undefined Inbox pipeline NOT_CONNECTED: undefined",
+   "labels": {
+    "NOT_CONNECTED": 3
+   },
+   "note": ""
+  },
+  {
+   "view": "approvals",
+   "title": "Approvals",
+   "route": "/api/approvals",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Approvals A request must answer what/why/cost/risk/external effect/reversible/if-no/no-spend alternative; incomplete requests are refused. Waiting for you (0) Nothing is waiting for approval. Decided STATUS ACTION WHAT REASON Nothing to show. Signed approval history EVENT DETAIL Nothing to show.",
+   "labels": {
+    "Nothing to show": 2
+   },
+   "note": ""
+  },
+  {
+   "view": "providers",
+   "title": "Model / Tool health",
+   "route": "",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Model / tool / provider health LIVE requires probe evidence. Placeholders are shown as such. COMPONENT STATE DETAIL Nothing to show.",
+   "labels": {
+    "LIVE": 1,
+    "Nothing to show": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "errors",
+   "title": "Errors & Blockers",
+   "route": "/api/doctor",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Errors & blockers SOURCE ERROR Nothing to show. Doctor findings SEVERITY CHECK DETAIL REMEDY DEGRADED owner-auth NO_OWNER_PUBLIC_KEY: critical actions are denied Provision the owner key in Owner Controls. DEGRADED runtime ECONNREFUSED Press Start ATLASZ (or check the port). DEGRADED backup NO_BACKUP_EXISTS Create a backup. DEGRADED lkg NO_LAST_KNOWN_GOOD Mark a verified backup as last known good (",
+   "labels": {
+    "Nothing to show": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "owner",
+   "title": "Owner Controls",
+   "route": "",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Owner controls Only Joci's passphrase-protected key can approve. No terminal needed. Owner key not created yet. Until then every critical action is denied (honest PLACEHOLDER_UNCONNECTED). Create owner key Emergency Stop Running normally. PAUSE ALL STOP EXTERNAL ACTIONS Resume Safe Mode Normal. Leave Safe Mode",
+   "labels": {},
+   "note": ""
+  },
+  {
+   "view": "backup",
+   "title": "Backup / Restore / LKG",
+   "route": "/api/backups",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Backup / restore / last known good No last known good yet. Create backup Run recovery drill Mark last known good Restore last known good BACKUP VERIFIED FILES CREATED Nothing to show.",
+   "labels": {
+    "Nothing to show": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "doctor",
+   "title": "System Doctor",
+   "route": "/api/doctor",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "System Doctor Read-only checks of environment, durable state and tamper-evident logs. OVERALL DEGRADED RUNTIME REACHABLE no Self-check CHECK STATUS DETAIL node-version OK 22.22.0 state-dir-writable OK /tmp/claude-0/-home-claude/99266fc2-7f47-5143-a99c-a762cb6b0b16/scratchpad/audit/uismoke/home/state disk-free OK 28144324608 bytes runtime-state OK FRESH_START queue-journal OK FRESH_START owner-auth",
+   "labels": {},
+   "note": ""
+  },
+  {
+   "view": "updates",
+   "title": "Update Center",
+   "route": "/api/updates",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Update Center DETECT → COMPATIBILITY → BACKUP/LKG → STAGING → TEST → SECURITY/HEALTH → APPROVAL → INSTALL → POST-TEST → EVIDENCE. On failure: FREEZE → PRESERVE EVIDENCE → ROLLBACK → VERIFY → REPORT. Check for Updates Safe Automatic Updates: OFF COMPONENT VERSION PROTECTED atlasz-extension-pack 1.0.0 no UPDATE STATE RISK / NOTES ACTIONS Nothing to show.",
+   "labels": {
+    "Nothing to show": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "voice",
+   "title": "Voice",
+   "route": "/api/voice",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Speak-to-Speak / Live Voice BLOCKED: no tested speech-to-text and text-to-speech provider is attached, so voice is not live. Voice can never approve anything. Transcripts are text only; raw audio is never stored. STATE ENABLED MODE LIVE IDLE false PUSH_TO_TALK NOT LIVE Voice can only request - it cannot approve, spend, send or change anything. Kill switch and Safe Mode stop every conversation. Moc",
+   "labels": {
+    "LIVE": 2,
+    "Nothing to show": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "documents",
+   "title": "Documents",
+   "route": "/api/documents",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Document Center Total 0 · unsupported formats 0 · secret 0 NAME TYPE CLASS EXTRACTION JOB Nothing to show.",
+   "labels": {
+    "Nothing to show": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "inbox",
+   "title": "Inbox",
+   "route": "/api/inbox",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Universal Inbox Drafts are never sent from here. Sending needs a proven connector, an open kill switch and your signed approval. Total 0 · new 0 · critical 0 · chain OK PRIORITY SOURCE STATUS SUBJECT Nothing to show.",
+   "labels": {
+    "Nothing to show": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "connectors",
+   "title": "Connectors",
+   "route": "/api/connectors",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Connectors A connector is LIVE only after its own read-only probe passes. Live 0 of 12; blocked (no credentials) 12; no safe probe 0. CONNECTOR STATE NEEDS github BLOCKED_NO_CREDENTIALS GITHUB_TOKEN hunter BLOCKED_NO_CREDENTIALS HUNTER_API_KEY airtable BLOCKED_NO_CREDENTIALS AIRTABLE_TOKEN gmail BLOCKED_NO_CREDENTIALS GMAIL_OAUTH_TOKEN calendar BLOCKED_NO_CREDENTIALS GCAL_OAUTH_TOKEN drive BLOCKED",
+   "labels": {
+    "LIVE": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "techwatch",
+   "title": "Tech Watch",
+   "route": "/api/techwatch",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Tech Watch NO_FEED: no feed files in the tech-watch folder, so no external news is claimed. COMPONENT INSTALLED AVAILABLE SEVERITY COMPATIBILITY Nothing to show. Capability gaps (0 not LIVE) ITEM STATE Nothing to show.",
+   "labels": {
+    "LIVE": 1,
+    "Nothing to show": 2
+   },
+   "note": ""
+  },
+  {
+   "view": "brain_status",
+   "title": "Brain · Status",
+   "route": "/api/brain",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Brain Status No Brain state has been written yet (the runtime has not run, or the Brain is not connected). NOT_CONNECTED: No Brain state has been written yet (the runtime has not run, or the Brain is not connected).",
+   "labels": {
+    "NOT_CONNECTED": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "brain_orchestrator",
+   "title": "Brain · Orchestrator",
+   "route": "/api/brain",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Orchestrator Pipeline: ANALYZE → PLAN → CAPABILITY_MATCH → ASSIGN → EXECUTE → OBSERVE → VERIFY → COMPLETE → EVIDENCE → LEARN SANDBOX: orchestrator is built and tested but no plan has been executed through it in the runtime. STATE UNKNOWN",
+   "labels": {
+    "UNKNOWN": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "brain_planning",
+   "title": "Brain · Planning",
+   "route": "/api/brain",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Planning NOT_CONNECTED: No plans exist yet.",
+   "labels": {
+    "NOT_CONNECTED": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "brain_capabilities",
+   "title": "Brain · Capability Graph",
+   "route": "/api/brain",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Capability Graph NOT_CONNECTED: No Brain state has been written yet (the runtime has not run, or the Brain is not connected).",
+   "labels": {
+    "NOT_CONNECTED": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "brain_knowledge",
+   "title": "Brain · Knowledge",
+   "route": "/api/brain",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Knowledge NOT_CONNECTED: No knowledge items stored yet. Model guesses are stored as INFERENCE, never as FACT.",
+   "labels": {
+    "NOT_CONNECTED": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "brain_simulation",
+   "title": "Brain · Simulation",
+   "route": "/api/brain",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Simulation / Digital Twin Simulation Lab is built and tested; runs are in-process and not persisted, so none are listed. Simulation success is never proof of LIVE success. ENVIRONMENTS (NEVER CONFUSED) SIMULATION STAGING LIVE",
+   "labels": {
+    "LIVE": 2
+   },
+   "note": ""
+  },
+  {
+   "view": "brain_verification",
+   "title": "Brain · Verification",
+   "route": "/api/brain",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Verification Screening results are recorded as NOT_INDEPENDENTLY_VERIFIED; nothing counts as completed work without an independent verifier ACCEPT. INDEPENDENTLY ACCEPTED REJECTED / NOT ACCEPTED SCREENING NOT INDEPENDENTLY VERIFIED 0 0 0",
+   "labels": {},
+   "note": ""
+  },
+  {
+   "view": "brain_security",
+   "title": "Brain · Security",
+   "route": "/api/brain",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Security Brain External text quarantined before reaching any agent: 0 TIME DECISION AGENT REASON Nothing to show. The Security Brain can only make the system stricter; it cannot grant permissions.",
+   "labels": {
+    "Nothing to show": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "brain_opportunities",
+   "title": "Brain · Opportunities",
+   "route": "/api/brain",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Opportunity Intelligence NOT_CONNECTED: No opportunities tracked yet.",
+   "labels": {
+    "NOT_CONNECTED": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "brain_factory",
+   "title": "Brain · Business Factory",
+   "route": "/api/brain",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Business Factory NOT_CONNECTED: No service drafts exist. Nothing is published, sold or launched without your approval.",
+   "labels": {
+    "NOT_CONNECTED": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "brain_blackbox",
+   "title": "Brain · Black Box",
+   "route": "/api/brain",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Observability / Black Box NOT_CONNECTED: Black box file does not exist yet.",
+   "labels": {
+    "NOT_CONNECTED": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "brain_recovery",
+   "title": "Brain · Recovery",
+   "route": "/api/brain",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Disaster Recovery Recovery readiness: NOT_RECOVERABLE (NO_BACKUP, NO_RESTORE_DRILL) A backup that has never been restored in a drill is not proven recoverable. Last known good: NONE Incident flow: DETECT → CONTAIN → FREEZE → PRESERVE_EVIDENCE → CHECKPOINT → DIAGNOSE → REPAIR → RETEST → ROLLBACK_TO_LKG → VERIFY → RESUME → REPORT",
+   "labels": {},
+   "note": ""
+  },
+  {
+   "view": "brain_behavior",
+   "title": "Brain · Behavior Anomalies",
+   "route": "/api/brain",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Behavior Anomalies NOT_CONNECTED: No behaviour scan has been persisted yet.",
+   "labels": {
+    "NOT_CONNECTED": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "brain_health",
+   "title": "Brain · Health",
+   "route": "/api/brain",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Brain Health {\"state\":\"NOT_CONNECTED\",\"note\":\"No Brain state has been written yet (the runtime has not run, or the Brain is not connected).\"} Recommendations only. Health metrics never change permissions or controls.",
+   "labels": {
+    "NOT_CONNECTED": 1
+   },
+   "note": ""
+  },
+  {
+   "view": "brain_command",
+   "title": "Owner Command",
+   "route": "/api/brain",
+   "loads": true,
+   "consoleErrors": [],
+   "httpErrors": [],
+   "shows": "Owner Command Natural language only selects an operation. Consequential operations always ask for your key; unknown requests do nothing. Run — OPERATION NEEDS YOUR APPROVAL SHOW_AGENTS no FIND_OPPORTUNITIES no SHOW_JOBS no SHOW_REVENUE no SHOW_COSTS_PROFIT no SHOW_BROKEN no RUN_DOCTOR no PAUSE_EXTERNAL yes RESUME_SYSTEM yes CREATE_RESTORE_POINT yes TEST_NEXT_UPDATE yes ROLLBACK_LAST_STABLE yes Com",
+   "labels": {},
+   "note": ""
+  }
+ ],
+ "bootIssues": null,
+ "endIssues": null,
+ "externalRequests": [],
+ "postsFromBrowser": [
+  "http://127.0.0.1:39963/api/workbench/action",
+  "http://127.0.0.1:39963/api/workbench/action",
+  "http://127.0.0.1:39963/api/workbench/action",
+  "http://127.0.0.1:39963/api/workbench/action",
+  "http://127.0.0.1:39963/api/workbench/action",
+  "http://127.0.0.1:39963/api/workbench/action",
+  "http://127.0.0.1:39963/api/workbench/action",
+  "http://127.0.0.1:39963/api/workbench/action",
+  "http://127.0.0.1:39963/api/prefs"
+ ],
+ "apiSweep": {
+  "/api/aurora/briefing": {
+   "status": 200,
+   "body": "{\"text\":\"Jó reggelt! Örülök, hogy itt vagy! Megmutatom, mit találtam a nyilvántartásban a munkalehet"
+  },
+  "/api/aurora/voice": {
+   "status": 200,
+   "body": "{\"audioOut\":\"NOT_TESTED\",\"audioOutAt\":null,\"audioOutVoice\":null,\"audioIn\":\"NOT_TESTED\",\"audioInAt\":n"
+  },
+  "/api/opportunity-pipeline": {
+   "status": 200,
+   "body": "{\"asOf\":\"2026-10-13T01:30:53.327Z\",\"freshness\":\"REAL_TIME\",\"counts\":{\"total\":0,\"byStage\":{},\"byRetri"
+  },
+  "/api/security/network": {
+   "status": 200,
+   "body": "{\"asOf\":\"2026-10-13T01:30:53.330Z\",\"summary\":{\"events\":2,\"findings\":0,\"agents\":{\"scheduler:sch-5-c18"
+  },
+  "/api/status": {
+   "status": 200,
+   "body": "{\"at\":\"2026-10-13T01:30:53.338Z\",\"runtime\":{\"reachable\":false,\"reason\":\"ECONNREFUSED\",\"managedByCont"
+  },
+  "/api/opportunities": {
+   "status": 200,
+   "body": "{\"count\":0,\"items\":[]}"
+  },
+  "/api/approvals": {
+   "status": 200,
+   "body": "{\"pending\":[],\"decided\":[],\"history\":[],\"note\":\"A request must answer what/why/cost/risk/external ef"
+  },
+  "/api/backups": {
+   "status": 200,
+   "body": "{\"items\":[{\"id\":\"2026-10-13T01-30-24-433Z_drill\",\"ok\":true,\"problems\":[],\"createdAt\":\"2026-10-13T01:"
+  },
+  "/api/profit/daily": {
+   "status": 200,
+   "body": "{\"target\":{\"metric\":\"VERIFIED_NET_PROFIT_USD_PER_DAY\",\"minimumUsd\":500,\"kind\":\"MINIMUM_NOT_CEILING\","
+  },
+  "/api/finance/reconciliation": {
+   "status": 200,
+   "body": "{\"ledgerPaidWithoutProcessorEvent\":[],\"amountMismatches\":[],\"notComparable\":[],\"processorPaymentsNot"
+  },
+  "/api/repos": {
+   "status": 200,
+   "body": "{\"repos\":[],\"note\":\"Put a repository folder under the ATLASZ config 'repos' folder. Analysis only re"
+  },
+  "/api/prototypes": {
+   "status": 200,
+   "body": "{\"state\":\"CONNECTED\",\"templates\":[{\"id\":\"text-transform\",\"title\":\"Text transformer\",\"describe\":\"Pure"
+  },
+  "/api/finance": {
+   "status": 200,
+   "body": "{\"entity\":\"ATLASZ_EXTERNAL\",\"entries\":0,\"chain\":{\"ok\":true,\"length\":0,\"head\":\"0000000000000000000000"
+  },
+  "/api/documents": {
+   "status": 200,
+   "body": "{\"summary\":{\"total\":0,\"byType\":{\"GENERIC\":0,\"INVOICE\":0,\"RECEIPT\":0,\"CONTRACT\":0,\"JOB_DOCUMENT\":0,\"R"
+  },
+  "/api/knowledge": {
+   "status": 200,
+   "body": "{\"state\":\"CONNECTED\",\"method\":\"KEYWORD_BM25_NOT_SEMANTIC\",\"projects\":[]}"
+  },
+  "/api/memory": {
+   "status": 200,
+   "body": "{\"state\":\"CONNECTED\",\"tenantId\":\"JOCI\",\"store\":{\"backend\":\"SQLITE_FTS5\",\"notes\":0,\"byClassification\""
+  },
+  "/api/model-registry": {
+   "status": 200,
+   "body": "{\"state\":\"CONNECTED\",\"inventory\":[],\"usage\":{\"month\":\"2026-10\",\"billedRequests\":0,\"failedButBilled\":"
+  },
+  "/api/security": {
+   "status": 200,
+   "body": "{\"state\":\"CONNECTED\",\"trustAnchors\":{\"ok\":true,\"list\":[]},\"status\":{\"state\":\"IMPLEMENTED_LOCAL_NOT_C"
+  },
+  "/api/agents30": {
+   "status": 200,
+   "body": "{\"state\":\"CONNECTED\",\"master\":{\"ok\":true,\"controlChain\":\"ATTACHED\",\"started\":\"2026-10-13T01:28:24.39"
+  },
+  "/api/vault": {
+   "status": 200,
+   "body": "{\"state\":\"CONNECTED\",\"vault\":{\"state\":\"LOCKED\",\"entries\":0,\"revoked\":0,\"shutdown\":false,\"auditOk\":tr"
+  },
+  "/api/chat-providers": {
+   "status": 200,
+   "body": "{\"state\":\"CONNECTED\",\"summary\":{\"implementation\":\"IMPLEMENTED\",\"connected\":0,\"live\":0,\"providers\":21"
+  },
+  "/api/trading": {
+   "status": 200,
+   "body": "{\"state\":\"CONNECTED\",\"at\":\"2026-10-13T01:30:53.426Z\",\"legend\":{\"LIVE\":\"streaming from an authorised "
+  },
+  "/api/operations": {
+   "status": 200,
+   "body": "{\"at\":\"2026-10-13T01:30:53.435Z\",\"system\":{\"runtime\":\"NOT_RUNNING\",\"reachable\":false,\"reason\":\"ECONN"
+  },
+  "/api/agents/activity": {
+   "status": 200,
+   "body": "{\"ok\":true,\"available\":false,\"reason\":\"COORDINATION_LEDGER_NOT_FOUND\",\"note\":\"The runtime has not wr"
+  },
+  "/api/revenue-dashboard": {
+   "status": 200,
+   "body": "{\"at\":\"2026-10-13T01:30:53.440Z\",\"realBusiness\":{\"source\":\"financial ledger (hash-chained); PAID nee"
+  },
+  "/api/revenue-ops": {
+   "status": 200,
+   "body": "{\"at\":\"2026-10-13T01:30:53.442Z\",\"environment\":\"LIVE\",\"state\":\"NO_BUSINESS_RECORDED\",\"note\":\"Nothing"
+  },
+  "/api/intake/status": {
+   "status": 200,
+   "body": "{\"scanner\":null,\"scannerState\":\"NO_SCANNER_INSTALLED: every file stays HELD (install ClamAV, or run "
+  },
+  "/api/agents/supervision": {
+   "status": 200,
+   "body": "{\"at\":\"2026-10-13T01:30:53.447Z\",\"agents\":[{\"id\":\"SEARCH-1\",\"status\":\"IDLE\",\"state\":\"NO_ACTIVITY_YET"
+  },
+  "/api/security/incidents": {
+   "status": 200,
+   "body": "{\"open\":[],\"alerts\":[]}"
+  },
+  "/api/trading/candles": {
+   "status": 400,
+   "body": "{\"error\":\"DATASET_NOT_FOUND\"}"
+  },
+  "/api/research": {
+   "status": 200,
+   "body": "{\"state\":\"CONNECTED\",\"summary\":{\"questions\":0,\"unresolved\":0,\"answered\":0,\"events\":0,\"chain\":{\"ok\":t"
+  },
+  "/api/sandbox": {
+   "status": 200,
+   "body": "{\"state\":\"CONNECTED\",\"summary\":{\"level\":\"NAMESPACE\",\"namespace\":true,\"nodePermission\":true,\"language"
+  },
+  "/api/workbench": {
+   "status": 200,
+   "body": "{\"state\":\"CONNECTED\",\"ops\":[\"conv.create\",\"conv.setProfile\",\"conv.list\",\"conv.get\",\"conv.addTurn\",\"c"
+  },
+  "/api/media": {
+   "status": 200,
+   "body": "{\"state\":\"CONNECTED\",\"builtIn\":[\"format identification\",\"image/audio/video metadata\",\"EXIF presence "
+  },
+  "/api/observations": {
+   "status": 200,
+   "body": "{\"state\":\"CONNECTED\",\"summary\":{\"total\":0,\"expired\":0,\"byKind\":{},\"byModality\":{},\"byClassification\""
+  },
+  "/api/brain": {
+   "status": 200,
+   "body": "{\"status\":{\"state\":\"NOT_CONNECTED\",\"note\":\"No Brain state has been written yet (the runtime has not "
+  },
+  "/api/money-engine": {
+   "status": 200,
+   "body": "{\"state\":\"NOT_CONNECTED\",\"note\":\"No Money Engine state exists. Nothing has been discovered, sent, wo"
+  },
+  "/api/money-jobs": {
+   "status": 200,
+   "body": "{\"state\":\"NOT_CONNECTED\",\"items\":[]}"
+  },
+  "/api/money-agents": {
+   "status": 200,
+   "body": "{\"state\":\"NOT_CONNECTED\",\"expected\":30,\"items\":[]}"
+  },
+  "/api/money-recurring": {
+   "status": 200,
+   "body": "{\"state\":\"NOT_CONNECTED\",\"note\":\"No subscriptions recorded.\"}"
+  },
+  "/api/crm-inbox": {
+   "status": 200,
+   "body": "{\"graph\":{\"state\":\"NOT_CONNECTED\"},\"followups\":{\"state\":\"NOT_CONNECTED\"},\"inbox\":{\"state\":\"NOT_CONNE"
+  },
+  "/api/owner-safety": {
+   "status": 200,
+   "body": "{\"at\":\"2026-10-13T01:30:53.532Z\",\"ownerAuthority\":{\"ownerId\":\"JOCI\",\"state\":\"PLACEHOLDER_UNCONNECTED"
+  },
+  "/api/inbox": {
+   "status": 200,
+   "body": "{\"counts\":{\"total\":0,\"new\":0,\"critical\":0,\"bySource\":{\"EMAIL\":0,\"AGENT_MESSAGE\":0,\"SYSTEM_ALERT\":0,\""
+  },
+  "/api/voice": {
+   "status": 200,
+   "body": "{\"state\":\"IDLE\",\"enabled\":false,\"mode\":\"PUSH_TO_TALK\",\"live\":false,\"stt\":null,\"tts\":null,\"sttMock\":f"
+  },
+  "/api/connectors": {
+   "status": 200,
+   "body": "{\"total\":12,\"live\":0,\"blockedNoCredentials\":12,\"noSafeProbe\":0,\"failed\":0,\"untested\":0,\"connectors\":"
+  },
+  "/api/techwatch": {
+   "status": 200,
+   "body": "{\"at\":\"2026-10-13T01:30:53.540Z\",\"status\":\"NO_FEED\",\"feeds\":[],\"advisories\":[],\"rejected\":[],\"invent"
+  },
+  "/api/evidence": {
+   "status": 200,
+   "body": "{\"logs\":[{\"log\":\"owner-auth-audit.jsonl\",\"present\":false},{\"log\":\"safe-mode-audit.jsonl\",\"present\":f"
+  },
+  "/api/brief": {
+   "status": 200,
+   "body": "{\"prefs\":{\"language\":\"hu\",\"greetingName\":\"Joci\",\"signaturePhrase\":\"Indul a mandula!\",\"enabled\":true}"
+  },
+  "/api/pcc": {
+   "status": 200,
+   "body": "{\"state\":\"CONNECTED\",\"agenda\":{\"at\":\"2026-10-13T01:30:53.551Z\",\"tenantId\":\"ATLASZ\",\"utcOffsetMinutes"
+  },
+  "/api/prefs": {
+   "status": 200,
+   "body": "{\"language\":\"hu\",\"greetingName\":\"Joci\",\"signaturePhrase\":\"Indul a mandula!\",\"enabled\":true}"
+  },
+  "/api/plugins": {
+   "status": 200,
+   "body": "{\"plugins\":[],\"rejected\":[],\"activeTheme\":null,\"note\":\"Plugin code runs in isolated child processes "
+  },
+  "/api/mcp": {
+   "status": 200,
+   "body": "{\"servers\":[],\"rejected\":[],\"note\":\"Local MCP stdio servers only. Starting one runs foreign code (re"
+  },
+  "/api/theme": {
+   "status": 200,
+   "body": "{\"id\":null,\"variables\":{}}"
+  },
+  "/api/doctor": {
+   "status": 200,
+   "body": "{\"level\":\"DEGRADED\",\"selfCheck\":{\"level\":\"DEGRADED\",\"ok\":true,\"at\":\"2026-10-13T01:30:53.562Z\",\"check"
+  },
+  "/api/updates": {
+   "status": 200,
+   "body": "{\"components\":[{\"id\":\"atlasz-extension-pack\",\"kind\":\"PLUGIN\",\"version\":\"1.0.0\",\"protected\":false}],\""
+  },
+  "/api/live": {
+   "status": 200,
+   "body": ""
+  },
+  "/api/stream": {
+   "status": 200,
+   "body": ""
+  }
+ },
+ "csrfChecks": {
+  "POST /api/prefs evil Origin": 403,
+  "POST /api/prefs text/plain": 415,
+  "POST no token": 401,
+  "GET candles (no dataset)": 400
+ },
+ "postRoutesNotCalled": [
+  "/api/aurora/utterance",
+  "/api/aurora/voice/settings",
+  "/api/aurora/voice/evidence",
+  "/api/owner-key",
+  "/api/approvals/decide",
+  "/api/emergency",
+  "/api/safe-mode/exit",
+  "/api/brain/command",
+  "/api/intake/file",
+  "/api/owner-safety/action",
+  "/api/runtime/start",
+  "/api/runtime/stop",
+  "/api/proposal/draft",
+  "/api/profit/close-day",
+  "/api/finance/webhook-receiver/start",
+  "/api/finance/webhook-receiver/stop",
+  "/api/finance/attest-costs",
+  "/api/finance/revoke-attestation",
+  "/api/finance/fx-rate",
+  "/api/finance/attach-fee",
+  "/api/finance/assess",
+  "/api/contract/review",
+  "/api/invoice/prepare",
+  "/api/backup",
+  "/api/backup/drill",
+  "/api/backup/mark-lkg",
+  "/api/restore/lkg",
+  "/api/restore/backup",
+  "/api/updates/check",
+  "/api/updates/test",
+  "/api/updates/install",
+  "/api/chat",
+  "/api/pcc/action",
+  "/api/knowledge/action",
+  "/api/memory/action",
+  "/api/model-registry/action",
+  "/api/security/action",
+  "/api/agents30/action",
+  "/api/vault/action",
+  "/api/chat-providers/action",
+  "/api/trading/action",
+  "/api/research/action",
+  "/api/sandbox/run",
+  "/api/workbench/action",
+  "/api/a11y/audit",
+  "/api/voice/action",
+  "/api/observations/action",
+  "/api/prefs",
+  "/api/plugins/enable",
+  "/api/repos/analyze",
+  "/api/repos/test",
+  "/api/prototypes/action",
+  "/api/mcp/start",
+  "/api/mcp/call",
+  "/api/mcp/stop",
+  "/api/plugins/invoke",
+  "/api/plugins/install",
+  "/api/plugins/rollback",
+  "/api/plugins/uninstall",
+  "/api/plugins/disable",
+  "/api/plugins/theme",
+  "/api/plugins/reset",
+  "/api/updates/rollback",
+  "/api/updates/auto",
+  "/api/updates/unfreeze"
+ ],
+ "notes": [
+  "apiSweep: GET routes from server.mjs get-table plus /api/live,/api/stream, with x-atlasz-token as the client sends it.",
+  "Earlier regex sweep also hit POST-only routes with GET (404 NOT_FOUND) - artefact of the script, removed.",
+  "postRoutesNotCalled: 0 state-changing POST routes were exercised on purpose. Browser POSTs seen: 8x /api/workbench/action (read-only list ops fired by Projects view on load), 1x /api/prefs {} (my own CSRF probe from inside the page; empty body)."
+ ]
+}

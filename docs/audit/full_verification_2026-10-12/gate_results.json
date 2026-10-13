@@ -1,0 +1,1228 @@
+{
+"atlasz-tests/detail-level-mutation.test.mjs": {
+"pass": 2,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/tenant-isolation.test.mjs": {
+"pass": 3,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/release-signing.test.mjs": {
+"pass": 22,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/evidence-record.test.mjs": {
+"pass": 2,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/agent-workforce.test.mjs": {
+"pass": 17,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/voice-session.test.mjs": {
+"pass": 4,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/provider-resilience.test.mjs": {
+"pass": 5,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/model-routing-bridge.test.mjs": {
+"pass": 7,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/r6-round13.test.mjs": {
+"pass": 6,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/file-intake.test.mjs": {
+"pass": 6,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/a11y-audit.test.mjs": {
+"pass": 16,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/document-center-quarantine.test.mjs": {
+"pass": 2,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/provider-adapters.test.mjs": {
+"pass": 7,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/enforcement-coverage.test.mjs": {
+"pass": 4,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/global-discovery.test.mjs": {
+"pass": 8,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/control-center-security.test.mjs": {
+"pass": 2,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/reserved-keys.test.mjs": {
+"pass": 6,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/r6-round9.test.mjs": {
+"pass": 16,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/evidence-sources.test.mjs": {
+"pass": 9,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/social-drafts.test.mjs": {
+"pass": 15,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/skills-hosted.test.mjs": {
+"pass": 1,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/control-center-discovery.test.mjs": {
+"pass": 2,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/control-center-master.test.mjs": {
+"pass": 2,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/audit-chain-headpin.test.mjs": {
+"pass": 2,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/code-review.test.mjs": {
+"pass": 16,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/revenue-persistence.test.mjs": {
+"pass": 18,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/page-ingest.test.mjs": {
+"pass": 6,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/analyst-mutation.test.mjs": {
+"pass": 7,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/restricted-node.test.mjs": {
+"pass": 11,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/policy-guards.test.mjs": {
+"pass": 5,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/r6-round12.test.mjs": {
+"pass": 6,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/brain-master-workflow.test.mjs": {
+"pass": 3,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/w2-doc-sync.test.mjs": {
+"pass": 15,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/document-intelligence.test.mjs": {
+"pass": 6,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/module-business.test.mjs": {
+"pass": 5,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/m5-runtime-memory.test.mjs": {
+"pass": 5,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/control-center-systems.test.mjs": {
+"pass": 1,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/backup-recovery.test.mjs": {
+"pass": 6,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/repos-hosted.test.mjs": {
+"pass": 2,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/entity-graph.test.mjs": {
+"pass": 7,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/contract-factories.test.mjs": {
+"pass": 7,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/gated-modules.test.mjs": {
+"pass": 9,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/worker-startup.test.mjs": {
+"pass": 3,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/m6-paper-trader.test.mjs": {
+"pass": 21,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/agent-factory-governor.test.mjs": {
+"pass": 7,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/registry-integrity.test.mjs": {
+"pass": 5,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/demonstrations.test.mjs": {
+"pass": 1,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/r6-plugin-containment.test.mjs": {
+"pass": 7,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/m1-vault-broker.test.mjs": {
+"pass": 35,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/chat-providers.test.mjs": {
+"pass": 16,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/w3-reasoning-common.test.mjs": {
+"pass": 5,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/opportunity-intake.test.mjs": {
+"pass": 13,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/brain-orchestration.test.mjs": {
+"pass": 12,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/no-weak-random.test.mjs": {
+"pass": 3,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/control-center-agents30.test.mjs": {
+"pass": 1,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/stream-hosted.test.mjs": {
+"pass": 1,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/payment-events.test.mjs": {
+"pass": 11,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/update-center.test.mjs": {
+"pass": 17,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/m5-memory-integration.test.mjs": {
+"pass": 18,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/code-sandbox.test.mjs": {
+"pass": 10,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/control-center-home.test.mjs": {
+"pass": 1,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/contract-memory-control.test.mjs": {
+"pass": 5,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/emergency-stop.test.mjs": {
+"pass": 10,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/compare-transcript.test.mjs": {
+"pass": 6,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/local-ai-manager.test.mjs": {
+"pass": 15,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/prototypes-hosted.test.mjs": {
+"pass": 1,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/knowledge-projects-hosted.test.mjs": {
+"pass": 2,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/skill-registry.test.mjs": {
+"pass": 17,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/scheduler.test.mjs": {
+"pass": 7,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/egress-policy.test.mjs": {
+"pass": 21,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/digital-twin.test.mjs": {
+"pass": 4,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/notes-organizer.test.mjs": {
+"pass": 9,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/probe-evidence.test.mjs": {
+"pass": 5,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/agent-registry.test.mjs": {
+"pass": 5,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/tick-loop.test.mjs": {
+"pass": 3,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/prototype-builder.test.mjs": {
+"pass": 14,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/owner-control-extra.test.mjs": {
+"pass": 3,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/modality-fabric.test.mjs": {
+"pass": 8,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/w2-data-quality.test.mjs": {
+"pass": 15,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/control-center-memory.test.mjs": {
+"pass": 6,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/control-center-installer.test.mjs": {
+"pass": 1,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/durable-queue.test.mjs": {
+"pass": 9,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/workbench-b1-hosted.test.mjs": {
+"pass": 6,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/brain-core.test.mjs": {
+"pass": 13,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/document-center.test.mjs": {
+"pass": 3,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/stage-r5-fixes.test.mjs": {
+"pass": 8,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/behavior-monitor.test.mjs": {
+"pass": 7,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/m3-memory-store.test.mjs": {
+"pass": 46,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/render-detail.test.mjs": {
+"pass": 14,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/m6-agent-activity.test.mjs": {
+"pass": 6,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/w3-goal-planner.test.mjs": {
+"pass": 16,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/payment-package-intake.test.mjs": {
+"pass": 4,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/w3-multi-solution.test.mjs": {
+"pass": 19,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/human-core.test.mjs": {
+"pass": 7,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/payment-webhook-receiver.test.mjs": {
+"pass": 4,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/study-suggest-hosted.test.mjs": {
+"pass": 1,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/model-gateway.test.mjs": {
+"pass": 6,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/daily-profit-objective.test.mjs": {
+"pass": 11,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/r6-round11.test.mjs": {
+"pass": 6,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/code-sandbox-hosted.test.mjs": {
+"pass": 3,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/alt-solution-harness.test.mjs": {
+"pass": 15,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/owner-control-bypass.test.mjs": {
+"pass": 13,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/compare-transcript-mutation.test.mjs": {
+"pass": 11,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/m5-verification-round2.test.mjs": {
+"pass": 10,
+"fail": 0,
+"ok": true,
+"note": "FLAKY_TIMING: failed once under 4x parallel CPU load ('took 5385 ms' assertion in F4), passes 10/10 alone and in the serial full gate"
+},
+"atlasz-tests/research-ledger.test.mjs": {
+"pass": 25,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/handoff-ledger.test.mjs": {
+"pass": 13,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/model-evidence.test.mjs": {
+"pass": 7,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/canonical-queue-safety.test.mjs": {
+"pass": 7,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/control-center-brain.test.mjs": {
+"pass": 5,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/r6-round14.test.mjs": {
+"pass": 7,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/live-discovery-runner.test.mjs": {
+"pass": 7,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/m5-verification-round3.test.mjs": {
+"pass": 7,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/process-gate.test.mjs": {
+"pass": 5,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/rag-durable.test.mjs": {
+"pass": 4,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/business-engines.test.mjs": {
+"pass": 11,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/mcp-hosted.test.mjs": {
+"pass": 1,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/form-assistant.test.mjs": {
+"pass": 15,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/brain-systems.test.mjs": {
+"pass": 7,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/source-allowlist.test.mjs": {
+"pass": 16,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/durable-dead-letters.test.mjs": {
+"pass": 10,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/w2-dev-assist-common.test.mjs": {
+"pass": 1,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/runtime-http.test.mjs": {
+"pass": 8,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/owner-auth.test.mjs": {
+"pass": 11,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/control-center-plugins.test.mjs": {
+"pass": 1,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/control-center-routes-m1.test.mjs": {
+"pass": 7,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/model-evolution.test.mjs": {
+"pass": 21,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/money-engine-sandbox.test.mjs": {
+"pass": 11,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/agent-tool-policy-vs-proposal.test.mjs": {
+"pass": 2,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/voice-conversation.test.mjs": {
+"pass": 14,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/recurring-billing.test.mjs": {
+"pass": 9,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/execution-boundary.test.mjs": {
+"pass": 13,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/financial-ledger.test.mjs": {
+"pass": 5,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/typed-tools.test.mjs": {
+"pass": 5,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/event-stream.test.mjs": {
+"pass": 12,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/priority-explained.test.mjs": {
+"pass": 3,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/preferences.test.mjs": {
+"pass": 13,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/browser-extension-guard.test.mjs": {
+"pass": 23,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/quarantine.test.mjs": {
+"pass": 39,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/m2-proposal-consistency.test.mjs": {
+"pass": 4,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/approval-requests.test.mjs": {
+"pass": 4,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/stop-enforcement.test.mjs": {
+"pass": 6,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/personal-command-center.test.mjs": {
+"pass": 6,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/injection-filter.test.mjs": {
+"pass": 1,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/translation-feedback.test.mjs": {
+"pass": 17,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/control-center-money-views.test.mjs": {
+"pass": 8,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/observation-memory.test.mjs": {
+"pass": 13,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/profiles-hosted.test.mjs": {
+"pass": 1,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/control-center-finance.test.mjs": {
+"pass": 2,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/w2-migration-planner.test.mjs": {
+"pass": 16,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/w2-architecture-assessor.test.mjs": {
+"pass": 15,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/project-memory.test.mjs": {
+"pass": 13,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/control-center-ownersafety.test.mjs": {
+"pass": 4,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/a08-sources.test.mjs": {
+"pass": 4,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/workflow-engine.test.mjs": {
+"pass": 26,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/research-ledger-hosted.test.mjs": {
+"pass": 2,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/brain-failure-modes.test.mjs": {
+"pass": 9,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/tutor.test.mjs": {
+"pass": 7,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/a11y-control-center.test.mjs": {
+"pass": 9,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/r6-round2.test.mjs": {
+"pass": 13,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/workbench-hosted.test.mjs": {
+"pass": 7,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/crm.test.mjs": {
+"pass": 5,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/model-registry.test.mjs": {
+"pass": 21,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/repo-analyzer.test.mjs": {
+"pass": 14,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/contract-invoice-delivery.test.mjs": {
+"pass": 5,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/plugin-installer.test.mjs": {
+"pass": 12,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/source-adapters.test.mjs": {
+"pass": 15,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/voice-conversation-hosted.test.mjs": {
+"pass": 3,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/global-discovery-workforce.test.mjs": {
+"pass": 6,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/contract-existing-modules.test.mjs": {
+"pass": 11,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/contract-money-tax.test.mjs": {
+"pass": 9,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/regression-repairs.test.mjs": {
+"pass": 4,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/local-update-signing.test.mjs": {
+"pass": 4,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/proposal-stage.test.mjs": {
+"pass": 3,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/memory-fabric.test.mjs": {
+"pass": 8,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/financial-engine.test.mjs": {
+"pass": 22,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/connector-catalog.test.mjs": {
+"pass": 4,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/governed-dispatch.test.mjs": {
+"pass": 12,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/r6-round8.test.mjs": {
+"pass": 8,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/financial-engine-core.test.mjs": {
+"pass": 5,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/plugin-manager.test.mjs": {
+"pass": 16,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/mcp-client.test.mjs": {
+"pass": 8,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/inbox-pipeline.test.mjs": {
+"pass": 6,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/r6-round10.test.mjs": {
+"pass": 12,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/page-ingest-hosted.test.mjs": {
+"pass": 1,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/eligibility-model.test.mjs": {
+"pass": 16,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/module-registrations.test.mjs": {
+"pass": 13,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/canonical-runtime.test.mjs": {
+"pass": 7,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/provider-egress.test.mjs": {
+"pass": 15,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/gap-register-modules.test.mjs": {
+"pass": 6,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/m6-control-center.test.mjs": {
+"pass": 13,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/doc-extractors.test.mjs": {
+"pass": 5,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/m6-market-orb.test.mjs": {
+"pass": 23,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/suggestions.test.mjs": {
+"pass": 9,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/model-routing-bridge-regress.test.mjs": {
+"pass": 4,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/incident-response.test.mjs": {
+"pass": 3,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/aurora.test.mjs": {
+"pass": 20,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/local-update-adapters.test.mjs": {
+"pass": 9,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/safety-modules.test.mjs": {
+"pass": 9,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/knowledge-projects.test.mjs": {
+"pass": 8,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/context-conversation.test.mjs": {
+"pass": 24,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/contract-core-engine.test.mjs": {
+"pass": 17,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/repo-secret-scan.test.mjs": {
+"pass": 3,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/modality-fabric-hosted.test.mjs": {
+"pass": 3,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/chunker-analyst.test.mjs": {
+"pass": 11,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/brain-intelligence.test.mjs": {
+"pass": 13,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/w3-campaign-manager.test.mjs": {
+"pass": 19,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/m5-verification-round5.test.mjs": {
+"pass": 4,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/w3-decision-analysis.test.mjs": {
+"pass": 16,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/contract-analysis.test.mjs": {
+"pass": 15,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/security-gates.test.mjs": {
+"pass": 6,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/agent-tool-broker.test.mjs": {
+"pass": 18,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/assistant-profiles.test.mjs": {
+"pass": 10,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/spaced-repetition.test.mjs": {
+"pass": 8,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/brain-runtime-wiring.test.mjs": {
+"pass": 4,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/money-engine-hosted.test.mjs": {
+"pass": 3,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/mobile-api.test.mjs": {
+"pass": 4,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/agent-tools-hosted.test.mjs": {
+"pass": 6,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/org-intelligence.test.mjs": {
+"pass": 18,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/control-center-vault-chat.test.mjs": {
+"pass": 3,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/m1-round2.test.mjs": {
+"pass": 11,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/secret-patterns.test.mjs": {
+"pass": 6,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/m5-verification-round1.test.mjs": {
+"pass": 20,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/handoff-concurrency.test.mjs": {
+"pass": 5,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/chunker-mutation.test.mjs": {
+"pass": 5,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/tech-watch.test.mjs": {
+"pass": 3,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/m2-code-edit-workflow.test.mjs": {
+"pass": 28,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/m5-verification-round6.test.mjs": {
+"pass": 5,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/runtime-restart-recovery.test.mjs": {
+"pass": 2,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/security-adversarial.test.mjs": {
+"pass": 16,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/m12-profile-integration.test.mjs": {
+"pass": 8,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/portable-backup.test.mjs": {
+"pass": 4,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/render-mutation.test.mjs": {
+"pass": 8,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/w2-test-intelligence.test.mjs": {
+"pass": 15,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/control-center.test.mjs": {
+"pass": 10,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/master-coordinator.test.mjs": {
+"pass": 10,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/universal-inbox.test.mjs": {
+"pass": 3,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/m5-verification-round4.test.mjs": {
+"pass": 6,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/control-center-model-registry.test.mjs": {
+"pass": 7,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/plugin-hooks-integration.test.mjs": {
+"pass": 5,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/owner-control-core.test.mjs": {
+"pass": 7,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/observation-memory-hosted.test.mjs": {
+"pass": 2,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/m4-agent-coordination.test.mjs": {
+"pass": 26,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/module-broker.test.mjs": {
+"pass": 8,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/w3-debate-protocol.test.mjs": {
+"pass": 21,
+"fail": 0,
+"ok": true
+},
+"atlasz-tests/master-security-probe.test.mjs": {
+"pass": 2,
+"fail": 0,
+"ok": true
+}
+}
