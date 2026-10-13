@@ -22,3 +22,7 @@ Jóváhagyás: tulajdonosi utasítás („BRAIN FEJLESZTÉS INDÍTÁSA – 1. MU
 ## Tanulságok, amelyeket a teszt maga talált
 * A specifikáció-áttekintő teszt elkapta, hogy elsőre rosszul számoltam a hibakódokat (14/12 helyett 12/14) – javítva.
 * A fake fetch első változata a hívás-naplóban megőrizte volna a kulcsot a fejlécben – a teszt elkapta, javítva (csak fejléc-nevek és hash tárolódik).
+
+## Pontosítás a 2A előkészítés során (hogy a zöld teszt ne tűnjön biztonsági igazolásnak)
+* Az ATL-WRK-0788 zöld tesztjei a mai viselkedést **rögzítik**; a 25 nyitott hézagnál ez *hibás védelem rögzítése*, nem megfelelőség. A tulajdonosi elfogadás („BRAIN_SPEC fejlesztési alap”) **nem** teljes Brain biztonsági jóváhagyás.
+* A 0788-ban megadott javítási hozzárendelések felülvizsgálva: 13 téves, 11 részleges, 1 megfelelő (lásd `brain_security_gap_register.csv`, `2A_VEGREHAJTASI_TERV.md` §4).
