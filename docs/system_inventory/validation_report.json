@@ -1,6 +1,6 @@
 {
  "generated_at": "2026-10-12",
- "git_head": "df9ab5e",
+ "git_head": "b5870e8",
  "checks": [
   {
    "check": "A v1 ledger minden bejegyzése és azonosítója változatlanul megmaradt",
@@ -132,7 +132,49 @@
    "check": "Az aktív feladat-órák és a követelményekre szétosztott órák egyeznek (a követelmény nélküli feladatokon kívül)",
    "ok": true,
    "level": "OK",
-   "detail": "{'active_task_total_h': 5095.9, 'requirement_allocated_h': 3156.0, 'task_h_without_requirement_link': 1939.9}"
+   "detail": "{'active_task_total_h': 5150.4, 'requirement_allocated_h': 3305.0, 'task_h_without_requirement_link': 1845.4}"
+  },
+  {
+   "check": "Minden munkaterv-sor kapcsolódik ATL-komponenshez vagy tervezett modulhoz, vagy dokumentált indoklása van",
+   "ok": true,
+   "level": "OK",
+   "detail": "kapcsolat/indoklás nélkül: []"
+  },
+  {
+   "check": "A munkaterv dokumentum-/modul-hivatkozásai létező azonosítók",
+   "ok": true,
+   "level": "OK",
+   "detail": "[]"
+  },
+  {
+   "check": "Minden MISSING CAP/FUT tételhez tartozik tervezett modul azonosító",
+   "ok": true,
+   "level": "OK",
+   "detail": "hiányzik: []"
+  },
+  {
+   "check": "Minden nem-VERIFIED követelmény-sor kapcsolódik ATL-komponenshez vagy tervezett modulhoz",
+   "ok": true,
+   "level": "OK",
+   "detail": "kapcsolat nélkül: 0 []"
+  },
+  {
+   "check": "A halasztott ötlet-tételek munkaterv-sora nem aktív (P5, deferred)",
+   "ok": true,
+   "level": "OK",
+   "detail": ""
+  },
+  {
+   "check": "A tervezett modul-tétel (PLN) mindig tartalmaz requirement-hivatkozást vagy direktívát",
+   "ok": true,
+   "level": "OK",
+   "detail": "[]"
+  },
+  {
+   "check": "ATL-FUT-0141: tervezett modul, név, kapcsolódó meglévő modulok, munka-összekötés kitöltve; halasztott",
+   "ok": true,
+   "level": "OK",
+   "detail": "ATL-PLN-0095 ATL-WRK-0782; ATL-WRK-0752"
   },
   {
    "check": "Csak docs/ alatti fájl változott (futó rendszer kódja nem módosult)",
@@ -156,13 +198,13 @@
  "errors": 0,
  "warnings": 0,
  "hours": {
-  "active_task_total_h": 5095.9,
-  "requirement_allocated_h": 3156.0,
-  "task_h_without_requirement_link": 1939.9
+  "active_task_total_h": 5150.4,
+  "requirement_allocated_h": 3305.0,
+  "task_h_without_requirement_link": 1845.4
  },
  "unmatched_after_assign": 21,
  "history": {
-  "previous_lines": 16986,
+  "previous_lines": 16996,
   "appended": 0
  }
 }

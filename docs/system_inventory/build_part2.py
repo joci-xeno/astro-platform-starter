@@ -21,12 +21,10 @@ for d in DIRS:
 
 # ------------------------------------------------------------------------------------------------ PLN bookkeeping
 for slug, m in PLN.items():
-    m["matched_req"] = sorted(a for a, r in REQ.items() if r.get("pln") == slug)
+    m["matched_req"] = sorted(a for a, r in {**REQ, **SRCSET}.items() if r.get("pln") == slug)
     m["matched_dir"] = sorted(d["id"] for d in DIRS if d["pln"] == slug)
     m["status"] = {"NEW": "PLANNED", "EXTEND": "PLANNED_EXTEND", "DEFERRED": "PLANNED_DEFERRED", "DECISION": "DECISION_PENDING"}[m["kind"]]
-    for a in m["matched_req"]:
-        REQ[a].setdefault("pln_id", m["id"])
-for a, r in REQ.items():
+for a, r in {**REQ, **SRCSET}.items():
     r["pln_id"] = PLN[r["pln"]]["id"] if r.get("pln") else ""
 for d in DIRS:
     d["pln_id"] = PLN[d["pln"]]["id"] if d.get("pln") else ""
@@ -152,11 +150,12 @@ DEC_BY_KEY = {d["key"]: d for d in DECISIONS}
 # ------------------------------------------------------------------------------------------------ work plan
 WORK = []
 WORK_BY_ID = {}
-def new_work(origin, key, prio, title, work, comps_=(), pln=None, reqs_=(), dirs_=(), impl=0.0, ver=0.0, verify="", accept="", ext="", owner="", deps=(), deferred=False, finds=(), decs=()):
+def new_work(origin, key, prio, title, work, comps_=(), pln=None, reqs_=(), dirs_=(), impl=0.0, ver=0.0, verify="", accept="", ext="", owner="", deps=(), deferred=False, finds=(), decs=(), docs=(), reason="", rel_pln=()):
     wid = alloc("WRK", key, title)
     w = dict(id=wid, origin=origin, priority=prio, title=title, work=work, component_ids=list(dict.fromkeys(comps_)), pln_id=pln or "", requirement_ids=list(dict.fromkeys(reqs_)),
              directive_count=len(dirs_), directive_ids=list(dirs_), depends_on=list(dict.fromkeys(deps)), impl_h=round(float(impl), 2), ver_h=round(float(ver), 2),
-             verify_method=verify, acceptance=accept, external=ext, owner_decision=owner, deferred=deferred, status="OPEN", finding_ids=list(finds), decision_ids=list(decs))
+             verify_method=verify, acceptance=accept, external=ext, owner_decision=owner, deferred=deferred, status="OPEN", finding_ids=list(finds), decision_ids=list(decs),
+             document_ids=list(dict.fromkeys(docs)), no_module_reason=reason, related_pln_ids=list(dict.fromkeys(rel_pln)))
     w["total_h"] = round(w["impl_h"] + w["ver_h"], 2)
     WORK.append(w); WORK_BY_ID[wid] = w
     return w
@@ -334,16 +333,21 @@ def row_needs_work(r):
     return r["status"] in NONVER and r["kind"] not in ("HEADING", "CONTEXT")
 uncovered = collections.defaultdict(list)
 for a, r in REQ.items():
-    if row_needs_work(r) and not r["pln"] and not (set(REQ_COMPS.get(a, [])) & covered_comps):
+    if row_needs_work(r) and (not r["pln"] or a in CAT.GAP_KEEP) and not (set(REQ_COMPS.get(a, [])) & covered_comps):
         uncovered[(r["chapter"], r["status"])].append(a)
 for (chap, st), lst in sorted(uncovered.items(), key=lambda x: (int(x[0][0]), x[0][1])):
     ih, vh = {"PARTIAL": (1.0, 0.5), "STRUCTURAL_ONLY": (1.5, 1.0), "EXTERNAL_BLOCKER": (1.0, 1.5), "MOCK_ONLY": (1.0, 1.5), "OWNER_APPROVAL_REQUIRED": (0.25, 0.25),
               "CONNECTED_UNTESTED": (0.25, 1.0), "NOT_YET_VERIFIED": (0.0, 0.75), "BROKEN": (3.0, 1.5), "MISSING": (4.0, 2.0)}[st]
     fixes = collections.Counter(short(REQ[a]["fix"], 110) for a in lst if REQ[a]["fix"] and REQ[a]["fix"] != "-")
     ext = "; ".join(sorted({REQ[a]["external"] for a in lst if REQ[a]["external"] and REQ[a]["external"] != "-"}))[:200]
-    new_work("V2_REQ_GAP", "wrk:v2:reqgap:%s:%s" % (chap, st), "P4" if st in ("EXTERNAL_BLOCKER", "MOCK_ONLY", "OWNER_APPROVAL_REQUIRED") else "P3",
+    plns_ = [REQ[a]["pln"] for a in lst if REQ[a].get("pln")]
+    moved = len(plns_) == len(lst) and all(PLN[x]["kind"] != "DEFERRED" for x in plns_)     # fully inside an active planned module -> hours live there
+    gw = new_work("V2_REQ_GAP", "wrk:v2:reqgap:%s:%s" % (chap, st), "P4" if st in ("EXTERNAL_BLOCKER", "MOCK_ONLY", "OWNER_APPROVAL_REQUIRED") else "P3",
              "Követelmény-hiányok lezárása: %s. fejezet, %s (%d db)" % (chap, st, len(lst)), "Teendők (gyakoriság szerint): " + " | ".join("%s ×%d" % (t, n) for t, n in fixes.most_common(6)),
-             [], reqs_=lst, impl=ih * len(lst), ver=vh * len(lst), verify=DEFAULT_VERIFY, accept="Mind a %d követelmény státusza a bizonyíték alapján frissítve; hiány esetén külön PLANNED modul jelölve." % len(lst), ext=ext)
+             [], reqs_=lst, impl=0 if moved else ih * len(lst), ver=0 if moved else vh * len(lst), verify=DEFAULT_VERIFY, accept="Mind a %d követelmény státusza a bizonyíték alapján frissítve; hiány esetén külön PLANNED modul jelölve." % len(lst), ext=ext,
+             rel_pln=[PLN[x]["id"] for x in plns_])
+    if moved:
+        gw["note"] = "v2 javítás: a követelmény(ek) tervezett modulba kerültek (%s); az órák a modul-feladatban vannak, itt nem számítanak duplán" % semi(sorted({PLN[x]["id"] for x in plns_}))
 
 # source-set (CAP / SIR) rows not covered
 uncov_ss = collections.defaultdict(list)
@@ -355,16 +359,24 @@ for a, r in SRCSET.items():
         uncov_ss[(pre, r["status"])].append(a)
 for (pre, st), lst in sorted(uncov_ss.items()):
     ih, vh = {"PARTIAL": (2.0, 1.0), "EXTERNAL_BLOCKER": (1.0, 2.0), "STRUCTURAL_ONLY": (3.0, 2.0)}.get(st, (2.0, 1.0))
-    new_work("V2_REQ_GAP", "wrk:v2:ssgap:%s:%s" % (pre, st), "P3" if st != "EXTERNAL_BLOCKER" else "P4", "%s tételek lezárása (%s, %d db)" % ("Eredeti 85 képesség" if pre == "CAP" else "23 biztonsági/infra követelmény", st, len(lst)),
-             "Tételenkénti hiányok pótlása a source_sets mátrix 'missing' oszlopa szerint.", [], reqs_=lst, impl=ih * len(lst), ver=vh * len(lst), verify=DEFAULT_VERIFY, accept="Tételek státusza a bizonyíték szerint.")
+    plns_ = [SRCSET[a]["pln"] for a in lst if SRCSET[a].get("pln")]
+    moved = len(plns_) == len(lst) and all(PLN[x]["kind"] != "DEFERRED" for x in plns_)
+    gw = new_work("V2_REQ_GAP", "wrk:v2:ssgap:%s:%s" % (pre, st), "P3" if st != "EXTERNAL_BLOCKER" else "P4", "%s tételek lezárása (%s, %d db)" % ("Eredeti 85 képesség" if pre == "CAP" else "23 biztonsági/infra követelmény", st, len(lst)),
+             "Tételenkénti hiányok pótlása a source_sets mátrix 'missing' oszlopa szerint.", [], reqs_=lst, impl=0 if moved else ih * len(lst), ver=0 if moved else vh * len(lst), verify=DEFAULT_VERIFY, accept="Tételek státusza a bizonyíték szerint.",
+             rel_pln=[PLN[x]["id"] for x in plns_])
+    if moved:
+        gw["note"] = "v2 javítás: a tételek tervezett modulba kerültek (%s); az órák a modul-feladatban vannak, itt nem számítanak duplán" % semi(sorted({PLN[x]["id"] for x in plns_}))
 
 # FUT (150 ideas) -> deferred idea backlog (not activated)
 for a, r in sorted(SRCSET.items()):
     if a.startswith("ATL-FUT") and r["status"] != "VERIFIED_WORKING":
         ih, vh = {"PARTIAL": (4.0, 2.0), "STRUCTURAL_ONLY": (8.0, 3.0), "MISSING": (16.0, 6.0), "EXTERNAL_BLOCKER": (3.0, 4.0)}.get(r["status"], (4.0, 2.0))
+        pk = r.get("pln")
+        dup_h = bool(pk) and PLN[pk]["kind"] == "DEFERRED"        # the deferred planned-module task carries the hours
         w = new_work("V2_DEFERRED_IDEA", "wrk:v2:fut:" + a, "P5", "Halasztott ötlet: %s (%s)" % (r["name"], r["status"]), "Csak a tulajdonos külön döntése után: " + short(r["missing"], 200),
-                     ids_in(r["component_ids"]), reqs_=[a], impl=ih, ver=vh, verify=DEFAULT_VERIFY, accept="Nincs aktiválás a tulajdonosi döntésig.", ext=r["external"], deferred=True)
-        w["note"] = "HALASZTOTT ÖTLET (150-es lista): nem aktivált; órák tájékoztató becslések"
+                     ids_in(r["component_ids"]) + FIXED_LINKS.get(a, []), reqs_=[a], impl=0 if dup_h else ih, ver=0 if dup_h else vh, verify=DEFAULT_VERIFY, accept="Nincs aktiválás a tulajdonosi döntésig.", ext=r["external"], deferred=True,
+                     rel_pln=[PLN[pk]["id"]] if pk else [])
+        w["note"] = "HALASZTOTT ÖTLET (150-es lista): nem aktivált; órák tájékoztató becslések" + ("; az órák a halasztott modul-feladatban (%s) vannak" % PLN[pk]["id"] if dup_h else "")
 
 # findings: bulk tasks
 for sub, title, hrs in (("REGISTER_STALE", "Nyilvántartás/dokumentáció ↔ kód ellentmondások feloldása (elavult V7.3/ledger sorok frissítése)", 0.25),
@@ -382,6 +394,62 @@ new_work("V2_FINAL", "wrk:v2:final-zero-tolerance", "P3", "VÉGSŐ teljes rendsz
          deps=["ALL_ACTIVE_TASKS"])
 new_work("V2_FINAL", "wrk:v2:inventory-maintenance", "P3", "Leltár-karbantartás minden lezárt modul után (history.jsonl, státusz, kapcsolatok)", "Modulonként: állapot-frissítés, változásnapló, kapcsolatok újraellenőrzése, duplikált/elveszett azonosító vizsgálat.",
          [], impl=0, ver=1.0 * len([m for m in PLN.values() if m["kind"] != "DEFERRED"]), verify="docs/system_inventory/validate (build + ellenőrzés)", accept="A validáció hibamentes.")
+
+# ------------------------------------------------------------------------------------------------ v2 correction: link every work item (component / planned module / documented reason). RECORDS ONLY.
+DIR_BY_ID = {d["id"]: d for d in DIRS}
+NO_MODULE_REASON = {
+ "policy": "Nem modul-specifikus: több modult érintő tulajdonosi policy-döntések gyűjtője; a tételes lista és az érintett direktíva-sorok (ATL-DIR) a 'detail'/directive_ids mezőkben; a döntés után a hozzá kötődő modul-feladatok ütemezhetők.",
+ "other": "Nem modul-specifikus: vegyes tulajdonosi döntések gyűjtője (277 direktíva-sor); a tételes lista a döntés-táblában (owner_decisions.csv), a sorok az ATL-DIR azonosítókkal követhetők.",
+}
+def src_docs_of(dir_ids):
+    return sorted({DIR_BY_ID[x]["source_id"] for x in dir_ids if x in DIR_BY_ID})
+for dd in DECISIONS:
+    if dd["origin"] == "PLANNED_MODULE":
+        continue
+    for wid in dd["wrk_ids"]:
+        w = WORK_BY_ID[wid]
+        w["component_ids"] = list(dict.fromkeys(DEC_COMP_IDS.get(dd["key"], [])))
+        w["document_ids"] = src_docs_of(dd["dir_ids"])
+        if dd["key"] == "commercial":
+            w["related_pln_ids"] = [PLN["licensing-commission-models"]["id"]]
+        if not w["component_ids"] and not w["related_pln_ids"]:
+            w["no_module_reason"] = NO_MODULE_REASON.get(dd["key"], "Nem modul-specifikus tulajdonosi döntés-előkészítés.")
+for w in WORK:
+    if w["origin"] == "V2_FINAL":
+        w["no_module_reason"] = "Nem modul-specifikus: rendszerszintű / folyamat-feladat (a teljes rendszer és a leltár egészére vonatkozik, nem egyetlen ATL-komponensre)."
+        w["document_ids"] = [x for x in (V73_SRC, resolve_path("docs/identity_registry/id_ledger.json")) if x]
+    elif w["origin"] == "V2_REQ_GAP":
+        cs = []
+        for a in w["requirement_ids"]:
+            if a in REQ:
+                cs += REQ_COMPS.get(a, [])
+            else:
+                cs += [c for c in ids_in(SRCSET[a]["component_ids"]) if comps[c]["category"] != "TST"]
+            cs += FIXED_LINKS.get(a, [])
+        w["component_ids"] = list(dict.fromkeys(cs))
+def link_dirgap(w, lst):
+    cs = collections.Counter(); docs = []
+    for x in lst:
+        cs.update(x["components"])
+        if x["same_as"] in REQ_COMPS:
+            cs.update(REQ_COMPS[x["same_as"]])
+        txt = " ".join([x["text"], x["evidence"], x["notes"], x["missing"], x["fix"]])
+        for pth in re.findall(r"[\w./-]+\.(?:mjs|js|json|csv|md|py|yml|yaml|sh)", txt):
+            cid = resolve_path(pth)
+            if cid:
+                (cs.update([cid]) if cid in comps else docs.append(cid))
+        if "tracker" in txt.lower() and find("scripts/master-tracker.mjs"):
+            cs.update([find("scripts/master-tracker.mjs")])
+    if lst[0]["source_code"] == "V73REG":
+        for pth in ("docs/atlasz_v73_requirement_registry.csv", "docs/atlasz_v73_requirement_registry.json"):
+            c = resolve_path(pth)
+            if c and c in comps:
+                cs.update([c])
+    w["component_ids"] = [c for c, _ in cs.most_common(20)]
+    w["document_ids"] = list(dict.fromkeys(docs + [lst[0]["source_id"]]))
+    if not w["component_ids"]:
+        w["no_module_reason"] = ("Nem modul-specifikus: dokumentum-/szabály-szintű direktíva-sorok (forrás: %s), amelyeknek nincs önálló kód-komponensük; a sorok ATL-DIR/SPC azonosítóval követhetők (directive_ids), "
+                                 "a feladat az egyenkénti besorolás lezárása." % lst[0]["source_code"])
 
 # map work ids back
 WORK_BY_PLN = {w["pln_id"]: w for w in WORK if w["pln_id"]}

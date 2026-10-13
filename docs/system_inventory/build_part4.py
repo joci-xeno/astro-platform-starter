@@ -36,7 +36,8 @@ for i, w in enumerate(WORK_SORTED, 1):
     w["no"] = i
 WORK_ROWS = []
 for w in WORK_SORTED:
-    WORK_ROWS.append(dict(no=w["no"], id=w["id"], origin=w["origin"], priority=w["priority"], title=w["title"], exact_work=w["work"], atl_component_ids=semi(w["component_ids"]), planned_module_id=w["pln_id"],
+    WORK_ROWS.append(dict(no=w["no"], id=w["id"], origin=w["origin"], priority=w["priority"], title=w["title"], exact_work=w["work"], atl_component_ids=semi(w["component_ids"]), planned_module_id=semi(([w["pln_id"]] if w["pln_id"] else []) + [x for x in w["related_pln_ids"] if x != w["pln_id"]]),
+                          document_ids=semi(w["document_ids"]), no_module_reason=w["no_module_reason"],
                           requirement_ids=semi(w["requirement_ids"] if w["origin"] not in ("V1_WORKLIST", "V2_COMPONENT") else w["req_set"]), requirement_count=len(w["requirement_ids"] if w["origin"] not in ("V1_WORKLIST", "V2_COMPONENT") else w["req_set"]),
                           directive_item_count=w["directive_count"], depends_on=semi(w["depends_on"]), est_impl_h=w["impl_h"], est_verify_h=w["ver_h"], est_total_h=w["total_h"], verification_method=w["verify_method"],
                           acceptance_criteria=w["acceptance"], external=w["external"], owner_decision=w["owner_decision"], decision_ids=semi(w["decision_ids"]), finding_ids=semi(w["finding_ids"]),
@@ -140,9 +141,24 @@ chk("A munkaterv függőségei körmentesek", not cyc, "ciklus: %s" % cyc[:2])
 # hours consistency
 tot_task = sum(w["total_h"] for w in WORK if not w["deferred"])
 tot_req = sum(sum(v) for a, v in REQ_HOURS.items() if not a.startswith("ATL-FUT"))
-tasks_without_req = sum(w["total_h"] for w in WORK if not w["deferred"] and not w["req_set"])
+tasks_without_req = sum(w["total_h"] for w in WORK if not w["deferred"] and not w.get("hours_reqs"))
 V["hours"] = {"active_task_total_h": round(tot_task, 1), "requirement_allocated_h": round(tot_req, 1), "task_h_without_requirement_link": round(tasks_without_req, 1)}
 chk("Az aktív feladat-órák és a követelményekre szétosztott órák egyeznek (a követelmény nélküli feladatokon kívül)", abs((tot_task - tasks_without_req) - tot_req) < 1.0, str(V["hours"]))
+# v2 correction round: link completeness
+unlinked = [w["id"] for w in WORK if not (w["component_ids"] or w["pln_id"] or w["related_pln_ids"] or w["no_module_reason"])]
+chk("Minden munkaterv-sor kapcsolódik ATL-komponenshez vagy tervezett modulhoz, vagy dokumentált indoklása van", not unlinked, "kapcsolat/indoklás nélkül: %s" % unlinked[:10])
+bad_doc = [(w["id"], x) for w in WORK for x in w["document_ids"] + w["related_pln_ids"] if x not in ids_all and x not in {s_["id"] for s_ in SOURCES} and x not in {c_["id"] for c_ in CONFIGS}]
+chk("A munkaterv dokumentum-/modul-hivatkozásai létező azonosítók", not bad_doc, str(bad_doc[:10]))
+fut_nopln = [r["atl_id"] for r in REQ_MATRIX if r["set"] in ("FUT", "CAP") and r["status"] == "MISSING" and not r["planned_module_id"]]
+chk("Minden MISSING CAP/FUT tételhez tartozik tervezett modul azonosító", not fut_nopln, "hiányzik: %s" % fut_nopln[:10])
+nonmod_empty = [r["atl_id"] for r in REQ_MATRIX if r["status"] in NONVER and r["kind"] not in ("HEADING", "CONTEXT") and not (r["atl_components"] or r["planned_module_id"])]
+chk("Minden nem-VERIFIED követelmény-sor kapcsolódik ATL-komponenshez vagy tervezett modulhoz", not nonmod_empty, "kapcsolat nélkül: %d %s" % (len(nonmod_empty), nonmod_empty[:10]), level="WARN")
+fut_wp = [r["atl_id"] for r in REQ_MATRIX if r["set"] == "FUT" and r["status"] in NONVER and (not r["work_ids"])]
+chk("A halasztott ötlet-tételek munkaterv-sora nem aktív (P5, deferred)", all(w["deferred"] for w in WORK if w["origin"] == "V2_DEFERRED_IDEA") and not fut_wp, "")
+chk("A tervezett modul-tétel (PLN) mindig tartalmaz requirement-hivatkozást vagy direktívát", not empty_pln, str(empty_pln), level="WARN")
+r0141 = [r for r in REQ_MATRIX if r["atl_id"] == "ATL-FUT-0141"][0]
+chk("ATL-FUT-0141: tervezett modul, név, kapcsolódó meglévő modulok, munka-összekötés kitöltve; halasztott", all([r0141["planned_module_id"], r0141["planned_module_name"], r0141["related_existing_modules"], r0141["work_ids"], r0141["atl_components"]]) and r0141["deferred"].startswith("IGEN")
+    and PLN_ROWS and [p_ for p_ in PLN_ROWS if p_["id"] == r0141["planned_module_id"]][0]["kind"] == "DEFERRED", r0141["planned_module_id"] + " " + r0141["work_ids"])
 # no code changed
 changed = [l[3:] for l in sh("git", "status", "--porcelain").split("\n") if l.strip()]
 bad_changed = [p for p in changed if not p.startswith("docs/")]

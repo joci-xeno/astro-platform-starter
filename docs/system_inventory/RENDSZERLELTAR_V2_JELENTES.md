@@ -1,6 +1,6 @@
 # ATLASZ AURÓRA V7.3 — KIBŐVÍTETT TELJES RENDSZERLELTÁR (2. kiadás)
 
-Dátum: 2026-10-12 · repó-állapot (HEAD a generáláskor): `df9ab5e` · ág: `atlasz-v73-integration`
+Dátum: 2026-10-12 · repó-állapot (HEAD a generáláskor): `b5870e8` · ág: `atlasz-v73-integration`
 
 > **Csak felmérés, azonosítás és dokumentálás.** A futó rendszer kódja nem változott; hiányzó modul nem épült meg; külső szolgáltatás nem lett aktiválva; költség nem keletkezett. A tervezett (PLANNED) elemek **nem léteznek**, sehol sem szerepelnek működőként. A munkaórák **tervezési becslések**, nem mérések. Fixture/helyi teszt-bizonyíték **nem** élő bizonyíték (valós külső rendszerrel igazolt elem: 0).
 
@@ -13,12 +13,12 @@ A kérésed szerint az eredeti követelmények, a létező rendszerelemek és a 
 | **Eredeti követelmény-tétel** (23 fejezet sorai, 85 képesség, 23 biztonsági/infra, 150 ötlet) | 2117 | `requirements_matrix.csv` (ebből 1859 a 23 fejezet sora: 1564 követelmény + 166 cím + 129 leíró sor; 258 a 85/23/150) |
 | **Tulajdonosi direktíva- és specifikáció-sor** (42 feltöltött direktíva + V7.3 mester-regiszter) | 12476 | `directive_items.csv` — mindegyik sor azonosítót (ATL-DIR / ATL-SPC) kapott, besorolva |
 | **Létező rendszerelem** (megőrzött v1: 898 + ebben a körben új, valós nyilvántartásba vett: 52) | 950 | `inventory_items.csv` (meglévő sorok) |
-| **Tervezett modul / bővítés / döntés / halasztott projekt** (még NEM létezik) | 94 | `planned_modules.csv` — új modul: 66, meglévő bővítése: 19, tulajdonosi döntést igénylő: 5, halasztott: 4 |
+| **Tervezett modul / bővítés / döntés / halasztott projekt** (még NEM létezik) | 97 | `planned_modules.csv` — új modul: 67, meglévő bővítése: 20, tulajdonosi döntést igénylő: 5, halasztott: 5 |
 | Forrásdokumentum (ATL-SRC) / konfig-állapotfájl (ATL-CFG) | 159 / 41 | `sources.csv`, `config_files.csv` |
-| Munkaterv-feladat (ATL-WRK) | 781 | ebből a korábbi 340 sor változatlanul benne, +441 új; aktív terv: 630 feladat, halasztott: 151 |
-| Megállapítás (ATL-FND) / tulajdonosi döntés (ATL-DEC) | 302 / 55 | `findings.csv`, `owner_decisions.csv` |
+| Munkaterv-feladat (ATL-WRK) | 784 | ebből a korábbi 340 sor változatlanul benne, +444 új; aktív terv: 632 feladat, halasztott: 152 |
+| Megállapítás (ATL-FND) / tulajdonosi döntés (ATL-DEC) | 302 / 57 | `findings.csv`, `owner_decisions.csv` |
 
-**Becsült munka:** aktív terv **5096 óra** (megvalósítás 3207 + ellenőrzés 1889). Halasztott/jövőbeli tételek tájékoztató becslése külön: 1037 óra (nem része az aktív tervnek, nem aktivált). A becslés módszere: állapot-alapú óranorma komponensenként/modulonként (lásd 12. pont); ±40% bizonytalansággal olvasandó.
+**Becsült munka:** aktív terv **5150 óra** (megvalósítás 3249 + ellenőrzés 1902). Halasztott/jövőbeli tételek tájékoztató becslése külön: 1049 óra (nem része az aktív tervnek, nem aktivált). A becslés módszere: állapot-alapú óranorma komponensenként/modulonként (lásd 12. pont); ±40% bizonytalansággal olvasandó.
 
 ## 2. Mi változott az 1. kiadáshoz képest (megőrzés + korrekciók)
 
@@ -71,7 +71,7 @@ A kérésed szerint az eredeti követelmények, a létező rendszerelemek és a 
 | Tesztek és ellenőrző eszközök | 307 | VERIFIED_WORKING: 247, STRUCTURAL_ONLY: 2, NOT_YET_VERIFIED: 58 |
 | Windows és mobil | 4 | PARTIAL: 1, CONNECTED_UNTESTED: 1, STRUCTURAL_ONLY: 2 |
 | Ügynökök | 65 | VERIFIED_WORKING: 1, PARTIAL: 64 |
-| TERVEZETT (új/bővítendő) modul | 94 | PLANNED: 66, PLANNED_EXTEND: 19, PLANNED_DEFERRED: 4, DECISION_PENDING: 5 |
+| TERVEZETT (új/bővítendő) modul | 97 | PLANNED: 67, PLANNED_EXTEND: 20, PLANNED_DEFERRED: 5, DECISION_PENDING: 5 |
 
 A teljes számozott lista: **`LELTAR_TELJES_LISTA.md`** (és `inventory_items.csv`). Minden sorban: azonosító, megnevezés, állapot, kapcsolódó követelmény, hiányosság, javítási terv, becsült idő.
 
@@ -147,7 +147,7 @@ A 150 ötletből a nem teljesen igazolt tételek külön, `P5 / HALASZTOTT` munk
 
 ## 5. Hiányzó (MISSING) követelmények → tervezett modulok
 
-A 23 fejezetben **164** sor MISSING (ebből 155 valódi követelmény, a többi cím/bevezető sor) (+ 260 további direktíva-sor, amelyhez nincs kód). Mindegyik kapott saját állandó követelmény-azonosítót (ATL-REQ-…), tervezett modul/bővítés azonosítót (ATL-PLN-…), kapcsolódó meglévő modulokat, szükséges bekötést, munka-azonosítót és becsült órát. **A tervezett modulok PLANNED állapotúak: még nem léteznek.**
+A 23 fejezetben **164** sor MISSING (ebből 155 valódi követelmény, a többi cím/bevezető sor) (+ 261 további direktíva-sor, amelyhez nincs kód). Mindegyik kapott saját állandó követelmény-azonosítót (ATL-REQ-…), tervezett modul/bővítés azonosítót (ATL-PLN-…), kapcsolódó meglévő modulokat, szükséges bekötést, munka-azonosítót és becsült órát. **A tervezett modulok PLANNED állapotúak: még nem léteznek.**
 
 | ATL-PLN | Tervezett elem | Fajta | Állapot | Követelmény (db) | Direktíva-sor (db) | Meglévő modulokhoz kötés | Óra (impl+ell) | Prior. | Munka |
 |---|---|---|---|---:|---:|---|---:|---|---|
@@ -169,7 +169,7 @@ A 23 fejezetben **164** sor MISSING (ebből 155 valódi követelmény, a többi 
 | ATL-PLN-0016 | Ügyfélszolgálat / támogatási jegy és SLA modul + support executor | NEW | PLANNED | 1 | 2 | business/communication-center; business/crm; agent-executors | 28+11 | P4 | ATL-WRK-0511 |
 | ATL-PLN-0017 | Prezentáció-generátor (PPTX) és AI-fejlesztési executor | NEW | PLANNED | 2 | 1 | agent-executors; document-center | 24+9 | P4 | ATL-WRK-0512 |
 | ATL-PLN-0018 | Táblázat-generálás (XLSX/CSV) | NEW | PLANNED | 0 | 1 | document-center; doc-extractors | 12+5 | P4 | ATL-WRK-0513 |
-| ATL-PLN-0019 | Média-eszközök: videó-, hang-/zene-, 3D-munkafolyamatok, médiakonverzió és szerkesztési adapter szerződés | NEW | PLANNED | 6 | 8 | tool-fabric; plugin-manager; restricted-node; modality-fabric | 40+16 | P4 | ATL-WRK-0514 |
+| ATL-PLN-0019 | Média-eszközök: videó-, hang-/zene-, 3D-munkafolyamatok, médiakonverzió és szerkesztési adapter szerződés | NEW | PLANNED | 9 | 8 | tool-fabric; plugin-manager; restricted-node; modality-fabric | 40+16 | P4 | ATL-WRK-0514 |
 | ATL-PLN-0020 | Kreatív-elemző képesség a Brain-ben (hangulat, téma, műfaj, vizuális stílus, tempó, szereplők, jelenet-s… | NEW | PLANNED | 11 | 5 | brain/central-brain; model-gateway; modality-fabric | 26+10 | P4 | ATL-WRK-0515 |
 | ATL-PLN-0021 | Kreatív projektek nyilvántartása (zene, film, történet, storyboard) és AURÓRA megjelenítés + asszisztens… | NEW | PLANNED | 2 | 3 | knowledge-projects; aurora; project-memory | 26+10 | P4 | ATL-WRK-0516 |
 | ATL-PLN-0022 | Connector-adapter: Google Contacts (descriptor + adapter + vault-kulcs + teszt + UI) | NEW | PLANNED | 2 | 0 | connector-catalog; universal-connector-layer; secret-vault; credential-broker; egress-pol… | 8+4 | P4 | ATL-WRK-0517 |
@@ -195,13 +195,13 @@ A 23 fejezetben **164** sor MISSING (ebből 155 valódi követelmény, a többi 
 | ATL-PLN-0042 | Ismétlődő szolgáltatás életciklus: előfizetéses lehetőségek, megújítás-követés, ütemezett szállítás, ism… | NEW | PLANNED | 1 | 5 | business/recurring-billing; business/delivery-service; business/qa-factory; global-discov… | 22+9 | P3 | ATL-WRK-0537 |
 | ATL-PLN-0043 | Adaptive Sales (igaz, nem manipulatív bizonyíték-alapú értékesítési adaptáció) | NEW | PLANNED | 1 | 1 | negotiation-engine; client-dna-engine; follow-up-engine | 20+8 | P4 | ATL-WRK-0538 |
 | ATL-PLN-0044 | Business Proof Package generátor (outreach > won > delivery > QA > bevétel > profit bizonyíték-csomag, e… | NEW | PLANNED | 1 | 2 | business/store; financial-ledger; observability-black-box; audit-chain | 18+7 | P3 | ATL-WRK-0539 |
-| ATL-PLN-0045 | KÜLÖN kereskedelmi licenc-rendszer (nem a tulajdonos belső ATLASZ-példánya): licenc- és jutalékos modell… | DEFERRED | PLANNED_DEFERRED | 2 | 7 | business/recurring-billing; business/invoice-service; financial-ledger; tax-accounting-en… | 60+24 | P5 | ATL-WRK-0540 |
+| ATL-PLN-0045 | KÜLÖN kereskedelmi licenc-rendszer (nem a tulajdonos belső ATLASZ-példánya): licenc- és jutalékos modell… | DEFERRED | PLANNED_DEFERRED | 5 | 10 | business/recurring-billing; business/invoice-service; financial-ledger; tax-accounting-en… | 60+24 | P5 | ATL-WRK-0540 |
 | ATL-PLN-0046 | Piactípus mező és lefedettségi riport (B2B, B2C, B2G, B2B2C, D2C, C2B) | EXTEND | PLANNED_EXTEND | 3 | 0 | opportunity-intake; global-business-intelligence; market-intelligence-engine | 8+4 | P3 | ATL-WRK-0541 |
 | ATL-PLN-0047 | Versenytárs-gyűjtő, ár-benchmark és árazási ajánlás, versenyfeltételek | NEW | PLANNED | 2 | 2 | market-intelligence-engine; proposal-quote-engine; org-intelligence | 24+9 | P4 | ATL-WRK-0542 |
 | ATL-PLN-0048 | Biztonságos távoli kapcsolat (TLS / VPN) a mobil/távoli vezérléshez | NEW | PLANNED | 2 | 0 | mobile-api; owner-auth; network-supervisor | 20+10 | P2 | ATL-WRK-0543 |
 | ATL-PLN-0049 | Függőség- és konténer-vizsgálat: npm audit/OSV, SBOM, trivy/grype a Dockerfile.worker image-re, lockfile… | NEW | PLANNED | 2 | 2 | atlasz-runtime/Dockerfile.worker; release-signing; malware-scanner | 14+6 | P2 | ATL-WRK-0544 |
 | ATL-PLN-0050 | Képernyőkép titok-ellenőrző (OCR előszűrő / kézi checklist) | NEW | PLANNED | 0 | 1 | secret-patterns; history-scan-patterns; file-intake | 14+6 | P3 | ATL-WRK-0545 |
-| ATL-PLN-0051 | main ág védelme (GitHub branch protection + pre-push hook) | DECISION | DECISION_PENDING | 1 | 15 | release-signing | 2+1 | P2 | ATL-WRK-0546 |
+| ATL-PLN-0051 | main ág védelme (GitHub branch protection + pre-push hook) | DECISION | DECISION_PENDING | 1 | 16 | release-signing | 2+1 | P2 | ATL-WRK-0546 |
 | ATL-PLN-0052 | Futásidejű önjavítás: hibás folyamat újraindítása (restartComponent), deadlock-észlelés, átmeneti állapo… | NEW | PLANNED | 2 | 4 | atlasz-runtime/supervisor-safe.mjs; watchdog; self-healing-loop; business/job-system; dur… | 26+12 | P2 | ATL-WRK-0547 |
 | ATL-PLN-0053 | Több gép / több példány közötti adatzár: döntés (egypéldányos telepítés + példányzár VAGY külső koordiná… | DECISION | DECISION_PENDING | 1 | 0 | file-lock; atlasz-runtime/supervisor-safe.mjs; durable-queue | 10+5 | P2 | ATL-WRK-0548 |
 | ATL-PLN-0054 | Pont-időponti visszaállítás (naplóalapú visszajátszás) és adatbázis-mentés / tárolási döntés (fájl-alapú… | DECISION | DECISION_PENDING | 0 | 3 | backup-recovery; portable-backup; audit-chain; business/store | 18+8 | P3 | ATL-WRK-0549 |
@@ -218,7 +218,7 @@ A 23 fejezetben **164** sor MISSING (ebből 155 valódi követelmény, a többi 
 | ATL-PLN-0065 | Website Manager: domain/DNS/SSL munkafolyamatok (jóváhagyással), weboldal-műveleti fázisgép (READ/PREPAR… | NEW | PLANNED | 2 | 5 | tool-fabric; approval-command-gateway; egress-policy; connector-catalog | 44+18 | P4 | ATL-WRK-0560 |
 | ATL-PLN-0066 | SEO audit, web analitika (valós szolgáltatói adat), web QA (a11y-audit újrahasználata) | NEW | PLANNED | 3 | 3 | a11y-audit; tool-fabric | 30+12 | P4 | ATL-WRK-0561 |
 | ATL-PLN-0067 | Web/app fejlesztési munkafolyamat (sablon + build + teszt + csomag) és website/szoftverfejlesztő eszköz … | NEW | PLANNED | 0 | 6 | code-edit-workflow; prototype-builder; agent-executors; release-signing | 34+14 | P4 | ATL-WRK-0562 |
-| ATL-PLN-0068 | Térkép / helymeghatározás modul szolgáltató-adapterekkel: geocoding, címkeresés, helyszínek, útvonal, te… | NEW | PLANNED | 10 | 8 | global-discovery; market-intelligence-engine; connector-catalog | 40+16 | P4 | ATL-WRK-0563 |
+| ATL-PLN-0068 | Térkép / helymeghatározás modul szolgáltató-adapterekkel: geocoding, címkeresés, helyszínek, útvonal, te… | NEW | PLANNED | 12 | 8 | global-discovery; market-intelligence-engine; connector-catalog | 40+16 | P4 | ATL-WRK-0563 |
 | ATL-PLN-0069 | Lehetőség -> döntés -> munka -> eredmény -> pénz nyomkövető nézet (egy felületről) + paymentId korreláció | NEW | PLANNED | 0 | 6 | business/store; business/payment-events; brain/black-box; financial-ledger | 22+9 | P3 | ATL-WRK-0564 |
 | ATL-PLN-0070 | Executive Owner Dashboard (egyoldalas tulajdonosi összkép) és why/next-tasks nézetek | NEW | PLANNED | 0 | 3 | brain/brain-health; financial-ledger; personal-command-center | 20+8 | P3 | ATL-WRK-0565 |
 | ATL-PLN-0071 | Notification Center (prioritás: ACTION_REQUIRED, csoportosítás kulcs+ablak alapján) | NEW | PLANNED | 0 | 2 | event-bus; universal-inbox; approval-requests | 16+7 | P3 | ATL-WRK-0566 |
@@ -229,7 +229,7 @@ A 23 fejezetben **164** sor MISSING (ebből 155 valódi követelmény, a többi 
 | ATL-PLN-0076 | Modell-nyilvántartás metaadatok: rate-limit, régió, szolgáltatói megkötések/ÁSZF, policy-mezők (engedély… | EXTEND | PLANNED_EXTEND | 0 | 17 | model-registry; model-evolution; model-evidence; provider-resilience; brain/model-intelli… | 20+9 | P3 | ATL-WRK-0571 |
 | ATL-PLN-0077 | Modell-benchmark készlet (reasoning, coding, research, task completion, tool-calling, security behavior,… | EXTEND | PLANNED_EXTEND | 0 | 7 | model-evolution; model-evidence; regression-eval-suite | 14+7 | P4 | ATL-WRK-0572 |
 | ATL-PLN-0078 | Frissítési csővezeték kiegészítés: biztonságos letöltő (allowlist+hash/aláírás), megszakadt letöltés kez… | NEW | PLANNED | 0 | 10 | update-center; local-update-adapters; release-signing; atlasz-control-center/electron/mai… | 36+16 | P3 | ATL-WRK-0573 |
-| ATL-PLN-0079 | Felderítési webhook / eseményfeed vevő (aláírt, allowlistelt, receive-only), felderítési riasztások és v… | NEW | PLANNED | 0 | 4 | global-discovery; source-allowlist; payment-webhook-receiver; universal-inbox | 24+10 | P3 | ATL-WRK-0574 |
+| ATL-PLN-0079 | Felderítési webhook / eseményfeed vevő (aláírt, allowlistelt, receive-only), felderítési riasztások és v… | NEW | PLANNED | 1 | 4 | global-discovery; source-allowlist; payment-webhook-receiver; universal-inbox | 24+10 | P3 | ATL-WRK-0574 |
 | ATL-PLN-0080 | Beszerzési forrás-adapterek: magán RFP/RFQ/alvállalkozói, beszállítói regisztráció és portálok, közbesze… | NEW | PLANNED | 0 | 9 | global-discovery; source-allowlist; source-adapters; eligibility-model | 40+16 | P3 | ATL-WRK-0575 |
 | ATL-PLN-0081 | Piaci adat-adapter (inaktív, jóváhagyásig), részvényindex-forrás és autonóm stratégiakutatás ügynök-munk… | NEW | PLANNED | 0 | 6 | market-data; backtest; paper-trader; orb-strategy; financial-guard | 34+14 | P4 | ATL-WRK-0576 |
 | ATL-PLN-0082 | Egyéb jóváhagyott kártevő-motor adapter (csak tulajdonosi igényre) | DEFERRED | PLANNED_DEFERRED | 0 | 1 | malware-scanner | 0+0 | P5 | ATL-WRK-0577 |
@@ -239,33 +239,36 @@ A 23 fejezetben **164** sor MISSING (ebből 155 valódi követelmény, a többi 
 | ATL-PLN-0086 | Technológia költség-ellenőrzés a tech-watch folyamatban (COST CHECK lépés) | EXTEND | PLANNED_EXTEND | 0 | 1 | tech-watch | 6+3 | P4 | ATL-WRK-0581 |
 | ATL-PLN-0087 | Felderítési kategória-bővítés: AI-rendszerek és automatizálási technológiák | EXTEND | PLANNED_EXTEND | 0 | 2 | global-discovery; source-allowlist | 8+4 | P4 | ATL-WRK-0582 |
 | ATL-PLN-0088 | Jövőbeli, külön engedélyezett élő kereskedési teljesítmény-nézet | DEFERRED | PLANNED_DEFERRED | 0 | 1 | paper-trader; financial-guard | 0+0 | P5 | ATL-WRK-0583 |
+| ATL-PLN-0095 | Issue-to-fix automatizálás (HALASZTOTT ötlet): issue-bevitel -> modell -> code-edit-workflow change-set … | DEFERRED | PLANNED_DEFERRED | 1 | 0 | code-edit-workflow; repo-analyzer; test-intelligence; agent-executors; brain/verifier; al… | 24+10 | P5 | ATL-WRK-0782 |
+| ATL-PLN-0096 | Hiányzó Control Center képernyők: Deliveries (szállítások), külön DEALS képernyő, Computer Use panel, Ta… | EXTEND | PLANNED_EXTEND | 1 | 1 | business/delivery-service; business/deal-pipeline; computer-use-fabric; tax-accounting-en… | 16+7 | P3 | ATL-WRK-0783 |
+| ATL-PLN-0097 | Látás- és környezet-érzékelés: tárgy- és eszközfelismerés (Object and Equipment Recognition), környezeti… | NEW | PLANNED | 2 | 0 | modality-fabric; computer-use-fabric; page-ingest | 36+14 | P4 | ATL-WRK-0784 |
 | ATL-PLN-0089 | Gépi rendszerleltár 12 mezős tételsorokkal: sebezhetőség-scan (static_scan.json) tételenként | EXTEND | PLANNED_EXTEND | 0 | 12 | registry-integrity.test | 10+4 | P4 | ATL-WRK-0584 |
 | ATL-PLN-0090 | Plugin-típusok: connector, média, dokumentum plugin manifest-séma | EXTEND | PLANNED_EXTEND | 0 | 2 | plugin-manager; plugin-installer; skill-registry | 10+5 | P3 | ATL-WRK-0585 |
 | ATL-PLN-0091 | Engedélyezett valódi connector-teszt és futási bizonyíték-gyűjtés | DECISION | DECISION_PENDING | 0 | 2 | universal-connector-layer; connector-catalog; probe-evidence | 12+8 | P4 | ATL-WRK-0586 |
-| ATL-PLN-0092 | Teszt-kategóriák és mutációs tesztelés (unit/contract/integration/E2E/negative/mutation/security/recover… | NEW | PLANNED | 0 | 5 | regression-eval-suite; test-intelligence | 30+12 | P3 | ATL-WRK-0587 |
-| ATL-PLN-0093 | Valódi STAGING környezet, Windows CI + test hardening (LF, junction symlink, rm retry, POSIX szignálok),… | DECISION | DECISION_PENDING | 0 | 3 | owner-keystore; approval-command-gateway; atlasz-control-center/electron/main.mjs | 30+20 | P2 | ATL-WRK-0588 |
+| ATL-PLN-0092 | Teszt-kategóriák és mutációs tesztelés (unit/contract/integration/E2E/negative/mutation/security/recover… | NEW | PLANNED | 1 | 10 | regression-eval-suite; test-intelligence | 30+12 | P3 | ATL-WRK-0587 |
+| ATL-PLN-0093 | Valódi STAGING környezet, Windows CI + test hardening (LF, junction symlink, rm retry, POSIX szignálok),… | DECISION | DECISION_PENDING | 1 | 10 | owner-keystore; approval-command-gateway; atlasz-control-center/electron/main.mjs | 30+20 | P2 | ATL-WRK-0588 |
 | ATL-PLN-0094 | T3 hardening: duplikált/hub-bag implementációk konszolidációja (32 modul), Math.random() ID fallback cse… | EXTEND | PLANNED_EXTEND | 0 | 2 | internal-integration-hub; scheduler; approval-command-gateway | 24+10 | P3 | ATL-WRK-0589 |
 
 Részletek (kapcsolatok, bekötés, elfogadási feltétel): `planned_modules.csv`; melyik követelmény melyik tervezett modulhoz tartozik: `requirements_matrix.csv` (`planned_module_id`).
 
 ## 6. Munkaterv
 
-A korábbi 340 soros munkalista **teljesen megmaradt** (ATL-WRK-0001…), és kibővült. Összesen **781** feladat; számozott, függőségekkel, becsült idővel, ellenőrzési módszerrel és elfogadási feltétellel: **`MUNKATERV.md`** / `work_plan.csv`.
+A korábbi 340 soros munkalista **teljesen megmaradt** (ATL-WRK-0001…), és kibővült. Összesen **784** feladat; számozott, függőségekkel, becsült idővel, ellenőrzési módszerrel és elfogadási feltétellel: **`MUNKATERV.md`** / `work_plan.csv`.
 
 | Eredet | Feladat | Aktív óra |
 |---|---:|---:|
 | Korábbi 340 soros lista (megőrizve) | 340 | 1876 |
 | Új: további meglévő komponensek hiányai | 154 | 471 |
-| Halasztott ötletek (150-es lista) — nem aktív | 147 | — (tájékoztató: 953) |
-| Új: tervezett modulok/bővítések megvalósítása+ellenőrzése | 94 | 2272 |
-| Új: direktíva-sorok lezárása | 16 | 174 |
+| Halasztott ötletek (150-es lista) — nem aktív | 147 | — (tájékoztató: 931) |
+| Új: tervezett modulok/bővítések megvalósítása+ellenőrzése | 97 | 2345 |
+| Új: direktíva-sorok lezárása | 16 | 170 |
 | Új: tulajdonosi döntések előkészítése | 15 | 8 |
-| Új: követelmény-hiányok lezárása (komponens nélkül) | 10 | 26 |
+| Új: követelmény-hiányok lezárása (komponens nélkül) | 10 | 10 |
 | Új: ellentmondások/megállapítások lezárása | 2 | 138 |
-| Végső teljes vizsgálat + leltár-karbantartás | 2 | 130 |
+| Végső teljes vizsgálat + leltár-karbantartás | 2 | 132 |
 | Új: korrekciók | 1 | 2 |
 
-Prioritás-eloszlás: P0: 7, P1: 4, P2: 64, P3: 428, P4: 127, P5: 151. (P0 adatvesztést/hamis biztonságot okozó hiba · P1 ismert hiba · P2 bekötés/teszt/biztonság/alapfunkció · P3 részleges modul/bővítés · P4 külső hozzáférés/tulajdonosi döntés függő · P5 halasztott, nem aktivált.)
+Prioritás-eloszlás: P0: 7, P1: 4, P2: 64, P3: 429, P4: 128, P5: 152. (P0 adatvesztést/hamis biztonságot okozó hiba · P1 ismert hiba · P2 bekötés/teszt/biztonság/alapfunkció · P3 részleges modul/bővítés · P4 külső hozzáférés/tulajdonosi döntés függő · P5 halasztott, nem aktivált.)
 
 ### P0–P2 feladatok (a legsürgősebbek, javaslatként)
 
@@ -353,10 +356,11 @@ Prioritás-eloszlás: P0: 7, P1: 4, P2: 64, P3: 428, P4: 127, P5: 151. (P0 adatv
 * **ATL-PLN-0045** — KÜLÖN kereskedelmi licenc-rendszer (nem a tulajdonos belső ATLASZ-példánya): licenc- és jutalékos modellek, 20% tulajdonosi bevétel-részesedés, ügyfélpéldányonkénti licenc/számvitel, igazolt jogosula… (PLANNED_DEFERRED). Tulajdonosi feltétel: Külön tulajdonosi jóváhagyás + üzleti/jogi feltételek
 * **ATL-PLN-0082** — Egyéb jóváhagyott kártevő-motor adapter (csak tulajdonosi igényre) (PLANNED_DEFERRED). Tulajdonosi feltétel: Csak tulajdonosi igény esetén
 * **ATL-PLN-0088** — Jövőbeli, külön engedélyezett élő kereskedési teljesítmény-nézet (PLANNED_DEFERRED). Tulajdonosi feltétel: Külön engedély; jelenleg NOT_AUTHORIZED
+* **ATL-PLN-0095** — Issue-to-fix automatizálás (HALASZTOTT ötlet): issue-bevitel -> modell -> code-edit-workflow change-set -> teszt -> független átnézés; automatikusan nem aktiválható (PLANNED_DEFERRED). Tulajdonosi feltétel: Külön tulajdonosi döntés az aktiváláshoz
 * **150 jövőbeli ötlet:** 147 nem teljesen igazolt tétel P5 feladatként nyilvántartva, aktiválás nélkül.
 * A direktívákban halasztottként jelölt sorok: 23 (robot, 300 ügynök, VIRENA stb. — `directive_items.csv`, `deferred` oszlop).
 
-## 8. Tulajdonosi döntések, amelyek az ütemezéshez kellenek (55)
+## 8. Tulajdonosi döntések, amelyek az ütemezéshez kellenek (57)
 
 * **ATL-DEC-0001** — Tulajdonosi kulcs (owner-key) kiadása / provisionálása és aláírt jóváhagyások · részlet: Kulcs + egress-jóváhagyás (13); Owner-kulcs provisionálása a tényleges jóváhagyáshoz. (12); kulcs, egress- és enable-aláírás (11); Owner-kulcs. (9); …
 * **ATL-DEC-0002** — Egress-policy és host/hoszt jóváhagyás aláírása · részlet: host-jóváhagyás (14); Egress jóváhagyás (11); Hoszt-jóváhagyás (10); EGRESS_POLICY_SET aláírása (5); Host-jóváhagyás aláírása (4); EGRESS_POLICY_SET …
@@ -410,6 +414,8 @@ Prioritás-eloszlás: P0: 7, P1: 4, P2: 64, P3: 428, P4: 127, P5: 151. (P0 adatv
 * **ATL-DEC-0050** — Döntés / jóváhagyás: Piaci adat-adapter (inaktív, jóváhagyásig), részvényindex-forrás és autonóm stratégiakutatás ügynök…
 * **ATL-DEC-0051** — Döntés / jóváhagyás: Egyéb jóváhagyott kártevő-motor adapter (csak tulajdonosi igényre)
 * **ATL-DEC-0052** — Döntés / jóváhagyás: Jövőbeli, külön engedélyezett élő kereskedési teljesítmény-nézet
+* **ATL-DEC-0056** — Döntés / jóváhagyás: Issue-to-fix automatizálás (HALASZTOTT ötlet): issue-bevitel -> modell -> code-edit-workflow change…
+* **ATL-DEC-0057** — Döntés / jóváhagyás: Látás- és környezet-érzékelés: tárgy- és eszközfelismerés (Object and Equipment Recognition), körny…
 * **ATL-DEC-0053** — Döntés / jóváhagyás: Engedélyezett valódi connector-teszt és futási bizonyíték-gyűjtés
 * **ATL-DEC-0054** — Döntés / jóváhagyás: Valódi STAGING környezet, Windows CI + test hardening (LF, junction symlink, rm retry, POSIX szigná…
 * **ATL-DEC-0055** — A karanténba tett régi futtatókörnyezet (worker.js, supervisor.js, agent-child.js) sorsa · részlet: A v1 leltár ezeket rendes elemnek vette; v2-ben LEGACY_QUARANTINED. Törlés/archiválás csak tulajdonosi döntéssel.
@@ -448,7 +454,14 @@ Ezek jellemzően dokumentáció↔kód eltérések (pl. egy régi regiszter `MIS
 | Halasztott tételek külön jelöltek és nem számítanak az aktív órákba | ✔ |  |
 | Minden hivatkozás létező azonosítóra mutat | ✔ | hibás: [] |
 | A munkaterv függőségei körmentesek | ✔ | ciklus: [] |
-| Az aktív feladat-órák és a követelményekre szétosztott órák egyeznek (a követelmény nélküli feladatokon kívül) | ✔ | {'active_task_total_h': 5095.9, 'requirement_allocated_h': 3156.0, 'task_h_without_requirement_link… |
+| Az aktív feladat-órák és a követelményekre szétosztott órák egyeznek (a követelmény nélküli feladatokon kívül) | ✔ | {'active_task_total_h': 5150.4, 'requirement_allocated_h': 3305.0, 'task_h_without_requirement_link… |
+| Minden munkaterv-sor kapcsolódik ATL-komponenshez vagy tervezett modulhoz, vagy dokumentált indoklása van | ✔ | kapcsolat/indoklás nélkül: [] |
+| A munkaterv dokumentum-/modul-hivatkozásai létező azonosítók | ✔ | [] |
+| Minden MISSING CAP/FUT tételhez tartozik tervezett modul azonosító | ✔ | hiányzik: [] |
+| Minden nem-VERIFIED követelmény-sor kapcsolódik ATL-komponenshez vagy tervezett modulhoz | ✔ | kapcsolat nélkül: 0 [] |
+| A halasztott ötlet-tételek munkaterv-sora nem aktív (P5, deferred) | ✔ |  |
+| A tervezett modul-tétel (PLN) mindig tartalmaz requirement-hivatkozást vagy direktívát | ✔ | [] |
+| ATL-FUT-0141: tervezett modul, név, kapcsolódó meglévő modulok, munka-összekötés kitöltve; halasztott | ✔ | ATL-PLN-0095 ATL-WRK-0782; ATL-WRK-0752 |
 | Csak docs/ alatti fájl változott (futó rendszer kódja nem módosult) | ✔ | docs/-on kívül: [] |
 | Fel nem oldott catalog-hivatkozás (rel) nincs | ✔ | [] |
 | A katalógus explicit kulcsai mind léteznek | ✔ | [] |

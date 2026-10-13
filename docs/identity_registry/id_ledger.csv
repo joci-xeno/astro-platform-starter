@@ -16966,11 +16966,19 @@ ATL-WRK-0770,WRK,wrk:v2:dirgap:3c13c27e:PARTIAL,"Direktíva-sorok lezárása (3c
 ATL-WRK-0771,WRK,wrk:v2:dirgap:3ee4d259:PARTIAL,"Direktíva-sorok lezárása (3ee4d259, PARTIAL, 2 sor)",ACTIVE,2026-10-12,df9ab5e
 ATL-WRK-0772,WRK,wrk:v2:dirgap:697cfe68:PARTIAL,"Direktíva-sorok lezárása (697cfe68, PARTIAL, 10 sor)",ACTIVE,2026-10-12,df9ab5e
 ATL-WRK-0773,WRK,wrk:v2:dirgap:7946c15c:PARTIAL,"Direktíva-sorok lezárása (7946c15c, PARTIAL, 1 sor)",ACTIVE,2026-10-12,df9ab5e
-ATL-WRK-0774,WRK,wrk:v2:dirgap:8b4aa20e:PARTIAL,"Direktíva-sorok lezárása (8b4aa20e, PARTIAL, 4 sor)",ACTIVE,2026-10-12,df9ab5e
+ATL-WRK-0774,WRK,wrk:v2:dirgap:8b4aa20e:PARTIAL,"Direktíva-sorok lezárása (8b4aa20e, PARTIAL, 3 sor)",ACTIVE,2026-10-12,df9ab5e
 ATL-WRK-0775,WRK,wrk:v2:dirgap:V73REG:PARTIAL,"Direktíva-sorok lezárása (V73REG, PARTIAL, 14 sor)",ACTIVE,2026-10-12,df9ab5e
 ATL-WRK-0776,WRK,wrk:v2:dirgap:a9d885b0:PARTIAL,"Direktíva-sorok lezárása (a9d885b0, PARTIAL, 1 sor)",ACTIVE,2026-10-12,df9ab5e
 ATL-WRK-0777,WRK,wrk:v2:dirgap:aa4f678c:PARTIAL,"Direktíva-sorok lezárása (aa4f678c, PARTIAL, 1 sor)",ACTIVE,2026-10-12,df9ab5e
 ATL-WRK-0778,WRK,wrk:v2:dirgap:cbd533cd:PARTIAL,"Direktíva-sorok lezárása (cbd533cd, PARTIAL, 5 sor)",ACTIVE,2026-10-12,df9ab5e
 ATL-WRK-0779,WRK,wrk:v2:dirgap:d09bcb09:PARTIAL,"Direktíva-sorok lezárása (d09bcb09, PARTIAL, 1 sor)",ACTIVE,2026-10-12,df9ab5e
-ATL-WRK-0780,WRK,wrk:v2:dirgap:ef67a595:PARTIAL,"Direktíva-sorok lezárása (ef67a595, PARTIAL, 23 sor)",ACTIVE,2026-10-12,df9ab5e
+ATL-WRK-0780,WRK,wrk:v2:dirgap:ef67a595:PARTIAL,"Direktíva-sorok lezárása (ef67a595, PARTIAL, 22 sor)",ACTIVE,2026-10-12,df9ab5e
 ATL-WRK-0781,WRK,wrk:v2:dirgap:ef67a595:STRUCTURAL_ONLY,"Direktíva-sorok lezárása (ef67a595, STRUCTURAL_ONLY, 3 sor)",ACTIVE,2026-10-12,df9ab5e
+ATL-PLN-0095,PLN,pln:issue-to-fix-automation,Issue-to-fix automatizálás (HALASZTOTT ötlet): issue-bevitel -> modell -> code-edit-workflow change-set -> teszt -> független átnézés; automatikusan nem aktiválható,ACTIVE,2026-10-12,b5870e8
+ATL-PLN-0096,PLN,pln:missing-ui-screens,"Hiányzó Control Center képernyők: Deliveries (szállítások), külön DEALS képernyő, Computer Use panel, Tax/Accounting panel",ACTIVE,2026-10-12,b5870e8
+ATL-PLN-0097,PLN,pln:vision-environment-awareness,"Látás- és környezet-érzékelés: tárgy- és eszközfelismerés (Object and Equipment Recognition), környezeti kontextus (Environmental Context Awareness)",ACTIVE,2026-10-12,b5870e8
+ATL-DEC-0056,DEC,dec:pln:issue-to-fix-automation,Döntés: Issue-to-fix automatizálás (HALASZTOTT ötlet): issue-bevitel -> modell -> code-…,ACTIVE,2026-10-12,b5870e8
+ATL-DEC-0057,DEC,dec:pln:vision-environment-awareness,Döntés: Látás- és környezet-érzékelés: tárgy- és eszközfelismerés (Object and Equipment…,ACTIVE,2026-10-12,b5870e8
+ATL-WRK-0782,WRK,wrk:v2:pln:issue-to-fix-automation,HALASZTOTT: Issue-to-fix automatizálás (HALASZTOTT ötlet): issue-bevitel -> modell -> code-edit-workflow change-set -> teszt -> független átnézés; automatikusan …,ACTIVE,2026-10-12,b5870e8
+ATL-WRK-0783,WRK,wrk:v2:pln:missing-ui-screens,"BŐVÍTÉS: Hiányzó Control Center képernyők: Deliveries (szállítások), külön DEALS képernyő, Computer Use panel, Tax/Accounting panel",ACTIVE,2026-10-12,b5870e8
+ATL-WRK-0784,WRK,wrk:v2:pln:vision-environment-awareness,"ÚJ MODUL: Látás- és környezet-érzékelés: tárgy- és eszközfelismerés (Object and Equipment Recognition), környezeti kontextus (Environmental Context Awareness)",ACTIVE,2026-10-12,b5870e8

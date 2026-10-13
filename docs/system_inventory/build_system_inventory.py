@@ -194,7 +194,7 @@ def classify_file(p):
         return "SRC"
     return "CFG"
 for p in tracked:
-    if p in covered or p.startswith(("src/", "public/", "netlify/")):
+    if p in covered or p.startswith(("src/", "public/", "netlify/", "docs/system_inventory/")):   # docs/system_inventory = generator + its own output (listed in HANDOVER_MANIFEST.csv, no ATL id: avoids circularity)
         continue
     cat = classify_file(p)
     cid = alloc(cat, ("repo:" + p), p)
@@ -287,13 +287,16 @@ for atl, r in REQ.items():
     r["pln"] = None
     if atl in KEYMAP:
         r["pln"] = KEYMAP[atl]
+for atl, r in SRCSET.items():          # v2 correction: CAP/SIR/FUT rows may also belong to a planned module
+    r["pln"] = KEYMAP.get(atl)
 for d in DIRS:
     d["pln"] = None
     if d["mode"] == "AUTO_HEADING" or d["mode"] == "AUTO_SHORT":
         continue
-    if d["key"] in KEYMAP and d["kind"] in ("REQUIREMENT", "RULE", "DEFERRED_IDEA"):
+    _k = d["key"] if d["key"] in KEYMAP else (d["id"] if d["id"] in KEYMAP else None)   # legacy key OR allocated ATL-DIR/SPC id
+    if _k and d["kind"] in ("REQUIREMENT", "RULE", "DEFERRED_IDEA"):
         if d["status"] != "VERIFIED_WORKING":
-            d["pln"] = KEYMAP[d["key"]]
+            d["pln"] = KEYMAP[_k]
     if not d["pln"] and item_pool(d["status"], d["kind"], d["needs_new_module"]) and not d["same_as"]:
         t = d["text"] + " " + d["hint"]
         for rx, slug in RX:
@@ -326,8 +329,15 @@ for d in DIRS:
     if not d["pln"] and item_pool(d["status"], d["kind"], d["needs_new_module"]) and not d["same_as"] and d["mode"] == "ASSESSED":
         UNMATCHED.append(("DIR", d["legacy_id"], d["text"][:90], d["hint"][:50] or d["fix"][:50]))
 
-_dkeys = {d["key"] for d in DIRS}
-EXPLICIT_UNUSED = [kk for m in CAT.MODULES for k in m["ids"] for kk in expand(k) if kk not in REQ and kk not in _dkeys]
+_dkeys = {d["key"] for d in DIRS} | {d["id"] for d in DIRS}
+EXPLICIT_UNUSED = [kk for m in CAT.MODULES for k in m["ids"] for kk in expand(k) if kk not in REQ and kk not in SRCSET and kk not in _dkeys]
+
+# v2 correction: extra links to EXISTING components (kept apart from the v1 link table so v1 relations stay untouched)
+FIXED_LINKS = {}
+for _key, _names in CAT.LINK_FIXES.items():
+    _c = [x for x in (resolve(n) for n in _names) if x]
+    FIXED_LINKS[_key] = list(dict.fromkeys(_c))
+DEC_COMP_IDS = {k: list(dict.fromkeys(x for x in (resolve(n) for n in v) if x)) for k, v in CAT.DEC_COMPS.items()}
 
 if "--show-unmatched" in sys.argv:
     for u in UNMATCHED:

@@ -1,0 +1,449 @@
+﻿table,id,change,field,old,new
+inventory_items.csv,ATL-PLN-0095,ADDED,,,Issue-to-fix automatizálás (HALASZTOTT ötlet): issue-bevitel -> modell -> code-edit-workflow change-set -> teszt -> független átnézés; automatikusan nem aktiválható
+inventory_items.csv,ATL-PLN-0096,ADDED,,,"Hiányzó Control Center képernyők: Deliveries (szállítások), külön DEALS képernyő, Computer Use panel, Tax/Accounting panel"
+inventory_items.csv,ATL-PLN-0097,ADDED,,,"Látás- és környezet-érzékelés: tárgy- és eszközfelismerés (Object and Equipment Recognition), környezeti kontextus (Environmental Context Awareness)"
+inventory_items.csv,ATL-AGT-0033,CHANGED,requirement_ids,ATL-REQ-0533; ATL-REQ-0543; ATL-REQ-0547; ATL-REQ-0548; ATL-REQ-0554; ATL-REQ-0555; ATL-REQ-0556; ATL-REQ-0575; ATL-REQ-0596; ATL-REQ-0630; ATL-REQ-0631; ATL-REQ-0633; ATL-REQ-0636; ATL-REQ-0638; ATL-REQ-0643; ATL-REQ-1179,ATL-FUT-0141; ATL-REQ-0533; ATL-REQ-0543; ATL-REQ-0547; ATL-REQ-0548; ATL-REQ-0554; ATL-REQ-0555; ATL-REQ-0556; ATL-REQ-0575; ATL-REQ-0596; ATL-REQ-0630; ATL-REQ-0631; ATL-REQ-0633; ATL-REQ-0636; ATL-REQ-0638; ATL-REQ-0643; ATL-REQ-1179
+inventory_items.csv,ATL-AGT-0033,CHANGED,requirement_count,16,17
+inventory_items.csv,ATL-AGT-0033,CHANGED,missing,11 kapcsolt követelmény nem VERIFIED_WORKING (PARTIAL:11) | tervezett bővítések/kapcsolatok: ATL-PLN-0014; ATL-PLN-0015; ATL-PLN-0016; ATL-PLN-0017; ATL-PLN-0067,11 kapcsolt követelmény nem VERIFIED_WORKING (PARTIAL:11) | tervezett bővítések/kapcsolatok: ATL-PLN-0014; ATL-PLN-0015; ATL-PLN-0016; ATL-PLN-0017; ATL-PLN-0067; ATL-PLN-0095
+inventory_items.csv,ATL-AGT-0033,CHANGED,planned_module_refs,ATL-PLN-0014; ATL-PLN-0015; ATL-PLN-0016; ATL-PLN-0017; ATL-PLN-0067,ATL-PLN-0014; ATL-PLN-0015; ATL-PLN-0016; ATL-PLN-0017; ATL-PLN-0067; ATL-PLN-0095
+inventory_items.csv,ATL-AGT-0039,CHANGED,requirement_ids,ATL-FUT-0045; ATL-FUT-0059; ATL-FUT-0064; ATL-FUT-0073; ATL-FUT-0107; ATL-FUT-0110; ATL-REQ-0182; ATL-REQ-0213; ATL-REQ-0214; ATL-REQ-0595; ATL-REQ-0650; ATL-REQ-1089; ATL-REQ-1092; ATL-REQ-1100; ATL-REQ-1159; ATL-REQ-1160; ATL-REQ-1161; ATL-REQ-1163; ATL-REQ-1164; ATL-REQ-1165; ATL-REQ-1179; ATL-RE,ATL-FUT-0045; ATL-FUT-0059; ATL-FUT-0064; ATL-FUT-0073; ATL-FUT-0107; ATL-FUT-0110; ATL-REQ-0182; ATL-REQ-0213; ATL-REQ-0214; ATL-REQ-0595; ATL-REQ-0650; ATL-REQ-1089; ATL-REQ-1092; ATL-REQ-1100; ATL-REQ-1159; ATL-REQ-1160; ATL-REQ-1161; ATL-REQ-1163; ATL-REQ-1164; ATL-REQ-1165; ATL-REQ-1179; ATL-RE
+inventory_items.csv,ATL-AGT-0039,CHANGED,requirement_count,25,26
+inventory_items.csv,ATL-AVA-0004,CHANGED,requirement_ids,ATL-CAP-0034; ATL-CAP-0035; ATL-CAP-0037; ATL-CAP-0041; ATL-CAP-0051; ATL-CAP-0053; ATL-CAP-0077; ATL-CAP-0080; ATL-FUT-0062; ATL-FUT-0109; ATL-FUT-0118; ATL-REQ-0560; ATL-REQ-0561; ATL-REQ-0562; ATL-REQ-0985; ATL-REQ-0986; ATL-REQ-0996; ATL-REQ-1058; ATL-REQ-1059; ATL-REQ-1060; ATL-REQ-1070; ATL-RE,ATL-CAP-0034; ATL-CAP-0035; ATL-CAP-0037; ATL-CAP-0041; ATL-CAP-0051; ATL-CAP-0053; ATL-CAP-0058; ATL-CAP-0077; ATL-CAP-0080; ATL-FUT-0062; ATL-FUT-0096; ATL-FUT-0097; ATL-FUT-0103; ATL-FUT-0109; ATL-FUT-0113; ATL-FUT-0118; ATL-REQ-0560; ATL-REQ-0561; ATL-REQ-0562; ATL-REQ-0985; ATL-REQ-0986; ATL-RE
+inventory_items.csv,ATL-AVA-0004,CHANGED,requirement_count,37,42
+inventory_items.csv,ATL-AVA-0004,CHANGED,missing,"30 kapcsolt követelmény nem VERIFIED_WORKING (EXTERNAL_BLOCKER:9, MISSING:3, PARTIAL:12, STRUCTURAL_ONLY:6) | tervezett bővítések/kapcsolatok: ATL-PLN-0003; ATL-PLN-0019; ATL-PLN-0020","30 kapcsolt követelmény nem VERIFIED_WORKING (EXTERNAL_BLOCKER:9, MISSING:3, PARTIAL:12, STRUCTURAL_ONLY:6) | tervezett bővítések/kapcsolatok: ATL-PLN-0003; ATL-PLN-0019; ATL-PLN-0020; ATL-PLN-0097"
+inventory_items.csv,ATL-AVA-0004,CHANGED,planned_module_refs,ATL-PLN-0003; ATL-PLN-0019; ATL-PLN-0020,ATL-PLN-0003; ATL-PLN-0019; ATL-PLN-0020; ATL-PLN-0097
+inventory_items.csv,ATL-BRN-0016,CHANGED,missing,"13 kapcsolt követelmény nem VERIFIED_WORKING (MOCK_ONLY:1, PARTIAL:12) | tervezett bővítések/kapcsolatok: ATL-PLN-0011; ATL-PLN-0074","13 kapcsolt követelmény nem VERIFIED_WORKING (MOCK_ONLY:1, PARTIAL:12) | tervezett bővítések/kapcsolatok: ATL-PLN-0011; ATL-PLN-0074; ATL-PLN-0095"
+inventory_items.csv,ATL-BRN-0016,CHANGED,planned_module_refs,ATL-PLN-0011; ATL-PLN-0074,ATL-PLN-0011; ATL-PLN-0074; ATL-PLN-0095
+inventory_items.csv,ATL-CHK-0021,CHANGED,requirement_ids,ATL-REQ-0026,ATL-REQ-0026; ATL-REQ-1788
+inventory_items.csv,ATL-CHK-0021,CHANGED,requirement_count,1,2
+inventory_items.csv,ATL-CHK-0022,CHANGED,requirement_ids,,ATL-REQ-1788
+inventory_items.csv,ATL-CHK-0022,CHANGED,requirement_count,0,1
+inventory_items.csv,ATL-DEV-0001,CHANGED,missing,"tesztelt, de a futó rendszerből nem érhető el; 2 kapcsolt követelmény nem VERIFIED_WORKING (PARTIAL:2)","tesztelt, de a futó rendszerből nem érhető el; 2 kapcsolt követelmény nem VERIFIED_WORKING (PARTIAL:2) | tervezett bővítések/kapcsolatok: ATL-PLN-0095"
+inventory_items.csv,ATL-DEV-0001,CHANGED,planned_module_refs,,ATL-PLN-0095
+inventory_items.csv,ATL-DEV-0003,CHANGED,requirement_ids,ATL-CAP-0014; ATL-REQ-0236; ATL-REQ-0568; ATL-REQ-0635; ATL-REQ-1214; ATL-REQ-1345; ATL-REQ-1347,ATL-CAP-0014; ATL-FUT-0032; ATL-FUT-0141; ATL-REQ-0236; ATL-REQ-0568; ATL-REQ-0635; ATL-REQ-1214; ATL-REQ-1345; ATL-REQ-1347
+inventory_items.csv,ATL-DEV-0003,CHANGED,requirement_count,7,9
+inventory_items.csv,ATL-DEV-0003,CHANGED,missing,6 kapcsolt követelmény nem VERIFIED_WORKING (PARTIAL:6) | tervezett bővítések/kapcsolatok: ATL-PLN-0067,6 kapcsolt követelmény nem VERIFIED_WORKING (PARTIAL:6) | tervezett bővítések/kapcsolatok: ATL-PLN-0067; ATL-PLN-0095
+inventory_items.csv,ATL-DEV-0003,CHANGED,planned_module_refs,ATL-PLN-0067,ATL-PLN-0067; ATL-PLN-0095
+inventory_items.csv,ATL-DEV-0004,CHANGED,missing,7 kapcsolt követelmény nem VERIFIED_WORKING (PARTIAL:7),7 kapcsolt követelmény nem VERIFIED_WORKING (PARTIAL:7) | tervezett bővítések/kapcsolatok: ATL-PLN-0095
+inventory_items.csv,ATL-DEV-0004,CHANGED,planned_module_refs,,ATL-PLN-0095
+inventory_items.csv,ATL-DEV-0007,CHANGED,requirement_ids,ATL-CAP-0014; ATL-FUT-0003; ATL-FUT-0010; ATL-FUT-0033; ATL-FUT-0038; ATL-FUT-0142; ATL-REQ-1012; ATL-REQ-1013; ATL-REQ-1014; ATL-REQ-1180; ATL-REQ-1189; ATL-REQ-1344,ATL-CAP-0014; ATL-FUT-0003; ATL-FUT-0010; ATL-FUT-0033; ATL-FUT-0038; ATL-FUT-0141; ATL-FUT-0142; ATL-REQ-1012; ATL-REQ-1013; ATL-REQ-1014; ATL-REQ-1180; ATL-REQ-1189; ATL-REQ-1344
+inventory_items.csv,ATL-DEV-0007,CHANGED,requirement_count,12,13
+inventory_items.csv,ATL-DEV-0007,CHANGED,missing,11 kapcsolt követelmény nem VERIFIED_WORKING (PARTIAL:11),11 kapcsolt követelmény nem VERIFIED_WORKING (PARTIAL:11) | tervezett bővítések/kapcsolatok: ATL-PLN-0095
+inventory_items.csv,ATL-DEV-0007,CHANGED,planned_module_refs,,ATL-PLN-0095
+inventory_items.csv,ATL-DEV-0008,CHANGED,requirement_ids,ATL-FUT-0009; ATL-FUT-0133; ATL-FUT-0137; ATL-REQ-0238; ATL-REQ-0567; ATL-REQ-0634; ATL-REQ-1013; ATL-REQ-1263,ATL-FUT-0009; ATL-FUT-0133; ATL-FUT-0137; ATL-FUT-0141; ATL-REQ-0238; ATL-REQ-0567; ATL-REQ-0634; ATL-REQ-1013; ATL-REQ-1263
+inventory_items.csv,ATL-DEV-0008,CHANGED,requirement_count,8,9
+inventory_items.csv,ATL-DEV-0008,CHANGED,missing,8 kapcsolt követelmény nem VERIFIED_WORKING (PARTIAL:8) | tervezett bővítések/kapcsolatok: ATL-PLN-0092,8 kapcsolt követelmény nem VERIFIED_WORKING (PARTIAL:8) | tervezett bővítések/kapcsolatok: ATL-PLN-0095; ATL-PLN-0092
+inventory_items.csv,ATL-DEV-0008,CHANGED,planned_module_refs,ATL-PLN-0092,ATL-PLN-0095; ATL-PLN-0092
+inventory_items.csv,ATL-DOC-0007,CHANGED,requirement_ids,ATL-FUT-0069; ATL-FUT-0071; ATL-FUT-0072; ATL-FUT-0077; ATL-REQ-0558; ATL-REQ-1330; ATL-REQ-1497; ATL-REQ-1515,ATL-FUT-0069; ATL-FUT-0071; ATL-FUT-0072; ATL-FUT-0077; ATL-FUT-0102; ATL-REQ-0558; ATL-REQ-1330; ATL-REQ-1497; ATL-REQ-1515
+inventory_items.csv,ATL-DOC-0007,CHANGED,requirement_count,8,9
+inventory_items.csv,ATL-FIN-0025,CHANGED,missing,"14 kapcsolt követelmény nem VERIFIED_WORKING (EXTERNAL_BLOCKER:1, PARTIAL:1, STRUCTURAL_ONLY:12) | tervezett bővítések/kapcsolatok: ATL-PLN-0045; ATL-PLN-0061; ATL-PLN-0062","14 kapcsolt követelmény nem VERIFIED_WORKING (EXTERNAL_BLOCKER:1, PARTIAL:1, STRUCTURAL_ONLY:12) | tervezett bővítések/kapcsolatok: ATL-PLN-0045; ATL-PLN-0061; ATL-PLN-0062; ATL-PLN-0096"
+inventory_items.csv,ATL-FIN-0025,CHANGED,planned_module_refs,ATL-PLN-0045; ATL-PLN-0061; ATL-PLN-0062,ATL-PLN-0045; ATL-PLN-0061; ATL-PLN-0062; ATL-PLN-0096
+inventory_items.csv,ATL-INT-0003,CHANGED,requirement_ids,ATL-CAP-0001; ATL-CAP-0015; ATL-CAP-0017; ATL-CAP-0045; ATL-CAP-0054; ATL-CAP-0062; ATL-FUT-0001; ATL-FUT-0013; ATL-FUT-0085; ATL-FUT-0117; ATL-REQ-0868; ATL-REQ-1098; ATL-REQ-1348; ATL-REQ-1359; ATL-REQ-1360; ATL-REQ-1361; ATL-REQ-1364; ATL-REQ-1366; ATL-REQ-1367; ATL-REQ-1368; ATL-REQ-1369; ATL-RE,ATL-CAP-0001; ATL-CAP-0015; ATL-CAP-0017; ATL-CAP-0045; ATL-CAP-0054; ATL-CAP-0061; ATL-CAP-0062; ATL-FUT-0001; ATL-FUT-0013; ATL-FUT-0085; ATL-FUT-0117; ATL-REQ-0868; ATL-REQ-1098; ATL-REQ-1348; ATL-REQ-1359; ATL-REQ-1360; ATL-REQ-1361; ATL-REQ-1364; ATL-REQ-1366; ATL-REQ-1367; ATL-REQ-1368; ATL-RE
+inventory_items.csv,ATL-INT-0003,CHANGED,requirement_count,28,31
+inventory_items.csv,ATL-INT-0003,CHANGED,missing,"külső-érintkező modul: csak fake/fixture teszt, éles kapcsolat nincs","külső-érintkező modul: csak fake/fixture teszt, éles kapcsolat nincs | tervezett bővítések/kapcsolatok: ATL-PLN-0096; ATL-PLN-0097"
+inventory_items.csv,ATL-INT-0003,CHANGED,planned_module_refs,,ATL-PLN-0096; ATL-PLN-0097
+inventory_items.csv,ATL-INT-0006,CHANGED,requirement_ids,ATL-CAP-0001; ATL-CAP-0078; ATL-FUT-0013; ATL-FUT-0078; ATL-FUT-0082; ATL-FUT-0086; ATL-FUT-0087; ATL-FUT-0090; ATL-REQ-1163; ATL-REQ-1386; ATL-REQ-1388; ATL-REQ-1486,ATL-CAP-0001; ATL-CAP-0078; ATL-FUT-0013; ATL-FUT-0078; ATL-FUT-0082; ATL-FUT-0086; ATL-FUT-0087; ATL-FUT-0090; ATL-FUT-0096; ATL-FUT-0113; ATL-REQ-1163; ATL-REQ-1386; ATL-REQ-1388; ATL-REQ-1486
+inventory_items.csv,ATL-INT-0006,CHANGED,requirement_count,12,14
+inventory_items.csv,ATL-INT-0006,CHANGED,missing,"külső-érintkező modul: csak fake/fixture teszt, éles kapcsolat nincs","külső-érintkező modul: csak fake/fixture teszt, éles kapcsolat nincs | tervezett bővítések/kapcsolatok: ATL-PLN-0097"
+inventory_items.csv,ATL-INT-0006,CHANGED,planned_module_refs,,ATL-PLN-0097
+inventory_items.csv,ATL-INT-0008,CHANGED,requirement_ids,ATL-REQ-1388; ATL-REQ-1451; ATL-REQ-1455; ATL-REQ-1456; ATL-REQ-1483,ATL-FUT-0092; ATL-FUT-0102; ATL-REQ-1388; ATL-REQ-1451; ATL-REQ-1455; ATL-REQ-1456; ATL-REQ-1483
+inventory_items.csv,ATL-INT-0008,CHANGED,requirement_count,5,7
+inventory_items.csv,ATL-PLN-0019,CHANGED,requirement_ids,ATL-REQ-0561; ATL-REQ-0562; ATL-REQ-0563; ATL-REQ-1476; ATL-REQ-1477; ATL-REQ-1479,ATL-FUT-0097; ATL-FUT-0103; ATL-REQ-0561; ATL-REQ-0562; ATL-REQ-0563; ATL-REQ-1476; ATL-REQ-1477; ATL-REQ-1479; ATL-REQ-1510
+inventory_items.csv,ATL-PLN-0019,CHANGED,requirement_count,6,9
+inventory_items.csv,ATL-PLN-0045,CHANGED,requirement_ids,ATL-REQ-0694; ATL-REQ-0698,ATL-REQ-0059; ATL-REQ-0694; ATL-REQ-0698; ATL-REQ-1643; ATL-REQ-1663
+inventory_items.csv,ATL-PLN-0045,CHANGED,requirement_count,2,5
+inventory_items.csv,ATL-PLN-0045,CHANGED,directive_item_count,7,10
+inventory_items.csv,ATL-PLN-0051,CHANGED,directive_item_count,15,16
+inventory_items.csv,ATL-PLN-0068,CHANGED,requirement_ids,ATL-REQ-1468; ATL-REQ-1469; ATL-REQ-1470; ATL-REQ-1501; ATL-REQ-1502; ATL-REQ-1503; ATL-REQ-1504; ATL-REQ-1505; ATL-REQ-1506; ATL-REQ-1507,ATL-CAP-0049; ATL-FUT-0111; ATL-REQ-1468; ATL-REQ-1469; ATL-REQ-1470; ATL-REQ-1501; ATL-REQ-1502; ATL-REQ-1503; ATL-REQ-1504; ATL-REQ-1505; ATL-REQ-1506; ATL-REQ-1507
+inventory_items.csv,ATL-PLN-0068,CHANGED,requirement_count,10,12
+inventory_items.csv,ATL-PLN-0079,CHANGED,requirement_ids,,ATL-FUT-0099
+inventory_items.csv,ATL-PLN-0079,CHANGED,requirement_count,0,1
+inventory_items.csv,ATL-PLN-0092,CHANGED,requirement_ids,,ATL-REQ-1229
+inventory_items.csv,ATL-PLN-0092,CHANGED,requirement_count,0,1
+inventory_items.csv,ATL-PLN-0092,CHANGED,directive_item_count,5,10
+inventory_items.csv,ATL-PLN-0093,CHANGED,requirement_ids,,ATL-REQ-1555
+inventory_items.csv,ATL-PLN-0093,CHANGED,requirement_count,0,1
+inventory_items.csv,ATL-PLN-0093,CHANGED,directive_item_count,3,10
+inventory_items.csv,ATL-RES-0006,CHANGED,requirement_ids,ATL-REQ-0522; ATL-REQ-0534; ATL-REQ-0535; ATL-REQ-0540; ATL-REQ-0541; ATL-REQ-0542; ATL-REQ-0546; ATL-REQ-0569; ATL-REQ-0570; ATL-REQ-0571; ATL-REQ-0572; ATL-REQ-0573; ATL-REQ-0574; ATL-REQ-0597; ATL-REQ-0598; ATL-REQ-0599; ATL-REQ-0601; ATL-REQ-0602; ATL-REQ-0603; ATL-REQ-0604; ATL-REQ-0605; ATL-RE,ATL-FUT-0091; ATL-FUT-0099; ATL-FUT-0111; ATL-REQ-0522; ATL-REQ-0534; ATL-REQ-0535; ATL-REQ-0540; ATL-REQ-0541; ATL-REQ-0542; ATL-REQ-0546; ATL-REQ-0569; ATL-REQ-0570; ATL-REQ-0571; ATL-REQ-0572; ATL-REQ-0573; ATL-REQ-0574; ATL-REQ-0597; ATL-REQ-0598; ATL-REQ-0599; ATL-REQ-0601; ATL-REQ-0602; ATL-RE
+inventory_items.csv,ATL-RES-0006,CHANGED,requirement_count,69,72
+inventory_items.csv,ATL-RES-0017,CHANGED,requirement_ids,ATL-CAP-0028; ATL-REQ-0697; ATL-REQ-1166; ATL-REQ-1168; ATL-REQ-1451; ATL-REQ-1455; ATL-REQ-1456; ATL-REQ-1460; ATL-REQ-1483,ATL-CAP-0028; ATL-FUT-0091; ATL-FUT-0092; ATL-REQ-0697; ATL-REQ-1166; ATL-REQ-1168; ATL-REQ-1451; ATL-REQ-1455; ATL-REQ-1456; ATL-REQ-1460; ATL-REQ-1483
+inventory_items.csv,ATL-RES-0017,CHANGED,requirement_count,9,11
+inventory_items.csv,ATL-SEC-0017,CHANGED,requirement_ids,ATL-REQ-0546,ATL-REQ-0546; ATL-REQ-1199
+inventory_items.csv,ATL-SEC-0017,CHANGED,requirement_count,1,2
+inventory_items.csv,ATL-UIX-0008,CHANGED,missing,"tesztelt, de a futó rendszerből nem érhető el; 160 kapcsolt követelmény nem VERIFIED_WORKING (BROKEN:2, CONNECTED_UNTESTED:41, EXTERNAL_BLOCKER:27, MISSING:2, PARTIAL:88)","tesztelt, de a futó rendszerből nem érhető el; 160 kapcsolt követelmény nem VERIFIED_WORKING (BROKEN:2, CONNECTED_UNTESTED:41, EXTERNAL_BLOCKER:27, MISSING:2, PARTIAL:88) | tervezett bővítések/kapcsolatok: ATL-PLN-0096"
+inventory_items.csv,ATL-UIX-0008,CHANGED,planned_module_refs,,ATL-PLN-0096
+inventory_items.csv,ATL-WFL-0005,CHANGED,missing,"7 kapcsolt követelmény nem VERIFIED_WORKING (MOCK_ONLY:2, PARTIAL:5)","7 kapcsolt követelmény nem VERIFIED_WORKING (MOCK_ONLY:2, PARTIAL:5) | tervezett bővítések/kapcsolatok: ATL-PLN-0096"
+inventory_items.csv,ATL-WFL-0005,CHANGED,planned_module_refs,,ATL-PLN-0096
+inventory_items.csv,ATL-WFL-0006,CHANGED,missing,"5 kapcsolt követelmény nem VERIFIED_WORKING (EXTERNAL_BLOCKER:1, PARTIAL:4) | tervezett bővítések/kapcsolatok: ATL-PLN-0042","5 kapcsolt követelmény nem VERIFIED_WORKING (EXTERNAL_BLOCKER:1, PARTIAL:4) | tervezett bővítések/kapcsolatok: ATL-PLN-0042; ATL-PLN-0096"
+inventory_items.csv,ATL-WFL-0006,CHANGED,planned_module_refs,ATL-PLN-0042,ATL-PLN-0042; ATL-PLN-0096
+requirements_matrix.csv,ATL-CAP-0049,CHANGED,planned_module_id,,ATL-PLN-0068
+requirements_matrix.csv,ATL-CAP-0049,CHANGED,planned_module_name,,"Térkép / helymeghatározás modul szolgáltató-adapterekkel: geocoding, címkeresés, helyszínek, útvonal, területi kutatás, territóriumok, Opportunity Map, helyalapú üzleti kutatás"
+requirements_matrix.csv,ATL-CAP-0049,CHANGED,planned_module_status,,PLANNED
+requirements_matrix.csv,ATL-CAP-0049,CHANGED,related_existing_modules,,ATL-RES-0006; ATL-RES-0010; ATL-INT-0004
+requirements_matrix.csv,ATL-CAP-0049,CHANGED,needed_wiring,,absztrakció + szolgáltató-adapter (OSM/Google) + UI térkép; adapter a core logikától elválasztva
+requirements_matrix.csv,ATL-CAP-0049,CHANGED,work_ids,ATL-WRK-0614,ATL-WRK-0563; ATL-WRK-0614
+requirements_matrix.csv,ATL-CAP-0049,CHANGED,est_impl_h,1.0,3.64
+requirements_matrix.csv,ATL-CAP-0049,CHANGED,est_verify_h,2.0,1.45
+requirements_matrix.csv,ATL-CAP-0049,CHANGED,est_total_h,3.0,5.09
+requirements_matrix.csv,ATL-CAP-0058,CHANGED,atl_components,,ATL-AVA-0004
+requirements_matrix.csv,ATL-CAP-0058,CHANGED,wired,—,BEKÖTVE
+requirements_matrix.csv,ATL-CAP-0058,CHANGED,planned_module_id,,ATL-PLN-0097
+requirements_matrix.csv,ATL-CAP-0058,CHANGED,planned_module_name,,"Látás- és környezet-érzékelés: tárgy- és eszközfelismerés (Object and Equipment Recognition), környezeti kontextus (Environmental Context Awareness)"
+requirements_matrix.csv,ATL-CAP-0058,CHANGED,planned_module_status,,PLANNED
+requirements_matrix.csv,ATL-CAP-0058,CHANGED,related_existing_modules,,ATL-AVA-0004; ATL-INT-0003; ATL-INT-0006
+requirements_matrix.csv,ATL-CAP-0058,CHANGED,needed_wiring,,modality-fabric képbemenet -> vision szolgáltató-adapter; szenzor-bemenet külön döntés
+requirements_matrix.csv,ATL-CAP-0058,CHANGED,work_ids,ATL-WRK-0614,ATL-WRK-0784; ATL-WRK-0614
+requirements_matrix.csv,ATL-CAP-0058,CHANGED,est_impl_h,1.0,18.0
+requirements_matrix.csv,ATL-CAP-0058,CHANGED,est_verify_h,2.0,7.0
+requirements_matrix.csv,ATL-CAP-0058,CHANGED,est_total_h,3.0,25.0
+requirements_matrix.csv,ATL-CAP-0061,CHANGED,atl_components,,ATL-INT-0003
+requirements_matrix.csv,ATL-CAP-0061,CHANGED,wired,—,NINCS BEKÖTVE
+requirements_matrix.csv,ATL-CAP-0061,CHANGED,planned_module_id,,ATL-PLN-0097
+requirements_matrix.csv,ATL-CAP-0061,CHANGED,planned_module_name,,"Látás- és környezet-érzékelés: tárgy- és eszközfelismerés (Object and Equipment Recognition), környezeti kontextus (Environmental Context Awareness)"
+requirements_matrix.csv,ATL-CAP-0061,CHANGED,planned_module_status,,PLANNED
+requirements_matrix.csv,ATL-CAP-0061,CHANGED,related_existing_modules,,ATL-AVA-0004; ATL-INT-0003; ATL-INT-0006
+requirements_matrix.csv,ATL-CAP-0061,CHANGED,needed_wiring,,modality-fabric képbemenet -> vision szolgáltató-adapter; szenzor-bemenet külön döntés
+requirements_matrix.csv,ATL-CAP-0061,CHANGED,work_ids,ATL-WRK-0614,ATL-WRK-0784; ATL-WRK-0614
+requirements_matrix.csv,ATL-CAP-0061,CHANGED,est_impl_h,1.0,18.0
+requirements_matrix.csv,ATL-CAP-0061,CHANGED,est_verify_h,2.0,7.0
+requirements_matrix.csv,ATL-CAP-0061,CHANGED,est_total_h,3.0,25.0
+requirements_matrix.csv,ATL-FUT-0032,CHANGED,atl_components,,ATL-DEV-0003
+requirements_matrix.csv,ATL-FUT-0032,CHANGED,wired,—,NINCS BEKÖTVE
+requirements_matrix.csv,ATL-FUT-0032,CHANGED,related_existing_modules,,ATL-DEV-0003
+requirements_matrix.csv,ATL-FUT-0091,CHANGED,atl_components,,ATL-RES-0006; ATL-RES-0017
+requirements_matrix.csv,ATL-FUT-0091,CHANGED,wired,—,RÉSZBEN BEKÖTVE
+requirements_matrix.csv,ATL-FUT-0091,CHANGED,related_existing_modules,,ATL-RES-0006; ATL-RES-0017
+requirements_matrix.csv,ATL-FUT-0092,CHANGED,atl_components,,ATL-INT-0008; ATL-RES-0017
+requirements_matrix.csv,ATL-FUT-0092,CHANGED,wired,—,NINCS BEKÖTVE
+requirements_matrix.csv,ATL-FUT-0092,CHANGED,related_existing_modules,,ATL-INT-0008; ATL-RES-0017
+requirements_matrix.csv,ATL-FUT-0096,CHANGED,atl_components,,ATL-AVA-0004; ATL-INT-0006
+requirements_matrix.csv,ATL-FUT-0096,CHANGED,wired,—,BEKÖTVE
+requirements_matrix.csv,ATL-FUT-0096,CHANGED,related_existing_modules,,ATL-AVA-0004; ATL-INT-0006
+requirements_matrix.csv,ATL-FUT-0097,CHANGED,atl_components,,ATL-AVA-0004
+requirements_matrix.csv,ATL-FUT-0097,CHANGED,wired,—,BEKÖTVE
+requirements_matrix.csv,ATL-FUT-0097,CHANGED,planned_module_id,,ATL-PLN-0019
+requirements_matrix.csv,ATL-FUT-0097,CHANGED,planned_module_name,,"Média-eszközök: videó-, hang-/zene-, 3D-munkafolyamatok, médiakonverzió és szerkesztési adapter szerződés"
+requirements_matrix.csv,ATL-FUT-0097,CHANGED,planned_module_status,,PLANNED
+requirements_matrix.csv,ATL-FUT-0097,CHANGED,related_existing_modules,,ATL-PLG-0006; ATL-PLG-0003; ATL-SEC-0034; ATL-AVA-0004
+requirements_matrix.csv,ATL-FUT-0097,CHANGED,needed_wiring,,tool-fabric adapter-szerződés + sandboxolt konverter (restricted-node) + média plugin manifest
+requirements_matrix.csv,ATL-FUT-0097,CHANGED,work_ids,ATL-WRK-0709,ATL-WRK-0514; ATL-WRK-0709
+requirements_matrix.csv,ATL-FUT-0099,CHANGED,atl_components,,ATL-RES-0006
+requirements_matrix.csv,ATL-FUT-0099,CHANGED,wired,—,BEKÖTVE
+requirements_matrix.csv,ATL-FUT-0099,CHANGED,planned_module_id,,ATL-PLN-0079
+requirements_matrix.csv,ATL-FUT-0099,CHANGED,planned_module_name,,"Felderítési webhook / eseményfeed vevő (aláírt, allowlistelt, receive-only), felderítési riasztások és változás-intelligencia"
+requirements_matrix.csv,ATL-FUT-0099,CHANGED,planned_module_status,,PLANNED
+requirements_matrix.csv,ATL-FUT-0099,CHANGED,related_existing_modules,,ATL-RES-0006; ATL-RES-0017; ATL-FIN-0020; ATL-DOC-0008
+requirements_matrix.csv,ATL-FUT-0099,CHANGED,needed_wiring,,payment-webhook-receiver mintájú receive-only vevő + discovery + inbox riasztás
+requirements_matrix.csv,ATL-FUT-0099,CHANGED,work_ids,ATL-WRK-0711,ATL-WRK-0574; ATL-WRK-0711
+requirements_matrix.csv,ATL-FUT-0102,CHANGED,atl_components,,ATL-DOC-0007; ATL-INT-0008
+requirements_matrix.csv,ATL-FUT-0102,CHANGED,wired,—,NINCS BEKÖTVE
+requirements_matrix.csv,ATL-FUT-0102,CHANGED,related_existing_modules,,ATL-DOC-0007; ATL-INT-0008
+requirements_matrix.csv,ATL-FUT-0103,CHANGED,atl_components,,ATL-AVA-0004
+requirements_matrix.csv,ATL-FUT-0103,CHANGED,wired,—,BEKÖTVE
+requirements_matrix.csv,ATL-FUT-0103,CHANGED,planned_module_id,,ATL-PLN-0019
+requirements_matrix.csv,ATL-FUT-0103,CHANGED,planned_module_name,,"Média-eszközök: videó-, hang-/zene-, 3D-munkafolyamatok, médiakonverzió és szerkesztési adapter szerződés"
+requirements_matrix.csv,ATL-FUT-0103,CHANGED,planned_module_status,,PLANNED
+requirements_matrix.csv,ATL-FUT-0103,CHANGED,related_existing_modules,,ATL-PLG-0006; ATL-PLG-0003; ATL-SEC-0034; ATL-AVA-0004
+requirements_matrix.csv,ATL-FUT-0103,CHANGED,needed_wiring,,tool-fabric adapter-szerződés + sandboxolt konverter (restricted-node) + média plugin manifest
+requirements_matrix.csv,ATL-FUT-0103,CHANGED,work_ids,ATL-WRK-0715,ATL-WRK-0514; ATL-WRK-0715
+requirements_matrix.csv,ATL-FUT-0111,CHANGED,atl_components,,ATL-RES-0006
+requirements_matrix.csv,ATL-FUT-0111,CHANGED,wired,—,BEKÖTVE
+requirements_matrix.csv,ATL-FUT-0111,CHANGED,planned_module_id,,ATL-PLN-0068
+requirements_matrix.csv,ATL-FUT-0111,CHANGED,planned_module_name,,"Térkép / helymeghatározás modul szolgáltató-adapterekkel: geocoding, címkeresés, helyszínek, útvonal, területi kutatás, territóriumok, Opportunity Map, helyalapú üzleti kutatás"
+requirements_matrix.csv,ATL-FUT-0111,CHANGED,planned_module_status,,PLANNED
+requirements_matrix.csv,ATL-FUT-0111,CHANGED,related_existing_modules,,ATL-RES-0006; ATL-RES-0010; ATL-INT-0004
+requirements_matrix.csv,ATL-FUT-0111,CHANGED,needed_wiring,,absztrakció + szolgáltató-adapter (OSM/Google) + UI térkép; adapter a core logikától elválasztva
+requirements_matrix.csv,ATL-FUT-0111,CHANGED,work_ids,ATL-WRK-0723,ATL-WRK-0563; ATL-WRK-0723
+requirements_matrix.csv,ATL-FUT-0113,CHANGED,atl_components,,ATL-AVA-0004; ATL-INT-0006
+requirements_matrix.csv,ATL-FUT-0113,CHANGED,wired,—,BEKÖTVE
+requirements_matrix.csv,ATL-FUT-0113,CHANGED,related_existing_modules,,ATL-AVA-0004; ATL-INT-0006
+requirements_matrix.csv,ATL-FUT-0141,CHANGED,atl_components,,ATL-DEV-0003; ATL-DEV-0007; ATL-DEV-0008; ATL-AGT-0033
+requirements_matrix.csv,ATL-FUT-0141,CHANGED,wired,—,RÉSZBEN BEKÖTVE
+requirements_matrix.csv,ATL-FUT-0141,CHANGED,planned_module_id,,ATL-PLN-0095
+requirements_matrix.csv,ATL-FUT-0141,CHANGED,planned_module_name,,Issue-to-fix automatizálás (HALASZTOTT ötlet): issue-bevitel -> modell -> code-edit-workflow change-set -> teszt -> független átnézés; automatikusan nem aktiválható
+requirements_matrix.csv,ATL-FUT-0141,CHANGED,planned_module_status,,PLANNED_DEFERRED
+requirements_matrix.csv,ATL-FUT-0141,CHANGED,related_existing_modules,,ATL-DEV-0003; ATL-DEV-0007; ATL-DEV-0008; ATL-AGT-0033; ATL-BRN-0016; ATL-DEV-0001; ATL-DEV-0004
+requirements_matrix.csv,ATL-FUT-0141,CHANGED,needed_wiring,,"NEM aktív. Csak tulajdonosi döntés után: issue-bevitel + élő modell + code-edit-workflow összekötése; minden kódváltozás emberi jóváhagyással, soha nem automatikus merge/push."
+requirements_matrix.csv,ATL-FUT-0141,CHANGED,work_ids,ATL-WRK-0752,ATL-WRK-0782; ATL-WRK-0752
+requirements_matrix.csv,ATL-FUT-0141,CHANGED,est_impl_h,16.0,24.0
+requirements_matrix.csv,ATL-FUT-0141,CHANGED,est_verify_h,6.0,10.0
+requirements_matrix.csv,ATL-FUT-0141,CHANGED,est_total_h,22.0,34.0
+requirements_matrix.csv,ATL-REQ-0059,CHANGED,planned_module_id,,ATL-PLN-0045
+requirements_matrix.csv,ATL-REQ-0059,CHANGED,planned_module_name,,"KÜLÖN kereskedelmi licenc-rendszer (nem a tulajdonos belső ATLASZ-példánya): licenc- és jutalékos modellek, 20% tulajdonosi bevétel-részesedés, ügyfélpéldányonkénti licenc/számvitel, igazolt jogosulatlan módosítás-észlelés, csak az érintett pénzkereső motor felfüggesztése, kizárólagos tulajdonosi új"
+requirements_matrix.csv,ATL-REQ-0059,CHANGED,planned_module_status,,PLANNED_DEFERRED
+requirements_matrix.csv,ATL-REQ-0059,CHANGED,related_existing_modules,,ATL-FIN-0008; ATL-FIN-0004; ATL-FIN-0012; ATL-FIN-0025; ATL-SEC-0033; ATL-SEC-0022
+requirements_matrix.csv,ATL-REQ-0059,CHANGED,needed_wiring,,NEM aktív. A direktíva szerint külön tulajdonosi jóváhagyás nélkül nem implementálható/aktiválható; külön marad a belső példánytól.
+requirements_matrix.csv,ATL-REQ-0059,CHANGED,work_ids,ATL-WRK-0605,ATL-WRK-0540; ATL-WRK-0605
+requirements_matrix.csv,ATL-REQ-0561,CHANGED,est_impl_h,6.67,5.71
+requirements_matrix.csv,ATL-REQ-0561,CHANGED,est_verify_h,2.67,2.29
+requirements_matrix.csv,ATL-REQ-0561,CHANGED,est_total_h,9.33,8.0
+requirements_matrix.csv,ATL-REQ-0562,CHANGED,est_impl_h,6.67,5.71
+requirements_matrix.csv,ATL-REQ-0562,CHANGED,est_verify_h,2.67,2.29
+requirements_matrix.csv,ATL-REQ-0562,CHANGED,est_total_h,9.33,8.0
+requirements_matrix.csv,ATL-REQ-0563,CHANGED,est_impl_h,6.67,5.71
+requirements_matrix.csv,ATL-REQ-0563,CHANGED,est_verify_h,2.67,2.29
+requirements_matrix.csv,ATL-REQ-0563,CHANGED,est_total_h,9.33,8.0
+requirements_matrix.csv,ATL-REQ-0923,CHANGED,planned_module_id,,ATL-PLN-0096
+requirements_matrix.csv,ATL-REQ-0923,CHANGED,planned_module_name,,"Hiányzó Control Center képernyők: Deliveries (szállítások), külön DEALS képernyő, Computer Use panel, Tax/Accounting panel"
+requirements_matrix.csv,ATL-REQ-0923,CHANGED,planned_module_status,,PLANNED_EXTEND
+requirements_matrix.csv,ATL-REQ-0923,CHANGED,related_existing_modules,,ATL-WFL-0006; ATL-WFL-0005; ATL-INT-0003; ATL-FIN-0025; ATL-UIX-0008
+requirements_matrix.csv,ATL-REQ-0923,CHANGED,needed_wiring,,meglévő /api route-ok -> új nézetek az app.js navigációban; UI-smoke bővítés
+requirements_matrix.csv,ATL-REQ-0923,CHANGED,work_ids,ATL-WRK-0606,ATL-WRK-0783; ATL-WRK-0606
+requirements_matrix.csv,ATL-REQ-0923,CHANGED,est_impl_h,1.0,16.0
+requirements_matrix.csv,ATL-REQ-0923,CHANGED,est_verify_h,0.5,7.0
+requirements_matrix.csv,ATL-REQ-0923,CHANGED,est_total_h,1.5,23.0
+requirements_matrix.csv,ATL-REQ-1199,CHANGED,atl_components,,ATL-SEC-0017; ATL-AGT-0039
+requirements_matrix.csv,ATL-REQ-1199,CHANGED,wired,—,NINCS BEKÖTVE
+requirements_matrix.csv,ATL-REQ-1199,CHANGED,related_existing_modules,,ATL-SEC-0017; ATL-AGT-0039
+requirements_matrix.csv,ATL-REQ-1229,CHANGED,planned_module_id,,ATL-PLN-0092
+requirements_matrix.csv,ATL-REQ-1229,CHANGED,planned_module_name,,"Teszt-kategóriák és mutációs tesztelés (unit/contract/integration/E2E/negative/mutation/security/recovery/routing/persistence/governance), control-bypass teszt, cross-module viselkedés-teszt"
+requirements_matrix.csv,ATL-REQ-1229,CHANGED,planned_module_status,,PLANNED
+requirements_matrix.csv,ATL-REQ-1229,CHANGED,related_existing_modules,,ATL-OPS-0024; ATL-DEV-0008
+requirements_matrix.csv,ATL-REQ-1229,CHANGED,needed_wiring,,atlasz-tests + mutációs harness kritikus modulokra
+requirements_matrix.csv,ATL-REQ-1229,CHANGED,work_ids,ATL-WRK-0608,ATL-WRK-0587; ATL-WRK-0608
+requirements_matrix.csv,ATL-REQ-1229,CHANGED,est_impl_h,1.0,30.0
+requirements_matrix.csv,ATL-REQ-1229,CHANGED,est_verify_h,0.5,12.0
+requirements_matrix.csv,ATL-REQ-1229,CHANGED,est_total_h,1.5,42.0
+requirements_matrix.csv,ATL-REQ-1391,CHANGED,atl_components,,ATL-INT-0003
+requirements_matrix.csv,ATL-REQ-1391,CHANGED,wired,—,NINCS BEKÖTVE
+requirements_matrix.csv,ATL-REQ-1391,CHANGED,related_existing_modules,,ATL-INT-0003
+requirements_matrix.csv,ATL-REQ-1397,CHANGED,atl_components,,ATL-INT-0003
+requirements_matrix.csv,ATL-REQ-1397,CHANGED,wired,—,NINCS BEKÖTVE
+requirements_matrix.csv,ATL-REQ-1397,CHANGED,related_existing_modules,,ATL-INT-0003
+requirements_matrix.csv,ATL-REQ-1468,CHANGED,est_impl_h,4.0,3.64
+requirements_matrix.csv,ATL-REQ-1468,CHANGED,est_verify_h,1.6,1.45
+requirements_matrix.csv,ATL-REQ-1468,CHANGED,est_total_h,5.6,5.09
+requirements_matrix.csv,ATL-REQ-1469,CHANGED,est_impl_h,4.0,3.64
+requirements_matrix.csv,ATL-REQ-1469,CHANGED,est_verify_h,1.6,1.45
+requirements_matrix.csv,ATL-REQ-1469,CHANGED,est_total_h,5.6,5.09
+requirements_matrix.csv,ATL-REQ-1470,CHANGED,est_impl_h,4.0,3.64
+requirements_matrix.csv,ATL-REQ-1470,CHANGED,est_verify_h,1.6,1.45
+requirements_matrix.csv,ATL-REQ-1470,CHANGED,est_total_h,5.6,5.09
+requirements_matrix.csv,ATL-REQ-1476,CHANGED,est_impl_h,6.67,5.71
+requirements_matrix.csv,ATL-REQ-1476,CHANGED,est_verify_h,2.67,2.29
+requirements_matrix.csv,ATL-REQ-1476,CHANGED,est_total_h,9.33,8.0
+requirements_matrix.csv,ATL-REQ-1477,CHANGED,est_impl_h,6.67,5.71
+requirements_matrix.csv,ATL-REQ-1477,CHANGED,est_verify_h,2.67,2.29
+requirements_matrix.csv,ATL-REQ-1477,CHANGED,est_total_h,9.33,8.0
+requirements_matrix.csv,ATL-REQ-1479,CHANGED,est_impl_h,6.67,5.71
+requirements_matrix.csv,ATL-REQ-1479,CHANGED,est_verify_h,2.67,2.29
+requirements_matrix.csv,ATL-REQ-1479,CHANGED,est_total_h,9.33,8.0
+requirements_matrix.csv,ATL-REQ-1501,CHANGED,est_impl_h,4.0,3.64
+requirements_matrix.csv,ATL-REQ-1501,CHANGED,est_verify_h,1.6,1.45
+requirements_matrix.csv,ATL-REQ-1501,CHANGED,est_total_h,5.6,5.09
+requirements_matrix.csv,ATL-REQ-1502,CHANGED,est_impl_h,4.0,3.64
+requirements_matrix.csv,ATL-REQ-1502,CHANGED,est_verify_h,1.6,1.45
+requirements_matrix.csv,ATL-REQ-1502,CHANGED,est_total_h,5.6,5.09
+requirements_matrix.csv,ATL-REQ-1503,CHANGED,est_impl_h,4.0,3.64
+requirements_matrix.csv,ATL-REQ-1503,CHANGED,est_verify_h,1.6,1.45
+requirements_matrix.csv,ATL-REQ-1503,CHANGED,est_total_h,5.6,5.09
+requirements_matrix.csv,ATL-REQ-1504,CHANGED,est_impl_h,4.0,3.64
+requirements_matrix.csv,ATL-REQ-1504,CHANGED,est_verify_h,1.6,1.45
+requirements_matrix.csv,ATL-REQ-1504,CHANGED,est_total_h,5.6,5.09
+requirements_matrix.csv,ATL-REQ-1505,CHANGED,est_impl_h,4.0,3.64
+requirements_matrix.csv,ATL-REQ-1505,CHANGED,est_verify_h,1.6,1.45
+requirements_matrix.csv,ATL-REQ-1505,CHANGED,est_total_h,5.6,5.09
+requirements_matrix.csv,ATL-REQ-1506,CHANGED,est_impl_h,4.0,3.64
+requirements_matrix.csv,ATL-REQ-1506,CHANGED,est_verify_h,1.6,1.45
+requirements_matrix.csv,ATL-REQ-1506,CHANGED,est_total_h,5.6,5.09
+requirements_matrix.csv,ATL-REQ-1507,CHANGED,est_impl_h,4.0,3.64
+requirements_matrix.csv,ATL-REQ-1507,CHANGED,est_verify_h,1.6,1.45
+requirements_matrix.csv,ATL-REQ-1507,CHANGED,est_total_h,5.6,5.09
+requirements_matrix.csv,ATL-REQ-1510,CHANGED,planned_module_id,,ATL-PLN-0019
+requirements_matrix.csv,ATL-REQ-1510,CHANGED,planned_module_name,,"Média-eszközök: videó-, hang-/zene-, 3D-munkafolyamatok, médiakonverzió és szerkesztési adapter szerződés"
+requirements_matrix.csv,ATL-REQ-1510,CHANGED,planned_module_status,,PLANNED
+requirements_matrix.csv,ATL-REQ-1510,CHANGED,related_existing_modules,,ATL-PLG-0006; ATL-PLG-0003; ATL-SEC-0034; ATL-AVA-0004
+requirements_matrix.csv,ATL-REQ-1510,CHANGED,needed_wiring,,tool-fabric adapter-szerződés + sandboxolt konverter (restricted-node) + média plugin manifest
+requirements_matrix.csv,ATL-REQ-1510,CHANGED,work_ids,ATL-WRK-0610,ATL-WRK-0514; ATL-WRK-0610
+requirements_matrix.csv,ATL-REQ-1510,CHANGED,est_impl_h,1.5,5.71
+requirements_matrix.csv,ATL-REQ-1510,CHANGED,est_verify_h,1.0,2.29
+requirements_matrix.csv,ATL-REQ-1510,CHANGED,est_total_h,2.5,8.0
+requirements_matrix.csv,ATL-REQ-1555,CHANGED,planned_module_id,,ATL-PLN-0093
+requirements_matrix.csv,ATL-REQ-1555,CHANGED,planned_module_name,,"Valódi STAGING környezet, Windows CI + test hardening (LF, junction symlink, rm retry, POSIX szignálok), élő/staging bizonyítás a vezérlőrendszerre (owner kulcs, aláírt jóváhagyások)"
+requirements_matrix.csv,ATL-REQ-1555,CHANGED,planned_module_status,,DECISION_PENDING
+requirements_matrix.csv,ATL-REQ-1555,CHANGED,related_existing_modules,,ATL-SEC-0029; ATL-SEC-0004; ATL-WIN-0001
+requirements_matrix.csv,ATL-REQ-1555,CHANGED,needed_wiring,,Windows gép / staging host + Joci kulcsa
+requirements_matrix.csv,ATL-REQ-1555,CHANGED,work_ids,ATL-WRK-0611,ATL-WRK-0588; ATL-WRK-0611
+requirements_matrix.csv,ATL-REQ-1555,CHANGED,est_impl_h,1.0,30.0
+requirements_matrix.csv,ATL-REQ-1555,CHANGED,est_verify_h,0.5,20.0
+requirements_matrix.csv,ATL-REQ-1555,CHANGED,est_total_h,1.5,50.0
+requirements_matrix.csv,ATL-REQ-1643,CHANGED,planned_module_id,,ATL-PLN-0045
+requirements_matrix.csv,ATL-REQ-1643,CHANGED,planned_module_name,,"KÜLÖN kereskedelmi licenc-rendszer (nem a tulajdonos belső ATLASZ-példánya): licenc- és jutalékos modellek, 20% tulajdonosi bevétel-részesedés, ügyfélpéldányonkénti licenc/számvitel, igazolt jogosulatlan módosítás-észlelés, csak az érintett pénzkereső motor felfüggesztése, kizárólagos tulajdonosi új"
+requirements_matrix.csv,ATL-REQ-1643,CHANGED,planned_module_status,,PLANNED_DEFERRED
+requirements_matrix.csv,ATL-REQ-1643,CHANGED,related_existing_modules,,ATL-FIN-0008; ATL-FIN-0004; ATL-FIN-0012; ATL-FIN-0025; ATL-SEC-0033; ATL-SEC-0022
+requirements_matrix.csv,ATL-REQ-1643,CHANGED,needed_wiring,,NEM aktív. A direktíva szerint külön tulajdonosi jóváhagyás nélkül nem implementálható/aktiválható; külön marad a belső példánytól.
+requirements_matrix.csv,ATL-REQ-1643,CHANGED,work_ids,ATL-WRK-0612,ATL-WRK-0540; ATL-WRK-0612
+requirements_matrix.csv,ATL-REQ-1663,CHANGED,planned_module_id,,ATL-PLN-0045
+requirements_matrix.csv,ATL-REQ-1663,CHANGED,planned_module_name,,"KÜLÖN kereskedelmi licenc-rendszer (nem a tulajdonos belső ATLASZ-példánya): licenc- és jutalékos modellek, 20% tulajdonosi bevétel-részesedés, ügyfélpéldányonkénti licenc/számvitel, igazolt jogosulatlan módosítás-észlelés, csak az érintett pénzkereső motor felfüggesztése, kizárólagos tulajdonosi új"
+requirements_matrix.csv,ATL-REQ-1663,CHANGED,planned_module_status,,PLANNED_DEFERRED
+requirements_matrix.csv,ATL-REQ-1663,CHANGED,related_existing_modules,,ATL-FIN-0008; ATL-FIN-0004; ATL-FIN-0012; ATL-FIN-0025; ATL-SEC-0033; ATL-SEC-0022
+requirements_matrix.csv,ATL-REQ-1663,CHANGED,needed_wiring,,NEM aktív. A direktíva szerint külön tulajdonosi jóváhagyás nélkül nem implementálható/aktiválható; külön marad a belső példánytól.
+requirements_matrix.csv,ATL-REQ-1663,CHANGED,work_ids,ATL-WRK-0612,ATL-WRK-0540; ATL-WRK-0612
+requirements_matrix.csv,ATL-REQ-1788,CHANGED,atl_components,,ATL-CHK-0021; ATL-CHK-0022
+requirements_matrix.csv,ATL-REQ-1788,CHANGED,related_existing_modules,,ATL-CHK-0021; ATL-CHK-0022
+planned_modules.csv,ATL-PLN-0095,ADDED,,,Issue-to-fix automatizálás (HALASZTOTT ötlet): issue-bevitel -> modell -> code-edit-workflow change-set -> teszt -> független átnézés; automatikusan nem aktiválható
+planned_modules.csv,ATL-PLN-0096,ADDED,,,"Hiányzó Control Center képernyők: Deliveries (szállítások), külön DEALS képernyő, Computer Use panel, Tax/Accounting panel"
+planned_modules.csv,ATL-PLN-0097,ADDED,,,"Látás- és környezet-érzékelés: tárgy- és eszközfelismerés (Object and Equipment Recognition), környezeti kontextus (Environmental Context Awareness)"
+planned_modules.csv,ATL-PLN-0019,CHANGED,requirement_ids,ATL-REQ-0561; ATL-REQ-0562; ATL-REQ-0563; ATL-REQ-1476; ATL-REQ-1477; ATL-REQ-1479,ATL-FUT-0097; ATL-FUT-0103; ATL-REQ-0561; ATL-REQ-0562; ATL-REQ-0563; ATL-REQ-1476; ATL-REQ-1477; ATL-REQ-1479; ATL-REQ-1510
+planned_modules.csv,ATL-PLN-0019,CHANGED,requirement_count,6,9
+planned_modules.csv,ATL-PLN-0045,CHANGED,requirement_ids,ATL-REQ-0694; ATL-REQ-0698,ATL-REQ-0059; ATL-REQ-0694; ATL-REQ-0698; ATL-REQ-1643; ATL-REQ-1663
+planned_modules.csv,ATL-PLN-0045,CHANGED,requirement_count,2,5
+planned_modules.csv,ATL-PLN-0045,CHANGED,directive_item_ids_count,7,10
+planned_modules.csv,ATL-PLN-0051,CHANGED,directive_item_ids_count,15,16
+planned_modules.csv,ATL-PLN-0068,CHANGED,requirement_ids,ATL-REQ-1468; ATL-REQ-1469; ATL-REQ-1470; ATL-REQ-1501; ATL-REQ-1502; ATL-REQ-1503; ATL-REQ-1504; ATL-REQ-1505; ATL-REQ-1506; ATL-REQ-1507,ATL-CAP-0049; ATL-FUT-0111; ATL-REQ-1468; ATL-REQ-1469; ATL-REQ-1470; ATL-REQ-1501; ATL-REQ-1502; ATL-REQ-1503; ATL-REQ-1504; ATL-REQ-1505; ATL-REQ-1506; ATL-REQ-1507
+planned_modules.csv,ATL-PLN-0068,CHANGED,requirement_count,10,12
+planned_modules.csv,ATL-PLN-0079,CHANGED,requirement_ids,,ATL-FUT-0099
+planned_modules.csv,ATL-PLN-0079,CHANGED,requirement_count,0,1
+planned_modules.csv,ATL-PLN-0092,CHANGED,requirement_ids,,ATL-REQ-1229
+planned_modules.csv,ATL-PLN-0092,CHANGED,requirement_count,0,1
+planned_modules.csv,ATL-PLN-0092,CHANGED,directive_item_ids_count,5,10
+planned_modules.csv,ATL-PLN-0093,CHANGED,requirement_ids,,ATL-REQ-1555
+planned_modules.csv,ATL-PLN-0093,CHANGED,requirement_count,0,1
+planned_modules.csv,ATL-PLN-0093,CHANGED,directive_item_ids_count,3,10
+work_plan.csv,ATL-WRK-0782,ADDED,,,HALASZTOTT: Issue-to-fix automatizálás (HALASZTOTT ötlet): issue-bevitel -> modell -> code-edit-workflow change-set -> teszt -> független átnézés; automatikusan …
+work_plan.csv,ATL-WRK-0783,ADDED,,,"BŐVÍTÉS: Hiányzó Control Center képernyők: Deliveries (szállítások), külön DEALS képernyő, Computer Use panel, Tax/Accounting panel"
+work_plan.csv,ATL-WRK-0784,ADDED,,,"ÚJ MODUL: Látás- és környezet-érzékelés: tárgy- és eszközfelismerés (Object and Equipment Recognition), környezeti kontextus (Environmental Context Awareness)"
+work_plan.csv,ATL-WRK-0514,CHANGED,requirement_ids,ATL-REQ-0561; ATL-REQ-0562; ATL-REQ-0563; ATL-REQ-1476; ATL-REQ-1477; ATL-REQ-1479,ATL-FUT-0097; ATL-FUT-0103; ATL-REQ-0561; ATL-REQ-0562; ATL-REQ-0563; ATL-REQ-1476; ATL-REQ-1477; ATL-REQ-1479; ATL-REQ-1510
+work_plan.csv,ATL-WRK-0514,CHANGED,requirement_count,6,9
+work_plan.csv,ATL-WRK-0540,CHANGED,requirement_ids,ATL-REQ-0694; ATL-REQ-0698,ATL-REQ-0059; ATL-REQ-0694; ATL-REQ-0698; ATL-REQ-1643; ATL-REQ-1663
+work_plan.csv,ATL-WRK-0540,CHANGED,requirement_count,2,5
+work_plan.csv,ATL-WRK-0540,CHANGED,directive_item_count,7,10
+work_plan.csv,ATL-WRK-0546,CHANGED,directive_item_count,15,16
+work_plan.csv,ATL-WRK-0563,CHANGED,requirement_ids,ATL-REQ-1468; ATL-REQ-1469; ATL-REQ-1470; ATL-REQ-1501; ATL-REQ-1502; ATL-REQ-1503; ATL-REQ-1504; ATL-REQ-1505; ATL-REQ-1506; ATL-REQ-1507,ATL-CAP-0049; ATL-FUT-0111; ATL-REQ-1468; ATL-REQ-1469; ATL-REQ-1470; ATL-REQ-1501; ATL-REQ-1502; ATL-REQ-1503; ATL-REQ-1504; ATL-REQ-1505; ATL-REQ-1506; ATL-REQ-1507
+work_plan.csv,ATL-WRK-0563,CHANGED,requirement_count,10,12
+work_plan.csv,ATL-WRK-0574,CHANGED,requirement_ids,,ATL-FUT-0099
+work_plan.csv,ATL-WRK-0574,CHANGED,requirement_count,0,1
+work_plan.csv,ATL-WRK-0587,CHANGED,requirement_ids,,ATL-REQ-1229
+work_plan.csv,ATL-WRK-0587,CHANGED,requirement_count,0,1
+work_plan.csv,ATL-WRK-0587,CHANGED,directive_item_count,5,10
+work_plan.csv,ATL-WRK-0588,CHANGED,requirement_ids,,ATL-REQ-1555
+work_plan.csv,ATL-WRK-0588,CHANGED,requirement_count,0,1
+work_plan.csv,ATL-WRK-0588,CHANGED,directive_item_count,3,10
+work_plan.csv,ATL-WRK-0590,CHANGED,atl_component_ids,,ATL-SEC-0029; ATL-SEC-0022
+work_plan.csv,ATL-WRK-0591,CHANGED,atl_component_ids,,ATL-SEC-0011
+work_plan.csv,ATL-WRK-0592,CHANGED,atl_component_ids,,ATL-MDL-0009
+work_plan.csv,ATL-WRK-0593,CHANGED,atl_component_ids,,ATL-INT-0020; ATL-INT-0021
+work_plan.csv,ATL-WRK-0594,CHANGED,atl_component_ids,,ATL-WIN-0001
+work_plan.csv,ATL-WRK-0595,CHANGED,atl_component_ids,,ATL-VOI-0002
+work_plan.csv,ATL-WRK-0596,CHANGED,atl_component_ids,,ATL-INT-0003
+work_plan.csv,ATL-WRK-0597,CHANGED,atl_component_ids,,ATL-MOB-0001
+work_plan.csv,ATL-WRK-0598,CHANGED,atl_component_ids,,ATL-FIN-0025
+work_plan.csv,ATL-WRK-0599,CHANGED,planned_module_id,,ATL-PLN-0045
+work_plan.csv,ATL-WRK-0600,CHANGED,atl_component_ids,,ATL-OPS-0036; ATL-OPS-0035; ATL-OPS-0031
+work_plan.csv,ATL-WRK-0601,CHANGED,atl_component_ids,,ATL-RES-0006
+work_plan.csv,ATL-WRK-0604,CHANGED,atl_component_ids,,ATL-OPS-0036; ATL-OPS-0035; ATL-OPS-0031
+work_plan.csv,ATL-WRK-0605,CHANGED,planned_module_id,,ATL-PLN-0045
+work_plan.csv,ATL-WRK-0606,CHANGED,planned_module_id,,ATL-PLN-0096
+work_plan.csv,ATL-WRK-0606,CHANGED,est_impl_h,1.0,0.0
+work_plan.csv,ATL-WRK-0606,CHANGED,est_verify_h,0.5,0.0
+work_plan.csv,ATL-WRK-0606,CHANGED,est_total_h,1.5,0.0
+work_plan.csv,ATL-WRK-0607,CHANGED,atl_component_ids,,ATL-SEC-0017; ATL-AGT-0039
+work_plan.csv,ATL-WRK-0608,CHANGED,planned_module_id,,ATL-PLN-0092
+work_plan.csv,ATL-WRK-0608,CHANGED,est_impl_h,1.0,0.0
+work_plan.csv,ATL-WRK-0608,CHANGED,est_verify_h,0.5,0.0
+work_plan.csv,ATL-WRK-0608,CHANGED,est_total_h,1.5,0.0
+work_plan.csv,ATL-WRK-0609,CHANGED,atl_component_ids,,ATL-INT-0003
+work_plan.csv,ATL-WRK-0610,CHANGED,planned_module_id,,ATL-PLN-0019
+work_plan.csv,ATL-WRK-0610,CHANGED,est_impl_h,1.5,0.0
+work_plan.csv,ATL-WRK-0610,CHANGED,est_verify_h,1.0,0.0
+work_plan.csv,ATL-WRK-0610,CHANGED,est_total_h,2.5,0.0
+work_plan.csv,ATL-WRK-0611,CHANGED,planned_module_id,,ATL-PLN-0093
+work_plan.csv,ATL-WRK-0611,CHANGED,est_impl_h,1.0,0.0
+work_plan.csv,ATL-WRK-0611,CHANGED,est_verify_h,0.5,0.0
+work_plan.csv,ATL-WRK-0611,CHANGED,est_total_h,1.5,0.0
+work_plan.csv,ATL-WRK-0612,CHANGED,planned_module_id,,ATL-PLN-0045
+work_plan.csv,ATL-WRK-0613,CHANGED,atl_component_ids,,ATL-CHK-0021; ATL-CHK-0022
+work_plan.csv,ATL-WRK-0614,CHANGED,atl_component_ids,,ATL-AVA-0004; ATL-INT-0003
+work_plan.csv,ATL-WRK-0614,CHANGED,planned_module_id,,ATL-PLN-0068; ATL-PLN-0097
+work_plan.csv,ATL-WRK-0614,CHANGED,est_impl_h,3.0,0.0
+work_plan.csv,ATL-WRK-0614,CHANGED,est_verify_h,6.0,0.0
+work_plan.csv,ATL-WRK-0614,CHANGED,est_total_h,9.0,0.0
+work_plan.csv,ATL-WRK-0644,CHANGED,atl_component_ids,,ATL-DEV-0003
+work_plan.csv,ATL-WRK-0703,CHANGED,atl_component_ids,,ATL-RES-0006; ATL-RES-0017
+work_plan.csv,ATL-WRK-0704,CHANGED,atl_component_ids,,ATL-INT-0008; ATL-RES-0017
+work_plan.csv,ATL-WRK-0708,CHANGED,atl_component_ids,,ATL-AVA-0004; ATL-INT-0006
+work_plan.csv,ATL-WRK-0709,CHANGED,atl_component_ids,,ATL-AVA-0004
+work_plan.csv,ATL-WRK-0709,CHANGED,planned_module_id,,ATL-PLN-0019
+work_plan.csv,ATL-WRK-0711,CHANGED,atl_component_ids,,ATL-RES-0006
+work_plan.csv,ATL-WRK-0711,CHANGED,planned_module_id,,ATL-PLN-0079
+work_plan.csv,ATL-WRK-0714,CHANGED,atl_component_ids,,ATL-DOC-0007; ATL-INT-0008
+work_plan.csv,ATL-WRK-0715,CHANGED,atl_component_ids,,ATL-AVA-0004
+work_plan.csv,ATL-WRK-0715,CHANGED,planned_module_id,,ATL-PLN-0019
+work_plan.csv,ATL-WRK-0723,CHANGED,atl_component_ids,,ATL-RES-0006
+work_plan.csv,ATL-WRK-0723,CHANGED,planned_module_id,,ATL-PLN-0068
+work_plan.csv,ATL-WRK-0725,CHANGED,atl_component_ids,,ATL-AVA-0004; ATL-INT-0006
+work_plan.csv,ATL-WRK-0752,CHANGED,atl_component_ids,,ATL-DEV-0003; ATL-DEV-0007; ATL-DEV-0008; ATL-AGT-0033
+work_plan.csv,ATL-WRK-0752,CHANGED,planned_module_id,,ATL-PLN-0095
+work_plan.csv,ATL-WRK-0752,CHANGED,est_impl_h,16.0,0.0
+work_plan.csv,ATL-WRK-0752,CHANGED,est_verify_h,6.0,0.0
+work_plan.csv,ATL-WRK-0752,CHANGED,est_total_h,22.0,0.0
+work_plan.csv,ATL-WRK-0765,CHANGED,est_verify_h,90.0,92.0
+work_plan.csv,ATL-WRK-0765,CHANGED,est_total_h,90.0,92.0
+work_plan.csv,ATL-WRK-0766,CHANGED,atl_component_ids,,ATL-BRN-0003; ATL-UIX-0070
+work_plan.csv,ATL-WRK-0767,CHANGED,atl_component_ids,,ATL-UIX-0046; ATL-UIX-0063; ATL-UIX-0018; ATL-UIX-0045; ATL-BRN-0003; ATL-UIX-0070; ATL-UIX-0024; ATL-API-0089; ATL-SEC-0024
+work_plan.csv,ATL-WRK-0768,CHANGED,atl_component_ids,,ATL-UIX-0061; ATL-API-0038; ATL-UIX-0031; ATL-API-0007
+work_plan.csv,ATL-WRK-0769,CHANGED,atl_component_ids,,ATL-UIX-0061; ATL-UIX-0062; ATL-BRN-0002; ATL-UIX-0037; ATL-UIX-0045; ATL-API-0021; ATL-UIX-0035; ATL-API-0019; ATL-UIX-0050; ATL-UIX-0049; ATL-API-0009; ATL-API-0062; ATL-SEC-0024; ATL-SEC-0005; ATL-SEC-0004
+work_plan.csv,ATL-WRK-0770,CHANGED,atl_component_ids,,ATL-BRN-0003
+work_plan.csv,ATL-WRK-0771,CHANGED,atl_component_ids,,ATL-UIX-0019; ATL-UIX-0013; ATL-RES-0015; ATL-UIX-0018; ATL-UIX-0037; ATL-AGT-0031
+work_plan.csv,ATL-WRK-0772,CHANGED,atl_component_ids,,ATL-AGT-0031; ATL-RES-0009; ATL-UIX-0018; ATL-UIX-0013; ATL-UIX-0017; ATL-API-0026; ATL-RES-0002; ATL-RES-0015; ATL-RES-0013; ATL-UIX-0049; ATL-UIX-0020; ATL-UIX-0021; ATL-API-0027; ATL-API-0028; ATL-API-0123; ATL-UIX-0037; ATL-UIX-0019
+work_plan.csv,ATL-WRK-0773,CHANGED,atl_component_ids,,ATL-UIX-0018; ATL-AGT-0031; ATL-API-0026
+work_plan.csv,ATL-WRK-0774,CHANGED,title,"Direktíva-sorok lezárása (8b4aa20e, PARTIAL, 4 sor)","Direktíva-sorok lezárása (8b4aa20e, PARTIAL, 3 sor)"
+work_plan.csv,ATL-WRK-0774,CHANGED,exact_work,Komponens- vagy követelmény-hozzárendelés nélküli direktíva-sorok egyenkénti feloldása: - a UI element exists.; - production Railway changes;; - merging to main;; - mutation tests;,Komponens- vagy követelmény-hozzárendelés nélküli direktíva-sorok egyenkénti feloldása: - a UI element exists.; - production Railway changes;; - merging to main;
+work_plan.csv,ATL-WRK-0774,CHANGED,atl_component_ids,,ATL-SEC-0024; ATL-SEC-0028; ATL-UIX-0036; ATL-API-0123
+work_plan.csv,ATL-WRK-0774,CHANGED,directive_item_count,4,3
+work_plan.csv,ATL-WRK-0774,CHANGED,est_impl_h,6.0,4.5
+work_plan.csv,ATL-WRK-0774,CHANGED,est_verify_h,3.0,2.25
+work_plan.csv,ATL-WRK-0774,CHANGED,est_total_h,9.0,6.75
+work_plan.csv,ATL-WRK-0775,CHANGED,atl_component_ids,,ATL-CHK-0036; ATL-UIX-0051; ATL-BRN-0003; ATL-UIX-0040; ATL-API-0044; ATL-UIX-0024; ATL-UIX-0026; ATL-UIX-0045; ATL-UIX-0018; ATL-UIX-0041; ATL-UIX-0050; ATL-UIX-0059; ATL-CHK-0037
+work_plan.csv,ATL-WRK-0776,CHANGED,atl_component_ids,,ATL-UIX-0051; ATL-API-0011
+work_plan.csv,ATL-WRK-0777,CHANGED,atl_component_ids,,ATL-UIX-0040; ATL-UIX-0052; ATL-API-0067; ATL-API-0062
+work_plan.csv,ATL-WRK-0778,CHANGED,atl_component_ids,,ATL-API-0011; ATL-UIX-0015; ATL-UIX-0043; ATL-API-0012; ATL-UIX-0018; ATL-UIX-0051
+work_plan.csv,ATL-WRK-0779,CHANGED,atl_component_ids,,ATL-BRN-0002
+work_plan.csv,ATL-WRK-0780,CHANGED,title,"Direktíva-sorok lezárása (ef67a595, PARTIAL, 23 sor)","Direktíva-sorok lezárása (ef67a595, PARTIAL, 22 sor)"
+work_plan.csv,ATL-WRK-0780,CHANGED,atl_component_ids,,ATL-CHK-0016; ATL-UIX-0016; ATL-UIX-0069; ATL-UIX-0043; ATL-UIX-0011; ATL-UIX-0044; ATL-API-0049
+work_plan.csv,ATL-WRK-0780,CHANGED,directive_item_count,23,22
+work_plan.csv,ATL-WRK-0780,CHANGED,est_impl_h,34.5,33.0
+work_plan.csv,ATL-WRK-0780,CHANGED,est_verify_h,17.25,16.5
+work_plan.csv,ATL-WRK-0780,CHANGED,est_total_h,51.75,49.5
+work_plan.csv,ATL-WRK-0781,CHANGED,atl_component_ids,,ATL-CHK-0016
+directive_items.csv,ATL-DIR-0452,CHANGED,planned_module_id,,ATL-PLN-0092
+directive_items.csv,ATL-DIR-0452,CHANGED,work_ids,ATL-WRK-0059; ATL-WRK-0004; ATL-WRK-0006; ATL-WRK-0011; ATL-WRK-0235; ATL-WRK-0608,ATL-WRK-0587; ATL-WRK-0059; ATL-WRK-0004; ATL-WRK-0006; ATL-WRK-0011; ATL-WRK-0235; ATL-WRK-0608
+directive_items.csv,ATL-DIR-10563,CHANGED,planned_module_id,,ATL-PLN-0093
+directive_items.csv,ATL-DIR-10563,CHANGED,work_ids,ATL-WRK-0095; ATL-WRK-0105; ATL-WRK-0106; ATL-WRK-0004; ATL-WRK-0006; ATL-WRK-0011; ATL-WRK-0235; ATL-WRK-0611,ATL-WRK-0588; ATL-WRK-0095; ATL-WRK-0105; ATL-WRK-0106; ATL-WRK-0004; ATL-WRK-0006; ATL-WRK-0011; ATL-WRK-0235; ATL-WRK-0611
+directive_items.csv,ATL-DIR-10645,CHANGED,planned_module_id,,ATL-PLN-0092
+directive_items.csv,ATL-DIR-10645,CHANGED,work_ids,ATL-WRK-0051; ATL-WRK-0226; ATL-WRK-0059; ATL-WRK-0608,ATL-WRK-0587; ATL-WRK-0051; ATL-WRK-0226; ATL-WRK-0059; ATL-WRK-0608
+directive_items.csv,ATL-DIR-11248,CHANGED,planned_module_id,,ATL-PLN-0051
+directive_items.csv,ATL-DIR-11248,CHANGED,work_ids,ATL-WRK-0780,ATL-WRK-0546
+directive_items.csv,ATL-DIR-1861,CHANGED,planned_module_id,,ATL-PLN-0045
+directive_items.csv,ATL-DIR-1861,CHANGED,work_ids,ATL-WRK-0298; ATL-WRK-0612,ATL-WRK-0540; ATL-WRK-0298; ATL-WRK-0612
+directive_items.csv,ATL-DIR-2557,CHANGED,planned_module_id,,ATL-PLN-0093
+directive_items.csv,ATL-DIR-2557,CHANGED,work_ids,ATL-WRK-0236; ATL-WRK-0004; ATL-WRK-0006; ATL-WRK-0011; ATL-WRK-0235; ATL-WRK-0474; ATL-WRK-0611,ATL-WRK-0588; ATL-WRK-0236; ATL-WRK-0004; ATL-WRK-0006; ATL-WRK-0011; ATL-WRK-0235; ATL-WRK-0474; ATL-WRK-0611
+directive_items.csv,ATL-DIR-4069,CHANGED,planned_module_id,,ATL-PLN-0093
+directive_items.csv,ATL-DIR-4069,CHANGED,work_ids,ATL-WRK-0262; ATL-WRK-0471; ATL-WRK-0008; ATL-WRK-0263; ATL-WRK-0611,ATL-WRK-0588; ATL-WRK-0262; ATL-WRK-0471; ATL-WRK-0008; ATL-WRK-0263; ATL-WRK-0611
+directive_items.csv,ATL-DIR-5307,CHANGED,planned_module_id,,ATL-PLN-0045
+directive_items.csv,ATL-DIR-5307,CHANGED,work_ids,ATL-WRK-0298; ATL-WRK-0605,ATL-WRK-0540; ATL-WRK-0298; ATL-WRK-0605
+directive_items.csv,ATL-DIR-5925,CHANGED,planned_module_id,,ATL-PLN-0093
+directive_items.csv,ATL-DIR-5925,CHANGED,work_ids,ATL-WRK-0234; ATL-WRK-0001; ATL-WRK-0002; ATL-WRK-0007; ATL-WRK-0306; ATL-WRK-0469; ATL-WRK-0611,ATL-WRK-0588; ATL-WRK-0234; ATL-WRK-0001; ATL-WRK-0002; ATL-WRK-0007; ATL-WRK-0306; ATL-WRK-0469; ATL-WRK-0611
+directive_items.csv,ATL-DIR-7821,CHANGED,planned_module_id,,ATL-PLN-0092
+directive_items.csv,ATL-DIR-7821,CHANGED,work_ids,ATL-WRK-0774,ATL-WRK-0587
+directive_items.csv,ATL-DIR-8261,CHANGED,planned_module_id,,ATL-PLN-0096
+directive_items.csv,ATL-DIR-8261,CHANGED,work_ids,ATL-WRK-0319; ATL-WRK-0606,ATL-WRK-0783; ATL-WRK-0319; ATL-WRK-0606
+directive_items.csv,ATL-DIR-8364,CHANGED,planned_module_id,,ATL-PLN-0045
+directive_items.csv,ATL-DIR-8364,CHANGED,work_ids,,ATL-WRK-0540
+directive_items.csv,ATL-DIR-9401,CHANGED,planned_module_id,,ATL-PLN-0093
+directive_items.csv,ATL-DIR-9401,CHANGED,work_ids,ATL-WRK-0234; ATL-WRK-0004; ATL-WRK-0006; ATL-WRK-0011; ATL-WRK-0235; ATL-WRK-0611,ATL-WRK-0588; ATL-WRK-0234; ATL-WRK-0004; ATL-WRK-0006; ATL-WRK-0011; ATL-WRK-0235; ATL-WRK-0611
+directive_items.csv,ATL-DIR-9554,CHANGED,planned_module_id,,ATL-PLN-0092
+directive_items.csv,ATL-DIR-9554,CHANGED,work_ids,ATL-WRK-0228; ATL-WRK-0230; ATL-WRK-0608,ATL-WRK-0587; ATL-WRK-0228; ATL-WRK-0230; ATL-WRK-0608
+directive_items.csv,ATL-DIR-9815,CHANGED,planned_module_id,,ATL-PLN-0093
+directive_items.csv,ATL-DIR-9815,CHANGED,work_ids,ATL-WRK-0611,ATL-WRK-0588; ATL-WRK-0611
+directive_items.csv,ATL-DIR-9815,CHANGED,notes,"UNREGISTERED:atlasz-tests/; tesztkategória/teszt-készlet: az atlasz-tests (ATL-TST-*) hordozza, külön új modul nem szükséges",UNREGISTERED:atlasz-tests/
+directive_items.csv,ATL-SPC-0721,CHANGED,planned_module_id,,ATL-PLN-0093
+directive_items.csv,ATL-SPC-0721,CHANGED,work_ids,ATL-WRK-0276; ATL-WRK-0611,ATL-WRK-0588; ATL-WRK-0276; ATL-WRK-0611
+directive_items.csv,ATL-SPC-0973,CHANGED,planned_module_id,,ATL-PLN-0092
+directive_items.csv,ATL-SPC-0973,CHANGED,work_ids,ATL-WRK-0608,ATL-WRK-0587; ATL-WRK-0608
+owner_decisions.csv,ATL-DEC-0056,ADDED,,,Döntés / jóváhagyás: Issue-to-fix automatizálás (HALASZTOTT ötlet): issue-bevitel -> modell -> code-edit-workflow change…
+owner_decisions.csv,ATL-DEC-0057,ADDED,,,"Döntés / jóváhagyás: Látás- és környezet-érzékelés: tárgy- és eszközfelismerés (Object and Equipment Recognition), körny…"
+findings.csv,ATL-FND-0273,CHANGED,directive_item_count,2,3
+findings.csv,ATL-FND-0273,CHANGED,directive_item_ids,ATL-DIR-9814; ATL-SPC-0061,ATL-DIR-9814; ATL-DIR-9815; ATL-SPC-0061
+findings.csv,ATL-FND-0274,CHANGED,directive_item_count,13,12
+findings.csv,ATL-FND-0274,CHANGED,directive_item_ids,ATL-DIR-9810; ATL-DIR-9811; ATL-DIR-9812; ATL-DIR-9813; ATL-DIR-9815; ATL-DIR-9816; ATL-DIR-9817; ATL-DIR-9818; ATL-DIR-9819; ATL-DIR-9820; ATL-DIR-9821; ATL-DIR-9822; ATL-DIR-9823,ATL-DIR-9810; ATL-DIR-9811; ATL-DIR-9812; ATL-DIR-9813; ATL-DIR-9816; ATL-DIR-9817; ATL-DIR-9818; ATL-DIR-9819; ATL-DIR-9820; ATL-DIR-9821; ATL-DIR-9822; ATL-DIR-9823

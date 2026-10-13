@@ -135740,7 +135740,7 @@
   "wrk:v2:dirgap:8b4aa20e:PARTIAL": {
    "id": "ATL-WRK-0774",
    "category": "WRK",
-   "name": "Direktíva-sorok lezárása (8b4aa20e, PARTIAL, 4 sor)",
+   "name": "Direktíva-sorok lezárása (8b4aa20e, PARTIAL, 3 sor)",
    "first_seen": "2026-10-12",
    "first_seen_commit": "df9ab5e",
    "status": "ACTIVE"
@@ -135788,7 +135788,7 @@
   "wrk:v2:dirgap:ef67a595:PARTIAL": {
    "id": "ATL-WRK-0780",
    "category": "WRK",
-   "name": "Direktíva-sorok lezárása (ef67a595, PARTIAL, 23 sor)",
+   "name": "Direktíva-sorok lezárása (ef67a595, PARTIAL, 22 sor)",
    "first_seen": "2026-10-12",
    "first_seen_commit": "df9ab5e",
    "status": "ACTIVE"
@@ -135799,6 +135799,70 @@
    "name": "Direktíva-sorok lezárása (ef67a595, STRUCTURAL_ONLY, 3 sor)",
    "first_seen": "2026-10-12",
    "first_seen_commit": "df9ab5e",
+   "status": "ACTIVE"
+  },
+  "pln:issue-to-fix-automation": {
+   "id": "ATL-PLN-0095",
+   "category": "PLN",
+   "name": "Issue-to-fix automatizálás (HALASZTOTT ötlet): issue-bevitel -> modell -> code-edit-workflow change-set -> teszt -> független átnézés; automatikusan nem aktiválható",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "b5870e8",
+   "status": "ACTIVE"
+  },
+  "pln:missing-ui-screens": {
+   "id": "ATL-PLN-0096",
+   "category": "PLN",
+   "name": "Hiányzó Control Center képernyők: Deliveries (szállítások), külön DEALS képernyő, Computer Use panel, Tax/Accounting panel",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "b5870e8",
+   "status": "ACTIVE"
+  },
+  "pln:vision-environment-awareness": {
+   "id": "ATL-PLN-0097",
+   "category": "PLN",
+   "name": "Látás- és környezet-érzékelés: tárgy- és eszközfelismerés (Object and Equipment Recognition), környezeti kontextus (Environmental Context Awareness)",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "b5870e8",
+   "status": "ACTIVE"
+  },
+  "dec:pln:issue-to-fix-automation": {
+   "id": "ATL-DEC-0056",
+   "category": "DEC",
+   "name": "Döntés: Issue-to-fix automatizálás (HALASZTOTT ötlet): issue-bevitel -> modell -> code-…",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "b5870e8",
+   "status": "ACTIVE"
+  },
+  "dec:pln:vision-environment-awareness": {
+   "id": "ATL-DEC-0057",
+   "category": "DEC",
+   "name": "Döntés: Látás- és környezet-érzékelés: tárgy- és eszközfelismerés (Object and Equipment…",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "b5870e8",
+   "status": "ACTIVE"
+  },
+  "wrk:v2:pln:issue-to-fix-automation": {
+   "id": "ATL-WRK-0782",
+   "category": "WRK",
+   "name": "HALASZTOTT: Issue-to-fix automatizálás (HALASZTOTT ötlet): issue-bevitel -> modell -> code-edit-workflow change-set -> teszt -> független átnézés; automatikusan …",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "b5870e8",
+   "status": "ACTIVE"
+  },
+  "wrk:v2:pln:missing-ui-screens": {
+   "id": "ATL-WRK-0783",
+   "category": "WRK",
+   "name": "BŐVÍTÉS: Hiányzó Control Center képernyők: Deliveries (szállítások), külön DEALS képernyő, Computer Use panel, Tax/Accounting panel",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "b5870e8",
+   "status": "ACTIVE"
+  },
+  "wrk:v2:pln:vision-environment-awareness": {
+   "id": "ATL-WRK-0784",
+   "category": "WRK",
+   "name": "ÚJ MODUL: Látás- és környezet-érzékelés: tárgy- és eszközfelismerés (Object and Equipment Recognition), környezeti kontextus (Environmental Context Awareness)",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "b5870e8",
    "status": "ACTIVE"
   }
  },
@@ -135834,12 +135898,12 @@
   "WIN": 4,
   "CFG": 42,
   "SRC": 160,
-  "PLN": 95,
+  "PLN": 98,
   "DIR": 11494,
   "SPC": 984,
   "FND": 303,
-  "DEC": 56,
-  "WRK": 782
+  "DEC": 58,
+  "WRK": 785
  },
  "rule": "An id is never reassigned or reused; retired keys keep their id.",
  "version": 2,

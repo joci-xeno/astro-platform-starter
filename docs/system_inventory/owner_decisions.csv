@@ -51,6 +51,8 @@ ATL-DEC-0049,"Döntés / jóváhagyás: Beszerzési forrás-adapterek: magán RF
 ATL-DEC-0050,"Döntés / jóváhagyás: Piaci adat-adapter (inaktív, jóváhagyásig), részvényindex-forrás és autonóm stratégiakutatás ügynök…",PLANNED_MODULE,Aktiválás külön jóváhagyás,0,ATL-PLN-0081,ATL-WRK-0576,OPEN
 ATL-DEC-0051,Döntés / jóváhagyás: Egyéb jóváhagyott kártevő-motor adapter (csak tulajdonosi igényre),PLANNED_MODULE,Csak tulajdonosi igény esetén,0,ATL-PLN-0082,ATL-WRK-0577,OPEN
 ATL-DEC-0052,"Döntés / jóváhagyás: Jövőbeli, külön engedélyezett élő kereskedési teljesítmény-nézet",PLANNED_MODULE,Külön engedély; jelenleg NOT_AUTHORIZED,0,ATL-PLN-0088,ATL-WRK-0583,OPEN
+ATL-DEC-0056,Döntés / jóváhagyás: Issue-to-fix automatizálás (HALASZTOTT ötlet): issue-bevitel -> modell -> code-edit-workflow change…,PLANNED_MODULE,Külön tulajdonosi döntés az aktiváláshoz,0,ATL-PLN-0095,ATL-WRK-0782,OPEN
+ATL-DEC-0057,"Döntés / jóváhagyás: Látás- és környezet-érzékelés: tárgy- és eszközfelismerés (Object and Equipment Recognition), körny…",PLANNED_MODULE,Szolgáltató és szenzorok engedélye,0,ATL-PLN-0097,ATL-WRK-0784,OPEN
 ATL-DEC-0053,Döntés / jóváhagyás: Engedélyezett valódi connector-teszt és futási bizonyíték-gyűjtés,PLANNED_MODULE,Fiókok / jóváhagyás,0,ATL-PLN-0091,ATL-WRK-0586,OPEN
 ATL-DEC-0054,"Döntés / jóváhagyás: Valódi STAGING környezet, Windows CI + test hardening (LF, junction symlink, rm retry, POSIX szigná…",PLANNED_MODULE,Windows/staging hozzáférés és kulcs,0,ATL-PLN-0093,ATL-WRK-0588,OPEN
 ATL-DEC-0055,"A karanténba tett régi futtatókörnyezet (worker.js, supervisor.js, agent-child.js) sorsa",V2_CORRECTION,A v1 leltár ezeket rendes elemnek vette; v2-ben LEGACY_QUARANTINED. Törlés/archiválás csak tulajdonosi döntéssel.,0,,ATL-WRK-0604,OPEN

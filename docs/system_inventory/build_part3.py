@@ -50,11 +50,12 @@ REQ_WORK = collections.defaultdict(list)
 for w in WORK:
     if not w["req_set"]:
         continue
-    n = len(w["req_set"])
+    share = [a for a in w["req_set"] if (a.startswith("ATL-FUT") if w["deferred"] else not a.startswith("ATL-FUT"))]
+    w["hours_reqs"] = share
+    for a in share:
+        REQ_HOURS[a][0] += w["impl_h"] / len(share)
+        REQ_HOURS[a][1] += w["ver_h"] / len(share)
     for a in w["req_set"]:
-        if not w["deferred"] or a.startswith("ATL-FUT"):
-            REQ_HOURS[a][0] += w["impl_h"] / n
-            REQ_HOURS[a][1] += w["ver_h"] / n
         REQ_WORK[a].append(w["id"])
 # component hours / work ids
 COMP_HOURS = collections.defaultdict(lambda: [0.0, 0.0])
@@ -69,6 +70,10 @@ for w in WORK:
     elif w["origin"] == "V2_PLANNED_MODULE":
         for c in w["component_ids"]:
             COMP_WORK[c].append(w["id"])           # related only (hours stay with the planned module)
+# v2 correction: reverse relation of the extra component links (does not influence hours)
+for _a, _cs in FIXED_LINKS.items():
+    for _c in _cs:
+        COMP_REQS[_c].add(_a)
 # pln refs per component
 COMP_PLN = collections.defaultdict(list)
 for m in PLN.values():
@@ -103,6 +108,7 @@ for (src, st), lst in sorted(by_src.items()):
     for x in lst:
         x["wrk_ids"] = [w["id"]]
         w["req_set"] = []
+    link_dirgap(w, lst)
 # register PLN/WRK back-links on decisions/findings already done; finalize ids lists
 for w in WORK:
     w.setdefault("req_set", [])
@@ -137,9 +143,9 @@ def rel_rows(a):
         lst = REQ_LINKS[a]
         impl_c = [c for c, rel in lst if rel != "VERIFIED_BY_TEST" and comps.get(c, {}).get("category") != "TST"]
         test_c = [c for c, rel in lst if rel == "VERIFIED_BY_TEST" or comps.get(c, {}).get("category") == "TST"]
-        return list(dict.fromkeys(impl_c)), list(dict.fromkeys(test_c))
+        return list(dict.fromkeys(impl_c + FIXED_LINKS.get(a, []))), list(dict.fromkeys(test_c))
     cs = ids_in(r.get("component_ids", ""))
-    return [c for c in cs if comps[c]["category"] != "TST"], [c for c in cs if comps[c]["category"] == "TST"]
+    return list(dict.fromkeys([c for c in cs if comps[c]["category"] != "TST"] + FIXED_LINKS.get(a, []))), [c for c in cs if comps[c]["category"] == "TST"]
 REQ_MATRIX = []
 for a in list(REQ) + list(SRCSET):
     r = REQ_BY_ID[a]
