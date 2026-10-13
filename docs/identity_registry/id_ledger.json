@@ -135864,6 +135864,758 @@
    "first_seen": "2026-10-12",
    "first_seen_commit": "b5870e8",
    "status": "ACTIVE"
+  },
+  "pln:brain:brain-gateway-service": {
+   "id": "ATL-PLN-0098",
+   "category": "PLN",
+   "name": "Brain Gateway szolgáltatás: egyetlen megosztott Brain-példány és közös belépési pont (consult/understand/plan/act) a Control Center, a runtime, az AURÓRA, az ügynökök és a munkafolyamatok számára",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "pln:brain:brain-context-builder": {
+   "id": "ATL-PLN-0099",
+   "category": "PLN",
+   "name": "Brain Context Builder és prompt-könyvtár: memória + élő rendszerállapot + preferenciák + persona kérésenkénti összeállítása, verziózott rendszerpromptok",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "pln:brain:model-gateway-wiring": {
+   "id": "ATL-PLN-0100",
+   "category": "PLN",
+   "name": "Modell-gateway egységes bekötése: a Control Center / runtime / ügynök gateway-ek a registry-lánchoz (jelenleg szolgáltató nélkül működnek)",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "pln:brain:model-live-adapter-layer": {
+   "id": "ATL-PLN-0101",
+   "category": "PLN",
+   "name": "Szolgáltató-adapter bővítés: system prompt + előzmény, streaming, tool-calling, strukturált kimenet, retry/backoff, bemenet/kimenet szerinti árazás és token-számlálás",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "pln:brain:understanding-engine": {
+   "id": "ATL-PLN-0102",
+   "category": "PLN",
+   "name": "Szövegértés / szándékfelismerő motor: séma-kötött szándék + entitás + bizonytalanság; modellalapú útvonal szabályos visszaesés mellett; a modell sosem ad jogosultságot",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "pln:brain:hungarian-language-pack": {
+   "id": "ATL-PLN-0103",
+   "category": "PLN",
+   "name": "Magyar nyelvi csomag: nyelvfelismerés, ékezet-normalizálás, stopszavak, szuffixum-/tőillesztés az intent- és memória-rétegben",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "pln:brain:conversation-orchestrator": {
+   "id": "ATL-PLN-0104",
+   "category": "PLN",
+   "name": "Többfordulós beszélgetés-vezérlő: előzmény, összegzés, utalás-feloldás, tisztázó kérdések; Aurora és chat egyesítése",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "pln:brain:reasoning-plan-bridge": {
+   "id": "ATL-PLN-0105",
+   "category": "PLN",
+   "name": "Következtetés- és terv-híd: goal-planner / decision-analysis / debate / multi-solution a Brain Gateway-en; közös terv-séma goal-planner → planning-brain → orchestrator → verifier",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "pln:brain:agent-execution-loop": {
+   "id": "ATL-PLN-0106",
+   "category": "PLN",
+   "name": "Ügynök-végrehajtási ciklus: modellvezérelt tool-use (megfigyel-gondol-cselekszik-ellenőriz), sandbox munkaterület, a 30 ügynök hostolása a runtime-ban",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "pln:brain:self-check-repair-loop": {
+   "id": "ATL-PLN-0107",
+   "category": "PLN",
+   "name": "Önellenőrzés és javítás: bizonyíték-alapú verifier, valódi újratervezés, hiba → ok → javítási javaslat → jóváhagyás → teszt → visszagörgetés",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "pln:brain:run-budget-governor": {
+   "id": "ATL-PLN-0108",
+   "category": "PLN",
+   "name": "Futásonkénti keretező: lépés, idő, token, költség; autonómia-szintek (A0/A1/A2); leállás és jelentés túllépéskor",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "pln:brain:voice-brain-bridge": {
+   "id": "ATL-PLN-0109",
+   "category": "PLN",
+   "name": "Hang-Brain híd: az AURÓRA böngészős hangja a szerver-oldali beszélgetés-stacken és a Brain Gateway-en át; push-to-talk; nyelvváltás STT/TTS-re",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "pln:brain:voice-provider-adapters": {
+   "id": "ATL-PLN-0110",
+   "category": "PLN",
+   "name": "STT/TTS szolgáltató-adapterek (böngésző-natív, helyi offline, felhő) probe-bizonyítékkal, magyar hang-választással, VAD-del",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "pln:brain:speech-style-emotion-engine": {
+   "id": "ATL-PLN-0111",
+   "category": "PLN",
+   "name": "Érzelem-, hangulat- és beszédstílus-felismerő motor (szöveg + opcionális prozódia), több fordulós hangulat-követés",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "pln:brain:emotion-expression-guard": {
+   "id": "ATL-PLN-0112",
+   "category": "PLN",
+   "name": "Érzelemkifejezés-szabályzat és kimeneti védelem: természetes kifejezés, emberi érzelem birtoklásának állítása nélkül (HU+EN minta-katalógus, modell-kimenetre is)",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "pln:brain:unified-memory-controls": {
+   "id": "ATL-PLN-0113",
+   "category": "PLN",
+   "name": "Egységes memória-vezérlés: globális be/ki, scope, megőrzés, export, felejtés, 'emlékezz erre' minden tárra",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "pln:brain:conversation-memory-capture": {
+   "id": "ATL-PLN-0114",
+   "category": "PLN",
+   "name": "Beszélgetés → memória rögzítés tulajdonosi hozzájárulással, összegzéssel, titok-szűréssel, visszahívással a kontextusba",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "pln:brain:memory-durability-embeddings": {
+   "id": "ATL-PLN-0115",
+   "category": "PLN",
+   "name": "Memória-tartósság és többnyelvű embedding: a nem tartós tárak tartóssá tétele; embedding-aktiválás; magyar retrieval-eval",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "pln:brain:brain-evaluation-harness": {
+   "id": "ATL-PLN-0116",
+   "category": "PLN",
+   "name": "Brain értékelő keret: magyar arany-korpusz, fake és élő üzemmód, küszöbök, fixture ≠ élő jelölés",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "pln:brain:brain-ui-surface": {
+   "id": "ATL-PLN-0117",
+   "category": "PLN",
+   "name": "Brain / AURÓRA egységes felület: beszélgetés, brainWorkflow indítás (ma nincs UI), terv- és bizonyíték-nézet, jóváhagyás-kérések, állapotjelző",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "pln:brain:brain-telemetry": {
+   "id": "ATL-PLN-0118",
+   "category": "PLN",
+   "name": "Brain telemetria: késleltetés, token, költség, hibaarány, visszaesés-arány, minőségi mutatók",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "dec:brain:impl-per-atl": {
+   "id": "ATL-DEC-0058",
+   "category": "DEC",
+   "name": "Fejlesztés-indítás ATL-számonként: minden WRK végrehajtása előtt külön tulajdonosi jóváhagyás (a terv elfogadása nem engedélyez kódmódosítást)",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "dec:brain:live-provider-choice": {
+   "id": "ATL-DEC-0059",
+   "category": "DEC",
+   "name": "Első élő modell-szolgáltató kiválasztása (helyi Ollama vs. felhő), fiók létrehozása és API-kulcs megadása a vaultba",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "dec:brain:spend-cap-amount": {
+   "id": "ATL-DEC-0060",
+   "category": "DEC",
+   "name": "Modell-költségplafon összege (havi és kérésenkénti) - aláírt MODEL_SPEND_CAP_SET; fizetős API-használat engedélye",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "dec:brain:local-model-install": {
+   "id": "ATL-DEC-0061",
+   "category": "DEC",
+   "name": "Helyi (offline) modell telepítése/letöltése (Ollama, modellfájlok, erőforrás-használat)",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "dec:brain:live-eval-budget": {
+   "id": "ATL-DEC-0062",
+   "category": "DEC",
+   "name": "Élő értékelő/benchmark futtatás költségkerete és engedélye",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "dec:brain:memory-capture-policy": {
+   "id": "ATL-DEC-0063",
+   "category": "DEC",
+   "name": "Beszélgetés-memória rögzítési és megőrzési policy: mit szabad rögzíteni, meddig, milyen hozzájárulással",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "dec:brain:embedding-activation": {
+   "id": "ATL-DEC-0064",
+   "category": "DEC",
+   "name": "Többnyelvű embedding-modell aktiválása / letöltése (helyi, loopback)",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "dec:brain:voice-provider-privacy": {
+   "id": "ATL-DEC-0065",
+   "category": "DEC",
+   "name": "Hang-szolgáltató és adatvédelem: felhős STT/TTS hangot küld külső félnek; böngésző-natív STT adatkezelése",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "dec:brain:emotion-policy-signoff": {
+   "id": "ATL-DEC-0066",
+   "category": "DEC",
+   "name": "Érzelemkifejezési szabályzat jóváhagyása (megengedett/tiltott kifejezések HU+EN)",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "dec:brain:autonomy-level": {
+   "id": "ATL-DEC-0067",
+   "category": "DEC",
+   "name": "Autonómia-szint (A0/A1/A2) jóváhagyása és az első felügyelt önálló futás engedélye",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "dec:brain:runtime-release": {
+   "id": "ATL-DEC-0068",
+   "category": "DEC",
+   "name": "A működő rendszer módosítása: a Brain beültetése (shadow → advisory → active), visszaállítási terv",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b00-arch-spec": {
+   "id": "ATL-WRK-0785",
+   "category": "WRK",
+   "name": "Brain architektúra-specifikáció és szerződések",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b01-single-brain": {
+   "id": "ATL-WRK-0786",
+   "category": "WRK",
+   "name": "Egyetlen megosztott Brain-példány (Control Center + runtime)",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b02-fake-adapters-fixtures": {
+   "id": "ATL-WRK-0787",
+   "category": "WRK",
+   "name": "Tesztinfrastruktúra: determinisztikus fake modell-adapter család és fixture-jelölés",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b03-threat-model": {
+   "id": "ATL-WRK-0788",
+   "category": "WRK",
+   "name": "Brain fenyegetésmodell és negatív teszt-készlet",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b10-gateway-api": {
+   "id": "ATL-WRK-0789",
+   "category": "WRK",
+   "name": "Brain Gateway API (consult/understand/plan/act) a module-brokeren át",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b11-context-builder": {
+   "id": "ATL-WRK-0790",
+   "category": "WRK",
+   "name": "Brain Context Builder",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b12-prompt-library": {
+   "id": "ATL-WRK-0791",
+   "category": "WRK",
+   "name": "Prompt-könyvtár és rendszerprompt-verziózás",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b13-degraded-mode": {
+   "id": "ATL-WRK-0792",
+   "category": "WRK",
+   "name": "Degradált (modell nélküli) üzemmód egyértelmű jelzéssel",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b14-bus-subscribers": {
+   "id": "ATL-WRK-0793",
+   "category": "WRK",
+   "name": "Brain-busz előfizetők bekötése",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b20-hu-language-pack": {
+   "id": "ATL-WRK-0794",
+   "category": "WRK",
+   "name": "Magyar nyelvi csomag",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b21-hu-gold-corpus": {
+   "id": "ATL-WRK-0795",
+   "category": "WRK",
+   "name": "Magyar arany-korpusz és mérőszámok",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b22-understanding-engine": {
+   "id": "ATL-WRK-0796",
+   "category": "WRK",
+   "name": "Szövegértés / szándékfelismerő motor",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b23-conversation-orchestrator": {
+   "id": "ATL-WRK-0797",
+   "category": "WRK",
+   "name": "Többfordulós beszélgetés-vezérlő",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b24-chat-aurora-unify": {
+   "id": "ATL-WRK-0798",
+   "category": "WRK",
+   "name": "AURÓRA és főoldali chat egyesítése egy beszélgetési úttá",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b25-hu-persona": {
+   "id": "ATL-WRK-0799",
+   "category": "WRK",
+   "name": "AURÓRA magyar persona és beszédstílus-beállítások",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b30-gateway-wiring": {
+   "id": "ATL-WRK-0800",
+   "category": "WRK",
+   "name": "Modell-gateway egységes bekötése",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b31-adapter-capabilities": {
+   "id": "ATL-WRK-0801",
+   "category": "WRK",
+   "name": "Szolgáltató-adapterek bővítése",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b32-token-cost": {
+   "id": "ATL-WRK-0802",
+   "category": "WRK",
+   "name": "Token- és költségszámlálás",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b33-output-guard": {
+   "id": "ATL-WRK-0803",
+   "category": "WRK",
+   "name": "Modell-kimenet védelem (injekció, titok, hamis érzelem-állítás)",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b34-model-routing-hu": {
+   "id": "ATL-WRK-0804",
+   "category": "WRK",
+   "name": "Nyelv- és feladat-alapú modell-útválasztás",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b35-model-benchmark-hu": {
+   "id": "ATL-WRK-0805",
+   "category": "WRK",
+   "name": "Modell-értékelő készlet magyar feladatokkal",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b36-local-model-prep": {
+   "id": "ATL-WRK-0806",
+   "category": "WRK",
+   "name": "Helyi (offline) modell-opció előkészítése",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b37-plan-schema-bridge": {
+   "id": "ATL-WRK-0807",
+   "category": "WRK",
+   "name": "Közös terv-séma és híd (szöveg → cél → terv → feladat → ügynök)",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b40-first-model-package": {
+   "id": "ATL-WRK-0808",
+   "category": "WRK",
+   "name": "Első élő modell-bekötés jóváhagyási csomag",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b41-first-live-connection": {
+   "id": "ATL-WRK-0809",
+   "category": "WRK",
+   "name": "ELSŐ élő modellbekötés végrehajtása (csak jóváhagyás után)",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b42-live-hu-smoke": {
+   "id": "ATL-WRK-0810",
+   "category": "WRK",
+   "name": "Élő modell magyar füstteszt és benchmark",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b50-live-understanding": {
+   "id": "ATL-WRK-0811",
+   "category": "WRK",
+   "name": "Élő szándékfelismerés bekötése és mérése",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b51-live-conversation": {
+   "id": "ATL-WRK-0812",
+   "category": "WRK",
+   "name": "Élő többfordulós magyar beszélgetés (AURÓRA + chat)",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b52-reasoning-engines": {
+   "id": "ATL-WRK-0813",
+   "category": "WRK",
+   "name": "Következtetés-motorok élesítése a Brain Gateway-en",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b54-complex-eval": {
+   "id": "ATL-WRK-0814",
+   "category": "WRK",
+   "name": "Összetett probléma-megoldás értékelése",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b60-unified-memory-controls": {
+   "id": "ATL-WRK-0815",
+   "category": "WRK",
+   "name": "Egységes memória-vezérlés",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b61-memory-durability": {
+   "id": "ATL-WRK-0816",
+   "category": "WRK",
+   "name": "Nem tartós tárak tartóssá tétele",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b62-memory-capture": {
+   "id": "ATL-WRK-0817",
+   "category": "WRK",
+   "name": "Beszélgetés → memória rögzítés hozzájárulással",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b63-embedding-activation": {
+   "id": "ATL-WRK-0818",
+   "category": "WRK",
+   "name": "Többnyelvű embedding aktiválása és magyar retrieval-eval",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b65-memory-in-context": {
+   "id": "ATL-WRK-0819",
+   "category": "WRK",
+   "name": "Memória-visszakeresés bekötése a Brain kontextusba",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b71-voice-brain-bridge": {
+   "id": "ATL-WRK-0820",
+   "category": "WRK",
+   "name": "Hang → Brain híd",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b72-voice-providers": {
+   "id": "ATL-WRK-0821",
+   "category": "WRK",
+   "name": "STT/TTS szolgáltató-adapterek",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b73-owner-voice-test": {
+   "id": "ATL-WRK-0822",
+   "category": "WRK",
+   "name": "Tulajdonosi hangteszt (magyar hallás + beszéd)",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b74-voice-privacy-notice": {
+   "id": "ATL-WRK-0823",
+   "category": "WRK",
+   "name": "Böngésző-STT adatvédelmi tájékoztató",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b80-emotion-style-engine": {
+   "id": "ATL-WRK-0824",
+   "category": "WRK",
+   "name": "Érzelem-, hangulat- és beszédstílus-felismerő motor",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b81-creative-intent": {
+   "id": "ATL-WRK-0825",
+   "category": "WRK",
+   "name": "Kreatív szándék és alkotói mód felismerése",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b82-emotion-expression-policy": {
+   "id": "ATL-WRK-0826",
+   "category": "WRK",
+   "name": "Érzelemkifejezési szabályzat",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b83-expressive-speech": {
+   "id": "ATL-WRK-0827",
+   "category": "WRK",
+   "name": "Kifejező beszéd: érzelem → prozódia/SSML/tempó",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b84-creative-expression": {
+   "id": "ATL-WRK-0828",
+   "category": "WRK",
+   "name": "Érzelemkifejezés kreatív munkában állítás-védelemmel",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b85-emotion-eval-hu": {
+   "id": "ATL-WRK-0829",
+   "category": "WRK",
+   "name": "Érzelem/stílus értékelés és negatív teszt",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b90-run-budget": {
+   "id": "ATL-WRK-0830",
+   "category": "WRK",
+   "name": "Futásonkénti keretező és leállító",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b91-tool-use-loop": {
+   "id": "ATL-WRK-0831",
+   "category": "WRK",
+   "name": "Modellvezérelt tool-use ciklus",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b92-sandbox-workspace": {
+   "id": "ATL-WRK-0832",
+   "category": "WRK",
+   "name": "Ügynök-munkaterület pillanatképpel és visszaállítással",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b93-real-replanner": {
+   "id": "ATL-WRK-0833",
+   "category": "WRK",
+   "name": "Valódi újratervezés",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b94-verifier-evidence": {
+   "id": "ATL-WRK-0834",
+   "category": "WRK",
+   "name": "Verifier bekötése bizonyíték-lekérdezőkkel",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b95-fix-loop": {
+   "id": "ATL-WRK-0835",
+   "category": "WRK",
+   "name": "Hiba → ok → javítás → jóváhagyás → teszt → visszagörgetés",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b96-workforce-in-runtime": {
+   "id": "ATL-WRK-0836",
+   "category": "WRK",
+   "name": "A 30 ügynök hostolása a runtime-ban az egységes Brain alatt",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b98-autonomy-levels": {
+   "id": "ATL-WRK-0837",
+   "category": "WRK",
+   "name": "Autonómia-szintek (A0 javasol, A1 jóváhagyással végrehajt, A2 kis kockázatnál önálló + utólagos jelentés)",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b97-supervised-trial": {
+   "id": "ATL-WRK-0838",
+   "category": "WRK",
+   "name": "Első felügyelt önálló futás",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b100-wire-agents": {
+   "id": "ATL-WRK-0839",
+   "category": "WRK",
+   "name": "Az ügynökök (30) és menedzserek (15) rákötése a Brain Gatewayre",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b101-wire-business": {
+   "id": "ATL-WRK-0840",
+   "category": "WRK",
+   "name": "Üzleti/pénzügyi/felderítő modulok Brain-konzultációja (csak javaslat)",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b102-wire-workflows": {
+   "id": "ATL-WRK-0841",
+   "category": "WRK",
+   "name": "Munkafolyamatok, workbench, fejlesztő-asszisztens, fordítás Brain-konzultációja",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b103-brain-ui": {
+   "id": "ATL-WRK-0842",
+   "category": "WRK",
+   "name": "Brain / AURÓRA egységes UI",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b104-telemetry": {
+   "id": "ATL-WRK-0843",
+   "category": "WRK",
+   "name": "Brain telemetria",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b105-e2e": {
+   "id": "ATL-WRK-0844",
+   "category": "WRK",
+   "name": "Végponti integrációs teszt-csomag",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b106-release-gate": {
+   "id": "ATL-WRK-0845",
+   "category": "WRK",
+   "name": "Kiadási kapu: a Brain beültetése a működő rendszerbe",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
+  },
+  "wrk:brain:b107-final-acceptance": {
+   "id": "ATL-WRK-0846",
+   "category": "WRK",
+   "name": "ZERO TOLERANCE záró elfogadás a Brain-programra",
+   "first_seen": "2026-10-12",
+   "first_seen_commit": "0df77d0",
+   "status": "ACTIVE"
   }
  },
  "next": {
@@ -135898,12 +136650,12 @@
   "WIN": 4,
   "CFG": 42,
   "SRC": 160,
-  "PLN": 98,
+  "PLN": 119,
   "DIR": 11494,
   "SPC": 984,
   "FND": 303,
-  "DEC": 58,
-  "WRK": 785
+  "DEC": 69,
+  "WRK": 847
  },
  "rule": "An id is never reassigned or reused; retired keys keep their id.",
  "version": 2,

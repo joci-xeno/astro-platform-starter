@@ -1,0 +1,19 @@
+﻿consumer_id,consumer,current_relation_to_brain,target_relation,work_ids
+ATL-AUR-0002,aurora,NINCS: aurora.respond a Brain-t nem hívja (csak human-core),Brain Gateway konzultáció + közös beszélgetési út,ATL-WRK-0798; ATL-WRK-0797
+ATL-API-0089,POST /api/chat,NINCS: core.chat → master-brief.answerQuery (4 regex),Brain Gateway (understand/consult),ATL-WRK-0798
+ATL-API-0058,POST /api/aurora/utterance,NINCS: közvetlen auroraRespond,Brain Gateway,ATL-WRK-0798; ATL-WRK-0820
+ATL-API-0065,POST /api/brain/command,REGEX whitelist (owner-command),Szándékfelismerő motor + whitelist végrehajtási kapu,ATL-WRK-0796
+ATL-BRN-0001,brain-master-bridge,"API-only (agents30/action), UI nincs, kész planId kell",Szöveg → terv → futás a Gatewayen és UI-n,ATL-WRK-0807; ATL-WRK-0842
+ATL-AGT-0040,agent-workforce,"NINCS: csak CC-ben hostolt, Brain-t nem kérdezi","Gateway-konzultáció, runtime-hostolás",ATL-WRK-0836; ATL-WRK-0839
+ATL-BRN-0025,master-coordinator,Felügyeleti tick; Brain csak infrastruktúra,Gateway-n át terv/tanács,ATL-WRK-0839
+ATL-OPS-0034,atlasz-runtime/supervisor-safe.mjs,"INFRASTRUKTÚRA: security/blackBox/dispatch, külön Brain-példány",Egyetlen megosztott Brain,ATL-WRK-0786; ATL-WRK-0836
+ATL-FIN-0005,business/money-engine,INFRASTRUKTÚRA: dispatch + memory.recordOutcome,Brain-javaslat (pénzügyi jogosultság változatlan),ATL-WRK-0840
+ATL-RES-0006,global-discovery,NINCS Brain-konzultáció (opportunity-intelligence csak szűr),Brain-javaslat felderítéshez (élő forrás tiltva),ATL-WRK-0840
+ATL-BRN-0017,campaign-manager,NINCS,Brain-javaslat,ATL-WRK-0840
+ATL-PLG-0008,workbench,conversation.complete → NO_ELIGIBLE_PROVIDER,Gateway,ATL-WRK-0841
+ATL-DOC-0007,translation-feedback,MODEL_NOT_CONFIGURED adapter nélkül,Gateway modell-út,ATL-WRK-0841
+ATL-DEV-0003,code-edit-workflow,Önálló; modell nem ír szerkesztést,Brain-javaslat → átnézés → jóváhagyás,ATL-WRK-0835; ATL-WRK-0841
+ATL-VOI-0001,voice-conversation,Mock szolgáltatók; böngészős hang megkerüli,Hang → Gateway,ATL-WRK-0820
+ATL-MEM-0002,brain/memory-fabric,write-mostly,Olvasás a Context Builderbe,ATL-WRK-0819; ATL-WRK-0790
+ATL-UIX-0004,atlasz-control-center/memory-panel.mjs,tár-szintű vezérlők,Egységes memória-vezérlés,ATL-WRK-0815
+ATL-UIX-0008,atlasz-control-center/public/app.js,Aurora/chat/hang szabályos út,Egységes Brain UI,ATL-WRK-0842; ATL-WRK-0798

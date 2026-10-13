@@ -1,0 +1,82 @@
+{
+ "generated_at": "2026-10-12",
+ "git_head": "0df77d0",
+ "checks": [
+  {
+   "check": "A korábbi (git HEAD) ledger minden bejegyzésének azonosítója és kulcsa változatlan",
+   "ok": true,
+   "detail": "16983 meglévő bejegyzés"
+  },
+  {
+   "check": "Az új azonosítók egyediek és nem ütköznek a leltárral/ledgerrel",
+   "ok": true,
+   "detail": "94 új azonosító"
+  },
+  {
+   "check": "A leltár 1 047 elemes és érintetlen (950 meglévő + 97 tervezett)",
+   "ok": true,
+   "detail": "inv=1047 pln=97 wrk=784"
+  },
+  {
+   "check": "Minden munkafeladatnak van meglévő ATL-komponens-kapcsolata és tervezett modulja",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "A függőségek körmentesek és létező azonosítókra mutatnak",
+   "ok": true,
+   "detail": "[]"
+  },
+  {
+   "check": "Mind a 10 képességhez tartozik munkafeladat",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "Minden munkafeladatnak van elfogadási kritériuma és legalább egy tesztje",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "Minden feladat a 'fejlesztés-indítás ATL-számonként' jóváhagyás mögött áll",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "Minden ÉLŐ szintű teszt mögött a megfelelő tulajdonosi kapu áll (modell/költség/hang/autonómia/kiadás)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "Az élő modell-bekötés feladatai legalább 3 kaput igényelnek (kulcs, egress, költség/engedély)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "Nincs fizetős/élő/külső művelet kapu nélkül (ext kitöltött → van nem-impl kapu)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "Minden tervezett modul ('PLANNED*') nem létezőként van jelölve, és van legalább egy feladata",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "Minden integrációs fogyasztónak van munkafeladata",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "A hivatkozott meglévő tervezett modulok léteznek (adopts/also_pln)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "Csak docs/ alatti fájl változott (futó kód nem módosult)",
+   "ok": true,
+   "detail": "[]"
+  }
+ ],
+ "errors": 0
+}

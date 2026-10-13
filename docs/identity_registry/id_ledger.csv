@@ -16982,3 +16982,97 @@ ATL-DEC-0057,DEC,dec:pln:vision-environment-awareness,Döntés: Látás- és kö
 ATL-WRK-0782,WRK,wrk:v2:pln:issue-to-fix-automation,HALASZTOTT: Issue-to-fix automatizálás (HALASZTOTT ötlet): issue-bevitel -> modell -> code-edit-workflow change-set -> teszt -> független átnézés; automatikusan …,ACTIVE,2026-10-12,b5870e8
 ATL-WRK-0783,WRK,wrk:v2:pln:missing-ui-screens,"BŐVÍTÉS: Hiányzó Control Center képernyők: Deliveries (szállítások), külön DEALS képernyő, Computer Use panel, Tax/Accounting panel",ACTIVE,2026-10-12,b5870e8
 ATL-WRK-0784,WRK,wrk:v2:pln:vision-environment-awareness,"ÚJ MODUL: Látás- és környezet-érzékelés: tárgy- és eszközfelismerés (Object and Equipment Recognition), környezeti kontextus (Environmental Context Awareness)",ACTIVE,2026-10-12,b5870e8
+ATL-PLN-0098,PLN,pln:brain:brain-gateway-service,"Brain Gateway szolgáltatás: egyetlen megosztott Brain-példány és közös belépési pont (consult/understand/plan/act) a Control Center, a runtime, az AURÓRA, az ügynökök és a munkafolyamatok számára",ACTIVE,2026-10-12,0df77d0
+ATL-PLN-0099,PLN,pln:brain:brain-context-builder,"Brain Context Builder és prompt-könyvtár: memória + élő rendszerállapot + preferenciák + persona kérésenkénti összeállítása, verziózott rendszerpromptok",ACTIVE,2026-10-12,0df77d0
+ATL-PLN-0100,PLN,pln:brain:model-gateway-wiring,Modell-gateway egységes bekötése: a Control Center / runtime / ügynök gateway-ek a registry-lánchoz (jelenleg szolgáltató nélkül működnek),ACTIVE,2026-10-12,0df77d0
+ATL-PLN-0101,PLN,pln:brain:model-live-adapter-layer,"Szolgáltató-adapter bővítés: system prompt + előzmény, streaming, tool-calling, strukturált kimenet, retry/backoff, bemenet/kimenet szerinti árazás és token-számlálás",ACTIVE,2026-10-12,0df77d0
+ATL-PLN-0102,PLN,pln:brain:understanding-engine,Szövegértés / szándékfelismerő motor: séma-kötött szándék + entitás + bizonytalanság; modellalapú útvonal szabályos visszaesés mellett; a modell sosem ad jogosultságot,ACTIVE,2026-10-12,0df77d0
+ATL-PLN-0103,PLN,pln:brain:hungarian-language-pack,"Magyar nyelvi csomag: nyelvfelismerés, ékezet-normalizálás, stopszavak, szuffixum-/tőillesztés az intent- és memória-rétegben",ACTIVE,2026-10-12,0df77d0
+ATL-PLN-0104,PLN,pln:brain:conversation-orchestrator,"Többfordulós beszélgetés-vezérlő: előzmény, összegzés, utalás-feloldás, tisztázó kérdések; Aurora és chat egyesítése",ACTIVE,2026-10-12,0df77d0
+ATL-PLN-0105,PLN,pln:brain:reasoning-plan-bridge,Következtetés- és terv-híd: goal-planner / decision-analysis / debate / multi-solution a Brain Gateway-en; közös terv-séma goal-planner → planning-brain → orchestrator → verifier,ACTIVE,2026-10-12,0df77d0
+ATL-PLN-0106,PLN,pln:brain:agent-execution-loop,"Ügynök-végrehajtási ciklus: modellvezérelt tool-use (megfigyel-gondol-cselekszik-ellenőriz), sandbox munkaterület, a 30 ügynök hostolása a runtime-ban",ACTIVE,2026-10-12,0df77d0
+ATL-PLN-0107,PLN,pln:brain:self-check-repair-loop,"Önellenőrzés és javítás: bizonyíték-alapú verifier, valódi újratervezés, hiba → ok → javítási javaslat → jóváhagyás → teszt → visszagörgetés",ACTIVE,2026-10-12,0df77d0
+ATL-PLN-0108,PLN,pln:brain:run-budget-governor,"Futásonkénti keretező: lépés, idő, token, költség; autonómia-szintek (A0/A1/A2); leállás és jelentés túllépéskor",ACTIVE,2026-10-12,0df77d0
+ATL-PLN-0109,PLN,pln:brain:voice-brain-bridge,Hang-Brain híd: az AURÓRA böngészős hangja a szerver-oldali beszélgetés-stacken és a Brain Gateway-en át; push-to-talk; nyelvváltás STT/TTS-re,ACTIVE,2026-10-12,0df77d0
+ATL-PLN-0110,PLN,pln:brain:voice-provider-adapters,"STT/TTS szolgáltató-adapterek (böngésző-natív, helyi offline, felhő) probe-bizonyítékkal, magyar hang-választással, VAD-del",ACTIVE,2026-10-12,0df77d0
+ATL-PLN-0111,PLN,pln:brain:speech-style-emotion-engine,"Érzelem-, hangulat- és beszédstílus-felismerő motor (szöveg + opcionális prozódia), több fordulós hangulat-követés",ACTIVE,2026-10-12,0df77d0
+ATL-PLN-0112,PLN,pln:brain:emotion-expression-guard,"Érzelemkifejezés-szabályzat és kimeneti védelem: természetes kifejezés, emberi érzelem birtoklásának állítása nélkül (HU+EN minta-katalógus, modell-kimenetre is)",ACTIVE,2026-10-12,0df77d0
+ATL-PLN-0113,PLN,pln:brain:unified-memory-controls,"Egységes memória-vezérlés: globális be/ki, scope, megőrzés, export, felejtés, 'emlékezz erre' minden tárra",ACTIVE,2026-10-12,0df77d0
+ATL-PLN-0114,PLN,pln:brain:conversation-memory-capture,"Beszélgetés → memória rögzítés tulajdonosi hozzájárulással, összegzéssel, titok-szűréssel, visszahívással a kontextusba",ACTIVE,2026-10-12,0df77d0
+ATL-PLN-0115,PLN,pln:brain:memory-durability-embeddings,Memória-tartósság és többnyelvű embedding: a nem tartós tárak tartóssá tétele; embedding-aktiválás; magyar retrieval-eval,ACTIVE,2026-10-12,0df77d0
+ATL-PLN-0116,PLN,pln:brain:brain-evaluation-harness,"Brain értékelő keret: magyar arany-korpusz, fake és élő üzemmód, küszöbök, fixture ≠ élő jelölés",ACTIVE,2026-10-12,0df77d0
+ATL-PLN-0117,PLN,pln:brain:brain-ui-surface,"Brain / AURÓRA egységes felület: beszélgetés, brainWorkflow indítás (ma nincs UI), terv- és bizonyíték-nézet, jóváhagyás-kérések, állapotjelző",ACTIVE,2026-10-12,0df77d0
+ATL-PLN-0118,PLN,pln:brain:brain-telemetry,"Brain telemetria: késleltetés, token, költség, hibaarány, visszaesés-arány, minőségi mutatók",ACTIVE,2026-10-12,0df77d0
+ATL-DEC-0058,DEC,dec:brain:impl-per-atl,Fejlesztés-indítás ATL-számonként: minden WRK végrehajtása előtt külön tulajdonosi jóváhagyás (a terv elfogadása nem engedélyez kódmódosítást),ACTIVE,2026-10-12,0df77d0
+ATL-DEC-0059,DEC,dec:brain:live-provider-choice,"Első élő modell-szolgáltató kiválasztása (helyi Ollama vs. felhő), fiók létrehozása és API-kulcs megadása a vaultba",ACTIVE,2026-10-12,0df77d0
+ATL-DEC-0060,DEC,dec:brain:spend-cap-amount,Modell-költségplafon összege (havi és kérésenkénti) - aláírt MODEL_SPEND_CAP_SET; fizetős API-használat engedélye,ACTIVE,2026-10-12,0df77d0
+ATL-DEC-0061,DEC,dec:brain:local-model-install,"Helyi (offline) modell telepítése/letöltése (Ollama, modellfájlok, erőforrás-használat)",ACTIVE,2026-10-12,0df77d0
+ATL-DEC-0062,DEC,dec:brain:live-eval-budget,Élő értékelő/benchmark futtatás költségkerete és engedélye,ACTIVE,2026-10-12,0df77d0
+ATL-DEC-0063,DEC,dec:brain:memory-capture-policy,"Beszélgetés-memória rögzítési és megőrzési policy: mit szabad rögzíteni, meddig, milyen hozzájárulással",ACTIVE,2026-10-12,0df77d0
+ATL-DEC-0064,DEC,dec:brain:embedding-activation,"Többnyelvű embedding-modell aktiválása / letöltése (helyi, loopback)",ACTIVE,2026-10-12,0df77d0
+ATL-DEC-0065,DEC,dec:brain:voice-provider-privacy,Hang-szolgáltató és adatvédelem: felhős STT/TTS hangot küld külső félnek; böngésző-natív STT adatkezelése,ACTIVE,2026-10-12,0df77d0
+ATL-DEC-0066,DEC,dec:brain:emotion-policy-signoff,Érzelemkifejezési szabályzat jóváhagyása (megengedett/tiltott kifejezések HU+EN),ACTIVE,2026-10-12,0df77d0
+ATL-DEC-0067,DEC,dec:brain:autonomy-level,Autonómia-szint (A0/A1/A2) jóváhagyása és az első felügyelt önálló futás engedélye,ACTIVE,2026-10-12,0df77d0
+ATL-DEC-0068,DEC,dec:brain:runtime-release,"A működő rendszer módosítása: a Brain beültetése (shadow → advisory → active), visszaállítási terv",ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0785,WRK,wrk:brain:b00-arch-spec,Brain architektúra-specifikáció és szerződések,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0786,WRK,wrk:brain:b01-single-brain,Egyetlen megosztott Brain-példány (Control Center + runtime),ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0787,WRK,wrk:brain:b02-fake-adapters-fixtures,Tesztinfrastruktúra: determinisztikus fake modell-adapter család és fixture-jelölés,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0788,WRK,wrk:brain:b03-threat-model,Brain fenyegetésmodell és negatív teszt-készlet,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0789,WRK,wrk:brain:b10-gateway-api,Brain Gateway API (consult/understand/plan/act) a module-brokeren át,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0790,WRK,wrk:brain:b11-context-builder,Brain Context Builder,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0791,WRK,wrk:brain:b12-prompt-library,Prompt-könyvtár és rendszerprompt-verziózás,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0792,WRK,wrk:brain:b13-degraded-mode,Degradált (modell nélküli) üzemmód egyértelmű jelzéssel,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0793,WRK,wrk:brain:b14-bus-subscribers,Brain-busz előfizetők bekötése,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0794,WRK,wrk:brain:b20-hu-language-pack,Magyar nyelvi csomag,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0795,WRK,wrk:brain:b21-hu-gold-corpus,Magyar arany-korpusz és mérőszámok,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0796,WRK,wrk:brain:b22-understanding-engine,Szövegértés / szándékfelismerő motor,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0797,WRK,wrk:brain:b23-conversation-orchestrator,Többfordulós beszélgetés-vezérlő,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0798,WRK,wrk:brain:b24-chat-aurora-unify,AURÓRA és főoldali chat egyesítése egy beszélgetési úttá,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0799,WRK,wrk:brain:b25-hu-persona,AURÓRA magyar persona és beszédstílus-beállítások,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0800,WRK,wrk:brain:b30-gateway-wiring,Modell-gateway egységes bekötése,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0801,WRK,wrk:brain:b31-adapter-capabilities,Szolgáltató-adapterek bővítése,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0802,WRK,wrk:brain:b32-token-cost,Token- és költségszámlálás,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0803,WRK,wrk:brain:b33-output-guard,"Modell-kimenet védelem (injekció, titok, hamis érzelem-állítás)",ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0804,WRK,wrk:brain:b34-model-routing-hu,Nyelv- és feladat-alapú modell-útválasztás,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0805,WRK,wrk:brain:b35-model-benchmark-hu,Modell-értékelő készlet magyar feladatokkal,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0806,WRK,wrk:brain:b36-local-model-prep,Helyi (offline) modell-opció előkészítése,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0807,WRK,wrk:brain:b37-plan-schema-bridge,Közös terv-séma és híd (szöveg → cél → terv → feladat → ügynök),ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0808,WRK,wrk:brain:b40-first-model-package,Első élő modell-bekötés jóváhagyási csomag,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0809,WRK,wrk:brain:b41-first-live-connection,ELSŐ élő modellbekötés végrehajtása (csak jóváhagyás után),ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0810,WRK,wrk:brain:b42-live-hu-smoke,Élő modell magyar füstteszt és benchmark,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0811,WRK,wrk:brain:b50-live-understanding,Élő szándékfelismerés bekötése és mérése,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0812,WRK,wrk:brain:b51-live-conversation,Élő többfordulós magyar beszélgetés (AURÓRA + chat),ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0813,WRK,wrk:brain:b52-reasoning-engines,Következtetés-motorok élesítése a Brain Gateway-en,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0814,WRK,wrk:brain:b54-complex-eval,Összetett probléma-megoldás értékelése,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0815,WRK,wrk:brain:b60-unified-memory-controls,Egységes memória-vezérlés,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0816,WRK,wrk:brain:b61-memory-durability,Nem tartós tárak tartóssá tétele,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0817,WRK,wrk:brain:b62-memory-capture,Beszélgetés → memória rögzítés hozzájárulással,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0818,WRK,wrk:brain:b63-embedding-activation,Többnyelvű embedding aktiválása és magyar retrieval-eval,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0819,WRK,wrk:brain:b65-memory-in-context,Memória-visszakeresés bekötése a Brain kontextusba,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0820,WRK,wrk:brain:b71-voice-brain-bridge,Hang → Brain híd,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0821,WRK,wrk:brain:b72-voice-providers,STT/TTS szolgáltató-adapterek,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0822,WRK,wrk:brain:b73-owner-voice-test,Tulajdonosi hangteszt (magyar hallás + beszéd),ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0823,WRK,wrk:brain:b74-voice-privacy-notice,Böngésző-STT adatvédelmi tájékoztató,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0824,WRK,wrk:brain:b80-emotion-style-engine,"Érzelem-, hangulat- és beszédstílus-felismerő motor",ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0825,WRK,wrk:brain:b81-creative-intent,Kreatív szándék és alkotói mód felismerése,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0826,WRK,wrk:brain:b82-emotion-expression-policy,Érzelemkifejezési szabályzat,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0827,WRK,wrk:brain:b83-expressive-speech,Kifejező beszéd: érzelem → prozódia/SSML/tempó,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0828,WRK,wrk:brain:b84-creative-expression,Érzelemkifejezés kreatív munkában állítás-védelemmel,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0829,WRK,wrk:brain:b85-emotion-eval-hu,Érzelem/stílus értékelés és negatív teszt,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0830,WRK,wrk:brain:b90-run-budget,Futásonkénti keretező és leállító,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0831,WRK,wrk:brain:b91-tool-use-loop,Modellvezérelt tool-use ciklus,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0832,WRK,wrk:brain:b92-sandbox-workspace,Ügynök-munkaterület pillanatképpel és visszaállítással,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0833,WRK,wrk:brain:b93-real-replanner,Valódi újratervezés,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0834,WRK,wrk:brain:b94-verifier-evidence,Verifier bekötése bizonyíték-lekérdezőkkel,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0835,WRK,wrk:brain:b95-fix-loop,Hiba → ok → javítás → jóváhagyás → teszt → visszagörgetés,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0836,WRK,wrk:brain:b96-workforce-in-runtime,A 30 ügynök hostolása a runtime-ban az egységes Brain alatt,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0837,WRK,wrk:brain:b98-autonomy-levels,"Autonómia-szintek (A0 javasol, A1 jóváhagyással végrehajt, A2 kis kockázatnál önálló + utólagos jelentés)",ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0838,WRK,wrk:brain:b97-supervised-trial,Első felügyelt önálló futás,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0839,WRK,wrk:brain:b100-wire-agents,Az ügynökök (30) és menedzserek (15) rákötése a Brain Gatewayre,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0840,WRK,wrk:brain:b101-wire-business,Üzleti/pénzügyi/felderítő modulok Brain-konzultációja (csak javaslat),ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0841,WRK,wrk:brain:b102-wire-workflows,"Munkafolyamatok, workbench, fejlesztő-asszisztens, fordítás Brain-konzultációja",ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0842,WRK,wrk:brain:b103-brain-ui,Brain / AURÓRA egységes UI,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0843,WRK,wrk:brain:b104-telemetry,Brain telemetria,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0844,WRK,wrk:brain:b105-e2e,Végponti integrációs teszt-csomag,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0845,WRK,wrk:brain:b106-release-gate,Kiadási kapu: a Brain beültetése a működő rendszerbe,ACTIVE,2026-10-12,0df77d0
+ATL-WRK-0846,WRK,wrk:brain:b107-final-acceptance,ZERO TOLERANCE záró elfogadás a Brain-programra,ACTIVE,2026-10-12,0df77d0
