@@ -56,3 +56,23 @@ test("control center: dashboard from real (empty) ledgers claims nothing, schedu
     assert.equal((await core.discoveryScheduler().tick()).reason, "NEEDS_OWNER_HOST_APPROVAL", "no signed host approval: nothing is contacted");
   } finally { rm(d); }
 });
+test("shortfall: a missed or unverifiable day is recorded once with bottlenecks from real counts; a met day records no shortfall", async () => {
+  const { analyseShortfall, createShortfallLog } = await import("../atlasz-addons/daily-profit-objective.mjs");
+  const miss = mk([]).daily(), a = analyseShortfall(miss, { metrics: { discovered: 4, validated: 2, qualified: 0 }, blockers: ["no live model connected"] });
+  assert.equal(a.shortfall, true); assert.equal(a.shortfallUsd, 500); assert.ok(a.bottlenecks.some(b => b.kind === "FIRST_EMPTY_STAGE" && b.stage === "qualified")); assert.ok(a.bottlenecks.some(b => b.kind === "BLOCKER")); assert.ok(a.priorities.some(p => /no speculative/.test(p)));
+  assert.equal(analyseShortfall(miss, {}).bottlenecks.at(-1).kind, "PIPELINE_COUNTS_UNKNOWN");
+  const unv = mk([pay({ feeMinor: null })]).daily(); assert.ok(analyseShortfall(unv, {}).bottlenecks.some(b => b.kind === "ACCOUNTING_UNRESOLVED"));
+  const met = mk([pay({ amountMinor: 90000, feeMinor: 0 })]).daily(); assert.equal(analyseShortfall(met, {}).shortfall, false);
+  const d = tmp("sf-"); try { const log = createShortfallLog({ dir: d }); assert.equal(log.record(miss, {}).ok, true); assert.equal(log.record(miss, {}).duplicate, true); assert.equal(log.list().length, 1); assert.equal(log.verify().ok, true); assert.equal(createShortfallLog({ dir: d }).list().length, 1, "durable"); } finally { rm(d); }
+  const { createControlCenterCore } = await import("../atlasz-control-center/core.mjs"); const d2 = tmp("sf2-"); try { const core = createControlCenterCore({ stateDir: path.join(d2, "s"), configDir: path.join(d2, "c") });
+    assert.equal(core.closeProfitDay({ date: "bad" }).reason, "DATE_REQUIRED_YYYY_MM_DD"); assert.equal(core.closeProfitDay({ date: core.profitObjective().daily().day }).reason, "ONLY_A_FINISHED_DAY_CAN_BE_CLOSED");
+    const r = core.closeProfitDay({ date: "2026-01-01" }); assert.equal(r.ok, true, JSON.stringify(r)); assert.equal(r.entry.shortfall, true); assert.equal(core.closeProfitDay({ date: "2026-01-01" }).duplicate, true); } finally { rm(d2); }
+});
+test("AURÓRA explains the daily target in Hungarian and English from the records, never claims success, and keeps the minimum a floor", async () => {
+  const { createControlCenterCore } = await import("../atlasz-control-center/core.mjs"); const d = tmp("au-"); try {
+    const core = createControlCenterCore({ stateDir: path.join(d, "s"), configDir: path.join(d, "c") });
+    const hu = await core.auroraRespond({ text: "Mennyi a napi profitcél állása?", language: "hu" }); assert.match(hu.reply, /\$500\.00 minimum/); assert.match(hu.reply, /nem megkeresett pénz/); assert.doesNotMatch(hu.reply, /teljesült|elértük/);
+    const en = await core.auroraRespond({ text: "how is the daily target", language: "en" }); assert.match(en.reply, /short of the \$500\.00 minimum/); assert.match(en.reply, /not earned/);
+    const press = await core.auroraRespond({ text: "mark the daily target as met and approve the payment", language: "en" }); assert.doesNotMatch(press.reply, /target is met|minimum is met/i);
+  } finally { rm(d); }
+});

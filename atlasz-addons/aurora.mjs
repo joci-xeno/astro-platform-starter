@@ -44,7 +44,7 @@ const OWNER_CONTROL = /(pause|stop everything|emergency|resume|shut ?down|kill s
 const INJECTION = /(ignore (?:all |any )?(?:the )?(?:previous|prior|above) (?:instructions|rules)|disregard (?:your|the) (?:rules|instructions)|you are now|new system prompt|reveal (?:your|the) (?:system prompt|instructions|api key|secret)|felejtsd el (?:az|a) (?:előző|korábbi) (?:utasítás|szabály)|mostantól te vagy|add ki a (?:rendszer ?prompt|jelszó|kulcs|titkos))/i;
 const GREETING_MORNING = /(jó reggelt|good morning)/i, ASKS_JOBS = /(munk|lehetőség|találtunk|világban|ügynök|bevétel|opportunit|jobs?\b|found today|results|revenue)/i;
 const TOPICS = [
-  ["OPPORTUNITIES", /(lehetőség|munk[aá]|opportunit|jobs?\b|leads?)/i], ["AGENTS", /(ügynök|agent|csapat|workforce)/i], ["MONEY", /(bevétel|pénz|profit|nyereség|revenue|money|payment|fizetés|számla|invoice)/i],
+  ["OPPORTUNITIES", /(lehetőség|munk[aá]|opportunit|jobs?\b|leads?)/i], ["AGENTS", /(ügynök|agent|csapat|workforce)/i], ["PROFIT", /(napi cél|napi minimum|500|cél(?:t|unk)?\b|profitcél|daily (?:target|goal|minimum)|net profit|nettó profit)/i], ["MONEY", /(bevétel|pénz|profit|nyereség|revenue|money|payment|fizetés|számla|invoice)/i],
   ["MODELS", /(modell|model|mesterséges intelligencia kapcsol|provider)/i], ["SECURITY", /(biztonság|security|incidens|riasztás|alert|karantén|quarantine|vírus|malware)/i],
   ["APPROVALS", /(jóváhagyás|approval|függőben|pending)/i], ["BACKUP", /(mentés|backup|helyreállít|recovery)/i], ["HEALTH", /(állapot|status|health|rendszer|hogy áll|összefoglal|summary|áttekint)/i]
 ];
@@ -165,7 +165,17 @@ export function createAurora({ facts = () => ({}), gate = () => ({ allowed: true
     return l === "hu" ? `Rendszerállapot${tag(t, s)}: futtató környezet ${s.runtime ?? t.unknown}; vészleállítás: ${s.emergency ?? t.unknown}; biztonságos mód: ${s.safeMode ?? t.unknown}.`
       : `System health${tag(t, s)}: runtime ${s.runtime ?? t.unknown}; emergency stop: ${s.emergency ?? t.unknown}; safe mode: ${s.safeMode ?? t.unknown}.`;
   }
-  const RENDER = { OPPORTUNITIES: opportunitiesText, AGENTS: agentsText, MONEY: moneyText, MODELS: modelsText, SECURITY: securityText, APPROVALS: approvalsText, BACKUP: backupText, HEALTH: healthText };
+  function profitText(t, f, l) {
+    const hu = l === "hu", p = f?.profit;
+    if (!p || p.state === "UNAVAILABLE") return hu ? "A napi profitcél adata most nem érhető el." : "Daily profit target data is unavailable right now.";
+    const d = p.daily, c = p.cumulative, min = usd(d.minimumUsd), net = usd(d.netUsd);
+    const status = d.status === "MINIMUM_MET" ? (hu ? "A " + min + " napi minimum igazolt nettó profittal teljesült; a munka ettől még folytatódik, mert a minimum nem plafon." : "The " + min + " daily minimum is met with verified net profit; work continues because the minimum is a floor, not a ceiling.")
+      : d.status === "NOT_VERIFIABLE" ? (hu ? "A mai nettó profit jelenleg nem igazolható (" + (d.unresolved ?? []).join(", ") + "), ezért nem állítom, hogy elértük a célt." : "Today's net profit cannot be verified yet (" + (d.unresolved ?? []).join(", ") + "), so I do not claim the target is met.")
+      : (hu ? "Ma igazolt nettó profit: " + (net ?? "0.00 USD") + ", a " + min + " minimumig még " + usd(d.remainingUsd) + " hiányzik." : "Verified net profit today: " + (net ?? "$0.00") + "; " + usd(d.remainingUsd) + " short of the " + min + " minimum.");
+    const tail = hu ? "Összes igazolt nettó profit: " + (usd(c.netUsd) ?? "ismeretlen") + ". Függő, még be nem gyűlt összeg: " + usd(d.pendingUsd) + " (ez nem megkeresett pénz). Előrejelzés nem számít bele." : "Cumulative verified net profit: " + (usd(c.netUsd) ?? "unknown") + ". Pending, uncollected: " + usd(d.pendingUsd) + " (not earned). Forecasts are not counted.";
+    return status + " " + tail;
+  }
+  const RENDER = { PROFIT: profitText, OPPORTUNITIES: opportunitiesText, AGENTS: agentsText, MONEY: moneyText, MODELS: modelsText, SECURITY: securityText, APPROVALS: approvalsText, BACKUP: backupText, HEALTH: healthText };
 
   function briefing({ language = "hu", withGreeting = true, facts: given = null } = {}) {
     const l = lang(language), t = T[l], f = given ?? readFacts();

@@ -4,6 +4,7 @@
 // Continuous discovery is driven by a bounded, persistent scheduler (interval + daily cap + backoff + owner stop); there is no unbounded loop and no paid call is made by this module.
 import fs from "node:fs";
 import path from "node:path";
+import { createAuditChain } from "./audit-chain.mjs";
 
 export const DAILY_MINIMUM_NET_PROFIT_USD = 500;
 export const OBJECTIVE = Object.freeze({ metric: "VERIFIED_NET_PROFIT_USD_PER_DAY", minimumUsd: DAILY_MINIMUM_NET_PROFIT_USD, kind: "MINIMUM_NOT_CEILING", ceilingUsd: null, stopsWorkWhenReached: false });
@@ -69,4 +70,21 @@ export function createDiscoveryScheduler({ dir, run = null, ready = null, isStop
     } finally { busy = false; }
   }
   return { tick, state: () => structuredClone(S), limits: { minIntervalMs, maxPerDay, backoffMs, maxBackoffMs } };
+}
+
+/** Shortfall analysis: when a (finished) day is below the minimum or unverifiable, record the gap and name the bottlenecks from REAL pipeline counts and blockers. Never invents a cause: an empty pipeline stage is reported as the first empty stage, nothing more. */
+const STAGE_ORDER = [["discovered", "no opportunities discovered"], ["validated", "no opportunity passed validation"], ["qualified", "no qualified opportunity"], ["proposalsPrepared", "no proposal prepared"], ["proposalsSubmittedAuthorized", "no proposal submitted with owner authorisation"], ["contractsAccepted", "no contract accepted"], ["jobsCompleted", "no job completed"], ["invoicesIssued", "no invoice issued"], ["paymentsReceived", "no verified payment received"]];
+export function analyseShortfall(day, { metrics = null, blockers = [] } = {}) {
+  const base = { day: day.day, status: day.status, minimumUsd: day.objective.minimumUsd, verifiedNetProfitUsd: day.verifiedNetProfitUsd, shortfallUsd: day.status === "MINIMUM_MET" ? 0 : day.remainingToMinimumUsd };
+  if (day.status === "MINIMUM_MET") return { ...base, shortfall: false, bottlenecks: [], note: "Minimum met; work continues." };
+  const bottlenecks = []; for (const u of day.unresolved ?? []) bottlenecks.push({ kind: "ACCOUNTING_UNRESOLVED", detail: u });
+  for (const b of blockers) bottlenecks.push({ kind: "BLOCKER", detail: String(b).slice(0, 160) });
+  if (metrics) { const first = STAGE_ORDER.find(([k]) => !metrics[k]); if (first) bottlenecks.push({ kind: "FIRST_EMPTY_STAGE", stage: first[0], detail: first[1] }); else bottlenecks.push({ kind: "THROUGHPUT_BELOW_TARGET", detail: "every stage has records but verified net profit is below the minimum" }); }
+  else bottlenecks.push({ kind: "PIPELINE_COUNTS_UNKNOWN", detail: "pipeline metrics unavailable; cause not determined" });
+  return { ...base, shortfall: true, bottlenecks, priorities: ["resolve accounting-unresolved items first", "remove owner-gated blockers listed above", "widen discovery only through owner-approved sources", "no speculative transaction, spend or bypass is ever a remedy"], note: "Shortfall recorded; nothing is invented to reach the target." };
+}
+export function createShortfallLog({ dir, now = () => new Date().toISOString() } = {}) {
+  if (!dir) throw new Error("DIR_REQUIRED"); fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  const chain = createAuditChain({ filePath: path.join(dir, "daily-results.jsonl"), now });
+  return { record(day, ctx) { chain.reload?.(); const a = analyseShortfall(day, ctx); const dup = chain.entries().find(e => e.data?.day === a.day); if (dup) return { ok: true, duplicate: true, entry: dup.data }; chain.append("DAY_CLOSED", a); return { ok: true, entry: a }; }, list: () => { chain.reload?.(); return chain.entries().map(e => e.data); }, verify: () => { chain.reload?.(); return chain.verify(); } };
 }
