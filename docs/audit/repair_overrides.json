@@ -694,6 +694,17 @@
    "test": "opportunity-intake.test.mjs (HTTP)",
    "status": "TESTED",
    "verification_result": "token required; labels FIXTURE/OPERATOR/CONNECTOR shown; not a packet monitor"
+  },
+  {
+   "defect_id": "C-003",
+   "severity": "HIGH",
+   "title": "Two processes sharing the opportunity registry / hand-off store silently overwrote each other (lost hand-offs); audit chain open/reload raced a concurrent append (false AUDIT_CHAIN_TRUNCATED)",
+   "owner": "Claude Code",
+   "reproduction_evidence": "3 submissions from 2 instances left 2 on disk; 5 concurrent processes: one failed at start with AUDIT_CHAIN_TRUNCATED:4<6",
+   "proposed_fix": "read-modify-write under the existing cross-process file lock with a re-read; audit-chain open/reload read+pin-check under the same lock",
+   "test": "handoff-concurrency.test.mjs (incl. 5 real OS processes)",
+   "status": "TESTED",
+   "verification_result": "44 distinct opportunities from 5 overlapping processes: exactly 44 hand-offs, chains verify; stable over repeated runs. Limit: single host, advisory lock (not a security boundary)"
   }
  ],
  "gaps": [

@@ -58,10 +58,15 @@ export function createAuditChain({ filePath = null, now = () => new Date().toISO
     if (!headPinFile) return; fs.mkdirSync(path.dirname(headPinFile), { recursive: true });
     const t = headPinFile + ".tmp"; fs.writeFileSync(t, JSON.stringify({ length: list.length, headHash: list.length ? list[list.length - 1].hash : GENESIS }), { mode: 0o600 }); fs.renameSync(t, headPinFile);
   }
-  let entries = filePath ? readAuditFile(filePath) : [];
-  const initial = verifyChain(entries);
-  if (!initial.ok) throw new Error("AUDIT_CHAIN_TAMPERED:" + initial.reason + "@" + initial.brokenAt);
-  if (filePath) checkPin(entries);
+  // Read + verify + pin check happen under the same cross-process lock the writers use: otherwise a process that starts (or reloads) while another appends can see a pin that is ahead of the log it just read and report a false AUDIT_CHAIN_TRUNCATED.
+  const locked = fn => (filePath && fs.existsSync(path.dirname(filePath)) ? withFileLock(filePath, fn) : fn());
+  let entries = locked(() => {
+    const list = filePath ? readAuditFile(filePath) : [];
+    const initial = verifyChain(list);
+    if (!initial.ok) throw new Error("AUDIT_CHAIN_TAMPERED:" + initial.reason + "@" + initial.brokenAt);
+    if (filePath) checkPin(list);
+    return list;
+  });
   if (filePath) fs.mkdirSync(path.dirname(filePath), { recursive: true });
 
   /** A crash mid-append can leave a final line without its newline. A complete entry just gets its newline; an unparseable fragment is cut off (it was never a valid entry), so the next entry does not glue onto it and turn ordinary crash recovery into a permanent "tampered" state. */
@@ -93,11 +98,13 @@ export function createAuditChain({ filePath = null, now = () => new Date().toISO
   // Re-read the file (another process, e.g. the owner CLI, may have appended). Tampering still throws.
   function reload() {
     if (!filePath) return;
-    const before = fastAppend ? statKey() : null;      // the file as it was BEFORE we read it: if another process appends while we read and verify, the next append sees a different state and takes the full path
-    const fresh = readAuditFile(filePath);
-    const v = verifyChain(fresh);
-    if (!v.ok) throw new Error("AUDIT_CHAIN_TAMPERED:" + v.reason + "@" + v.brokenAt);
-    checkPin(fresh); entries = fresh; if (fastAppend) seen = before;
+    locked(() => {
+      const before = fastAppend ? statKey() : null;      // the file as it was BEFORE we read it: if another process appends while we read and verify, the next append sees a different state and takes the full path
+      const fresh = readAuditFile(filePath);
+      const v = verifyChain(fresh);
+      if (!v.ok) throw new Error("AUDIT_CHAIN_TAMPERED:" + v.reason + "@" + v.brokenAt);
+      checkPin(fresh); entries = fresh; if (fastAppend) seen = before;
+    });
   }
   return {
     reload,

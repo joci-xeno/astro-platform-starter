@@ -2,7 +2,8 @@
 // Reuses: global-discovery (assessListing, scamIndicators, canonicalUrl), source-adapters (validateRecord shape), text-compare (INJECTION_PATTERNS), audit-chain.
 // Honesty rules: a missing budget / deadline / client / payment term stays null and is listed in `unknownFields` - never invented; a published budget is never revenue; nothing is "won" here;
 // a FIXTURE or OPERATOR record is labelled as such and can never be presented as a live connector retrieval; external text is DATA and is never executed or obeyed.
-import fs from "node:fs"; import path from "node:path"; import { createHash, randomBytes } from "node:crypto";
+import fs from "node:fs";
+import { withFileLock } from "./file-lock.mjs"; import path from "node:path"; import { createHash, randomBytes } from "node:crypto";
 import { createAuditChain } from "./audit-chain.mjs";
 import { assessListing, scamIndicators, canonicalUrl, inferRequirements, DISCOVERY_LIMITS } from "./global-discovery.mjs";
 import { INJECTION_PATTERNS } from "./text-compare.mjs";
@@ -52,7 +53,11 @@ export function createOpportunityRegistry({ dir, verifyEvidence = null, now = ()
   const FILE = path.join(dir, "opportunities.json"); let S = { items: {}, byKey: {}, byContent: {} };
   if (fs.existsSync(FILE)) { try { S = JSON.parse(fs.readFileSync(FILE, "utf8")); if (!S.items || !S.byKey || !S.byContent) throw new Error("shape"); } catch { throw new Error("OPPORTUNITY_STORE_UNREADABLE"); } }
   const save = () => { const t = FILE + ".tmp"; fs.writeFileSync(t, JSON.stringify(S), { mode: 0o600 }); fs.renameSync(t, FILE); };
-  function upsert(rec) {
+  // Several processes (Control Center, runtime) may share this store: every write re-reads the file under a lock first, so one writer can never silently overwrite another's opportunities.
+  const refresh = () => { if (!fs.existsSync(FILE)) return; try { const x = JSON.parse(fs.readFileSync(FILE, "utf8")); if (!x.items || !x.byKey || !x.byContent) throw new Error("shape"); S = x; } catch { throw new Error("OPPORTUNITY_STORE_UNREADABLE"); } };
+  const locked = fn => withFileLock(FILE, () => { refresh(); return fn(); });
+  function upsert(rec) { return locked(() => upsertLocked(rec)); }
+  function upsertLocked(rec) {
     const k = stableKey(rec), ck = contentKey(rec); let id = (k && S.byKey[k]) || S.byContent[ck] || null;
     if (!id) { id = "opp-" + randomBytes(5).toString("hex"); S.items[id] = { ...rec, opportunityId: id, firstSeenAt: now(), lastSeenAt: now(), seen: 1, history: [] }; if (k) S.byKey[k] = id; S.byContent[ck] = id; audit.append("OPPORTUNITY_CREATED", { id, sourceId: rec.sourceId, retrieval: rec.retrieval, hash: rec.contentHash }); save(); return { action: "CREATED", id }; }
     const cur = S.items[id]; cur.lastSeenAt = now(); cur.seen++;
@@ -63,13 +68,14 @@ export function createOpportunityRegistry({ dir, verifyEvidence = null, now = ()
     if (k) S.byKey[k] = id; S.byContent[ck] = id; audit.append("OPPORTUNITY_UPDATED", { id, changed }); save(); return { action: "UPDATED", id, changed };
   }
   /** Move forward one stage. The entry criteria of the target stage are REQUIRED EVIDENCE (workflow-stages.mjs); external facts (approval, delivery, payment) must be verified by the injected authority. Intake itself may enter VERIFY. */
-  function setStage(id, stage, by, note = null, { evidence = null, internal = false } = {}) { const o = S.items[id]; if (!o) return { ok: false, reason: "UNKNOWN_OPPORTUNITY" }; if (!WORKFLOW_STAGES.includes(stage)) return { ok: false, reason: "STAGE_INVALID" };
+  function setStage(id, stage, by, note = null, opts = {}) { return locked(() => setStageLocked(id, stage, by, note, opts)); }
+  function setStageLocked(id, stage, by, note = null, { evidence = null, internal = false } = {}) { const o = S.items[id]; if (!o) return { ok: false, reason: "UNKNOWN_OPPORTUNITY" }; if (!WORKFLOW_STAGES.includes(stage)) return { ok: false, reason: "STAGE_INVALID" };
     const from = WORKFLOW_STAGES.indexOf(o.stage), to = WORKFLOW_STAGES.indexOf(stage); if (to > from + 1) return { ok: false, reason: "STAGE_SKIP_REFUSED:" + o.stage + "->" + stage };      // no skipping entry criteria
     if (to <= from) return { ok: false, reason: "STAGE_BACKWARD_REFUSED" };
     if (!internal) { const g = evaluateStageEntry(stage, evidence ?? {}, { verify: verifyEvidence ? (a, e) => verifyEvidence(a, e, o) : null }); if (!g.ok) { audit.append("OPPORTUNITY_STAGE_REFUSED", { id, stage, missing: g.missing.slice(0, 8) }); return { ok: false, reason: "ENTRY_CRITERIA_NOT_MET", missing: g.missing }; } }
     o.stage = stage; (o.stageLog ??= []).push({ at: now(), stage, by: clip(by, 40), note: clip(note, 200) }); audit.append("OPPORTUNITY_STAGE", { id, stage, by: clip(by, 40) }); save(); return { ok: true, stage }; }
-  const get = id => (S.items[id] ? structuredClone(S.items[id]) : null), list = () => Object.values(S.items).map(x => structuredClone(x));
-  const counts = () => { const l = Object.values(S.items), by = f => l.reduce((o, x) => (o[f(x)] = (o[f(x)] ?? 0) + 1, o), {}); return { total: l.length, byStage: by(x => x.stage), byRetrieval: by(x => x.retrieval) }; };
+  const get = id => { refresh(); return S.items[id] ? structuredClone(S.items[id]) : null; }, list = () => { refresh(); return Object.values(S.items).map(x => structuredClone(x)); };
+  const counts = () => { refresh(); const l = Object.values(S.items), by = f => l.reduce((o, x) => (o[f(x)] = (o[f(x)] ?? 0) + 1, o), {}); return { total: l.length, byStage: by(x => x.stage), byRetrieval: by(x => x.retrieval) }; };
   return { upsert, setStage, get, list, counts, verify: () => audit.verify(), auditEntries: () => audit.entries() };
 }
 
@@ -80,6 +86,8 @@ export function createMasterIntake({ dir, registry, capabilities = [], isStopped
   const FILE = path.join(dir, "handoffs.json"); let S = { handoffs: {} };
   if (fs.existsSync(FILE)) { try { S = JSON.parse(fs.readFileSync(FILE, "utf8")); if (!S.handoffs) throw new Error("shape"); } catch { throw new Error("HANDOFF_STORE_UNREADABLE"); } }
   const save = () => { const t = FILE + ".tmp"; fs.writeFileSync(t, JSON.stringify(S), { mode: 0o600 }); fs.renameSync(t, FILE); };
+  const refresh = () => { if (!fs.existsSync(FILE)) return; try { const x = JSON.parse(fs.readFileSync(FILE, "utf8")); if (!x.handoffs) throw new Error("shape"); S = x; } catch { throw new Error("HANDOFF_STORE_UNREADABLE"); } };
+  const locked = fn => withFileLock(FILE, () => { refresh(); return fn(); });      // read-modify-write under a cross-process lock: no lost hand-offs
   const R = { highValue: 5000, ...approvalRules }, have = new Set(capabilities);
   const SEARCH_ID = /^SEARCH-[1-5]$/;
   const stopped = () => { try { return Boolean(isStopped()); } catch { return true; } };
@@ -88,7 +96,8 @@ export function createMasterIntake({ dir, registry, capabilities = [], isStopped
   const view = h => structuredClone({ taskId: h.taskId, from: h.from, state: h.state, owner: h.owner, reason: h.reason, opportunityId: h.opportunityId ?? null, dedupe: h.dedupe ?? null, requiresOwnerApproval: h.requiresOwnerApproval ?? null, approvalReasons: h.approvalReasons ?? [], provenance: h.provenance, receivedAt: h.receivedAt, trail: h.trail, recovery: TERMINAL.has(h.state) ? null : { resumeFrom: h.state, how: "call resume(); steps are idempotent" } });
 
   /** receive({agentId, record}) -> view. `record` is the common record from normalizeOpportunity (with retrieval/evidence labels). */
-  function receive({ agentId, record } = {}) {
+  function receive(a = {}) { return locked(() => receiveLocked(a)); }
+  function receiveLocked({ agentId, record } = {}) {
     if (stopped()) return { ok: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" };
     if (typeof agentId !== "string" || !SEARCH_ID.test(agentId)) return { ok: false, reason: "SENDER_NOT_A_SEARCH_AGENT" };
     if (!record || typeof record !== "object") return { ok: false, reason: "RECORD_REQUIRED" };
@@ -124,12 +133,13 @@ export function createMasterIntake({ dir, registry, capabilities = [], isStopped
     return view(h);
   }
   /** Re-drive every unfinished hand-off from its last checkpoint (restart recovery). Terminal ones are untouched. */
-  function resume(taskId = null) {
+  function resume(taskId = null) { return locked(() => resumeLocked(taskId)); }
+  function resumeLocked(taskId = null) {
     const one = id => { const h = S.handoffs[id]; if (!h) return { ok: false, reason: "UNKNOWN_HANDOFF" }; if (TERMINAL.has(h.state)) return { ok: true, ...view(h) }; if (stopped()) return { ok: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" }; return { ok: true, ...run(h) }; };
     return taskId ? one(taskId) : { ok: true, resumed: Object.keys(S.handoffs).filter(id => !TERMINAL.has(S.handoffs[id].state)).map(id => one(id)) };
   }
-  const list = () => Object.values(S.handoffs).map(view), get = id => (S.handoffs[id] ? view(S.handoffs[id]) : null);
-  const summary = () => Object.values(S.handoffs).reduce((o, h) => (o[h.state] = (o[h.state] ?? 0) + 1, o), {});
+  const list = () => { refresh(); return Object.values(S.handoffs).map(view); }, get = id => { refresh(); return S.handoffs[id] ? view(S.handoffs[id]) : null; };
+  const summary = () => (refresh(), Object.values(S.handoffs)).reduce((o, h) => (o[h.state] = (o[h.state] ?? 0) + 1, o), {});
   return { receive, resume, list, get, summary, verify: () => audit.verify(), auditEntries: () => audit.entries() };
 }
 
