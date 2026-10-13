@@ -15,6 +15,7 @@ import { createJudgePanel } from "./judge.mjs";
 import { createCommunicationCenter } from "./communication-center.mjs";
 import { createDealPipeline } from "./deal-pipeline.mjs";
 import { createDeliveryService } from "./delivery-service.mjs";
+import { createPackageDeliveryAdapter } from "./package-delivery-adapter.mjs";
 import { createInvoiceService } from "./invoice-service.mjs";
 import { createPaymentVerifier } from "./payment-verification.mjs";
 import { createFinanceIntelligence } from "./finance-intelligence.mjs";
@@ -31,7 +32,7 @@ export function createMoneyEngine({ dir, ownerAuth, brain, environment = "SANDBO
   const payments = createPaymentVerifier({ file: p("payments.json"), environment, now, blackBox: bb, ledger: environment === "LIVE" ? ledger : null, lookups: { invoice: id => invoices.get(id) } });
   const jobs = createJobSystem({ file: p("jobs-universal.json"), environment, now, blackBox: bb, lookups: { artifact: id => artifacts.get(id), delivery: id => delivery.get(id), invoice: id => invoices.get(id), payment: id => payments.get(id) } });
   const deals = createDealPipeline({ file: p("deals.json"), ownerAuth, environment, now, blackBox: bb, lookups: { communication: id => comms.get(id) } });
-  const delivery = createDeliveryService({ file: p("deliveries.json"), ownerAuth, adapters: adapters.delivery ?? {}, lookups: { artifact: id => artifacts.get(id) }, environment, now, blackBox: bb });
+  const delivery = createDeliveryService({ file: p("deliveries.json"), ownerAuth, adapters: { LOCAL_PACKAGE: createPackageDeliveryAdapter({ outboxDir: p("outbox"), artifacts, environment, now }), ...(adapters.delivery ?? {}) }, lookups: { artifact: id => artifacts.get(id) }, environment, now, blackBox: bb });
   const invoices = createInvoiceService({ file: p("invoices.json"), ownerAuth, environment, now, blackBox: bb, lookups: { communication: id => comms.get(id), payments: id => payments.list().filter(x => x.invoiceId === id), job: id => jobs.get(id) } });
   const recurring = createRecurringBilling({ file: p("subscriptions.json"), ownerAuth, invoices, lookups: { invoice: id => invoices.get(id) }, environment, now, blackBox: bb });
   const qa = createQaFactory({ security: brain.security, runners: qaRunners, blackBox: bb, now });

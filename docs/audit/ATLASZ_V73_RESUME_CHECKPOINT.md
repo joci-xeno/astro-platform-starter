@@ -1,6 +1,6 @@
 # ATLASZ V7.3 — RESUME CHECKPOINT
 - Branch: `atlasz-v73-integration` (remote `github` only; never `origin`, never `main`)
-- Last verified: Batch 8 Phase A + C + E (stage authorities + proposal-draft stage `atlasz-addons/proposal-stage.mjs`, owner-panel `/api/proposal/draft`, drafts are DRAFT_NOT_SENT, checker-verified)+ daily-profit objective (`daily-profit-objective.mjs`, docs/DAILY_PROFIT_OBJECTIVE.md) + UI — gate 2177/2177 (previous: 2168, 2165, 2163, 2160, 2148). Exact commit id: `git log -1` / `git ls-remote github atlasz-v73-integration`.
+- Last verified: Batch 8 Phase A + C + E (stage authorities + proposal-draft stage `atlasz-addons/proposal-stage.mjs`, owner-panel `/api/proposal/draft`, drafts are DRAFT_NOT_SENT, checker-verified)+ daily-profit objective (`daily-profit-objective.mjs`, docs/DAILY_PROFIT_OBJECTIVE.md) + UI — + safe worker image (`atlasz-runtime/Dockerfile.worker` -> supervisor-safe only; image build unverified, no Docker daemon), contract review, invoice preparation (DRAFT), LOCAL_PACKAGE delivery adapter — gate 2185/2185 (previous: 2177, 2168, 2165, 2163, 2160, 2148). Exact commit id: `git log -1` / `git ls-remote github atlasz-v73-integration`.
 - Current batch: 6 complete → next: Batch 7 (real authorized AI model connectivity), then Batch 8–14.
 
 ## Completed (Batch 8 Phase E slice + UI)
@@ -42,7 +42,7 @@
 86 SELF_TESTED, 17 RUNTIME_CONNECTED, 25 REGISTERED (self-test needs an injected dependency or the module is offline by design), 2 END_TO_END_VERIFIED, 3 QUARANTINED legacy (owner decision). **0 LIVE_OPERATIONAL.** Disposition ≠ production readiness.
 
 ## Unfinished / outstanding defects
-Dockerfile.worker still launches legacy supervisor.js (B6-005); 86 non-133 modules remain PARTIAL/OPEN in the total register; discovery scheduler, tool_call executor, auto-update CI/release, Windows evidence, malware scanner, 85+23+150 / 983 reconciliation.
+86 non-133 modules remain PARTIAL/OPEN in the total register; discovery scheduler, tool_call executor, auto-update CI/release, Windows evidence, malware scanner, 85+23+150 / 983 reconciliation.
 
 ## Required approvals / external blockers
 Owner key provisioning; host approvals; provider credentials + `ATLASZ_VAULT_KEY`; malware scanner choice; D12 signature (optional); legacy runtime removal; manual Windows installer run; enable auto-update policy; real USB backup rehearsal; Stripe awaits Astra package (deferred).

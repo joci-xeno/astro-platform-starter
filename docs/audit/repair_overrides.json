@@ -407,7 +407,7 @@
    "proposed_fix": "Quarantined: excluded by policy, never registered/activated/deleted; removal needs owner decision",
    "test": "policy-guards.test.mjs",
    "status": "OWNER_DECISION_PENDING",
-   "verification_result": "runtime start script now node supervisor-safe.mjs (legacy supervisor.js no longer started by npm start); Dockerfile.worker still launches legacy supervisor.js: owner/dependency decision; files remain quarantined"
+   "verification_result": "runtime start script now node supervisor-safe.mjs (legacy supervisor.js no longer started by npm start); Dockerfile.worker now starts only supervisor-safe.mjs (legacy files not copied into the image; worker-startup.test.mjs, real child-process start/stop/restart). Docker image BUILD not verified (no daemon in sandbox). Legacy file removal remains an owner decision; files remain quarantined"
   },
   {
    "defect_id": "B6-006",

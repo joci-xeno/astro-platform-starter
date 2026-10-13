@@ -1,6 +1,19 @@
+# ATLASZ canonical worker image. Starts ONLY the approved safe supervisor (atlasz-runtime/supervisor-safe.mjs).
+# The quarantined legacy files (supervisor.js, worker.js, agent-child.js) are NOT copied into the image, so they cannot be started by accident.
+# BUILD FROM THE REPOSITORY ROOT (the supervisor imports ../atlasz-addons):
+#   docker build -f atlasz-runtime/Dockerfile.worker -t atlasz-worker .
+# Required at run time (never baked into the image): ATLASZ_RUNTIME_TOKEN (>= 24 chars; without it every protected route answers 503), a persistent volume at /data.
+# No provider keys are needed for the runtime to start; paid AI calls stay disabled until the owner approves them.
 FROM node:22-bookworm-slim
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg ca-certificates && rm -rf /var/lib/apt/lists/*
+ENV NODE_ENV=production ATLASZ_STATE_DIR=/data PORT=8080
 WORKDIR /app
-COPY . .
-ENV NODE_ENV=production
-CMD ["node", "supervisor.js"]
+COPY atlasz-runtime/package.json atlasz-runtime/supervisor-safe.mjs atlasz-runtime/runtime-http.mjs ./atlasz-runtime/
+COPY atlasz-addons ./atlasz-addons
+RUN mkdir -p /data && chown -R node:node /data /app
+USER node
+VOLUME ["/data"]
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||8080)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+STOPSIGNAL SIGTERM
+WORKDIR /app/atlasz-runtime
+CMD ["node", "supervisor-safe.mjs"]

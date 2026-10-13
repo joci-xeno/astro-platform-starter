@@ -495,5 +495,10 @@ if (process.env.ATLASZ_TEST_MODE !== "1") {
   const runtime = createRuntime();
   const server = http.createServer(createRuntimeHandler({ runtime, version: VERSION }));      // authenticated; only /health is open (see runtime-http.mjs)
   server.listen(Number(process.env.PORT || 8080), "0.0.0.0", () => runtime.start());
-  for (const signal of ["SIGTERM", "SIGINT"]) process.on(signal, () => { runtime.stop(); server.close(() => process.exit(0)); });
+  let shuttingDown = false;
+  for (const signal of ["SIGTERM", "SIGINT"]) process.on(signal, () => {
+    if (shuttingDown) return; shuttingDown = true;                       // controlled shutdown: stop timers, flush state, close the listener; a bounded fallback exit prevents a hung keep-alive from blocking a redeploy
+    const force = setTimeout(() => process.exit(1), 8000); force.unref?.();
+    runtime.stop(); server.close(() => process.exit(0)); server.closeAllConnections?.();
+  });
 }

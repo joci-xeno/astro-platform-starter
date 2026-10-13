@@ -6,4 +6,4 @@ Open item (owner decision): `atlasz-runtime/package.json` `start` still points t
 
 
 ## Update (Batch 7A)
-`atlasz-runtime/package.json` `start` now runs `supervisor-safe.mjs`. The three legacy files remain quarantined (not deleted, activated or registered). `Dockerfile.worker` still launches legacy `supervisor.js`: recorded as an owner/dependency decision under B6-005.
+`atlasz-runtime/package.json` `start` now runs `supervisor-safe.mjs`. The three legacy files remain quarantined (not deleted, activated or registered). `atlasz-runtime/Dockerfile.worker` now starts only `supervisor-safe.mjs` (build from the repo root; legacy files are not copied into the image). Image build itself is unverified until a Docker daemon is available. Removal of the legacy files stays an owner decision (B6-005).
