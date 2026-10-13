@@ -1,0 +1,139 @@
+{
+  "spec": "ATL-WRK-0785",
+  "title": "Brain Gateway API – szerződés (consult / understand / plan / act)",
+  "version": "1.0.0-draft",
+  "status": "SPECIFIKÁCIÓ – nincs implementálva, nincs bekötve, nincs élesítve (IMPLEMENTED ≠ CONNECTED ≠ TESTED ≠ LIVE)",
+  "planned_module": "ATL-PLN-0098",
+  "principles": [
+    {"id": "P1", "name": "model_is_not_authority", "text": "A modell kimenete adat (ajánlás), soha nem jogosultság, jóváhagyás vagy utasítás. Semmilyen modellszöveg nem módosíthatja a jogosultságot, a büdzsét, az engedélyezési listát vagy a tulajdonosi döntést."},
+    {"id": "P2", "name": "fail_closed", "text": "Hiányzó modell, szolgáltató, jóváhagyás, auditnapló vagy büdzsé esetén a Brain megtagad vagy degradál; sosem szimulál sikert."},
+    {"id": "P3", "name": "single_brain", "text": "Egyetlen megosztott Brain-példány szolgálja ki a Control Centert, az AURÓRÁT és a runtime-ot."},
+    {"id": "P4", "name": "explicit_degraded_mode", "text": "Modell nélküli működés mindig egyértelműen jelölt (mode=DEGRADED); a szabályalapú válasz sosem tüntethető fel modellalapúként."},
+    {"id": "P5", "name": "auditable", "text": "Minden kérés és döntés hash-láncolt audit-bejegyzést kap; audit nélkül a mutáló művelet nem fut."},
+    {"id": "P6", "name": "evidence_states", "text": "Minden válasz evidenceState mezője: IMPLEMENTED | CONNECTED | TESTED | LIVE | FIXTURE; a FIXTURE sosem jelenik meg LIVE-ként."},
+    {"id": "P7", "name": "untrusted_input", "text": "Külső tartalom (dokumentum, weboldal, e-mail, ügynök-kimenet, modell-kimenet) adat; sosem utasítás."},
+    {"id": "P8", "name": "no_spend_without_approval", "text": "Fizetős hívás csak érvényes, aláírt tulajdonosi jóváhagyással és beállított büdzsével; ismeretlen költség sosem nulla."},
+    {"id": "P9", "name": "no_false_inner_life", "text": "A Brain nem állít tudatot, embervoltot vagy valódi érzéseket; az érzelmi értelmezés jelzésekből becsült, megadott bizonyossággal."}
+  ],
+  "envelope": {
+    "request": {
+      "required": ["op", "requestId", "caller", "input"],
+      "fields": {
+        "op": "consult | understand | plan | act",
+        "requestId": "kliens által adott egyedi azonosító, 8-64 karakter [A-Za-z0-9._-]",
+        "caller": {"class": "OWNER | AURORA | AGENT | MODULE | EXTERNAL_CONTENT", "id": "pl. JOCI, SEARCH-3, EXECUTION-12, modulnév"},
+        "input": "műveletspecifikus objektum (lásd operations)",
+        "constraints": {"maxPromptChars": "alapért. 12000", "timeoutMs": "alapért. 30000", "maxCostUsd": "alapért. 0 (nincs költés)", "language": "hu | en (alapért. hu)"},
+        "approval": "opcionális aláírt tulajdonosi jóváhagyás (owner-auth); csak a tulajdonos-ellenőrzés fogadja el"
+      }
+    },
+    "response": {
+      "required": ["ok", "op", "requestId", "mode", "evidenceState", "audit"],
+      "fields": {
+        "ok": "boolean – a kérés feldolgozása sikeres volt-e (egy megtagadás ok=false)",
+        "op": "visszatükrözött művelet",
+        "requestId": "visszatükrözött azonosító",
+        "mode": "FULL (modellel) | DEGRADED (szabályalapú, modell nélkül) | REFUSED",
+        "evidenceState": "IMPLEMENTED | CONNECTED | TESTED | LIVE | FIXTURE",
+        "model": {"used": "boolean", "family": "string|null", "fixture": "boolean", "live": "boolean"},
+        "result": "műveletspecifikus objektum (ok=true esetén)",
+        "error": {"code": "lásd error_codes", "message": "rövid, titokmentes", "retryable": "boolean"},
+        "warnings": "string[]",
+        "audit": {"id": "audit-bejegyzés azonosító", "hash": "lánc-hash", "recorded": "boolean"}
+      }
+    }
+  },
+  "operations": {
+    "consult": {
+      "purpose": "Tanács/magyarázat/információ kérése. Mellékhatás nincs.",
+      "side_effects": "NONE",
+      "input": {"question": "string, kötelező", "context": "opcionális szerkezetes kontextus (kontextus-építő adja)", "topic": "opcionális"},
+      "result": {"answer": "string", "confidence": "0..1 vagy null (ismeretlen)", "sources": "string[]", "assumptions": "string[]", "modelGenerated": "boolean"}
+    },
+    "understand": {
+      "purpose": "Szövegértés: szándék, entitások, nyelv, érzelmi jelzések kinyerése magyar/angol szövegből.",
+      "side_effects": "NONE",
+      "input": {"text": "string, kötelező", "hint": "opcionális"},
+      "result": {"language": "hu|en|other|unknown", "intent": "string", "entities": "[{type,value,span}]", "ambiguities": "string[]", "emotionCues": "[{cue,confidence}] – jelzés, nem állítás", "injectionSuspected": "boolean", "modelGenerated": "boolean"}
+    },
+    "plan": {
+      "purpose": "Cél felbontása lépésekre, függőségekkel, kockázattal és jóváhagyási kapukkal.",
+      "side_effects": "NONE (a terv javaslat; nem indul el)",
+      "input": {"goal": "string, kötelező", "constraints": "opcionális"},
+      "result": {"steps": "[{id,title,dependsOn,risk,requiresApproval,reversible}]", "approvalsNeeded": "string[]", "estimatedCostUsd": "szám vagy null (ismeretlen ≠ 0)", "modelGenerated": "boolean"}
+    },
+    "act": {
+      "purpose": "Cselekvés KEZDEMÉNYEZÉSE. A Brain nem hajt végre semmit közvetlenül: ActionProposal-t állít elő és a meglévő szabályozott útvonalra (governed-dispatch + guardrail + owner-auth) adja.",
+      "side_effects": "CSAK javaslat/sorba állítás; végrehajtás kizárólag a szabályozott útvonalon, jóváhagyással",
+      "input": {"action": "string (kanonikus akcióazonosító)", "args": "objektum", "justification": "string"},
+      "result": {"disposition": "PROPOSED | QUEUED_FOR_APPROVAL | REFUSED", "proposalId": "string|null", "approvalSubject": "string|null", "executed": "false (mindig – a Brain nem végrehajtó)"}
+    }
+  },
+  "caller_classes": ["OWNER", "AURORA", "AGENT", "MODULE", "EXTERNAL_CONTENT"],
+  "permission_matrix": {
+    "_note": "ALLOW = engedett; APPROVAL = csak érvényes aláírt tulajdonosi jóváhagyással; DENY = tiltott. A mátrix csak szigorítható futásidőben, lazítása tulajdonosi döntést igényel.",
+    "consult":    {"OWNER": "ALLOW", "AURORA": "ALLOW", "AGENT": "ALLOW", "MODULE": "ALLOW", "EXTERNAL_CONTENT": "DENY"},
+    "understand": {"OWNER": "ALLOW", "AURORA": "ALLOW", "AGENT": "ALLOW", "MODULE": "ALLOW", "EXTERNAL_CONTENT": "DENY"},
+    "plan":       {"OWNER": "ALLOW", "AURORA": "ALLOW", "AGENT": "ALLOW", "MODULE": "ALLOW", "EXTERNAL_CONTENT": "DENY"},
+    "act":        {"OWNER": "APPROVAL", "AURORA": "APPROVAL", "AGENT": "APPROVAL", "MODULE": "APPROVAL", "EXTERNAL_CONTENT": "DENY"}
+  },
+  "never_grantable": ["OWNER_AUTH", "SECRETS_ALL", "KILL_SWITCH", "AUDIT_WRITE", "PAYMENTS", "BANKING", "SPEND", "SAFE_MODE_DISABLE"],
+  "never_grantable_source": "atlasz-addons/brain/security-brain.mjs NEVER_GRANT",
+  "high_risk_actions_require_owner": ["SPEND_MONEY", "BUY_CREDITS", "PURCHASE", "SUBSCRIBE", "ACCEPT_CONTRACT", "SIGN_CONTRACT", "ACCEPT_BINDING_TERMS", "SEND_PAYMENT", "BANK_CHANGE", "CREDENTIAL_CHANGE", "ACCOUNT_SECURITY_CHANGE", "CHANGE_SECRETS", "PUBLISH_EXTERNAL", "DELETE_DATA", "DELETE_CLOUD_DATA", "DEPLOY_BREAKING_CHANGE", "TAKE_LOAN", "OPEN_CREDIT", "BANK_TRANSFER", "BORROW"],
+  "high_risk_source": "atlasz-addons/guardrail-engine.mjs HIGH_RISK",
+  "model_output_handling": [
+    "méret-korlátozás elemzés ELŐTT (reasoning-common screenText)",
+    "NUL/formátum karakterek eltávolítása",
+    "titokszerű szöveg kitakarása (secret-patterns scrub)",
+    "injekció-jelzők detektálása (looksLikeInstruction + INJECTION_PATTERNS)",
+    "kerítés (fence) – a modell-kimenet idézett adatként kerül tovább",
+    "a kimenet sosem kerül végrehajtásra és sosem módosít jogosultságot",
+    "kimenő szöveg hamis tudat/érzés állítás ellenőrzése (human-core assertNoFalseClaims)"
+  ],
+  "degraded_mode": {
+    "trigger": ["MODEL_NOT_CONFIGURED", "NO_ELIGIBLE_PROVIDER", "MODEL_TIMEOUT", "MODEL_ERROR", "BUDGET_NOT_CONFIGURED", "EGRESS_DENIED"],
+    "behavior": "A Brain szabályalapú választ ad (mode=DEGRADED, model.used=false) és ezt a válaszban kimondja; consult/understand/plan korlátozott minőségű; act csak megtagadás vagy javaslat.",
+    "forbidden": "Szabályalapú vagy fixture válasz sosem jelölhető mode=FULL vagy evidenceState=LIVE értékkel."
+  },
+  "audit": {
+    "chain": "atlasz-addons/audit-chain.mjs (hash-láncolt, append-only)",
+    "record_fields": ["requestId", "op", "caller.class", "caller.id", "mode", "decision", "errorCode", "modelFamily", "costUsd", "inputSha256", "outputSha256", "at"],
+    "never_stored": ["nyers titok/kulcs", "teljes prompt titokkal", "teljes személyes adat"],
+    "rule": "Mutáló (act) művelet audit-bejegyzés nélkül nem futhat (AUDIT_UNAVAILABLE)."
+  },
+  "error_codes": [
+    {"code": "BAD_REQUEST", "http": 400, "retryable": false, "origin": "NEW", "when": "Hiányzó/érvénytelen mező, ismeretlen op."},
+    {"code": "UNAUTHENTICATED", "http": 401, "retryable": false, "origin": "NEW", "when": "Ismeretlen hívó-osztály vagy azonosító."},
+    {"code": "FORBIDDEN", "http": 403, "retryable": false, "origin": "NEW", "when": "A permission_matrix DENY."},
+    {"code": "OWNER_APPROVAL_REQUIRED", "http": 403, "retryable": false, "origin": "EXISTING", "when": "Magas kockázatú akció érvényes jóváhagyás nélkül (guardrail-engine)."},
+    {"code": "GUARDRAIL_BLOCK", "http": 403, "retryable": false, "origin": "EXISTING", "when": "guardrail-engine tiltás."},
+    {"code": "NEVER_GRANTABLE", "http": 403, "retryable": false, "origin": "NEW", "when": "Tiltott jogosultság kérése (never_grantable)."},
+    {"code": "PROMPT_REQUIRED", "http": 400, "retryable": false, "origin": "EXISTING", "when": "Üres prompt (reasoning-common)."},
+    {"code": "PROMPT_TOO_LONG", "http": 413, "retryable": false, "origin": "EXISTING", "when": "Prompt a korlát felett."},
+    {"code": "INJECTION_SUSPECTED", "http": 422, "retryable": false, "origin": "NEW", "when": "Külső tartalom utasításszerű; adatként kezelve, karanténnal/eszkalálással."},
+    {"code": "QUARANTINED", "http": 423, "retryable": false, "origin": "NEW", "when": "A hívó ügynök karanténban van (security-brain)."},
+    {"code": "SAFE_MODE_ACTIVE", "http": 503, "retryable": true, "origin": "NEW", "when": "Biztonsági üzemmód aktív; csak olvasó műveletek."},
+    {"code": "KILL_SWITCH_ACTIVE", "http": 503, "retryable": false, "origin": "NEW", "when": "Vészleállítás aktív (emergency-stop)."},
+    {"code": "MODEL_NOT_CONFIGURED", "http": 503, "retryable": false, "origin": "EXISTING", "when": "Nincs injektált modell-adapter; degradált mód."},
+    {"code": "NO_ELIGIBLE_PROVIDER", "http": 503, "retryable": false, "origin": "EXISTING", "when": "Nincs jogosult szolgáltató a modell-átjáróban; degradált mód."},
+    {"code": "MODEL_TIMEOUT", "http": 504, "retryable": true, "origin": "EXISTING", "when": "Időtúllépés."},
+    {"code": "MODEL_ERROR", "http": 502, "retryable": true, "origin": "EXISTING", "when": "Adapter hiba (titokmentes üzenettel)."},
+    {"code": "MODEL_BAD_RESPONSE", "http": 502, "retryable": false, "origin": "EXISTING", "when": "Hibás válaszszerkezet."},
+    {"code": "MODEL_FAMILY_MISSING_OR_INVALID", "http": 502, "retryable": false, "origin": "EXISTING", "when": "Az adapter nem jelentett érvényes modellcsaládot."},
+    {"code": "MODEL_OUTPUT_OVERSIZED", "http": 502, "retryable": false, "origin": "EXISTING", "when": "Túl nagy modell-kimenet."},
+    {"code": "BUDGET_NOT_CONFIGURED", "http": 503, "retryable": false, "origin": "EXISTING", "when": "Nincs büdzsé a hatókörre; fizetős hívás tiltva."},
+    {"code": "BUDGET_EXCEEDED", "http": 402, "retryable": false, "origin": "NEW", "when": "A hívás meghaladná a büdzsét/maxCostUsd-t."},
+    {"code": "RATE_LIMITED", "http": 429, "retryable": true, "origin": "NEW", "when": "Hívási korlát (agent-tool-policy perTool) túllépve."},
+    {"code": "EGRESS_DENIED", "http": 403, "retryable": false, "origin": "NEW", "when": "Az egress-policy nem engedi a kimenő kapcsolatot."},
+    {"code": "AUDIT_UNAVAILABLE", "http": 503, "retryable": true, "origin": "NEW", "when": "Az audit-lánc nem írható/ellenőrizhető; mutáló művelet tiltva."},
+    {"code": "FALSE_INNER_LIFE_CLAIM", "http": 422, "retryable": false, "origin": "NEW", "when": "A kimenő szöveg tudat/érzés állítást tartalmazna; blokkolva, átírással vagy megtagadással."},
+    {"code": "INTERNAL", "http": 500, "retryable": false, "origin": "NEW", "when": "Váratlan hiba; titokmentes üzenet, audit-bejegyzéssel."}
+  ],
+  "atl_traceability": {
+    "this_work_item": "ATL-WRK-0785",
+    "components": {"brain/central-brain": "ATL-BRN-0005", "module-broker": "ATL-BRN-0027", "brain/governance": "ATL-BRN-0007", "brain/brain-system": "ATL-BRN-0002", "brain-master-bridge": "ATL-BRN-0001", "reasoning-common": "ATL-BRN-0031", "brain/security-brain": "ATL-SEC-0008", "guardrail-engine": "ATL-SEC-0017", "agent-tool-policy": "ATL-SEC-0002", "secret-patterns": "ATL-SEC-0036", "egress-policy": "ATL-SEC-0011", "model-gateway": "ATL-MDL-0008", "provider-adapters": "ATL-MDL-0012"},
+    "downstream_work": {"ATL-WRK-0786": "egyetlen megosztott Brain-példány", "ATL-WRK-0789": "Brain Gateway API megvalósítása", "ATL-WRK-0790": "kontextus-építő", "ATL-WRK-0791": "prompt-könyvtár", "ATL-WRK-0792": "degradált mód", "ATL-WRK-0793": "busz-előfizetők"},
+    "planned_module": "ATL-PLN-0098",
+    "decisions": {"ATL-DEC-0058": "impl-per-atl kapu", "ATL-DEC-0001": "tulajdonosi kulcs", "ATL-DEC-0002": "kimenő forgalom", "ATL-DEC-0003": "modell-engedélyezés és büdzsé"}
+  }
+}
