@@ -603,9 +603,9 @@
    "owner": "Claude Code",
    "reproduction_evidence": "enforcement_coverage.json",
    "proposed_fix": "Wire boundary into spawn wrappers or OS-level isolation (owner/Windows decision)",
-   "test": "enforcement-coverage.test.mjs (classification only)",
-   "status": "OPEN",
-   "verification_result": "documented; sandboxed by Node permission model where applicable"
+   "test": "process-gate.test.mjs; enforcement-coverage.test.mjs",
+   "status": "PARTIALLY_FIXED",
+   "verification_result": "process-gate.mjs: restricted-node (plugins, MCP, repo tests, agent executors, update self-tests), code sandbox and malware scanner now refuse spawns on incident block / owner stop; ambient actor attributes spawns to the calling agent. Remaining: owner-initiated tooling spawns (git, node --check, own runtime child) and OS-level isolation (owner/Windows decision)"
   },
   {
    "defect_id": "A-001",

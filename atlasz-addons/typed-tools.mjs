@@ -6,6 +6,7 @@
 // an invalid result is rejected, never returned. Nothing here grants authority; it only routes calls through the existing chain.
 //
 // Schema dialect = a deliberately small JSON-Schema subset. An unsupported keyword is a registration error (fail closed), never ignored.
+import { processGate } from "./process-gate.mjs";
 const ALLOWED_KEYS = new Set(["type", "enum", "const", "required", "properties", "additionalProperties", "items", "minLength", "maxLength", "pattern", "minimum", "maximum", "minItems", "maxItems", "description", "nullable"]);
 const TYPES = new Set(["string", "number", "integer", "boolean", "object", "array", "null"]);
 export const LIMITS = Object.freeze({ maxDepth: 8, maxStringLen: 20000, maxArray: 1000, maxPattern: 200, maxKeys: 200 });
@@ -115,7 +116,7 @@ export function createToolRegistry({ chain, blackBox = null, boundary = null, no
     try { d = chain.evaluate({ actor, operation: t.operation, params: args, spendUsd: t.spendUsd, ownerApproval }); } catch (e) { return done("DENIED", { reason: "CHAIN_ERROR_FAIL_CLOSED" }); }
     if (!d?.allowed) return done(d?.verdict === "REQUIRE_APPROVAL" ? "REQUIRES_APPROVAL" : "DENIED", { reason: d?.reason ?? "NOT_ALLOWED", layer: d?.layer ?? null });
     let out; const th = {};
-    try { out = await Promise.race([Promise.resolve().then(() => t.handler(structuredClone(args))), sleepFail(t.timeoutMs, th)]); }
+    try { out = await Promise.race([Promise.resolve().then(() => processGate.runAs({ agentId: actor?.id ?? null, onBehalfOf, taskId }, () => t.handler(structuredClone(args)))), sleepFail(t.timeoutMs, th)]); }
     catch (e) { return done(e.message === "TOOL_TIMEOUT" ? "TIMEOUT" : "HANDLER_ERROR", { error: String(e.message).slice(0, 200) }); }
     finally { clearTimeout(th.t); }
     if (t.output) { const o = validate(t.output, out); if (!o.ok) return done("OUTPUT_INVALID", { errors: o.errors }); }

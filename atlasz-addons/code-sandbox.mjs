@@ -13,6 +13,7 @@
 // bypass an in-process hook, which is why Python without a namespace is not treated as contained). POSIX rlimits (CPU, file size, open files, address space for
 // Python) are applied where `sh`/`ulimit` exist; on Windows only the timeout and output caps apply. This is NOT a container or VM and is labelled as such.
 import { spawn, spawnSync } from "node:child_process";
+import { processGate } from "./process-gate.mjs";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -124,6 +125,7 @@ export function createCodeSandbox({ allowPython = process.env.ATLASZ_ALLOW_UNCON
     if (language === "python" && !c.python) return done("LANGUAGE_UNAVAILABLE");
     const level = c.level, isolation = describeIsolation(language, level, c);
     if (level !== "NAMESPACE" && !allowProcessOnly) return done("ISOLATION_NOT_AVAILABLE_NEEDS_OWNER_APPROVAL", { isolation, reason: "No OS-level isolation is available on this host; a process-only run needs a signed owner approval bound to this exact code." });
+    { const pg = processGate.check({ tool: "code-sandbox", agentId: req.agentId ?? null, taskId: req.taskId ?? null }); if (!pg.allowed) return done("BOUNDARY_REFUSED", { isolation, reason: pg.reason }); }
     if (busy >= L.maxConcurrent) return done("BUSY", { isolation });
     const timeoutMs = Math.min(Math.max(Number(req.timeoutMs) || L.timeoutMs, 100), L.maxTimeoutMs);
     busy++; let dir = null;

@@ -53,6 +53,6 @@ test("control center: dashboard from real (empty) ledgers claims nothing, schedu
     const core = createControlCenterCore({ stateDir: path.join(d, "s"), configDir: path.join(d, "c") }), x = core.profitDashboard();
     assert.equal(x.target.minimumUsd, 500); assert.equal(x.daily.status, "BELOW_MINIMUM"); assert.equal(x.daily.verifiedGrossReceiptsUsd, 0); assert.equal(x.cumulative.verifiedNetProfitUsd, 0);
     assert.equal(x.daily.continueWork, true); assert.equal(x.forecast.addedToResults, false); assert.match(x.note, /MINIMUM/);
-    assert.equal((await core.discoveryScheduler().tick()).reason, "NO_AUTHORISED_LIVE_SOURCE_CONNECTED");
+    assert.equal((await core.discoveryScheduler().tick()).reason, "NEEDS_OWNER_HOST_APPROVAL", "no signed host approval: nothing is contacted");
   } finally { rm(d); }
 });

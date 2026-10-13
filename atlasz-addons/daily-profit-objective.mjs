@@ -47,7 +47,7 @@ export function createProfitObjective({ payments, costs = () => [], pipeline = (
 }
 
 /** Persistent, bounded discovery scheduler. The caller drives tick(); each tick runs at most once per interval and at most maxPerDay times per day, backs off after failure and honours the owner stop. */
-export function createDiscoveryScheduler({ dir, run = null, isStopped = () => false, now = () => new Date().toISOString(), minIntervalMs = 15 * 60_000, maxPerDay = 96, backoffMs = 10 * 60_000, maxBackoffMs = 6 * 3_600_000, timeZone = "UTC" } = {}) {
+export function createDiscoveryScheduler({ dir, run = null, ready = null, isStopped = () => false, now = () => new Date().toISOString(), minIntervalMs = 15 * 60_000, maxPerDay = 96, backoffMs = 10 * 60_000, maxBackoffMs = 6 * 3_600_000, timeZone = "UTC" } = {}) {
   if (!dir) throw new Error("DIR_REQUIRED"); fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   const file = path.join(dir, "discovery-scheduler.json"); let S = { lastRunAt: null, day: null, runsToday: 0, failures: 0, nextAllowedAt: null, last: null, queue: [] };
   if (fs.existsSync(file)) { try { S = { ...S, ...JSON.parse(fs.readFileSync(file, "utf8")) }; } catch { throw new Error("SCHEDULER_STATE_CORRUPT_NOT_OVERWRITTEN"); } }
@@ -57,13 +57,14 @@ export function createDiscoveryScheduler({ dir, run = null, isStopped = () => fa
     const t = now(), ms = Date.parse(t), day = dayOf(t, timeZone);
     if (isStopped()) return { ran: false, reason: "OWNER_STOP_OR_SAFE_MODE_ACTIVE" };
     if (typeof run !== "function") return { ran: false, reason: "NO_AUTHORISED_LIVE_SOURCE_CONNECTED" };       // honest: nothing to run until the owner approves a source
+    if (typeof ready === "function") { let why = null; try { why = ready(); } catch { why = "READINESS_CHECK_FAILED"; } if (why) return { ran: false, reason: why }; }
     if (busy) return { ran: false, reason: "RUN_IN_PROGRESS" };
     if (S.day !== day) { S.day = day; S.runsToday = 0; }
     if (S.runsToday >= maxPerDay) return { ran: false, reason: "DAILY_RUN_CAP_REACHED" };
     const gate = Math.max(S.lastRunAt ? Date.parse(S.lastRunAt) + minIntervalMs : 0, S.nextAllowedAt ? Date.parse(S.nextAllowedAt) : 0);
     if (ms < gate) return { ran: false, reason: "NOT_DUE", dueAt: new Date(gate).toISOString() };
     busy = true; S.lastRunAt = t; S.runsToday++; S.last = { at: t, state: "STARTED" }; save();                  // checkpoint BEFORE the run: a crash is visible, not silent
-    try { const r = await run({ at: t }); S.failures = 0; S.nextAllowedAt = null; S.last = { at: t, state: "OK", summary: typeof r === "object" && r ? Object.fromEntries(Object.entries(r).filter(([, v]) => ["number", "string", "boolean"].includes(typeof v)).slice(0, 10)) : null }; save(); return { ran: true, ok: true, ...S.last };
+    try { const r = await run({ at: t, runIndex: S.runsToday }); S.failures = 0; S.nextAllowedAt = null; S.last = { at: t, state: "OK", summary: typeof r === "object" && r ? Object.fromEntries(Object.entries(r).filter(([, v]) => ["number", "string", "boolean"].includes(typeof v)).slice(0, 10)) : null }; save(); return { ran: true, ok: true, ...S.last };
     } catch (e) { S.failures++; const wait = Math.min(maxBackoffMs, backoffMs * 2 ** (S.failures - 1)); S.nextAllowedAt = new Date(ms + wait).toISOString(); S.last = { at: t, state: "FAILED", code: String(e?.code ?? e?.message ?? "ERROR").slice(0, 60) }; save(); return { ran: true, ok: false, ...S.last, retryAt: S.nextAllowedAt };
     } finally { busy = false; }
   }

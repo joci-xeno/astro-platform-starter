@@ -15,3 +15,6 @@ test("files classified BOUNDARY_WIRED really call the boundary", () => {
 test("legacy runtime files stay quarantined: no import of them from live code", () => {
   for (const f of walk(path.join(root, "atlasz-addons")).concat(walk(path.join(root, "atlasz-control-center")))) assert.doesNotMatch(fs.readFileSync(f, "utf8"), /from\s+["'][^"']*(\/supervisor\.js|\/worker\.js|\/agent-child\.js)["']/, f);
 });
+test("PROCESS_GATED files really call the process gate; restricted-node callers really use restrictedNodeCommand", () => {
+  for (const [f, c] of Object.entries(cov.files)) { const src = fs.readFileSync(path.join(root, f), "utf8"); if (c === "PROCESS_GATED") assert.match(src, /processGate\.check\(/, f); if (c === "PROCESS_GATED_VIA_RESTRICTED_NODE") assert.match(src, /restrictedNodeCommand\(/, f); }
+});

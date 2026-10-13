@@ -123,5 +123,5 @@ export function createAgentsPanel({ stateDir, ownerAuth, sign, isStopped = () =>
   }
   const loopEvent = (type, data) => { try { open(); master?.recordEvent(type, data); } catch { /* audit unavailable: the loop status still shows the state */ } };
   const superviseNow = async () => { open(); if (!master) return null; const r = await master.supervise(); await refreshMaster(); return r; };
-  return { view, action, workforce: open, masterRef: () => { open(); return master; }, superviseNow, loopEvent, close: () => { try { master?.close(); } catch { /* already closed */ } } };
+  return { view, action, discovery, workforce: open, masterRef: () => { open(); return master; }, superviseNow, loopEvent, close: () => { try { master?.close(); } catch { /* already closed */ } } };
 }

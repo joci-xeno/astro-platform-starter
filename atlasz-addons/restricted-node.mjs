@@ -12,6 +12,7 @@
 //   LIFETIME    `maxLifetimeSec` wraps the child in `timeout -s KILL` (when available) so it dies even if the manager is SIGKILLed; `lifetimeLimited` reports it.
 // Fail closed: if the host's Node has no permission model (older Node, some Electron builds) the launcher returns {ok:false, reason:"SANDBOX_UNAVAILABLE"}; it never silently runs unrestricted.
 import { spawnSync } from "node:child_process";
+import { processGate } from "./process-gate.mjs";
 
 const cache = new Map();
 const IS_WIN = process.platform === "win32";
@@ -39,7 +40,8 @@ const norm = d => String(d);
  * Build the command line for running `script` under restriction. Does not spawn.
  * @returns {{ok:true, cmd, args, env, level, networkBlocked, filesystemRestricted} | {ok:false, reason}}
  */
-export function restrictedNodeCommand({ nodeBin = process.execPath, script, scriptArgs = [], readDirs = [], writeDirs = [], env = {}, allowNetwork = false, requireNoNetwork = false, requireHostIsolation = false, maxLifetimeSec = 0, nodeFlags = [], caps = null } = {}) {
+export function restrictedNodeCommand({ purpose = "process.restricted_node", nodeBin = process.execPath, script, scriptArgs = [], readDirs = [], writeDirs = [], env = {}, allowNetwork = false, requireNoNetwork = false, requireHostIsolation = false, maxLifetimeSec = 0, nodeFlags = [], caps = null } = {}) {
+  const pg = processGate.check({ tool: purpose }); if (!pg.allowed) return { ok: false, reason: "BOUNDARY_REFUSED:" + pg.reason };      // SEC-GAP-5: incident block / owner stop applies to child processes too
   if (!script) return { ok: false, reason: "SCRIPT_REQUIRED" };
   if (typeof script !== "string" || script.startsWith("-")) return { ok: false, reason: "SCRIPT_INVALID" };      // a script path that starts with "-" would be read as a node option
   const c = caps ?? detectNodeRestrictions(nodeBin);

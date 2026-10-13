@@ -101,7 +101,7 @@ export const PARSERS = Object.freeze({
   },
   ALGOLIA_HN_JSON(src, text) {
     let j; try { j = JSON.parse(text); } catch { return R("PARSE_ERROR"); } const items = [];
-    for (const h of (Array.isArray(j?.hits) ? j.hits : []).slice(0, DISCOVERY_LIMITS.maxItems)) { const id = String(h.objectID ?? "").replace(/\D/g, ""); if (!id) continue; items.push(base(src, { url: "https://news.ycombinator.com/item?id=" + id, title: h.title ?? h.story_title ?? ("HN item " + id), description: stripTags(h.comment_text ?? h.story_text), language: "en", publishedAt: isoOrNull(h.created_at), kindHint: "COMMUNITY_BOARD" })); }
+    for (const h of (Array.isArray(j?.hits) ? j.hits : []).slice(0, DISCOVERY_LIMITS.maxItems)) { const id = String(h.objectID ?? "").replace(/\D/g, ""); if (!id) continue; items.push(base(src, { url: "https://news.ycombinator.com/item?id=" + id, title: h.title ?? (h.comment_text ? "HN comment: " + stripTags(h.comment_text).slice(0, 90) : null) ?? h.story_title ?? ("HN item " + id), description: stripTags(h.comment_text ?? h.story_text), language: "en", publishedAt: isoOrNull(h.created_at), kindHint: "COMMUNITY_BOARD" })); }
     return { ok: true, items };
   }
 });

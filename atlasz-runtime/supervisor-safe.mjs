@@ -23,6 +23,7 @@ import { createCodeEditWorkflow } from "../atlasz-addons/code-edit-workflow.mjs"
 import { createCredentialBroker } from "../atlasz-addons/credential-broker.mjs";
 import { createIncidentResponse } from "../atlasz-addons/incident-response.mjs";
 import { createExecutionBoundary } from "../atlasz-addons/execution-boundary.mjs";
+import { processGate } from "../atlasz-addons/process-gate.mjs";
 import { createNetworkSupervisor } from "../atlasz-addons/network-supervisor.mjs";
 import { roleOf as agentRoleOf } from "../atlasz-addons/agent-tool-policy.mjs";
 import { createApprovalRequests } from "../atlasz-addons/approval-requests.mjs";
@@ -70,6 +71,7 @@ export function createRuntime({ retryBaseMs = 2000, dataDir = process.env.ATLASZ
   const incidents = createIncidentResponse({ dir: path.join(dataDir, "incidents"), ownerAuth, alert: a => { try { process.stderr.write("[ALERT] " + JSON.stringify({ level: a.level, incident: a.incident, kind: a.kind }) + "\n"); } catch { /* alerting is best effort */ } } });
   const networkSupervisor = createNetworkSupervisor({ dir: path.join(dataDir, "network-supervision"), declare: i => incidents.declare(i) });
   const executionBoundary = createExecutionBoundary({ isBlocked: a => incidents.isBlocked(a), isStopped: () => emergencyStatus().mode !== "RUNNING" });
+  processGate.configure(executionBoundary);                              // SEC-GAP-5: child processes are gated by the same boundary
   const vault = createSecretVault({ dir: path.join(dataDir, "vault"), ownerAuth });
   // Credential broker (M1): agents never get raw credentials. No grants exist until the owner signs them, and no agent tool is wired to it yet (agent-tool-policy denies unlisted tools).
   const credentialBroker = createCredentialBroker({ vault, boundary: executionBoundary, netSup: networkSupervisor, ownerAuth, stateDir: path.join(dataDir, "vault", "broker"), roleOf: agentRoleOf, isKnownAgent: id => (state?.agents ?? []).some(a => a.id === id) });
