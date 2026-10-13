@@ -94,7 +94,7 @@ test("ESCALATION 4: the hosted broker contains an agent after a confirmed incide
 test("FINANCE 1: no agent can reach any money/payment/invoice/CRM/send tool; the payment-event ledger exposes no money-moving function", async () => {
   const s = setup();
   for (const id of ALL) for (const tool of ["money.panel", "money.record_invoice", "money.pay", "payments.refund", "payouts.create", "crm.send", "inbox.summary"]) assert.notEqual((await s.broker.call({ agentId: id, jobId: J(), tool, args: {} })).status, "OK", id + " " + tool);
-  const d = tmp("adv-"); try { const pe = mkCore(d).paymentEvents(); for (const k of Object.keys(pe)) assert.doesNotMatch(k, /^(pay|refund|transfer|send|payoutCreate|payoutInitiate|charge|initiate)$/i, k); assert.deepEqual(Object.keys(pe).sort(), ["authority", "confirmedPayment", "ingest", "listPayments", "payment", "payout", "reconcileBank", "summary", "verify"]); } finally { rm(d); }
+  const d = tmp("adv-"); try { const pe = mkCore(d).paymentEvents(); for (const k of Object.keys(pe)) assert.doesNotMatch(k, /^(pay|refund|transfer|send|payoutCreate|payoutInitiate|charge|initiate)$/i, k); assert.deepEqual(Object.keys(pe).sort(), ["attachFee", "authority", "confirmedPayment", "ingest", "listPayments", "payment", "payout", "reconcileBank", "summary", "verify"]); } finally { rm(d); }
 });
 test("FINANCE 2: forged, replayed and duplicated webhooks cannot create revenue; with no webhook secret everything is refused", () => {
   const d = tmp("adv-"); try { const c = mkCore(d), body = JSON.stringify({ id: "evt_adv1", type: "payment_intent.succeeded", data: { object: { id: "pi_adv1", amount: 5000, currency: "usd" } } });

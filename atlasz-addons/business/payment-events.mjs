@@ -60,14 +60,16 @@ export function createPaymentEventLedger({ dir, environment = "LIVE", secretFor 
   }
   function applyPayment(kind, o, at, evId) {
     const pi = typeof o.payment_intent === "string" ? o.payment_intent : (o.object === "payment_intent" ? o.id : (o.id ?? "unknown")), key = String(pi).slice(0, 100);
-    const p = (S.payments[key] ??= { key, state: null, at: 0, amountMinor: null, currency: null, feeMinor: null, invoiceId: null, refundedMinor: 0, refundIds: [], dispute: null, events: [] });
+    const p = (S.payments[key] ??= { key, state: null, at: 0, amountMinor: null, currency: null, feeMinor: null, feeEvidence: null, invoiceId: null, refundedMinor: 0, refundIds: [], refundLog: [], dispute: null, disputeLog: [], events: [] });
     p.events.push({ id: evId, kind, at }); if (p.events.length > 50) p.events.shift();
     const amt = intOrNull(o.amount_received ?? o.amount ?? o.amount_captured), cur = typeof o.currency === "string" ? o.currency.toLowerCase().slice(0, 3) : null;
     if (amt !== null && p.amountMinor === null) p.amountMinor = amt; if (cur && !p.currency) p.currency = cur;
     const inv = o.metadata?.invoice_id; if (typeof inv === "string" && inv && !p.invoiceId) p.invoiceId = inv.slice(0, 80);
-    if (Number.isInteger(o.application_fee_amount) && p.feeMinor === null) p.feeMinor = o.application_fee_amount;
-    if (kind === "REFUND") { const rid = String(o.id ?? evId), ra = intOrNull(o.object === "refund" ? o.amount : o.amount_refunded); if (ra !== null && !p.refundIds.includes(rid)) { p.refundIds.push(rid); p.refundedMinor = o.object === "refund" ? p.refundedMinor + ra : Math.max(p.refundedMinor, ra); } return { key, applied: true, state: p.state }; }
-    if (kind === "DISPUTE_OPENED" || kind === "DISPUTE_CLOSED") { p.dispute = { status: kind === "DISPUTE_OPENED" ? "OPEN" : String(o.status ?? "CLOSED").toUpperCase().slice(0, 30), at }; return { key, applied: true, state: p.state }; }
+    if (Number.isInteger(o.application_fee_amount) && p.feeMinor === null) { p.feeMinor = o.application_fee_amount; p.feeEvidence = { source: "PROCESSOR_APPLICATION_FEE", reference: evId, at }; }
+    const bt = o.balance_transaction;                                                                                    // expanded balance transaction = the processor's own fee statement (same currency as the charge)
+    if (bt && typeof bt === "object" && Number.isInteger(bt.fee) && bt.fee >= 0 && typeof bt.currency === "string" && bt.currency.toLowerCase() === (p.currency ?? cur) && p.feeEvidence?.source !== "PROCESSOR_BALANCE_TRANSACTION") { p.feeMinor = bt.fee; p.feeEvidence = { source: "PROCESSOR_BALANCE_TRANSACTION", reference: String(bt.id ?? evId).slice(0, 80), at }; }
+    if (kind === "REFUND") { const rid = String(o.id ?? evId), ra = intOrNull(o.object === "refund" ? o.amount : o.amount_refunded); if (ra !== null && !p.refundIds.includes(rid)) { const before = p.refundedMinor; p.refundIds.push(rid); p.refundedMinor = o.object === "refund" ? p.refundedMinor + ra : Math.max(p.refundedMinor, ra); if (p.refundedMinor > before) p.refundLog.push({ id: rid, amountMinor: p.refundedMinor - before, at }); }  return { key, applied: true, state: p.state }; }
+    if (kind === "DISPUTE_OPENED" || kind === "DISPUTE_CLOSED") { p.dispute = { status: kind === "DISPUTE_OPENED" ? "OPEN" : String(o.status ?? "CLOSED").toUpperCase().slice(0, 30), at }; (p.disputeLog ??= []).push({ status: p.dispute.status, at }); if (p.disputeLog.length > 20) p.disputeLog.shift(); return { key, applied: true, state: p.state }; }
     if (p.state && RANK[p.state] === 3 && RANK[kind] === 3 && p.state !== kind) { sec("CONFLICTING_TERMINAL_PAYMENT_EVENTS", { key, have: p.state, got: kind }); return { key, applied: false, state: p.state }; }
     if (p.state && (RANK[kind] < RANK[p.state] || (RANK[kind] === RANK[p.state] && at < p.at))) return { key, applied: false, state: p.state, note: "OUT_OF_ORDER_IGNORED" };
     p.state = kind; p.at = at; return { key, applied: true, state: p.state };
@@ -88,12 +90,21 @@ export function createPaymentEventLedger({ dir, environment = "LIVE", secretFor 
     if (evidence.amountMinor !== po.amountMinor || evidence.currency.toLowerCase() !== po.currency) return { ok: false, reason: "BANK_EVIDENCE_AMOUNT_OR_CURRENCY_MISMATCH" };
     po.state = "BANK_RECONCILED"; po.bankEvidence = { reference: evidence.reference.slice(0, 100), source: evidence.source.slice(0, 60), receivedAt: evidence.receivedAt }; audit.append("PAYOUT_BANK_RECONCILED", { key: payoutKey, reference: po.bankEvidence.reference }); save(); return { ok: true, key: payoutKey, state: po.state };
   }
+  /** Fee evidence for a payment whose processor event carried no fee (e.g. a balance-transaction report). Owner-supplied evidence only; a recorded fee is never silently replaced. */
+  function attachFee(paymentKey, { feeMinor, currency, source, reference, ownerApproved = false } = {}) {
+    const p = S.payments[paymentKey]; if (!p) return { ok: false, reason: "UNKNOWN_PAYMENT" };
+    if (ownerApproved !== true) return { ok: false, reason: "OWNER_AUTHORISED_FEE_EVIDENCE_REQUIRED" };
+    if (!Number.isInteger(feeMinor) || feeMinor < 0 || typeof source !== "string" || !source || typeof reference !== "string" || !reference) return { ok: false, reason: "FEE_EVIDENCE_INCOMPLETE" };
+    if (String(currency ?? "").toLowerCase() !== p.currency) return { ok: false, reason: "FEE_CURRENCY_MISMATCH" };
+    if (p.feeMinor !== null) return p.feeMinor === feeMinor ? { ok: true, duplicate: true } : { ok: false, reason: "FEE_ALREADY_RECORDED_DIFFERENT" };
+    p.feeMinor = feeMinor; p.feeEvidence = { source: source.slice(0, 60), reference: reference.slice(0, 100), at: Math.floor(Date.parse(now()) / 1000) }; audit.append("PAYMENT_FEE_EVIDENCE_ATTACHED", { key: paymentKey, source: p.feeEvidence.source, reference: p.feeEvidence.reference }); save(); return { ok: true, key: paymentKey };
+  }
   const count = (o, f) => Object.values(o).filter(f).length, sumOf = (list, f) => list.reduce((s, x) => s + (f(x) ?? 0), 0);
   function summary() {
-    const P = Object.values(S.payments), succ = P.filter(p => p.state === "PAYMENT_SUCCEEDED"), feesKnown = succ.every(p => p.feeMinor !== null), gross = sumOf(succ, p => p.amountMinor), refunds = sumOf(succ, p => p.refundedMinor), fees = sumOf(succ, p => p.feeMinor);
+    const P = Object.values(S.payments), succ = P.filter(p => p.state === "PAYMENT_SUCCEEDED"), feesKnown = succ.every(p => p.feeMinor !== null) && new Set(succ.map(p => p.currency)).size <= 1, gross = sumOf(succ, p => p.amountMinor), refunds = sumOf(succ, p => p.refundedMinor), fees = sumOf(succ, p => p.feeMinor);
     return { environment, payments: { initiated: P.filter(p => p.state === "PAYMENT_INITIATED").length, pending: P.filter(p => p.state === "PAYMENT_PENDING").length, succeededProcessorConfirmed: succ.length, failed: P.filter(p => p.state === "PAYMENT_FAILED").length, disputesOpen: P.filter(p => p.dispute?.status === "OPEN").length, withRefunds: P.filter(p => p.refundedMinor > 0).length },
       payouts: { initiated: count(S.payouts, p => p.state === "PAYOUT_INITIATED"), paidByProcessorNotBankConfirmed: count(S.payouts, p => p.state === "PAYOUT_PAID_BY_PROCESSOR"), failed: count(S.payouts, p => p.state === "PAYOUT_FAILED"), bankReconciled: count(S.payouts, p => p.state === "BANK_RECONCILED") },
-      money: { grossProcessorConfirmedMinor: succ.length ? gross : null, refundedMinor: refunds, feesMinor: feesKnown ? fees : null, netMinor: feesKnown && succ.length ? gross - refunds - fees : null, netNote: feesKnown ? "gross - refunds - fees (processor-confirmed, not bank receipt)" : "UNKNOWN: at least one succeeded payment has no recorded fee",
+      money: { grossProcessorConfirmedMinor: succ.length ? gross : null, refundedMinor: refunds, feesMinor: feesKnown ? fees : null, netMinor: feesKnown && succ.length ? gross - refunds - fees : null, currencies: [...new Set(succ.map(p => p.currency))], netNote: feesKnown ? "gross - refunds - fees (processor-confirmed, not bank receipt)" : "UNKNOWN: a succeeded payment has no recorded fee, or receipts are in more than one currency (see the profit objective for documented conversion)",
         bankReconciledMinor: sumOf(Object.values(S.payouts).filter(p => p.state === "BANK_RECONCILED"), p => p.amountMinor) }, eventsProcessed: Object.keys(S.events).length, auditOk: audit.verify().ok };
   }
   /** Authority for the payment-verification engine: VERIFIED only for a processor-confirmed succeeded payment carrying this invoice id with the exact amount and currency, not fully refunded, not under open dispute. */
@@ -114,5 +125,5 @@ export function createPaymentEventLedger({ dir, environment = "LIVE", secretFor 
     if (p.refundedMinor >= p.amountMinor) return { status: "FAILED", reason: "FULLY_REFUNDED" };
     return { status: "VERIFIED", amount: Number(c.amount), currency: String(c.currency).toUpperCase(), reference: p.key, environment, settledAt: new Date(p.at * 1000).toISOString() };
   } });
-  return { ingest, reconcileBank, summary, authority, confirmedPayment, listPayments: () => Object.values(S.payments).map(x => structuredClone(x)), payment: k => (S.payments[k] ? structuredClone(S.payments[k]) : null), payout: k => (S.payouts[k] ? structuredClone(S.payouts[k]) : null), verify: () => audit.verify() };
+  return { ingest, reconcileBank, attachFee, summary, authority, confirmedPayment, listPayments: () => Object.values(S.payments).map(x => structuredClone(x)), payment: k => (S.payments[k] ? structuredClone(S.payments[k]) : null), payout: k => (S.payouts[k] ? structuredClone(S.payouts[k]) : null), verify: () => audit.verify() };
 }

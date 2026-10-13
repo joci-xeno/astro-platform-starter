@@ -39,7 +39,7 @@ const SOURCE_TYPES = ["OWNER_PROVIDED", "DOCUMENT_CENTER", "MANUAL_ENTRY", "PUBL
 const RETRIEVALS = ["CONNECTOR", "OPERATOR_TOOL", "FIXTURE"], STAGES_AFTER_PLAN = ["PROPOSED", "CONTRACTED", "IN_PROGRESS", "QUALITY_CHECKED", "DELIVERED", "PAYMENT_PENDING", "PAID"];
 const sourceById = id => SOURCE_CATALOGUE.find(x => x.id === id) ?? null;
 
-export function createWorkforce({ dir, registry, ledger = null, revenue = null, memory = null, models = null, approvals = null, tools = null, executors = BUILTIN_EXECUTORS, simulatedModelIds = [], isStopped = () => false, evidenceKnown = null, now = () => new Date().toISOString(), sleep = ms => new Promise(r => setTimeout(r, ms)), clock = () => Date.now() } = {}) {
+export function createWorkforce({ dir, registry, ledger = null, revenue = null, memory = null, models = null, approvals = null, tools = null, executors = BUILTIN_EXECUTORS, simulatedModelIds = [], isStopped = () => false, evidenceKnown = null, objective = () => null, now = () => new Date().toISOString(), sleep = ms => new Promise(r => setTimeout(r, ms)), clock = () => Date.now() } = {}) {
   if (!dir) throw new Error("DIR_REQUIRED"); if (!registry || typeof registry.list !== "function") throw new Error("REGISTRY_REQUIRED");
   fs.mkdirSync(path.join(dir, "artifacts"), { recursive: true, mode: 0o700 });
   // The Master Coordinator facade is the only holder of this one-shot capability: it may dispatch PLAN_STEP work (never OWNER_DIRECTED) and suspend/reassign tasks. API callers cannot claim it.
@@ -557,6 +557,7 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
   }
 
   /** Transparent, deterministic prioritisation. Only components with evidence score; every unknown is listed and scores 0 (never guessed). No earnings are inferred. */
+  const objectiveContext = () => { try { const x = objective(); return x && typeof x.status === "string" ? x : null; } catch { return null; } };
   function rankPipeline() {
     const have = new Set(registry.list().flatMap(a => a.team === "EXECUTION" && a.status === "REGISTERED_READY" ? a.capabilityProfile.skills : []));
     const rows = Object.values(S.opps).map(o => {
@@ -566,10 +567,14 @@ export function createWorkforce({ dir, registry, ledger = null, revenue = null, 
       const skills = o.ownerInput?.requiredSkills ?? d?.requirements?.skills ?? []; if (!skills.length) { unknown.push("DELIVERABILITY_NO_SKILL_MATCH"); c.deliverability = 0; } else c.deliverability = Math.round(25 * skills.filter(x => have.has(x)).length / skills.length);
       c.deadline = !d ? 5 : d.deadlineState === "OPEN" ? ((Date.parse(d.deadline) - Date.parse(now())) / 864e5 >= 7 ? 15 : 8) : d.deadlineState === "UNKNOWN" ? 5 : 0; if (d?.deadlineState === "UNKNOWN") unknown.push("DEADLINE_UNKNOWN");
       c.geography = !d ? 5 : d.geoRestrictions?.length ? 0 : d.internationalEligibility === "SOURCE_STATES_OPEN" ? 15 : 5; unknown.push(...(d && !d.geoRestrictions?.length && d.internationalEligibility !== "SOURCE_STATES_OPEN" ? ["GEOGRAPHIC_ELIGIBILITY_UNKNOWN_NOT_ASSUMED"] : []), ...(d?.geoRestrictions?.length ? ["GEOGRAPHIC_RESTRICTION_FOUND"] : []));
-      c.valueKnown = o.derived.sourceValue || o.derived.expectedNetUsd !== null ? 10 : 0; if (!c.valueKnown) unknown.push("VALUE_UNKNOWN"); if (o.derived.economics === "UNKNOWN") unknown.push("MARGIN_UNKNOWN");
+      // Commercial factors: ADVERTISED value is not profit. Only an owner-recorded expected NET scores fully; an advertised figure alone scores almost nothing; every unknown factor is listed, never guessed.
+      c.netEconomics = o.derived.expectedNetUsd !== null ? 5 : (o.derived.sourceValue ? 1 : 0); if (o.derived.expectedNetUsd === null) unknown.push("EXPECTED_NET_UNKNOWN_ADVERTISED_VALUE_IS_NOT_PROFIT"); if (o.derived.economics === "UNKNOWN") unknown.push("MARGIN_UNKNOWN", "DELIVERY_COSTS_UNKNOWN");
+      c.objectiveFit = 0; const obj = objectiveContext(), met = obj && (obj.status === "MINIMUM_MET" || obj.status === "ABOVE_MINIMUM");
+      if (obj && o.derived.expectedNetUsd !== null && o.derived.expectedNetUsd > 0) c.objectiveFit = met ? 2 : Math.round(5 * Math.min(1, o.derived.expectedNetUsd / Math.max(1, obj.remainingToMinimumUsd ?? 500))); else if (obj) unknown.push("OBJECTIVE_FIT_NOT_SCORED_EXPECTED_NET_UNKNOWN");   // the daily minimum is ONE small factor (<=5 of 100), never the reason to take a bad job
+      if (!(o.ownerInput?.buyer ?? d?.buyer ?? o.client)) unknown.push("CLIENT_IDENTITY_UNKNOWN"); if (!o.ownerInput?.paymentTerms) unknown.push("PAYMENT_TERMS_AND_RELIABILITY_UNKNOWN"); if (!(o.ownerInput?.complexity)) unknown.push("COMPLEXITY_UNKNOWN");
       c.scamRisk = !d ? 8 : d.fraud?.level === "NONE" ? 15 : d.fraud?.level === "LOW" ? 8 : 0;
       const score = Object.values(c).reduce((a, b) => a + b, 0);
-      return { opportunityId: o.id, title: o.title, score, components: c, unknown: [...new Set(unknown)], maxScore: 100, lifecycle: lifecycleOf(o), basis: "Evidence-weighted checklist, not a revenue forecast." };
+      return { opportunityId: o.id, title: o.title, score, components: c, unknown: [...new Set(unknown)], maxScore: 100, lifecycle: lifecycleOf(o), objective: obj ? { status: obj.status, remainingToMinimumUsd: obj.remainingToMinimumUsd ?? null } : null, basis: "Evidence-weighted checklist over verifiable commercial factors; the daily objective is one small factor. Not a revenue forecast." };
     });
     return rows.sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
   }

@@ -11,13 +11,13 @@ import { createMasterCoordinator } from "../atlasz-addons/master-coordinator.mjs
 import { createCampaignManager } from "../atlasz-addons/campaign-manager.mjs";
 import { createGlobalBusinessIntelligence } from "../atlasz-addons/global-business-intelligence.mjs";
 
-export function createAgentsPanel({ stateDir, ownerAuth, sign, isStopped = () => false, approvals = null, memory = null, models = null, discoveryTransport = null, modelView = null, approvalsPending = null, hostProbes = {}, brainWorkflow = null, brainWorkflows = null, loop = () => null, controlGuard = null, controlStatus = null, nowFn = () => new Date().toISOString() } = {}) {
+export function createAgentsPanel({ stateDir, ownerAuth, sign, isStopped = () => false, approvals = null, memory = null, models = null, discoveryTransport = null, modelView = null, approvalsPending = null, hostProbes = {}, brainWorkflow = null, brainWorkflows = null, loop = () => null, controlGuard = null, controlStatus = null, objective = () => null, nowFn = () => new Date().toISOString() } = {}) {
   const dir = path.join(stateDir, "workforce");
   const auth = { verifyApproval: (...a) => { try { return ownerAuth().verifyApproval(...a); } catch { return { allowed: false, reason: "NO_OWNER_KEY" }; } }, verifyRecorded: (...a) => { try { return ownerAuth().verifyRecorded(...a); } catch { return false; } } };
   let wf = null, openError = null, master = null, campaigns = null, gbi = null;
   const open = () => {
     if (wf) return wf;
-    try { const registry = createAgentRegistry({ dir: path.join(dir, "registry"), ownerAuth: auth, isStopped }); wf = createWorkforce({ dir, registry, approvals, memory: memory?.() ?? null, models, isStopped, evidenceKnown: (h, r) => { try { return discovery()?.hasEvidence(h, r) === true; } catch { return false; } } });
+    try { const registry = createAgentRegistry({ dir: path.join(dir, "registry"), ownerAuth: auth, isStopped }); wf = createWorkforce({ dir, registry, approvals, memory: memory?.() ?? null, models, isStopped, objective, evidenceKnown: (h, r) => { try { return discovery()?.hasEvidence(h, r) === true; } catch { return false; } } });
       campaigns = createCampaignManager({ dir: path.join(dir, "campaigns"), coordinator: wf.coordinator, ownerAuth: auth, isStopped });
       gbi = createGlobalBusinessIntelligence({ workforce: wf, discovery: null, models });
       master = createMasterCoordinator({ controlGuard, loopStatus: () => loop()?.status() ?? null, dir: path.join(dir, "master"), workforce: wf, campaigns, isStopped, approvalsPending, models: typeof modelView === "function" ? modelView : null,

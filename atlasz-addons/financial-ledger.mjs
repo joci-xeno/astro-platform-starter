@@ -18,6 +18,7 @@ export function createFinancialLedger({ dir, now = () => new Date().toISOString(
   function recordCost({ entity, jobId = null, provider = "UNSPECIFIED", category = "OTHER", amountUsd, evidence = null, tokensIn = 0, tokensOut = 0, note = "" } = {}) {
     const amount = num(amountUsd, "INVALID_COST_AMOUNT");
     if (amount > 0 && !evOk(evidence)) throw new Error("COST_REQUIRES_EVIDENCE");      // an actual cost must be documented, never guessed
+    if (amount > 0 && evidence.reference && rows().some(r => r.type === "COST" && r.evidence?.source === evidence.source && r.evidence?.reference === evidence.reference && (r.entity || "ATLASZ_EXTERNAL") === entityOf(entity))) throw new Error("DUPLICATE_COST_REFERENCE");   // a retried bill/usage record is never counted twice
     return chain.append("COST", { entity: entityOf(entity), jobId, provider, category, amountUsd: amount, tokensIn: num(tokensIn, "INVALID_TOKENS"), tokensOut: num(tokensOut, "INVALID_TOKENS"), evidence, note });
   }
   function recordRevenue({ entity, jobId, amountUsd, stage, confirmedReceived = false, evidence = null, note = "" } = {}) {

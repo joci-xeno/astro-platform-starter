@@ -107,3 +107,13 @@ test("an agent handle cannot widen its own project reach (extraProject / coordin
     const c = await am.contextForProject("SEARCH-2", { taskId: "t9", query: "alpha implementation plan", project: "alpha" }); assert.equal(c.ok, true); assert.ok(c.ids.length > 0);
   } finally { rm(d); }
 });
+
+test("ranking uses commercial factors: advertised value is not profit, unknowns are listed, and the daily objective is one small factor", async () => {
+  const d = tmp("gdw-rank-"); try {
+    const mkWf = objective => createWorkforce({ objective, evidenceKnown: (h, r) => { try { return createDiscoveryEngine({ dir: path.join(d, "disc"), now: () => NOW }).hasEvidence(h, r); } catch { return false; } }, dir: path.join(d, "wf"), registry: createAgentRegistry({ dir: path.join(d, "wf", "registry"), ownerAuth: { verifyApproval: () => ({ allowed: false }), verifyRecorded: () => false } }), now: () => NOW });
+    const wf = mkWf(() => ({ status: "BELOW_MINIMUM", remainingToMinimumUsd: 500 })); await ingest(d, wf);
+    const rows = wf.rankPipeline().filter(r => r.score !== null); assert.ok(rows.length >= 1);
+    for (const r of rows) { assert.ok(r.components.netEconomics <= 1, "no owner-recorded net: an advertised figure scores at most 1 of 100"); assert.equal(r.components.objectiveFit, 0); assert.ok(r.unknown.includes("EXPECTED_NET_UNKNOWN_ADVERTISED_VALUE_IS_NOT_PROFIT")); assert.ok(r.unknown.includes("OBJECTIVE_FIT_NOT_SCORED_EXPECTED_NET_UNKNOWN")); assert.ok(r.unknown.includes("PAYMENT_TERMS_AND_RELIABILITY_UNKNOWN")); assert.equal(r.objective.status, "BELOW_MINIMUM"); assert.ok(r.score <= 100); }
+    const none = mkWf(() => { throw new Error("objective unavailable"); }).rankPipeline().filter(r => r.score !== null); assert.ok(none.every(r => r.objective === null), "a failing objective hook never breaks ranking");
+  } finally { rm(d); }
+});

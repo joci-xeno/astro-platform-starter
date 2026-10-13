@@ -10,3 +10,6 @@
 - **Dashboard:** `/api/profit/daily`, Control Center view "Daily Profit Target".
 - **Blockers:** no live payment processor events, no live discovery source (needs the owner's signed host egress approval), Stripe webhook secret. Until verified records exist the objective is **not** claimed as achieved.
 - Unchanged: exactly 5 SEARCH + 25 EXECUTION agents; all owner approvals; spending/transfers/trading stay owner-gated.
+
+## Update — financial engine v2
+The objective now uses **America/Vancouver** as the business day (DST-correct), has the four statuses `NOT_VERIFIABLE / BELOW_MINIMUM / MINIMUM_MET / ABOVE_MINIMUM`, dates refunds and lost chargebacks by their own event time, converts non-USD receipts only with an owner-signed documented rate, separates cost categories, and treats costs as **unknown** until the owner attests completeness. Details: `docs/FINANCIAL_ENGINE.md`; stage mapping: `docs/WORKFLOW_STAGE_MAPPING.md`; owner steps: `docs/owner/STRIPE_ACTIVATION_OWNER_STEPS.md`.

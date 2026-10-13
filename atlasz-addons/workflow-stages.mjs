@@ -15,7 +15,7 @@ export const STAGES = Object.freeze({
   INVOICE: { entry: [{ kind: "delivery", fields: ["deliveryId"], authority: "DELIVERY_RECORD" }], exit: ["invoice issued"] },
   PAYMENT_VERIFICATION: { entry: [{ kind: "invoice", fields: ["invoiceId"], authority: "INVOICE_RECORD" }], exit: ["payment verified by processor evidence"] },
   RECONCILIATION: { entry: [{ kind: "payment", fields: ["eventId", "invoiceId", "amount", "currency"], authority: "PAYMENT_VERIFIED" }], exit: ["fees and refunds reconciled"] },
-  NET_PROFIT: { entry: [{ kind: "reconciliation", fields: ["reconciled", "costsRecorded"], authority: false, equals: { reconciled: true, costsRecorded: true } }], exit: ["verified net profit computed"] }
+  NET_PROFIT: { entry: [{ kind: "reconciliation", fields: ["reconciled", "costsRecorded", "paymentKey"], authority: "NET_PROFIT_VERIFIED", equals: { reconciled: true, costsRecorded: true } }], exit: ["verified net profit computed"] }
 });
 const filled = v => v !== undefined && v !== null && v !== "" && !(Array.isArray(v) && !v.length);
 
