@@ -1,0 +1,303 @@
+﻿id,kind,subtype,text,status,resolved_by,directive_item_count,directive_item_ids,component_ids,work_ids
+ATL-FND-0001,CONFLICT,CODE_VS_DOC,10 helyett 17,OPEN,,1,ATL-DIR-9229,,ATL-WRK-0763
+ATL-FND-0002,CONFLICT,REGISTER_STALE,167 helyett 192 EXISTS_AND_WORKING a registryben,OPEN,,1,ATL-DIR-9224,,ATL-WRK-0762
+ATL-FND-0003,CONFLICT,CODE_VS_DOC,18 forrás (connection_status.md) vs 19 (global-discovery.mjs),OPEN,,1,ATL-DIR-10994,ATL-RES-0006,ATL-WRK-0763
+ATL-FND-0004,CONFLICT,CODE_VS_DOC,29 helyett 36,OPEN,,1,ATL-DIR-9228,,ATL-WRK-0763
+ATL-FND-0005,CONFLICT,CODE_VS_DOC,35 helyett 36,OPEN,,1,ATL-DIR-9227,,ATL-WRK-0763
+ATL-FND-0006,CONFLICT,CODE_VS_DOC,800 helyett 930 item-rekord,OPEN,,1,ATL-DIR-9221,,ATL-WRK-0763
+ATL-FND-0007,CONFLICT,REGISTER_STALE,853 helyett 983 registry-rekord (930 item + 53 szakasz),OPEN,,1,ATL-DIR-9220,,ATL-WRK-0762
+ATL-FND-0008,CONFLICT,CODE_VS_DOC,a 'ne kódolj' tilalmat a 64db7065 direktíva feloldotta,OPEN,,1,ATL-DIR-8393,,ATL-WRK-0763
+ATL-FND-0009,CONFLICT,CODE_VS_DOC,a 23-as lista nincs a repóban (jelentés 17.6),OPEN,,1,ATL-DIR-11194,,ATL-WRK-0763
+ATL-FND-0010,CONFLICT,CODE_VS_DOC,a 23-pontos direktíva szó szerinti szövege nincs a repóban,OPEN,,1,ATL-DIR-5825,,ATL-WRK-0763
+ATL-FND-0011,CONFLICT,CODE_VS_DOC,a 23-pontos és a Fortress-12 forrás nincs a repóban (GLOBAL_BUSINESS_INTEGRATION_REPORT.md),OPEN,,1,ATL-DIR-8326,,ATL-WRK-0763
+ATL-FND-0012,CONFLICT,CODE_VS_DOC,"a checkpoint fejléce ""next: Batch 7"", pedig a tartalom Batch 8-at ír kész",OPEN,,1,ATL-DIR-11253,ATL-BRN-0030; ATL-OPS-0005,ATL-WRK-0763
+ATL-FND-0013,CONFLICT,CODE_VS_DOC,"a daily-profit-objective.mjs fejléce/docs ""folyamatos felderítés"" - de az ütemezőt a futó rendszer nem hívja (D-08)",OPEN,,1,ATL-DIR-10998,ATL-RES-0008; ATL-SCH-0002; ATL-SCH-0007,ATL-WRK-0763
+ATL-FND-0014,CONFLICT,CODE_VS_DOC,"a direktíva ""14 + BRAIN_MANAGER"", a kód MASTER + 14 (BRAIN_MANAGER-rel együtt) azonosítót ad",OPEN,,1,ATL-DIR-10822,ATL-BRN-0001; ATL-BRN-0025,ATL-WRK-0763
+ATL-FND-0015,CONFLICT,CODE_VS_DOC,"a direktíva 0 bevételt kér, a kód ""ismeretlen""-t ír",OPEN,,1,ATL-DIR-3362,ATL-API-0003; ATL-API-0027; ATL-AUR-0002; ATL-UIX-0022,ATL-WRK-0763
+ATL-FND-0016,CONFLICT,CODE_VS_DOC,"A direktíva egyetlen közös Owner Approval Gateway-t ír elő; a kód 4 párhuzamos jóváhagyási útvonalat tart (gateway, approval-requests, owner-command, governance)",OPEN,,2,ATL-DIR-8528; ATL-DIR-8529,ATL-SEC-0004; ATL-SEC-0005; ATL-SEC-0024; ATL-SEC-0026,ATL-WRK-0763
+ATL-FND-0017,CONFLICT,CODE_VS_DOC,"A direktíva szerint egyetlen közös Owner Approval Gateway; a kód 4 párhuzamos jóváhagyási útvonalat használ (gateway, approval-requests, owner-command, brain governance)",OPEN,,1,ATL-DIR-4772,ATL-BRN-0012; ATL-SEC-0004; ATL-SEC-0024,ATL-WRK-0763
+ATL-FND-0018,CONFLICT,CODE_VS_DOC,"a direktíva és a connection_status.md 18 forrást említ, a kódban 19 S(...) bejegyzés van",OPEN,,1,ATL-DIR-4014,ATL-INT-0004; ATL-INT-0008; ATL-RES-0006; ATL-RES-0017,ATL-WRK-0763
+ATL-FND-0019,CONFLICT,REGISTER_STALE,"a docs/atlasz_v73_requirement_registry.csv jelenleg 983 sor (item_audit.csv is 983), nem 853",OPEN,,1,ATL-DIR-7402,,ATL-WRK-0762
+ATL-FND-0020,CONFLICT,REGISTER_STALE,a jelentett 18 VERIFIED_WORKING a nyilvántartásban (audit_85.json) van; a 10-12-i újraellenőrzés 9-re minősített vissza,OPEN,,1,ATL-DIR-5637,,ATL-WRK-0762
+ATL-FND-0021,CONFLICT,CODE_VS_DOC,"a jelentés területenkénti %-os arányokat közöl, bár a direktíva tiltja a ""completion percentage"" kitalálását (levezetett, nem kitalált)",OPEN,,1,ATL-DIR-11209,,ATL-WRK-0763
+ATL-FND-0022,CONFLICT,REGISTER_STALE,a Merlin szolgáltató egy .example placeholder hosztot használ (model-registry.mjs SEED_PROVIDERS),OPEN,,1,ATL-DIR-10904,ATL-INT-0002; ATL-MDL-0009; ATL-MDL-0019,ATL-WRK-0762
+ATL-FND-0023,CONFLICT,CODE_VS_DOC,a mester-specifikáció teljes szövege nincs a repóban,OPEN,,1,ATL-DIR-5827,,ATL-WRK-0763
+ATL-FND-0024,CONFLICT,CODE_VS_DOC,"a payment-event ingest nincs az execution-boundary mögött, a direktíva szerint minden pénzügyi integrációs művelet kapuzandó",OPEN,,1,ATL-DIR-2845,ATL-FIN-0006; ATL-SEC-0015; ATL-SEC-0031,ATL-WRK-0763
+ATL-FND-0025,CONFLICT,REGISTER_STALE,"a portable mentés kizárja a configDir/backups mappát, ahol az LKG-regiszter él",OPEN,,1,ATL-DIR-6861,ATL-OPS-0001; ATL-OPS-0017; ATL-OPS-0021,ATL-WRK-0762
+ATL-FND-0026,CONFLICT,CODE_VS_DOC,"a példaszöveg (""Haladjunk sorban..."") eltér az implementáltól (""Kezdjük azzal, amit most biztosan ellenőrizni tudunk."")",OPEN,,1,ATL-DIR-3301,ATL-API-0003; ATL-AUR-0002; ATL-UIX-0022,ATL-WRK-0763
+ATL-FND-0027,CONFLICT,CODE_VS_DOC,"a qualification-engine ismeretlen óraszámot 24-nek vesz, miközben az intake ""unknown stays null"" elvet követ",OPEN,,1,ATL-DIR-11008,ATL-FIN-0023; ATL-RES-0012,ATL-WRK-0763
+ATL-FND-0028,CONFLICT,REGISTER_STALE,a Revenue/Costs/Profit (finance) nézet financial-ledger.profit.verifiedNetUsd-t számol külön úton (financial-ledger.mjs:53),OPEN,,1,ATL-DIR-9153,ATL-API-0011; ATL-FIN-0010; ATL-UIX-0015,ATL-WRK-0762
+ATL-FND-0029,CONFLICT,CODE_VS_DOC,a VERIFIED_WORKING csak helyi/fixture szintet jelent,OPEN,,1,ATL-DIR-10532,ATL-BRN-0002,ATL-WRK-0763
+ATL-FND-0030,CONFLICT,CODE_VS_DOC,"agents-panel dependencies ""Campaign Manager NOT_CONNECTED"" vs. master.planCampaign bekötve",OPEN,,1,ATL-DIR-2546,ATL-BRN-0017; ATL-BRN-0025,ATL-WRK-0763
+ATL-FND-0031,CONFLICT,CODE_VS_DOC,"agents-panel.mjs dependencies ""Campaign Manager / GBI NOT_CONNECTED"" vs. ugyanott master.planCampaign + gbi bekötve",OPEN,,1,ATL-DIR-2325,ATL-AGT-0040; ATL-BRN-0017; ATL-BRN-0025; ATL-RES-0005,ATL-WRK-0763
+ATL-FND-0032,CONFLICT,CODE_VS_DOC,"agentSupervision notes szövege még 'not yet aggregate'-et állít, a kód aggregál",OPEN,,10,ATL-DIR-2867; ATL-DIR-2868; ATL-DIR-2869; ATL-DIR-2870; ATL-DIR-2871; ATL-DIR-2872; ATL-DIR-2873; ATL-DIR-2874; ATL-DIR-2875; ATL-DIR-2876,ATL-SEC-0006; ATL-SEC-0021,ATL-WRK-0763
+ATL-FND-0033,CONFLICT,CODE_VS_DOC,at-least-once ütemező és ack-védelem hiánya vs 'no accidental replay',OPEN,,1,ATL-DIR-1916,ATL-OPS-0010; ATL-SCH-0002; ATL-SEC-0026,ATL-WRK-0763
+ATL-FND-0034,CONFLICT,REGISTER_STALE,"ATL-REQ MISSING, számlálók léteznek",OPEN,,1,ATL-SPC-0698,ATL-OPS-0010; ATL-OPS-0034,ATL-WRK-0762
+ATL-FND-0035,CONFLICT,CODE_VS_DOC,"ATL-REQ PARTIAL, a kódban nincs",OPEN,,1,ATL-SPC-0973,,ATL-WRK-0763
+ATL-FND-0036,CONFLICT,CODE_VS_DOC,"ATL-REQ PARTIAL, de a kódban nincs",OPEN,,1,ATL-SPC-0970,,ATL-WRK-0763
+ATL-FND-0037,CONFLICT,CODE_VS_DOC,"ATL-REQ VERIFIED_WORKING, de a napló nem egységes/perzisztens mindenhol",OPEN,,1,ATL-SPC-0701,ATL-OPS-0002; ATL-OPS-0028; ATL-OPS-0034,ATL-WRK-0763
+ATL-FND-0038,CONFLICT,REGISTER_STALE,"ATL-REQ-0469 MISSING, de lessonsFor rangsorolás létezik (részleges)",OPEN,,1,ATL-SPC-0252,ATL-AGT-0036; ATL-MEM-0007,ATL-WRK-0762
+ATL-FND-0039,CONFLICT,CODE_VS_DOC,ATL-SCH-0007 discoveryScheduler BROKEN az inventoryban,OPEN,,2,ATL-DIR-2928; ATL-DIR-2929,ATL-RES-0006; ATL-RES-0008; ATL-SCH-0007,ATL-WRK-0763
+ATL-FND-0040,CONFLICT,CODE_VS_DOC,atlasz-runtime/package.json start már supervisor-safe.mjs (Batch 7A); egyeztetendő a tilalommal,OPEN,,1,ATL-DIR-7371,,ATL-WRK-0763
+ATL-FND-0041,CONFLICT,REGISTER_STALE,"atlasz-runtime/package.json start már supervisor-safe.mjs-re vált (Batch 7A, docs/audit/LEGACY_QUARANTINE.md); a direktíva időrendje nem ellenőrizhető",OPEN,,1,ATL-DIR-5330,,ATL-WRK-0762
+ATL-FND-0042,CONFLICT,CODE_VS_DOC,"atlasz-runtime/package.json start már supervisor-safe.mjs-t indítja (Batch 7A) – a ""production start"" módosítása tilalmával egyeztetendő",OPEN,,1,ATL-DIR-5388,,ATL-WRK-0763
+ATL-FND-0043,CONFLICT,CODE_VS_DOC,"atlasz-runtime/package.json:7-8 'start' már 'node supervisor-safe.mjs' (=start:canonical), míg main-ben 'start'='node worker.js'; main-be merge átállítaná az éles indítást",OPEN,,1,ATL-DIR-7879,,ATL-WRK-0763
+ATL-FND-0044,CONFLICT,CODE_VS_DOC,"audit D-03/D-04 ellentmond a ""queue restart"" teljes lefedettségének",OPEN,,1,ATL-DIR-2089,ATL-OPS-0009; ATL-OPS-0010,ATL-WRK-0763
+ATL-FND-0045,CONFLICT,CODE_VS_DOC,az '85 elsőbbség' szabályt a 64db7065-L11 direktíva feloldotta,OPEN,,1,ATL-DIR-8284,,ATL-WRK-0763
+ATL-FND-0046,CONFLICT,CODE_VS_DOC,az '85-ös lista folytatása elsőbbségi' szabályt a 64db7065 direktíva feloldotta,OPEN,,1,ATL-DIR-8384,,ATL-WRK-0763
+ATL-FND-0047,CONFLICT,CODE_VS_DOC,az 'ne szakítsa meg az 85-öt' szabályt a 64db7065 direktíva feloldotta,OPEN,,1,ATL-DIR-8285,,ATL-WRK-0763
+ATL-FND-0048,CONFLICT,REGISTER_STALE,az 85-ös nyilvántartás 9 VERIFIED_WORKING tétele nem tartható,OPEN,,1,ATL-DIR-11193,,ATL-WRK-0762
+ATL-FND-0049,CONFLICT,CODE_VS_DOC,"az API működik, a UI nézet hibás (D-01)",OPEN,,1,ATL-DIR-4104,ATL-AGT-0040; ATL-API-0030; ATL-UIX-0023,ATL-WRK-0763
+ATL-FND-0050,CONFLICT,CODE_VS_DOC,"az ATL-leltár VERIFIED_WORKING/PARTIAL státuszt ad, de a fájl karanténban, nem aktív; LEGACY_QUARANTINED komponensre hivatkozik (v1 hiba javítva)",OPEN,,1,ATL-DIR-6566,ATL-OPS-0031,ATL-WRK-0763
+ATL-FND-0051,CONFLICT,CODE_VS_DOC,az előtte-utána számok eltérő módszerrel készültek (matrix: tally; checkpoint: evidence-level),OPEN,,1,ATL-DIR-10800,,ATL-WRK-0763
+ATL-FND-0052,CONFLICT,CODE_VS_DOC,az eredeti 85/23/150 direktíva szövege nincs a repóban (sources_summary.md),OPEN,,1,ATL-DIR-6413,ATL-AGT-0041; ATL-BRN-0004; ATL-OPS-0006,ATL-WRK-0763
+ATL-FND-0053,CONFLICT,CODE_VS_DOC,"az integration_matrix statikus import-zárat kapcsoltságnak tekint, a tracker STATIC_IMPORT_ONLY-nak",OPEN,,1,ATL-DIR-10781,ATL-BRN-0023; ATL-BRN-0027,ATL-WRK-0763
+ATL-FND-0054,CONFLICT,CODE_VS_DOC,az obsolete `origin` remote még létezik a repóban,OPEN,,1,ATL-DIR-11248,,ATL-WRK-0763
+ATL-FND-0055,CONFLICT,CODE_VS_DOC,"az utasítás credential brokert kér, a kód a vaultot hívja közvetlenül (core.mjs:832)",OPEN,,1,ATL-DIR-3204,ATL-MDL-0010; ATL-SEC-0010; ATL-SEC-0037,ATL-WRK-0763
+ATL-FND-0056,CONFLICT,CODE_VS_DOC,brain-views.mjs:42 verifiedAt=now() a hash-ellenőrzésre (nem valódi visszaállítás-ellenőrzés),OPEN,,1,ATL-DIR-4753,ATL-OPS-0004; ATL-OPS-0017; ATL-UIX-0072,ATL-WRK-0763
+ATL-FND-0057,CONFLICT,CODE_VS_DOC,commit_id mind UNCOMMITTED,OPEN,,1,ATL-DIR-10749,,ATL-WRK-0763
+ATL-FND-0058,CONFLICT,CODE_VS_DOC,"comp_index API-0102 CONNECTED_UNTESTED, de a11y-control-center.test.mjs HTTP-n teszteli",OPEN,,1,ATL-DIR-5658,ATL-API-0102; ATL-AVA-0001; ATL-AVA-0002; ATL-UIX-0025,ATL-WRK-0763
+ATL-FND-0059,CONFLICT,CODE_VS_DOC,"comp_index API-0113 CONNECTED_UNTESTED, de a route tesztelt; a teszt skip-elhet, ha a host nem támogatja a Node --permission módot",OPEN,,1,ATL-DIR-5704,ATL-API-0113; ATL-PLG-0002; ATL-PLG-0003,ATL-WRK-0763
+ATL-FND-0060,CONFLICT,REGISTER_STALE,"completion-registry.mjs PLANNED, a kód bekötve az approvals()-ba",OPEN,,1,ATL-DIR-6918,ATL-AUR-0003; ATL-SEC-0005,ATL-WRK-0762
+ATL-FND-0061,CONFLICT,REGISTER_STALE,"completion-registry.mjs PLANNED, a kód létezik",OPEN,,1,ATL-DIR-6915,ATL-AUR-0002; ATL-AUR-0003,ATL-WRK-0762
+ATL-FND-0062,CONFLICT,REGISTER_STALE,"completion-registry.mjs PLANNED, a kód létezik de nincs bekötve",OPEN,,1,ATL-DIR-6917,ATL-AUR-0003,ATL-WRK-0762
+ATL-FND-0063,CONFLICT,REGISTER_STALE,"completion-registry.mjs szerint a human-core-emotional-intelligence PLANNED, de human-core.mjs + tesztek léteznek",OPEN,,1,ATL-DIR-6914,ATL-AUR-0002; ATL-AUR-0003,ATL-WRK-0762
+ATL-FND-0064,CONFLICT,CODE_VS_DOC,"components.csv/integration_matrix 'Master:nem' (2026-10-11 előtti), a kód+teszt bekötést mutat",OPEN,,1,ATL-DIR-10353,ATL-BRN-0017; ATL-BRN-0025,ATL-WRK-0763
+ATL-FND-0065,CONFLICT,REGISTER_STALE,contextTokens vs contextLimit mezőnév-eltérés (panel vs registry),OPEN,,1,ATL-DIR-3198,ATL-MDL-0009; ATL-UIX-0035,ATL-WRK-0762
+ATL-FND-0066,CONFLICT,REGISTER_STALE,core.mjs:200 LEDGER_UNREADABLE -> verifiedReceivedUsd:0; qualifyOpportunity n() ismeretlent 0-ra konvertál,OPEN,,1,ATL-DIR-7264,ATL-FIN-0002; ATL-FIN-0012; ATL-UIX-0011; ATL-UIX-0043,ATL-WRK-0762
+ATL-FND-0067,CONFLICT,CODE_VS_DOC,"core.mjs:456 markLastKnownGood (5 kritérium, build={by:control-center}) != recovery-points.mjs LKG_REQUIREMENTS (9 feltétel)",OPEN,,1,ATL-DIR-4729,ATL-API-0083; ATL-API-0084; ATL-OPS-0001; ATL-OPS-0017,ATL-WRK-0763
+ATL-FND-0068,CONFLICT,CODE_VS_DOC,"core.mjs:456 markLastKnownGood (build={by:control-center}, migrationStateKnown:true konstans) != recovery-points.mjs LKG_REQUIREMENTS",OPEN,,1,ATL-DIR-8693,ATL-API-0083; ATL-OPS-0001; ATL-OPS-0017,ATL-WRK-0763
+ATL-FND-0069,CONFLICT,CODE_VS_DOC,D-01,OPEN,,1,ATL-DIR-0258,ATL-UIX-0012; ATL-UIX-0023; ATL-UIX-0036,ATL-WRK-0763
+ATL-FND-0070,CONFLICT,CODE_VS_DOC,"D-01 a Security & Supervision nézet összeomlik (app.js:838 sv.notes.map, de core.mjs agentSupervision().notes objektum)",OPEN,,14,ATL-DIR-6787; ATL-DIR-6788; ATL-DIR-6789; ATL-DIR-6790; ATL-DIR-6791; ATL-DIR-6792; ATL-DIR-6793; ATL-DIR-6794; ATL-DIR-6795; ATL-DIR-6796; ATL-DIR-6797; ATL-DIR-6799; ATL-DIR-6924; ATL-DIR-6928,ATL-AGT-0031; ATL-AGT-0032; ATL-AGT-0038; ATL-AGT-0039; ATL-AGT-0040; ATL-API-0001; ATL-BRN-0025; ATL-FIN-0001; ATL-FIN-0012; ATL-OPS-0005; ATL-SCH-0001; ATL-SCH-0004; ATL-SEC-0002; ATL-SEC-0019; ATL-UIX-0023; ATL-UIX-0024; ATL-UIX-0049,ATL-WRK-0763
+ATL-FND-0071,CONFLICT,CODE_VS_DOC,D-01 nézet összeomlik,OPEN,,1,ATL-DIR-9150,ATL-API-0031; ATL-UIX-0023; ATL-UIX-0036,ATL-WRK-0763
+ATL-FND-0072,CONFLICT,CODE_VS_DOC,D-01 supervision nézet összeomlik,OPEN,,1,ATL-DIR-0242,ATL-API-0002; ATL-UIX-0008; ATL-UIX-0041,ATL-WRK-0763
+ATL-FND-0073,CONFLICT,CODE_VS_DOC,D-02,OPEN,,4,ATL-DIR-0257; ATL-DIR-0265; ATL-DIR-0412; ATL-DIR-0432,ATL-API-0057; ATL-API-0088; ATL-API-0106; ATL-OPS-0014; ATL-OPS-0029; ATL-PLG-0003; ATL-UIX-0008; ATL-UIX-0013; ATL-UIX-0042; ATL-UIX-0043; ATL-UIX-0055,ATL-WRK-0763
+ATL-FND-0074,CONFLICT,CODE_VS_DOC,D-02 félrevezető siker-jelzés más végpontokon,OPEN,,1,ATL-DIR-10501,ATL-UIX-0004; ATL-UIX-0034,ATL-WRK-0763
+ATL-FND-0075,CONFLICT,CODE_VS_DOC,D-02 megtévesztő siker (ELLENORZESI_JELENTES 17. fejezet),OPEN,,1,ATL-DIR-8914,ATL-BRN-0016; ATL-SEC-0014; ATL-SEC-0026,ATL-WRK-0763
+ATL-FND-0076,CONFLICT,CODE_VS_DOC,D-03/D-04/D-05,OPEN,,1,ATL-DIR-0150,ATL-BRN-0008; ATL-OPS-0010; ATL-SEC-0015,ATL-WRK-0763
+ATL-FND-0077,CONFLICT,CODE_VS_DOC,D-04/D-05 dupla példány / zár nélküli közös tár,OPEN,,1,ATL-DIR-0138,ATL-BRN-0008; ATL-OPS-0010; ATL-OPS-0034,ATL-WRK-0763
+ATL-FND-0078,CONFLICT,CODE_VS_DOC,D-08 a docs 'folyamatos felderítés' állítása nem igaz – a tick-nek nincs hívója,OPEN,,1,ATL-DIR-10091,ATL-FIN-0010; ATL-RES-0008; ATL-SCH-0007,ATL-WRK-0763
+ATL-FND-0079,CONFLICT,CODE_VS_DOC,D-08 discoveryScheduler.tick() hívója nincs; D-11 fix egress,OPEN,,1,ATL-DIR-0084,ATL-AGT-0001; ATL-AGT-0002; ATL-AGT-0003; ATL-AGT-0004; ATL-BRN-0014,ATL-WRK-0763
+ATL-FND-0080,CONFLICT,CODE_VS_DOC,D-11 fix hn.algolia engedély a kódban,OPEN,,1,ATL-DIR-9134,ATL-RES-0008; ATL-RES-0017; ATL-SEC-0011,ATL-WRK-0763
+ATL-FND-0081,CONFLICT,CODE_VS_DOC,D-11 runtime SEARCH host kódban fixen engedélyezett,OPEN,,1,ATL-DIR-9109,ATL-API-0006; ATL-SEC-0011; ATL-SEC-0021,ATL-WRK-0763
+ATL-FND-0082,CONFLICT,CODE_VS_DOC,"daily-profit-objective doc ""folyamatos felderítés"" állítása túlzó (D-08)",OPEN,,1,ATL-DIR-7001,ATL-BRN-0014; ATL-RES-0006; ATL-RES-0008; ATL-SCH-0007,ATL-WRK-0763
+ATL-FND-0083,CONFLICT,CODE_VS_DOC,"daily-profit-objective.mjs/DAILY_PROFIT_OBJECTIVE.md folyamatos felderítést állít, hívó nincs (D-08)",OPEN,,1,ATL-DIR-7934,ATL-BRN-0014; ATL-RES-0006; ATL-RES-0008; ATL-SCH-0007,ATL-WRK-0763
+ATL-FND-0084,CONFLICT,CODE_VS_DOC,"DEF-002 TESTED, de a supervision UI-nézet a 2026-10-12-i smoke szerint összeomlik",OPEN,,1,ATL-DIR-4066,ATL-OPS-0034; ATL-SCH-0004; ATL-SCH-0005; ATL-SCH-0009,ATL-WRK-0763
+ATL-FND-0085,CONFLICT,CODE_VS_DOC,"DEF-004 TESTED, de ATL-SCH-0007 BROKEN (tick-hívó hiányzik)",OPEN,,1,ATL-DIR-4069,ATL-SCH-0002; ATL-SCH-0003; ATL-SCH-0006; ATL-SCH-0007,ATL-WRK-0763
+ATL-FND-0086,CONFLICT,CODE_VS_DOC,"DEF-008 'No canary monitoring' OPEN, de quarantine.mjs kanári-monitor + tesztek; DEF-010 OPEN, de mind a 133 disposition kész",OPEN,,1,ATL-DIR-3817,ATL-BRN-0027,ATL-WRK-0763
+ATL-FND-0087,CONFLICT,CODE_VS_DOC,"DEF-015 OPEN és ATL-SCH-0007 BROKEN – az ütemező kód létezik, de nincs hívója",OPEN,,1,ATL-DIR-5507,ATL-RES-0006; ATL-SCH-0002; ATL-SCH-0007,ATL-WRK-0763
+ATL-FND-0088,CONFLICT,CODE_VS_DOC,"DEF-015/020 OPEN a defect registerben, SCH-0007 BROKEN",OPEN,,1,ATL-DIR-11398,ATL-MDL-0007; ATL-OPS-0029; ATL-RES-0006; ATL-SCH-0003,ATL-WRK-0763
+ATL-FND-0089,CONFLICT,CODE_VS_DOC,DEF-018 OPEN (23 pontos csomag nincs tételenként újraértékelve a defect registerben),OPEN,,1,ATL-DIR-3811,,ATL-WRK-0763
+ATL-FND-0090,CONFLICT,CODE_VS_DOC,"defect register DEF-015 'No continuous discovery' OPEN, SCH-0007 BROKEN",OPEN,,1,ATL-DIR-10325,ATL-BRN-0025; ATL-RES-0006; ATL-RES-0011,ATL-WRK-0763
+ATL-FND-0091,CONFLICT,CODE_VS_DOC,"defect register DEF-015/DEF-020 OPEN, SCH-0007 BROKEN",OPEN,,1,ATL-DIR-11333,ATL-BRN-0025; ATL-OPS-0029; ATL-RES-0006; ATL-SCH-0007,ATL-WRK-0763
+ATL-FND-0092,CONFLICT,CODE_VS_DOC,digital-twin (SIMULATED) és simulation-lab (SIMULATION) párhuzamos,OPEN,,1,ATL-DIR-4523,ATL-BRN-0015; ATL-BRN-0020; ATL-UIX-0066,ATL-WRK-0763
+ATL-FND-0093,CONFLICT,CODE_VS_DOC,digital-twin ENVIRONMENTS=SIMULATED/STAGING/LIVE vs simulation-lab SIMULATION/STAGING/LIVE; két párhuzamos szimulátor,OPEN,,1,ATL-DIR-9753,ATL-BRN-0015; ATL-BRN-0020; ATL-UIX-0066,ATL-WRK-0763
+ATL-FND-0094,CONFLICT,REGISTER_STALE,"direktíva 2091/2091, a jelenlegi kapu 2237/2237 (docs/audit/full_verification_2026-10-12/gate_results.json)",OPEN,,1,ATL-DIR-2794,,ATL-WRK-0762
+ATL-FND-0095,CONFLICT,REGISTER_STALE,"direktíva HEAD 9ae63e6 elavult, aktuális df9ab5e",OPEN,,1,ATL-DIR-9216,,ATL-WRK-0762
+ATL-FND-0096,CONFLICT,CODE_VS_DOC,"direktíva szerint 'connect Update Center evidence', de runtime UPDATE=NOT_CONNECTED (teszt ezt rögzíti)",OPEN,,1,ATL-DIR-0830,ATL-BRN-0006; ATL-OPS-0029,ATL-WRK-0763
+ATL-FND-0097,CONFLICT,CODE_VS_DOC,"direktíva szerint 13 adapter/14 szolgáltató – a kód ezt igazolja, Merlinhez a host placeholder (example)",OPEN,,1,ATL-DIR-3966,ATL-MDL-0009; ATL-MDL-0019,ATL-WRK-0763
+ATL-FND-0098,CONFLICT,CODE_VS_DOC,direktíva szerint legacy indul – a kód már javított,OPEN,,1,ATL-DIR-9092,ATL-OPS-0030; ATL-OPS-0034,ATL-WRK-0763
+ATL-FND-0099,CONFLICT,CODE_VS_DOC,"direktíva tiltja az ellenőrizetlen kód auto-telepítését, a kód alapból engedi",OPEN,,1,ATL-DIR-3518,ATL-OPS-0014; ATL-OPS-0029,ATL-WRK-0763
+ATL-FND-0100,CONFLICT,REGISTER_STALE,direktíva-állítás elavult – Dockerfile.worker már a safe supervisort indítja,OPEN,,1,ATL-DIR-9091,ATL-OPS-0030,ATL-WRK-0762
+ATL-FND-0101,CONFLICT,REGISTER_STALE,direktíva-állítás elavult – van helyi delivery adapter,OPEN,,1,ATL-DIR-9137,ATL-WFL-0011,ATL-WRK-0762
+ATL-FND-0102,CONFLICT,REGISTER_STALE,docs registry (ATLASZ-BR-004) szerint a 30 ügynök screening-je nem fut az orchestratoron; supervisor-safe.mjs:279-421 szerint igen (brain.dispatch.run),OPEN,,1,ATL-DIR-4777,ATL-BRN-0002; ATL-BRN-0005; ATL-BRN-0007; ATL-BRN-0011,ATL-WRK-0762
+ATL-FND-0103,CONFLICT,CODE_VS_DOC,"docs szerint kiadás-kapu, de /api/updates/install hibát is ok:true burokban ad (D-02)",OPEN,,1,ATL-DIR-8225,ATL-OPS-0029; ATL-PLG-0002; ATL-SEC-0033,ATL-WRK-0763
+ATL-FND-0104,CONFLICT,REGISTER_STALE,"docs/atlasz_capability_audit_85 M01=MISSING (""No browser companion exists""), de a repóban van MV3 bővítmény",OPEN,,1,ATL-DIR-5722,ATL-INT-0001; ATL-INT-0011; ATL-INT-0012; ATL-INT-0016,ATL-WRK-0762
+ATL-FND-0105,CONFLICT,REGISTER_STALE,"docs/atlasz_capability_audit_85.json 18 VERIFIED_WORKING, az újraellenőrzés 9",OPEN,,1,ATL-DIR-7324,ATL-OPS-0006; ATL-UIX-0064,ATL-WRK-0762
+ATL-FND-0106,CONFLICT,REGISTER_STALE,docs/DAILY_PROFIT_OBJECTIVE.md 'folyamatos felderítés' – a tick-nek nincs hívója (D-08),OPEN,,1,ATL-DIR-9076,ATL-AGT-0040; ATL-FIN-0010; ATL-SCH-0007,ATL-WRK-0762
+ATL-FND-0107,CONFLICT,REGISTER_STALE,docs/DAILY_PROFIT_OBJECTIVE.md első bekezdése még 'default UTC'-t ír (elavult),OPEN,,1,ATL-DIR-10132,ATL-API-0011; ATL-FIN-0010,ATL-WRK-0762
+ATL-FND-0108,CONFLICT,CODE_VS_DOC,dokumentáció túlállít (ELLENORZESI_JELENTES 17.),OPEN,,1,ATL-DIR-8977,ATL-OPS-0006; ATL-SEC-0014; ATL-SEC-0030,ATL-WRK-0763
+ATL-FND-0109,CONFLICT,CODE_VS_DOC,durable-queue ack worker-azonosító nélkül,OPEN,,1,ATL-DIR-1907,ATL-OPS-0005; ATL-OPS-0010; ATL-OPS-0034,ATL-WRK-0763
+ATL-FND-0110,CONFLICT,CODE_VS_DOC,"durable-queue ack(id) worker-azonosító nélkül, REQ-1275 BROKEN",OPEN,,1,ATL-DIR-1661,ATL-OPS-0010; ATL-OPS-0022; ATL-SCH-0008,ATL-WRK-0763
+ATL-FND-0111,CONFLICT,CODE_VS_DOC,"egyes összefoglalók 'teljes' lefedettséget sugallnak, az enforcement_coverage.json hiányt mutat",OPEN,,1,ATL-DIR-2898,ATL-SEC-0015; ATL-SEC-0031,ATL-WRK-0763
+ATL-FND-0112,CONFLICT,CODE_VS_DOC,egyetlen rendszer helyett párhuzamos rétegek,OPEN,,1,ATL-DIR-0789,ATL-BRN-0011; ATL-BRN-0012; ATL-BRN-0023,ATL-WRK-0763
+ATL-FND-0113,CONFLICT,REGISTER_STALE,elavult batch-sor,OPEN,,1,ATL-DIR-11258,,ATL-WRK-0762
+ATL-FND-0114,CONFLICT,REGISTER_STALE,Electron ^33 bundled Node vs --permission (docs/SANDBOX_LIMITS_WINDOWS_ELECTRON.md),OPEN,,1,ATL-DIR-0699,ATL-WIN-0001; ATL-WIN-0002; ATL-WIN-0003,ATL-WRK-0762
+ATL-FND-0115,CONFLICT,REGISTER_STALE,"Electron ^33 Node 20-at hoz, a --permission miatt a frissítési önteszt és a pluginok Windowson nem futnának (docs/SANDBOX_LIMITS_WINDOWS_ELECTRON.md)",OPEN,,1,ATL-DIR-11138,ATL-WIN-0001,ATL-WRK-0762
+ATL-FND-0116,CONFLICT,CODE_VS_DOC,enforcement_coverage.json nem-100% lefedettséget jelez; univerzális állítás nem tehető,OPEN,,1,ATL-DIR-2848,ATL-SEC-0015; ATL-SEC-0031,ATL-WRK-0763
+ATL-FND-0117,CONFLICT,CODE_VS_DOC,estimatedHours||24 csendes alapérték,OPEN,,1,ATL-DIR-8071,ATL-BRN-0010; ATL-RES-0012,ATL-WRK-0763
+ATL-FND-0118,CONFLICT,CODE_VS_DOC,"evidence-record.mjs sandbox/PRODUCTION védelme megkerülhető (environment szöveg-eltérés), pedig a szabály tiltja",OPEN,,1,ATL-DIR-9839,ATL-SEC-0014; ATL-SEC-0025; ATL-SEC-0030,ATL-WRK-0763
+ATL-FND-0119,CONFLICT,CODE_VS_DOC,Experience/Business Memory nem tartós,OPEN,,1,ATL-DIR-0269,ATL-MEM-0001; ATL-MEM-0002; ATL-MEM-0003; ATL-MEM-0007,ATL-WRK-0763
+ATL-FND-0120,CONFLICT,CODE_VS_DOC,feloldja a 0048/1690/1704 követelmények 'külön engedély nélkül nem' korlátját a 150-as csomagra,OPEN,,1,ATL-DIR-5804,,ATL-WRK-0763
+ATL-FND-0121,CONFLICT,CODE_VS_DOC,felülírja a 9569c4b6-L411/L413 és 9d86527c-L105 szigorú sorrendi szabályt,OPEN,,1,ATL-DIR-5791,,ATL-WRK-0763
+ATL-FND-0122,CONFLICT,CODE_VS_DOC,"finance-intelligence recurring.summary() hívás, recurring-billing report() -t exportál",OPEN,,1,ATL-DIR-1175,ATL-FIN-0002; ATL-FIN-0008,ATL-WRK-0763
+ATL-FND-0123,CONFLICT,REGISTER_STALE,financial-ledger.mjs:53 külön verifiedNetUsd a daily-profit-objective mellett,OPEN,,1,ATL-DIR-10030,ATL-FIN-0006; ATL-FIN-0010; ATL-FIN-0012,ATL-WRK-0762
+ATL-FND-0124,CONFLICT,REGISTER_STALE,financial-ledger.mjs:53 és revenue-persistence külön nettó/collected számítás a daily-profit-objective mellett,OPEN,,1,ATL-DIR-10218,ATL-FIN-0010; ATL-FIN-0012; ATL-SCH-0007,ATL-WRK-0762
+ATL-FND-0125,CONFLICT,CODE_VS_DOC,"gyökér package.json 'start' = astro dev, a runtime start a atlasz-runtime/package.json-ban van",OPEN,,1,ATL-DIR-6897,ATL-OPS-0030; ATL-OPS-0034,ATL-WRK-0763
+ATL-FND-0126,CONFLICT,CODE_VS_DOC,health-monitor szintnevek eltérnek a speccétől,OPEN,,1,ATL-DIR-1680,ATL-SCH-0001,ATL-WRK-0763
+ATL-FND-0127,CONFLICT,CODE_VS_DOC,"három ""master"" jellegű modul (master-coordinator, master-planner-orchestrator, agent-coordination) fedi egymást",OPEN,,1,ATL-DIR-10797,ATL-BRN-0025; ATL-BRN-0027,ATL-WRK-0763
+ATL-FND-0128,CONFLICT,REGISTER_STALE,"három külön pénzügyi tár: firewall cost/revenue, financial-ledger, profit-ledger",OPEN,,1,ATL-DIR-8627,ATL-FIN-0012; ATL-FIN-0017; ATL-MDL-0014,ATL-WRK-0762
+ATL-FND-0129,CONFLICT,CODE_VS_DOC,három párhuzamos deal-állapotgép,OPEN,,1,ATL-DIR-9005,ATL-WFL-0005; ATL-WFL-0016; ATL-WFL-0023,ATL-WRK-0763
+ATL-FND-0130,CONFLICT,CODE_VS_DOC,három párhuzamos job-reprezentáció (dispatch jobs.json / jobs-universal.json / runtime candidates),OPEN,,1,ATL-DIR-1011,ATL-BRN-0008; ATL-BRN-0045; ATL-WFL-0009,ATL-WRK-0763
+ATL-FND-0131,CONFLICT,CODE_VS_DOC,"három állapotgép: workflow-stages (14), workforce lifecycle (12), deal-state/job-system",OPEN,,1,ATL-DIR-10016,ATL-FIN-0005; ATL-WFL-0005; ATL-WFL-0023; ATL-WFL-0037,ATL-WRK-0763
+ATL-FND-0132,CONFLICT,CODE_VS_DOC,ismeretlen költség 0 a qualification-engine-ben vs. cost-completeness,OPEN,,1,ATL-DIR-11009,ATL-FIN-0009; ATL-RES-0012,ATL-WRK-0763
+ATL-FND-0133,CONFLICT,CODE_VS_DOC,"kettő briefing-implementáció (master-brief ""Szia Joci — Indul a mandula!"" vs aurora) és a szöveg eltér",OPEN,,1,ATL-DIR-3343,ATL-API-0003; ATL-API-0050; ATL-AUR-0002; ATL-UIX-0022,ATL-WRK-0763
+ATL-FND-0134,CONFLICT,CODE_VS_DOC,két approval gateway (approval-command-gateway és owner-control/approval-gateway) él egymás mellett,OPEN,,1,ATL-SPC-0149,ATL-BRN-0023,ATL-WRK-0763
+ATL-FND-0135,CONFLICT,CODE_VS_DOC,két doctor (legacy doctor() és doctorV2) eltérő lefedettséggel,OPEN,,1,ATL-DIR-0616,ATL-FIN-0012; ATL-OPS-0020; ATL-UIX-0054,ATL-WRK-0763
+ATL-FND-0136,CONFLICT,CODE_VS_DOC,két lehetőség-pipeline (brain opportunity STAGES vs business deal-pipeline WFL-0005 / 14 szakaszos WFL-0023),OPEN,,1,ATL-DIR-4637,ATL-BRN-0010; ATL-WFL-0025,ATL-WRK-0763
+ATL-FND-0137,CONFLICT,CODE_VS_DOC,két párhuzamos entity graph,OPEN,,1,ATL-DIR-1242,ATL-MEM-0015; ATL-WFL-0007,ATL-WRK-0763
+ATL-FND-0138,CONFLICT,CODE_VS_DOC,két párhuzamos modellválasztó (multi-model-brain.selectModel és capability-graph.match/model-intelligence),OPEN,,1,ATL-DIR-9682,ATL-BRN-0004; ATL-BRN-0009; ATL-MDL-0011,ATL-WRK-0763
+ATL-FND-0139,CONFLICT,CODE_VS_DOC,két szakaszmodell,OPEN,,1,ATL-DIR-3121,ATL-FIN-0005; ATL-WFL-0023,ATL-WRK-0763
+ATL-FND-0140,CONFLICT,CODE_VS_DOC,két szakaszmodell (workflow-stages 14 szakasz vs deal-state DISCOVERED>SCREENED...),OPEN,,1,ATL-DIR-6812,ATL-FIN-0005; ATL-RES-0011; ATL-WFL-0023,ATL-WRK-0763
+ATL-FND-0141,CONFLICT,CODE_VS_DOC,két szakaszmodell (workflow-stages vs deal-pipeline),OPEN,,1,ATL-DIR-2823,ATL-AGT-0032; ATL-SEC-0023,ATL-WRK-0763
+ATL-FND-0142,CONFLICT,CODE_VS_DOC,két szakaszmodell (workflow-stages vs deal-state),OPEN,,1,ATL-DIR-6813,ATL-FIN-0005; ATL-FIN-0007; ATL-WFL-0016; ATL-WFL-0023,ATL-WRK-0763
+ATL-FND-0143,CONFLICT,CODE_VS_DOC,kétféle 'modul' fogalom (plugin kind=MODULE vs module-broker regisztráció),OPEN,,1,ATL-DIR-9737,ATL-BRN-0027; ATL-PLG-0003,ATL-WRK-0763
+ATL-FND-0144,CONFLICT,CODE_VS_DOC,kétféle sor (OPS-0010 durable-queue vs governed-dispatch jobs.json),OPEN,,1,ATL-DIR-4384,ATL-BRN-0008; ATL-BRN-0011; ATL-OPS-0010,ATL-WRK-0763
+ATL-FND-0145,CONFLICT,CODE_VS_DOC,kód osztályai (PUBLIC/PERSONAL/CONFIDENTIAL/SECRET) != spec (public/internal/customer-confidential/personal/secret/financial),OPEN,,1,ATL-DIR-1952,ATL-AVA-0004; ATL-DOC-0003; ATL-MEM-0002,ATL-WRK-0763
+ATL-FND-0146,CONFLICT,CODE_VS_DOC,kód-módok (MANUAL/RECOMMEND_ONLY/AUTO_FOR_FREE_LOCAL) nem azonosak a direktíva A/B/C módjaival,OPEN,,1,ATL-DIR-8174,ATL-MDL-0007; ATL-OPS-0025,ATL-WRK-0763
+ATL-FND-0147,CONFLICT,CODE_VS_DOC,kód-módok neve/hatóköre eltér a direktíva A/B/C módjaitól,OPEN,,1,ATL-DIR-8347,ATL-MDL-0007; ATL-OPS-0025,ATL-WRK-0763
+ATL-FND-0148,CONFLICT,CODE_VS_DOC,kód-állapotnév eltér a direktíva pontos azonosítójától (core.mjs:871),OPEN,,1,ATL-DIR-10103,ATL-SCH-0007; ATL-UIX-0015,ATL-WRK-0763
+ATL-FND-0149,CONFLICT,REGISTER_STALE,"LEDGER_UNREADABLE esetén verifiedReceivedUsd=0 jelenik meg (core.mjs:200, app.js:98) az ""ismeretlen nem nulla"" szabály ellen",OPEN,,1,ATL-DIR-2051,ATL-FIN-0012; ATL-UIX-0011; ATL-UIX-0043,ATL-WRK-0762
+ATL-FND-0150,CONFLICT,CODE_VS_DOC,"Live Agent Activity/Operations a runtime <state>/coordination főkönyvét olvassa (ops-views.mjs), a Workforce (agents-panel) külön <state>/workforce/coordination-be ír - a workforce A-F munkái itt nem látszanak",OPEN,,24,ATL-DIR-5176; ATL-DIR-5230; ATL-DIR-5231; ATL-DIR-5245; ATL-DIR-6104; ATL-DIR-6105; ATL-DIR-6106; ATL-DIR-6107; ATL-DIR-6109; ATL-DIR-6115; ATL-DIR-6116; ATL-DIR-6117; ATL-DIR-6118; ATL-DIR-6119; ATL-DIR-6120; ATL-DIR-6121; ATL-DIR-6122; ATL-DIR-6123; ATL-DIR-6124; ATL-DIR-6125,ATL-AGT-0031; ATL-AGT-0037; ATL-AGT-0040; ATL-API-0026; ATL-API-0123; ATL-OPS-0002; ATL-SEC-0006; ATL-UIX-0001; ATL-UIX-0017; ATL-UIX-0018; ATL-UIX-0037; ATL-UIX-0046; ATL-UIX-0049; ATL-UIX-0051,ATL-WRK-0763
+ATL-FND-0151,CONFLICT,REGISTER_STALE,loopback fixture LIVE-ra léphet (teszt control-center-model-registry:48),OPEN,,1,ATL-DIR-3210,ATL-MDL-0005; ATL-MDL-0006; ATL-MDL-0010,ATL-WRK-0762
+ATL-FND-0152,CONFLICT,CODE_VS_DOC,"modul-szintű idempotencia zöld, de runtime szinten D-04 dupla végrehajtás",OPEN,,1,ATL-DIR-2092,ATL-BRN-0008; ATL-OPS-0010,ATL-WRK-0763
+ATL-FND-0153,CONFLICT,CODE_VS_DOC,money-views.mjs j.blocked vs job-system j.blockers/blockedFrom mezőnév eltérés,OPEN,,1,ATL-DIR-1035,ATL-UIX-0046; ATL-WFL-0009,ATL-WRK-0763
+ATL-FND-0154,CONFLICT,CODE_VS_DOC,opportunity-qualification-engine.mjs:10 hiányzó érték->0,OPEN,,1,ATL-DIR-8068,ATL-BRN-0010; ATL-RES-0011; ATL-RES-0012,ATL-WRK-0763
+ATL-FND-0155,CONFLICT,CODE_VS_DOC,parancs 'blocked jobs' -> általános opportunity-lista,OPEN,,1,ATL-DIR-0596,ATL-BRN-0008; ATL-BRN-0012,ATL-WRK-0763
+ATL-FND-0156,CONFLICT,REGISTER_STALE,"pkg150_status.csv ""connected: NO"" elavult",OPEN,,2,ATL-DIR-11195; ATL-DIR-6982,,ATL-WRK-0762
+ATL-FND-0157,CONFLICT,CODE_VS_DOC,párhuzamos entity graph / job / doctor implementációk,OPEN,,1,ATL-DIR-0755,ATL-BRN-0011; ATL-BRN-0012; ATL-BRN-0023,ATL-WRK-0763
+ATL-FND-0158,CONFLICT,REGISTER_STALE,"párhuzamos nettó-számítások: financial-ledger.profit.verifiedNetUsd (financial-ledger.mjs:53), revenue-persistence collected, daily-profit-objective – a FINANCIAL_ENGINE.md 'egy hatóság' állítása nem teljesen igaz",OPEN,,1,ATL-DIR-9956,,ATL-WRK-0762
+ATL-FND-0159,CONFLICT,REGISTER_STALE,"párhuzamos pénzügyi utak léteznek (profit-ledger, profit-accounting-engine, revenue-persistence, financial-ledger.profit) a daily-profit-objective mellett",OPEN,,1,ATL-DIR-9957,,ATL-WRK-0762
+ATL-FND-0160,CONFLICT,CODE_VS_DOC,példa-parancs nem oldódik fel,OPEN,,1,ATL-DIR-0597,ATL-BRN-0012; ATL-UIX-0043,ATL-WRK-0763
+ATL-FND-0161,CONFLICT,CODE_VS_DOC,"qualifyOpportunity hiányzó estimatedValueUsd->0, estimatedHours->24",OPEN,,1,ATL-DIR-8046,ATL-BRN-0010; ATL-RES-0006; ATL-RES-0014,ATL-WRK-0763
+ATL-FND-0162,CONFLICT,REGISTER_STALE,"reg EXISTS_AND_WORKING, de ATL-REQ MISSING (deadlock nincs)",OPEN,,1,ATL-SPC-0965,ATL-OPS-0010; ATL-SCH-0004,ATL-WRK-0762
+ATL-FND-0163,CONFLICT,CODE_VS_DOC,"reg EXISTS_AND_WORKING, de inbox send nem idempotens",OPEN,,1,ATL-SPC-0968,ATL-OPS-0010,ATL-WRK-0763
+ATL-FND-0164,CONFLICT,CODE_VS_DOC,"reg EXISTS_AND_WORKING, de LKG-kritérium hibás",OPEN,,1,ATL-SPC-0949,ATL-OPS-0001,ATL-WRK-0763
+ATL-FND-0165,CONFLICT,REGISTER_STALE,"reg MISSING, de breaker kész és tesztelt",OPEN,,1,ATL-SPC-0963,ATL-MDL-0014; ATL-SCH-0001,ATL-WRK-0762
+ATL-FND-0166,CONFLICT,REGISTER_STALE,"reg MISSING, de részleges védelem van",OPEN,,1,ATL-SPC-0961,ATL-MDL-0009; ATL-OPS-0029,ATL-WRK-0762
+ATL-FND-0167,CONFLICT,REGISTER_STALE,reg_status MISSING,OPEN,,1,ATL-SPC-0866,ATL-BRN-0026; ATL-BRN-0045; ATL-OPS-0034,ATL-WRK-0762
+ATL-FND-0168,CONFLICT,REGISTER_STALE,"reg_status MISSING, de a fájlkezelés tesztelt",OPEN,,1,ATL-SPC-0723,ATL-DOC-0003; ATL-SEC-0016; ATL-SEC-0032,ATL-WRK-0762
+ATL-FND-0169,CONFLICT,REGISTER_STALE,"reg_status MISSING, de a modul és a tesztek léteznek; a hiány a bekötés",OPEN,,1,ATL-SPC-0871,ATL-DOC-0003; ATL-SEC-0016,ATL-WRK-0762
+ATL-FND-0170,CONFLICT,REGISTER_STALE,"reg_status MISSING, de az olvasás kódban megvan",OPEN,,1,ATL-SPC-0540,ATL-DOC-0001; ATL-DOC-0003,ATL-WRK-0762
+ATL-FND-0171,CONFLICT,REGISTER_STALE,"reg_status MISSING, de az olvasás kódban+tesztben megvan",OPEN,,1,ATL-SPC-0539,ATL-DOC-0001; ATL-DOC-0003,ATL-WRK-0762
+ATL-FND-0172,CONFLICT,REGISTER_STALE,"reg_status MISSING, de document-center megvan (ingest nincs bekötve)",OPEN,,1,ATL-SPC-0914,ATL-DOC-0003; ATL-SEC-0016,ATL-WRK-0762
+ATL-FND-0173,CONFLICT,REGISTER_STALE,"reg_status MISSING, de elemző modul létezik",OPEN,,1,ATL-SPC-0633,ATL-DEV-0002; ATL-DEV-0003,ATL-WRK-0762
+ATL-FND-0174,CONFLICT,REGISTER_STALE,"reg_status MISSING, de hitelesítő-visszavonás van",OPEN,,1,ATL-SPC-0759,ATL-SEC-0010; ATL-SEC-0012; ATL-SEC-0037,ATL-WRK-0762
+ATL-FND-0175,CONFLICT,REGISTER_STALE,"reg_status MISSING, de human-core bekötve és tesztelt",OPEN,,1,ATL-SPC-0863,ATL-AUR-0002; ATL-AUR-0003,ATL-WRK-0762
+ATL-FND-0176,CONFLICT,REGISTER_STALE,"reg_status MISSING, de human-core modul megvan",OPEN,,1,ATL-SPC-0909,ATL-AUR-0003,ATL-WRK-0762
+ATL-FND-0177,CONFLICT,REGISTER_STALE,"reg_status MISSING, de MASTER chat fixture-szinten tesztelt",OPEN,,1,ATL-SPC-0861,ATL-BRN-0001; ATL-BRN-0025; ATL-MDL-0008,ATL-WRK-0762
+ATL-FND-0178,CONFLICT,REGISTER_STALE,"reg_status MISSING, de MASTER fixture-szinten tesztelt",OPEN,,1,ATL-SPC-0727,ATL-BRN-0001; ATL-BRN-0025; ATL-BRN-0026,ATL-WRK-0762
+ATL-FND-0179,CONFLICT,REGISTER_STALE,"reg_status MISSING, de model-evidence/-evolution létezik",OPEN,,1,ATL-SPC-0800,ATL-MDL-0006; ATL-MDL-0007; ATL-MEM-0007,ATL-WRK-0762
+ATL-FND-0180,CONFLICT,REGISTER_STALE,"reg_status MISSING, de model-registry revision van",OPEN,,1,ATL-SPC-0947,ATL-MDL-0003; ATL-MDL-0009,ATL-WRK-0762
+ATL-FND-0181,CONFLICT,REGISTER_STALE,"reg_status MISSING, de model-registry schemaVersion van",OPEN,,1,ATL-SPC-0944,ATL-MDL-0009; ATL-OPS-0001,ATL-WRK-0762
+ATL-FND-0182,CONFLICT,REGISTER_STALE,"reg_status MISSING, de piszkozat+feldolgozás létezik",OPEN,,1,ATL-SPC-0592,ATL-DOC-0005; ATL-DOC-0008; ATL-WFL-0008,ATL-WRK-0762
+ATL-FND-0183,CONFLICT,REGISTER_STALE,"reg_status MISSING, de tender-parserek és katalógus léteznek",OPEN,,1,ATL-SPC-0657,ATL-INT-0008; ATL-RES-0006; ATL-RES-0008,ATL-WRK-0762
+ATL-FND-0184,CONFLICT,REGISTER_STALE,"reg_status MISSING, de titkosított export/import létezik",OPEN,,1,ATL-SPC-0758,ATL-OPS-0021; ATL-SEC-0037,ATL-WRK-0762
+ATL-FND-0185,CONFLICT,REGISTER_STALE,"reg_status MISSING, de van blocker-kapu a minősítőben",OPEN,,1,ATL-SPC-0895,ATL-RES-0012; ATL-SEC-0017,ATL-WRK-0762
+ATL-FND-0186,CONFLICT,REGISTER_STALE,reg_status MISSING; FTS5 keresés létezik jegyzetekre,OPEN,,1,ATL-SPC-0694,ATL-MEM-0009; ATL-MEM-0014,ATL-WRK-0762
+ATL-FND-0187,CONFLICT,CODE_VS_DOC,reg_status PARTIAL; fixture-szinten teljes,OPEN,,1,ATL-SPC-0865,ATL-OPS-0010; ATL-OPS-0034; ATL-SCH-0002; ATL-SCH-0003,ATL-WRK-0763
+ATL-FND-0188,CONFLICT,REGISTER_STALE,registry ATLASZ-BR-004 szerint nincs a dispatch útvonalon; supervisor-safe.mjs:279-421 szerint igen,OPEN,,1,ATL-DIR-8751,ATL-BRN-0007; ATL-BRN-0011; ATL-SEC-0026,ATL-WRK-0762
+ATL-FND-0189,CONFLICT,REGISTER_STALE,registry ATLASZ-OSC-009/BR-027 szerint a backup/restore/update bizonyíték-források nincsenek bekötve; supervisor-safe.mjs:333-341 BACKUP/RESTORE-t bekötötte (UPDATE még nem),OPEN,,1,ATL-DIR-8580,ATL-BRN-0006; ATL-BRN-0016; ATL-SEC-0025; ATL-WFL-0010,ATL-WRK-0762
+ATL-FND-0190,CONFLICT,REGISTER_STALE,"regiszter ""nincs egységes firewall modul"", de owner-control/financial-firewall.mjs létezik",OPEN,,1,ATL-SPC-0372,ATL-FIN-0011; ATL-FIN-0017; ATL-SEC-0017,ATL-WRK-0762
+ATL-FND-0191,CONFLICT,REGISTER_STALE,"regiszter EXISTS_NEEDS_TEST (nincs teszt), de contract-factories.test és skill-registry.test lefedi",OPEN,,1,ATL-SPC-0427,ATL-PLG-0004; ATL-PLG-0005,ATL-WRK-0762
+ATL-FND-0192,CONFLICT,REGISTER_STALE,"regiszter EXISTS_NEEDS_TEST, de contract-money-tax.test lefedi",OPEN,,1,ATL-SPC-0292,ATL-BRN-0010; ATL-RES-0012,ATL-WRK-0762
+ATL-FND-0193,CONFLICT,REGISTER_STALE,"regiszter EXTERNAL_BLOCKER ""nincs lejátszó kód"", de app.js böngészős speechSynthesis létezik",OPEN,,1,ATL-SPC-0220,ATL-AUR-0002; ATL-UIX-0022,ATL-WRK-0762
+ATL-FND-0194,CONFLICT,REGISTER_STALE,"regiszter EXTERNAL_BLOCKER ""nincs mikrofon kód"", de app.js:778 böngészős SpeechRecognition létezik",OPEN,,1,ATL-SPC-0219,ATL-AVA-0002; ATL-UIX-0022,ATL-WRK-0762
+ATL-FND-0195,CONFLICT,REGISTER_STALE,"regiszter EXTERNAL_BLOCKER; panel létezik (REQ-0849 PARTIAL), az élő hang külső függőség",OPEN,,1,ATL-SPC-0474,ATL-API-0046; ATL-UIX-0056,ATL-WRK-0762
+ATL-FND-0196,CONFLICT,REGISTER_STALE,regiszter MISSING,OPEN,,2,ATL-SPC-0403; ATL-SPC-0418,ATL-MEM-0001; ATL-RES-0016; ATL-SEC-0007; ATL-SEC-0014; ATL-UIX-0073,ATL-WRK-0762
+ATL-FND-0197,CONFLICT,REGISTER_STALE,"regiszter MISSING (""nincs tender forrás""), de global-discovery.mjs:22-27 TENDER-források és OCDS parserek léteznek",OPEN,,1,ATL-SPC-0294,ATL-INT-0008; ATL-RES-0006; ATL-RES-0017,ATL-WRK-0762
+ATL-FND-0198,CONFLICT,REGISTER_STALE,"regiszter MISSING, de /api/chat + owner-command létezik",OPEN,,1,ATL-SPC-0191,ATL-API-0089; ATL-AUR-0002; ATL-BRN-0012; ATL-UIX-0075,ATL-WRK-0762
+ATL-FND-0199,CONFLICT,REGISTER_STALE,"regiszter MISSING, de a Knowledge nézet (UIX-0033) létezik",OPEN,,1,ATL-SPC-0491,ATL-API-0017; ATL-UIX-0033,ATL-WRK-0762
+ATL-FND-0200,CONFLICT,REGISTER_STALE,"regiszter MISSING, de a Memory nézet (views.memory, UIX-0034) létezik",OPEN,,1,ATL-SPC-0490,ATL-API-0018; ATL-UIX-0034,ATL-WRK-0762
+ATL-FND-0201,CONFLICT,REGISTER_STALE,"regiszter MISSING, de a REQ-0383 szerint a fast/deep logika létezik (fake regisztrációkkal tesztelt)",OPEN,,1,ATL-SPC-0275,ATL-MDL-0003; ATL-MDL-0010,ATL-WRK-0762
+ATL-FND-0202,CONFLICT,REGISTER_STALE,"regiszter MISSING, de Aurora szándékok (hu/en) hangból olvasási parancsokat kezelnek",OPEN,,1,ATL-SPC-0222,ATL-API-0004; ATL-AUR-0002,ATL-WRK-0762
+ATL-FND-0203,CONFLICT,REGISTER_STALE,"regiszter MISSING, de Aurora szöveges/felolvasott státusz létezik",OPEN,,1,ATL-SPC-0223,ATL-API-0004; ATL-AUR-0002,ATL-WRK-0762
+ATL-FND-0204,CONFLICT,REGISTER_STALE,"regiszter MISSING, de behavior-monitor MUTUAL_REINFORCEMENT/OBJECTIVE_DRIFT/LOOP létezik",OPEN,,1,ATL-SPC-0401,ATL-SEC-0007; ATL-UIX-0073,ATL-WRK-0762
+ATL-FND-0205,CONFLICT,REGISTER_STALE,"regiszter MISSING, de doc-extractors.mjs kinyerő létezik (doc-extractors.test)",OPEN,,6,ATL-SPC-0530; ATL-SPC-0531; ATL-SPC-0532; ATL-SPC-0533; ATL-SPC-0536; ATL-SPC-0538,ATL-DOC-0001; ATL-DOC-0003,ATL-WRK-0762
+ATL-FND-0206,CONFLICT,REGISTER_STALE,"regiszter MISSING, de goal-planner.mjs/planning-brain/decision-analysis létezik (w3-goal-planner.test, w3-decision-analysis.test zöld)",OPEN,,1,ATL-SPC-0177,ATL-BRN-0013; ATL-BRN-0019; ATL-BRN-0022,ATL-WRK-0762
+ATL-FND-0207,CONFLICT,REGISTER_STALE,"regiszter MISSING, de hangválasztó létezik",OPEN,,1,ATL-SPC-0231,ATL-API-0059; ATL-AUR-0002; ATL-UIX-0022,ATL-WRK-0762
+ATL-FND-0208,CONFLICT,REGISTER_STALE,"regiszter MISSING, de Home + PCC nézetek léteznek",OPEN,,1,ATL-SPC-0243,ATL-UIX-0024; ATL-UIX-0026,ATL-WRK-0762
+ATL-FND-0209,CONFLICT,REGISTER_STALE,"regiszter MISSING, de human-core.assessImpact létezik és jóváhagyó kártyákba kötött",OPEN,,1,ATL-SPC-0396,ATL-AUR-0003; ATL-WFL-0010,ATL-WRK-0762
+ATL-FND-0210,CONFLICT,REGISTER_STALE,"regiszter MISSING, de knowledge-brain.conflicts() és research-ledger ellentmondás-kezelés létezik",OPEN,,1,ATL-SPC-0260,ATL-MEM-0001; ATL-RES-0016,ATL-WRK-0762
+ATL-FND-0211,CONFLICT,REGISTER_STALE,"regiszter MISSING, de master-brief.mjs és /api/brief létezik",OPEN,,1,ATL-SPC-0190,ATL-API-0003; ATL-API-0050; ATL-BRN-0024,ATL-WRK-0762
+ATL-FND-0212,CONFLICT,REGISTER_STALE,"regiszter MISSING, de model-evidence napló és model-intelligence/capability-graph előzmény részben létezik",OPEN,,1,ATL-SPC-0282,ATL-BRN-0004; ATL-BRN-0009; ATL-MDL-0006,ATL-WRK-0762
+ATL-FND-0213,CONFLICT,REGISTER_STALE,"regiszter MISSING, de passzív hézag-jelzés létezik (knowledge-projects, research-ledger)",OPEN,,1,ATL-SPC-0259,ATL-MEM-0008; ATL-RES-0016,ATL-WRK-0762
+ATL-FND-0214,CONFLICT,REGISTER_STALE,"regiszter MISSING, de PKG84-006/memory-fabric megvalósítja",OPEN,,1,ATL-SPC-0021,ATL-MEM-0001; ATL-MEM-0002; ATL-MEM-0003; ATL-MEM-0007,ATL-WRK-0762
+ATL-FND-0215,CONFLICT,REGISTER_STALE,"regiszter MISSING, de PKG84-017 backpressure megvalósítva",OPEN,,1,ATL-SPC-0318,ATL-OPS-0010; ATL-OPS-0034,ATL-WRK-0762
+ATL-FND-0216,CONFLICT,REGISTER_STALE,"regiszter MISSING, de provider-adapters.mjs fixture-tesztelt adapter-profilokkal létezik",OPEN,,1,ATL-SPC-0436,ATL-INT-0004; ATL-MDL-0012,ATL-WRK-0762
+ATL-FND-0217,CONFLICT,REGISTER_STALE,"regiszter MISSING, de provider-resilience/model-gateway fallback tesztelt (fake adapterekkel)",OPEN,,1,ATL-SPC-0278,ATL-MDL-0008; ATL-MDL-0014,ATL-WRK-0762
+ATL-FND-0218,CONFLICT,REGISTER_STALE,"regiszter MISSING; a kérdés mezőként létezik, számítás nélkül",OPEN,,1,ATL-SPC-0210,ATL-AUR-0003,ATL-WRK-0762
+ATL-FND-0219,CONFLICT,REGISTER_STALE,regiszter MISSING; csak üres mező létezik,OPEN,,1,ATL-SPC-0212,ATL-AUR-0003,ATL-WRK-0762
+ATL-FND-0220,CONFLICT,REGISTER_STALE,regiszter MISSING; health-monitor alertek léteznek (csak UI),OPEN,,1,ATL-SPC-0422,ATL-SCH-0001; ATL-SEC-0019; ATL-UIX-0051,ATL-WRK-0762
+ATL-FND-0221,CONFLICT,REGISTER_STALE,regiszter MISSING; knowledge-brain.conflicts() és research-ledger contradiction kezelés létezik,OPEN,,1,ATL-SPC-0187,ATL-MEM-0001; ATL-RES-0016,ATL-WRK-0762
+ATL-FND-0222,CONFLICT,REGISTER_STALE,regiszter MISSING; MCP-kliens eszköz-kiterjesztésként létezik,OPEN,,1,ATL-SPC-0520,ATL-INT-0005; ATL-PLG-0003; ATL-PLG-0007,ATL-WRK-0762
+ATL-FND-0223,CONFLICT,REGISTER_STALE,"regiszter MISSING; nyelv/aláírás beállítás a Home-on létezik, egységes Settings képernyő nincs",OPEN,,1,ATL-SPC-0499,ATL-API-0052; ATL-AUR-0005,ATL-WRK-0762
+ATL-FND-0224,CONFLICT,REGISTER_STALE,regiszter MISSING; probe+breaker+bizonyíték létezik (kézi indítás),OPEN,,1,ATL-SPC-0283,ATL-MDL-0006; ATL-MDL-0014; ATL-SCH-0001,ATL-WRK-0762
+ATL-FND-0225,CONFLICT,REGISTER_STALE,"regiszter PARTIAL (caller-set), de a kód már a bizonyíték-kaput használja",OPEN,,1,ATL-SPC-0078,ATL-INT-0010; ATL-PLG-0001; ATL-SEC-0030,ATL-WRK-0762
+ATL-FND-0226,CONFLICT,REGISTER_STALE,"regiszter PARTIAL (nincs felvéve), PKG84-002 szerint kibővítve",OPEN,,1,ATL-SPC-0105,ATL-OPS-0029,ATL-WRK-0762
+ATL-FND-0227,CONFLICT,REGISTER_STALE,"regiszter PARTIAL (nincs install/uninstall), de plugin-installer install/uninstall/rollback létezik",OPEN,,1,ATL-SPC-0518,ATL-PLG-0002; ATL-PLG-0003,ATL-WRK-0762
+ATL-FND-0228,CONFLICT,REGISTER_STALE,"regiszter PARTIAL (nincs plugin uninstall), de plugin-installer uninstall/rollback létezik",OPEN,,1,ATL-SPC-0527,ATL-API-0115; ATL-API-0116; ATL-PLG-0002,ATL-WRK-0762
+ATL-FND-0229,CONFLICT,REGISTER_STALE,"regiszter PARTIAL (nincs plugin-kompatibilitás), de atlaszCompat létezik",OPEN,,1,ATL-SPC-0524,ATL-OPS-0029; ATL-PLG-0003,ATL-WRK-0762
+ATL-FND-0230,CONFLICT,REGISTER_STALE,"regiszter VERIFIED, de ack lease-tulajdonos ellenőrzés nincs",OPEN,,1,ATL-SPC-0331,ATL-OPS-0010,ATL-WRK-0762
+ATL-FND-0231,CONFLICT,CODE_VS_DOC,REQ-0932/0933 BROKEN (act() 'done'),OPEN,,1,ATL-DIR-1964,ATL-SEC-0014; ATL-SEC-0026,ATL-WRK-0763
+ATL-FND-0232,CONFLICT,CODE_VS_DOC,REQ-1275 BROKEN,OPEN,,1,ATL-DIR-1923,ATL-OPS-0013; ATL-SCH-0002,ATL-WRK-0763
+ATL-FND-0233,CONFLICT,CODE_VS_DOC,"RESUME_CHECKPOINT 7A szerint a Dockerfile.worker még legacy, a LEGACY_QUARANTINE/Dockerfile szerint már supervisor-safe (a kód az utóbbit igazolja)",OPEN,,1,ATL-DIR-6552,ATL-OPS-0033; ATL-OPS-0034,ATL-WRK-0763
+ATL-FND-0234,CONFLICT,CODE_VS_DOC,"RUN_DOCTOR kezelő a legacy doctor()-t hívja (level/findings), a 19 komponensű doctorV2 nem ezen az úton fut",OPEN,,1,ATL-DIR-0601,ATL-API-0065; ATL-BRN-0012; ATL-UIX-0075,ATL-WRK-0763
+ATL-FND-0235,CONFLICT,CODE_VS_DOC,SCH-0007 BROKEN (D-08),OPEN,,1,ATL-DIR-11355,ATL-AGT-0040; ATL-RES-0006; ATL-SCH-0007,ATL-WRK-0763
+ATL-FND-0236,CONFLICT,CODE_VS_DOC,"SCH-0007 BROKEN (D-08), defect register DEF-015 OPEN",OPEN,,1,ATL-DIR-11354,ATL-BRN-0025; ATL-RES-0006; ATL-RES-0008; ATL-SCH-0007,ATL-WRK-0763
+ATL-FND-0237,CONFLICT,CODE_VS_DOC,"SCH-0007 BROKEN (D-08), miközben a docs ""folyamatos keresést"" ír",OPEN,,1,ATL-DIR-7222,ATL-AUR-0004; ATL-SCH-0002; ATL-SCH-0006; ATL-SCH-0007,ATL-WRK-0763
+ATL-FND-0238,CONFLICT,CODE_VS_DOC,SECURITY FORTRESS 12 spec nincs a repóban,OPEN,,1,ATL-DIR-5828,,ATL-WRK-0763
+ATL-FND-0239,CONFLICT,CODE_VS_DOC,"SECURITY FORTRESS 12 spec nincs a repóban, tartalma nem ellenőrizhető",OPEN,,1,ATL-DIR-8227,ATL-BRN-0007; ATL-SEC-0027; ATL-SEC-0028,ATL-WRK-0763
+ATL-FND-0240,CONFLICT,CODE_VS_DOC,spec 'NOT_CONNECTED' vs kód 'BLOCKED_NO_PROVIDER',OPEN,,1,ATL-DIR-1394,ATL-VOI-0001; ATL-VOI-0003,ATL-WRK-0763
+ATL-FND-0241,CONFLICT,CODE_VS_DOC,spec 7 állapot vs kód állapotnevek,OPEN,,1,ATL-DIR-1430,ATL-INT-0004; ATL-SEC-0022,ATL-WRK-0763
+ATL-FND-0242,CONFLICT,CODE_VS_DOC,"spec ASK_JOCI, kód FORBIDDEN (szigorúbb)",OPEN,,1,ATL-DIR-0352,ATL-INT-0003; ATL-SEC-0027,ATL-WRK-0763
+ATL-FND-0243,CONFLICT,CODE_VS_DOC,spec állapotnevek vs kód,OPEN,,1,ATL-DIR-1439,ATL-INT-0004,ATL-WRK-0763
+ATL-FND-0244,CONFLICT,CODE_VS_DOC,supervisor-safe.mjs:240 fix hn.algolia engedély vs. aláírt egress-policy elv,OPEN,,1,ATL-DIR-11030,ATL-RES-0017; ATL-SEC-0011; ATL-SEC-0021,ATL-WRK-0763
+ATL-FND-0245,CONFLICT,CODE_VS_DOC,supervisor.js/worker.js/agent-child.js még a repóban (karanténban); a komponens-leltár agent-child.js-t VERIFIED_WORKING-nak jelöli; LEGACY_QUARANTINED komponensre hivatkozik (v1 hiba javítva),OPEN,,1,ATL-DIR-9276,ATL-OPS-0031; ATL-OPS-0035; ATL-OPS-0036,ATL-WRK-0763
+ATL-FND-0246,CONFLICT,CODE_VS_DOC,"tenant-isolation.mjs (kereskedelmi/licenc alap) vs. ""nincs külön kereskedelmi kiadás fejlesztés""",OPEN,,1,ATL-DIR-6486,ATL-SEC-0039,ATL-WRK-0763
+ATL-FND-0247,CONFLICT,REGISTER_STALE,"tracker UPD-001/WIN-001 NOT_STARTED, pedig az update-center megvan; commit_id mind UNCOMMITTED",OPEN,,1,ATL-DIR-10730,,ATL-WRK-0762
+ATL-FND-0248,CONFLICT,CODE_VS_DOC,UI sikerjelzés result.ok=false mellett (REQ-0932/0933 BROKEN),OPEN,,1,ATL-DIR-1799,ATL-API-0001; ATL-UIX-0008,ATL-WRK-0763
+ATL-FND-0249,CONFLICT,CODE_VS_DOC,UIX-0023 BROKEN (D-01); app.js act() hamis sikert mutat (D-02),OPEN,,1,ATL-DIR-7244,ATL-API-0002; ATL-OPS-0033; ATL-UIX-0008,ATL-WRK-0763
+ATL-FND-0250,CONFLICT,CODE_VS_DOC,"update-center számolja a migrationStateKnown-t, a core hardcode true",OPEN,,1,ATL-SPC-0938,ATL-OPS-0001,ATL-WRK-0763
+ATL-FND-0251,CONFLICT,CODE_VS_DOC,voice-conversation.mjs:152 mock providerek beépített 'PASS' probe-bizonyítékot hordoznak,OPEN,,1,ATL-DIR-7772,ATL-MDL-0006; ATL-MDL-0011; ATL-SEC-0030,ATL-WRK-0763
+ATL-FND-0252,CONFLICT,CODE_VS_DOC,voice-session status().live nem veszi figyelembe a mock jelzőt,OPEN,,1,ATL-DIR-7963,ATL-SEC-0014; ATL-SEC-0025; ATL-SEC-0030,ATL-WRK-0763
+ATL-FND-0253,CONFLICT,CODE_VS_DOC,voice-session status().live nem zárja ki a mock providert,OPEN,,1,ATL-DIR-9658,ATL-SEC-0030; ATL-VOI-0001; ATL-VOI-0003,ATL-WRK-0763
+ATL-FND-0254,CONFLICT,CODE_VS_DOC,workforce lifecycle (12 szakasz) és Money Engine deal-state eltér a 14 szakaszos definíciótól,OPEN,,1,ATL-DIR-10018,ATL-AGT-0040; ATL-RES-0011; ATL-WFL-0023,ATL-WRK-0763
+ATL-FND-0255,ELTÉRÉS,STATUS_DIFF,"ATL-REQ státusza PARTIAL, itt a konkrét sor bizonyítéka alapján EXTERNAL_BLOCKER",RECORDED,,2,ATL-SPC-0721; ATL-SPC-0730,ATL-INT-0004; ATL-INT-0010; ATL-SEC-0014,
+ATL-FND-0256,ELTÉRÉS,STATUS_DIFF,"ATL-REQ státusza PARTIAL, itt a konkrét sor bizonyítéka alapján MISSING",RECORDED,,4,ATL-SPC-0681; ATL-SPC-0693; ATL-SPC-0695; ATL-SPC-0697,ATL-MDL-0014; ATL-MEM-0014; ATL-OPS-0028; ATL-RES-0006,
+ATL-FND-0257,ELTÉRÉS,STATUS_DIFF,"ATL-REQ státusza PARTIAL, itt a konkrét sor bizonyítéka alapján MOCK_ONLY",RECORDED,,1,ATL-SPC-0908,ATL-VOI-0001; ATL-VOI-0003,
+ATL-FND-0258,ELTÉRÉS,STATUS_DIFF,"ATL-REQ státusza PARTIAL, itt a konkrét sor bizonyítéka alapján STRUCTURAL_ONLY",RECORDED,,1,ATL-SPC-0552,ATL-DOC-0001; ATL-PLG-0006,
+ATL-FND-0259,ELTÉRÉS,STATUS_DIFF,"ATL-REQ státusza PARTIAL, itt a konkrét sor bizonyítéka alapján VERIFIED_WORKING",RECORDED,,1,ATL-SPC-0922,ATL-OPS-0027; ATL-SCH-0004,
+ATL-FND-0260,ELTÉRÉS,STATUS_DIFF,"ATL-REQ státusza STRUCTURAL_ONLY, itt a konkrét sor bizonyítéka alapján MISSING",RECORDED,,1,ATL-SPC-0637,,
+ATL-FND-0261,ELTÉRÉS,STATUS_DIFF,"ATL-REQ státusza STRUCTURAL_ONLY, itt a konkrét sor bizonyítéka alapján MOCK_ONLY",RECORDED,,1,ATL-SPC-0634,ATL-INT-0004; ATL-INT-0009; ATL-INT-0010,
+ATL-FND-0262,ELTÉRÉS,STATUS_DIFF,"ATL-REQ státusza VERIFIED_WORKING, itt a konkrét sor bizonyítéka alapján MISSING",RECORDED,,1,ATL-SPC-0802,ATL-MEM-0006,
+ATL-FND-0263,ELTÉRÉS,STATUS_DIFF,"ATL-REQ státusza VERIFIED_WORKING, itt a konkrét sor bizonyítéka alapján PARTIAL",RECORDED,,15,ATL-SPC-0559; ATL-SPC-0560; ATL-SPC-0561; ATL-SPC-0565; ATL-SPC-0572; ATL-SPC-0615; ATL-SPC-0640; ATL-SPC-0667; ATL-SPC-0668; ATL-SPC-0669; ATL-SPC-0689; ATL-SPC-0716; ATL-SPC-0719; ATL-SPC-0803; ATL-SPC-0898,ATL-DOC-0001; ATL-DOC-0003; ATL-FIN-0012; ATL-FIN-0025; ATL-INT-0008; ATL-MDL-0001; ATL-MEM-0006; ATL-OPS-0001; ATL-OPS-0002; ATL-OPS-0021; ATL-OPS-0024; ATL-OPS-0029; ATL-RES-0006; ATL-RES-0010; ATL-RES-0016; ATL-RES-0017; ATL-SEC-0006; ATL-SEC-0014; ATL-SEC-0032; ATL-UIX-0008,
+ATL-FND-0264,UNREGISTERED,UNREGISTERED_PATH,.github/workflows/build-windows-installer.yml,RESOLVED_BY_V2_REGISTRATION,ATL-CFG-0002,5,ATL-DIR-5227; ATL-DIR-5249; ATL-DIR-6095; ATL-DIR-6202; ATL-DIR-7529,ATL-WIN-0001; ATL-WIN-0002; ATL-WIN-0003,
+ATL-FND-0265,UNREGISTERED,UNREGISTERED_PATH,"atlasz-addons/model-registry.mjs (vercel-ai-gateway seed-szolgáltató, nincs ATL-MDL komponens)",RESOLVED_BY_V2_REGISTRATION,ATL-MDL-0009,1,ATL-DIR-5117,ATL-MDL-0012; ATL-MDL-0019,
+ATL-FND-0266,UNREGISTERED,UNREGISTERED_PATH,atlasz-addons/model-registry.mjs#vercel-ai-gateway (nincs saját ATL-MDL azonosító a comp_index-ben),RESOLVED_BY_V2_REGISTRATION,ATL-MDL-0009,1,ATL-DIR-3965,ATL-MDL-0009; ATL-MDL-0012,
+ATL-FND-0267,UNREGISTERED,UNREGISTERED_PATH,atlasz-astra/README.md,RESOLVED_BY_V2_REGISTRATION,ATL-SRC-0018,1,ATL-DIR-2616,,
+ATL-FND-0268,UNREGISTERED,UNREGISTERED_PATH,atlasz-control-center/build/icon.png,RESOLVED_BY_V2_REGISTRATION,ATL-CFG-0008,1,ATL-DIR-6097,ATL-UIX-0017; ATL-WIN-0001; ATL-WIN-0002; ATL-WIN-0003,
+ATL-FND-0269,UNREGISTERED,UNREGISTERED_PATH,atlasz-control-center/package.json,RESOLVED_BY_V2_REGISTRATION,ATL-CHK-0024,2,ATL-DIR-5227; ATL-DIR-6095,ATL-WIN-0001; ATL-WIN-0002; ATL-WIN-0003,
+ATL-FND-0270,UNREGISTERED,UNREGISTERED_PATH,atlasz-runtime/LEGACY_EXCLUDED.md; LEGACY_QUARANTINED komponensre hivatkozik (v1 hiba javítva),RESOLVED_BY_V2_REGISTRATION,ATL-SRC-0019,1,ATL-DIR-7392,ATL-OPS-0031; ATL-OPS-0035; ATL-OPS-0036,
+ATL-FND-0271,UNREGISTERED,UNREGISTERED_PATH,atlasz-runtime/package.json,RESOLVED_BY_V2_REGISTRATION,ATL-CHK-0025,2,ATL-SPC-0071; ATL-SPC-0072,ATL-OPS-0034,
+ATL-FND-0272,UNREGISTERED,UNREGISTERED_PATH,"atlasz-runtime/package.json; tesztkategória/teszt-készlet: az atlasz-tests (ATL-TST-*) hordozza, külön új modul nem szükséges",RESOLVED_BY_V2_REGISTRATION,ATL-CHK-0025,1,ATL-SPC-0073,,
+ATL-FND-0273,UNREGISTERED,UNREGISTERED_PATH,atlasz-tests/,RESOLVED_BY_V2_REGISTRATION,ATL-CHK-0001,2,ATL-DIR-9814; ATL-SPC-0061,,
+ATL-FND-0274,UNREGISTERED,UNREGISTERED_PATH,"atlasz-tests/; tesztkategória/teszt-készlet: az atlasz-tests (ATL-TST-*) hordozza, külön új modul nem szükséges",RESOLVED_BY_V2_REGISTRATION,ATL-CHK-0001,13,ATL-DIR-9810; ATL-DIR-9811; ATL-DIR-9812; ATL-DIR-9813; ATL-DIR-9815; ATL-DIR-9816; ATL-DIR-9817; ATL-DIR-9818; ATL-DIR-9819; ATL-DIR-9820; ATL-DIR-9821; ATL-DIR-9822; ATL-DIR-9823,ATL-TST-0003; ATL-TST-0007; ATL-TST-0011; ATL-TST-0012; ATL-TST-0027; ATL-TST-0031; ATL-TST-0035; ATL-TST-0039; ATL-TST-0040; ATL-TST-0041; ATL-TST-0042; ATL-TST-0043; ATL-TST-0045; ATL-TST-0046; ATL-TST-0047; ATL-TST-0048; ATL-TST-0049; ATL-TST-0055; ATL-TST-0064; ATL-TST-0066,
+ATL-FND-0275,UNREGISTERED,UNREGISTERED_PATH,atlasz-tests/helpers.mjs,RESOLVED_BY_V2_REGISTRATION,ATL-CHK-0001,1,ATL-SPC-0121,,
+ATL-FND-0276,UNREGISTERED,UNREGISTERED_PATH,"atlasz-tests/no-weak-random.test.mjs; tesztkategória/teszt-készlet: az atlasz-tests (ATL-TST-*) hordozza, külön új modul nem szükséges",RESOLVED_BY_V2_REGISTRATION,ATL-TST-0143,1,ATL-SPC-0150,,
+ATL-FND-0277,UNREGISTERED,UNREGISTERED_PATH,atlasz-tests/owner-control-core.test.mjs,RESOLVED_BY_V2_REGISTRATION,ATL-TST-0151,1,ATL-SPC-0104,,
+ATL-FND-0278,UNREGISTERED,UNREGISTERED_PATH,atlasz-tests/registry-integrity.test.mjs,RESOLVED_BY_V2_REGISTRATION,ATL-TST-0188,1,ATL-SPC-0138,ATL-OPS-0006,
+ATL-FND-0279,UNREGISTERED,UNREGISTERED_PATH,docs/ACCELERATION_PLAN.md,RESOLVED_BY_V2_REGISTRATION,ATL-SRC-0020,1,ATL-DIR-5257,,
+ATL-FND-0280,UNREGISTERED,UNREGISTERED_PATH,docs/atlasz_v73_requirement_registry.csv,RESOLVED_BY_V2_REGISTRATION,ATL-CHK-0036,12,ATL-SPC-0814; ATL-SPC-0815; ATL-SPC-0816; ATL-SPC-0817; ATL-SPC-0818; ATL-SPC-0819; ATL-SPC-0820; ATL-SPC-0821; ATL-SPC-0822; ATL-SPC-0823; ATL-SPC-0824; ATL-SPC-0825,,
+ATL-FND-0281,UNREGISTERED,UNREGISTERED_PATH,docs/audit/ATLASZ_V73_DEFECT_REGISTER.csv,RESOLVED_BY_V2_REGISTRATION,ATL-CHK-0039,2,ATL-DIR-3815; ATL-DIR-3816,ATL-BRN-0027,
+ATL-FND-0282,UNREGISTERED,UNREGISTERED_PATH,docs/audit/ATLASZ_V73_TOTAL_INTEGRATION_REPAIR.csv,RESOLVED_BY_V2_REGISTRATION,ATL-SRC-0038,27,ATL-DIR-11396; ATL-DIR-3776; ATL-DIR-3778; ATL-DIR-3779; ATL-DIR-3780; ATL-DIR-3781; ATL-DIR-3782; ATL-DIR-3783; ATL-DIR-3784; ATL-DIR-3785; ATL-DIR-3786; ATL-DIR-3787; ATL-DIR-3788; ATL-DIR-3789; ATL-DIR-3790; ATL-DIR-3791; ATL-DIR-3792; ATL-DIR-3793; ATL-DIR-3794; ATL-DIR-3795,ATL-BRN-0027; ATL-OPS-0029,
+ATL-FND-0283,UNREGISTERED,UNREGISTERED_PATH,docs/audit/ATLASZ_V73_TOTAL_INTEGRATION_REPAIR.csv;scripts/repair-register.mjs,RESOLVED_BY_V2_REGISTRATION,ATL-SRC-0038,1,ATL-DIR-3773,ATL-BRN-0027,
+ATL-FND-0284,UNREGISTERED,UNREGISTERED_PATH,docs/audit/original_133_resolution.json,RESOLVED_BY_V2_REGISTRATION,ATL-SRC-0062,2,ATL-DIR-3774; ATL-DIR-3871,ATL-BRN-0027; ATL-BRN-0042,
+ATL-FND-0285,UNREGISTERED,UNREGISTERED_PATH,docs/audit/provider_matrix.mjs,RESOLVED_BY_V2_REGISTRATION,ATL-CHK-0006,1,ATL-DIR-10343,ATL-MDL-0006; ATL-MDL-0012,
+ATL-FND-0286,UNREGISTERED,UNREGISTERED_PATH,docs/audit/repair_overrides.json,RESOLVED_BY_V2_REGISTRATION,ATL-CHK-0055,1,ATL-DIR-3818,ATL-BRN-0027,
+ATL-FND-0287,UNREGISTERED,UNREGISTERED_PATH,docs/identity_registry/components.csv,RESOLVED_BY_V2_REGISTRATION,ATL-SRC-0090,1,ATL-DIR-7022,,
+ATL-FND-0288,UNREGISTERED,UNREGISTERED_PATH,docs/master_gap_register.py,RESOLVED_BY_V2_REGISTRATION,ATL-SRC-0103,1,ATL-SPC-0131,ATL-OPS-0006,
+ATL-FND-0289,UNREGISTERED,UNREGISTERED_PATH,docs/registry_new_brain.py,RESOLVED_BY_V2_REGISTRATION,ATL-SRC-0112,1,ATL-SPC-0062,ATL-OPS-0006,
+ATL-FND-0290,UNREGISTERED,UNREGISTERED_PATH,docs/STRIPE_HANDOFF.md,RESOLVED_BY_V2_REGISTRATION,ATL-CHK-0031,1,ATL-DIR-2618,ATL-FIN-0006; ATL-FIN-0020; ATL-INT-0007,
+ATL-FND-0291,UNREGISTERED,UNREGISTERED_PATH,scripts/agent-evidence.mjs,RESOLVED_BY_V2_REGISTRATION,ATL-CHK-0009,2,ATL-DIR-6228; ATL-DIR-6322,ATL-AGT-0031; ATL-AGT-0037; ATL-AGT-0040; ATL-UIX-0018; ATL-UIX-0037,
+ATL-FND-0292,UNREGISTERED,UNREGISTERED_PATH,scripts/d12-report.mjs,RESOLVED_BY_V2_REGISTRATION,ATL-CHK-0010,1,ATL-DIR-6571,ATL-SEC-0001,
+ATL-FND-0293,UNREGISTERED,UNREGISTERED_PATH,scripts/demonstrations.mjs,RESOLVED_BY_V2_REGISTRATION,ATL-CHK-0011,2,ATL-DIR-3524; ATL-DIR-6229,ATL-AGT-0032; ATL-AGT-0033; ATL-AGT-0040; ATL-OPS-0006,
+ATL-FND-0294,UNREGISTERED,UNREGISTERED_PATH,scripts/integration-matrix.mjs,RESOLVED_BY_V2_REGISTRATION,ATL-CHK-0013,2,ATL-DIR-10284; ATL-DIR-10393,ATL-BRN-0023; ATL-BRN-0025; ATL-BRN-0027; ATL-UIX-0054,
+ATL-FND-0295,UNREGISTERED,UNREGISTERED_PATH,scripts/make-sanitized-dist.mjs,RESOLVED_BY_V2_REGISTRATION,ATL-CHK-0015,1,ATL-DIR-6753,ATL-SEC-0018; ATL-SEC-0036,
+ATL-FND-0296,UNREGISTERED,UNREGISTERED_PATH,scripts/master-tracker.mjs,RESOLVED_BY_V2_REGISTRATION,ATL-CHK-0016,4,ATL-DIR-10729; ATL-DIR-10730; ATL-DIR-5269; ATL-DIR-6203,,
+ATL-FND-0297,UNREGISTERED,UNREGISTERED_PATH,scripts/module-evidence.mjs,RESOLVED_BY_V2_REGISTRATION,ATL-CHK-0017,4,ATL-DIR-10256; ATL-DIR-3617; ATL-DIR-3683; ATL-DIR-3868,ATL-BRN-0023; ATL-BRN-0027; ATL-BRN-0042; ATL-OPS-0006; ATL-SCH-0001; ATL-SEC-0030,
+ATL-FND-0298,UNREGISTERED,UNREGISTERED_PATH,scripts/repair-register.mjs,RESOLVED_BY_V2_REGISTRATION,ATL-CHK-0019,1,ATL-DIR-3804,ATL-BRN-0027,
+ATL-FND-0299,UNREGISTERED,UNREGISTERED_PATH,scripts/secret-history-scan.mjs,RESOLVED_BY_V2_REGISTRATION,ATL-CHK-0020,4,ATL-DIR-10421; ATL-DIR-2689; ATL-DIR-2693; ATL-DIR-6745,ATL-MDL-0010; ATL-SEC-0010; ATL-SEC-0018; ATL-SEC-0036; ATL-SEC-0037,
+ATL-FND-0300,UNREGISTERED,UNREGISTERED_PATH,scripts/system-audit.mjs,RESOLVED_BY_V2_REGISTRATION,ATL-CHK-0021,1,ATL-DIR-7006,ATL-BRN-0023; ATL-BRN-0027,
+ATL-FND-0301,UNREGISTERED,UNREGISTERED_PATH,scripts/test-impacted.mjs,RESOLVED_BY_V2_REGISTRATION,ATL-CHK-0022,1,ATL-DIR-5260,,
+ATL-FND-0302,UNREGISTERED,UNREGISTERED_PATH,scripts/validate-malware-scanner.mjs,RESOLVED_BY_V2_REGISTRATION,ATL-CHK-0023,1,ATL-DIR-6777,ATL-SEC-0016; ATL-SEC-0020; ATL-SEC-0032,

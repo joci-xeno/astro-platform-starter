@@ -1,0 +1,168 @@
+{
+ "generated_at": "2026-10-12",
+ "git_head": "df9ab5e",
+ "checks": [
+  {
+   "check": "A v1 ledger minden bejegyzése és azonosítója változatlanul megmaradt",
+   "ok": true,
+   "level": "OK",
+   "detail": "elveszett/megváltozott: 0"
+  },
+  {
+   "check": "A 898 v1 rendszerelem azonosítója és neve változatlan",
+   "ok": true,
+   "level": "OK",
+   "detail": "átnevezett: 0"
+  },
+  {
+   "check": "Nincs ismétlődő azonosító a táblák között",
+   "ok": true,
+   "level": "OK",
+   "detail": "ismétlődő: []"
+  },
+  {
+   "check": "A ledgerben minden azonosító egyedi (nincs újrafelhasználás)",
+   "ok": true,
+   "level": "OK",
+   "detail": ""
+  },
+  {
+   "check": "Minden azonosító ledger-bejegyzéshez köthető (a v1 követelmény/CAP/SIR/FUT azonosítók a v1 ledgerben vannak)",
+   "ok": true,
+   "level": "OK",
+   "detail": "hiányzó: []"
+  },
+  {
+   "check": "Mind az 1859 követelmény-sor + 258 (85/23/150) tétel szerepel a mátrixban",
+   "ok": true,
+   "level": "OK",
+   "detail": "2117 sor"
+  },
+  {
+   "check": "Mind a 12 476 direktíva-/specifikáció-sor azonosítót kapott",
+   "ok": true,
+   "level": "OK",
+   "detail": "12476"
+  },
+  {
+   "check": "Mind a 42 feltöltött direktíva forrásként azonosítva",
+   "ok": true,
+   "level": "OK",
+   "detail": ""
+  },
+  {
+   "check": "Pontosan 30 állandó ügynök (5 SEARCH + 25 EXECUTION), a Master/AURÓRA nem ügynök",
+   "ok": true,
+   "level": "OK",
+   "detail": ""
+  },
+  {
+   "check": "Minden MISSING követelményhez tartozik tervezett modul/bővítés azonosító",
+   "ok": true,
+   "level": "OK",
+   "detail": "hiányzik: []"
+  },
+  {
+   "check": "Minden MISSING követelményhez tartozik megvalósítási munkaterv-feladat",
+   "ok": true,
+   "level": "OK",
+   "detail": "hiányzik: []"
+  },
+  {
+   "check": "Minden nem-VERIFIED követelményhez (REQ/CAP/SIR) tartozik munkaterv-feladat",
+   "ok": true,
+   "level": "OK",
+   "detail": "feladat nélkül: 0 []"
+  },
+  {
+   "check": "A 150 jövőbeli ötlet nem-VERIFIED tételei halasztott feladatként szerepelnek",
+   "ok": true,
+   "level": "OK",
+   "detail": "hiányzik: []"
+  },
+  {
+   "check": "Minden munkát igénylő direktíva-sorhoz tartozik feladat",
+   "ok": true,
+   "level": "OK",
+   "detail": "feladat nélkül: 0"
+  },
+  {
+   "check": "Minden duplikált direktíva-sor az eredetire hivatkozik",
+   "ok": true,
+   "level": "OK",
+   "detail": ""
+  },
+  {
+   "check": "Tervezett (PLN) azonosító nincs a meglévő rendszerelemek között",
+   "ok": true,
+   "level": "OK",
+   "detail": ""
+  },
+  {
+   "check": "Tervezett elem státusza soha nem működő státusz",
+   "ok": true,
+   "level": "OK",
+   "detail": ""
+  },
+  {
+   "check": "A tervezett modulok mind kaptak legalább egy követelményt/direktíva-sort (nincs üres modul)",
+   "ok": true,
+   "level": "OK",
+   "detail": "üres: []"
+  },
+  {
+   "check": "Halasztott tételek külön jelöltek és nem számítanak az aktív órákba",
+   "ok": true,
+   "level": "OK",
+   "detail": ""
+  },
+  {
+   "check": "Minden hivatkozás létező azonosítóra mutat",
+   "ok": true,
+   "level": "OK",
+   "detail": "hibás: []"
+  },
+  {
+   "check": "A munkaterv függőségei körmentesek",
+   "ok": true,
+   "level": "OK",
+   "detail": "ciklus: []"
+  },
+  {
+   "check": "Az aktív feladat-órák és a követelményekre szétosztott órák egyeznek (a követelmény nélküli feladatokon kívül)",
+   "ok": true,
+   "level": "OK",
+   "detail": "{'active_task_total_h': 5095.9, 'requirement_allocated_h': 3156.0, 'task_h_without_requirement_link': 1939.9}"
+  },
+  {
+   "check": "Csak docs/ alatti fájl változott (futó rendszer kódja nem módosult)",
+   "ok": true,
+   "level": "OK",
+   "detail": "docs/-on kívül: []"
+  },
+  {
+   "check": "Fel nem oldott catalog-hivatkozás (rel) nincs",
+   "ok": true,
+   "level": "OK",
+   "detail": "[]"
+  },
+  {
+   "check": "A katalógus explicit kulcsai mind léteznek",
+   "ok": true,
+   "level": "OK",
+   "detail": "[]"
+  }
+ ],
+ "errors": 0,
+ "warnings": 0,
+ "hours": {
+  "active_task_total_h": 5095.9,
+  "requirement_allocated_h": 3156.0,
+  "task_h_without_requirement_link": 1939.9
+ },
+ "unmatched_after_assign": 21,
+ "history": {
+  "previous_lines": 16986,
+  "appended": 0
+ }
+}

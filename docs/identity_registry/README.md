@@ -10,3 +10,6 @@ Csak nyilvántartás – a futó rendszer kódját nem módosítja. Az azonosít
 * `build_identity_registry.py`, `render_identity_report.py` – újraépítés a repó gyökeréből: `python3 docs/identity_registry/build_identity_registry.py && python3 docs/identity_registry/render_identity_report.py`.
 
 Későbbi javítás/módosítás ugyanahhoz az ATL-azonosítóhoz kapcsolódik; a `history.jsonl`-be új sor kerül (mi változott, melyik commitban, mely követelményt érinti, mely tesztek futottak, előző/új állapot, ki hagyta jóvá).
+
+
+> **2. kiadás:** a kibővített leltár (tervezett modulok, direktíva-sorok, munkaterv, órabecslés, korrekciók) a `docs/system_inventory/` mappában van; az itteni v1 fájlok történeti pillanatképek (az azonosítók érvényesek maradnak).

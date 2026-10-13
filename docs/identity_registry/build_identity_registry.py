@@ -371,7 +371,10 @@ for r in srcs:
 
 # ---------------------------------------------------------------- retire vanished keys
 live_keys = set(KEY2ID) | {"req:" + r["id"] for r in reqs} | {"src:" + r["id"] for r in srcs}
+V2_KEY_PREFIXES = ("mgr:", "gate:", "exe:", "disc:", "prov:", "repo:", "registry:", "upload:", "dir:", "pln:", "wrk:", "fnd:", "dec:")   # owned by docs/system_inventory (v2) - never retired here
 for k, e in LEDGER["entries"].items():
+    if k.startswith(V2_KEY_PREFIXES):
+        continue
     if k not in live_keys and e["status"] == "ACTIVE":
         e["status"] = "RETIRED"; e["retired_at"] = TODAY
         HISTORY_NEW.append({"at": TODAY, "commit": HEAD, "id": e["id"], "event": "RETIRED", "key": k})
