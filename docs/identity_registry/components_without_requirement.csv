@@ -1,0 +1,187 @@
+﻿id,name,category,status,function
+ATL-AGT-0031,agent-activity,AGT,VERIFIED_WORKING,"Unified programme M6: the REAL operational state of the 30 permanent agents, derived read-only from the coordination ledger and coordinator state the runtime writes."
+ATL-API-0024,GET /api/trading,API,VERIFIED_WORKING,Control Center HTTP GET /api/trading → core.UNKNOWN
+ATL-API-0029,GET /api/intake/status,API,VERIFIED_WORKING,Control Center HTTP GET /api/intake/status → core.UNKNOWN
+ATL-API-0030,GET /api/agents/supervision,API,VERIFIED_WORKING,Control Center HTTP GET /api/agents/supervision → core.UNKNOWN
+ATL-API-0032,GET /api/trading/candles,API,CONNECTED_UNTESTED,Control Center HTTP GET /api/trading/candles → core.UNKNOWN
+ATL-API-0035,GET /api/workbench,API,VERIFIED_WORKING,Control Center HTTP GET /api/workbench → core.UNKNOWN
+ATL-API-0041,GET /api/money-agents,API,VERIFIED_WORKING,Control Center HTTP GET /api/money-agents → core.moneyAgents
+ATL-API-0060,POST /api/aurora/voice/evidence,API,CONNECTED_UNTESTED,Control Center HTTP POST /api/aurora/voice/evidence → core.UNKNOWN
+ATL-API-0068,POST /api/runtime/start,API,VERIFIED_WORKING,Control Center HTTP POST /api/runtime/start → core.startRuntime
+ATL-API-0069,POST /api/runtime/stop,API,VERIFIED_WORKING,Control Center HTTP POST /api/runtime/stop → core.stopRuntime
+ATL-API-0071,POST /api/profit/close-day,API,CONNECTED_UNTESTED,Control Center HTTP POST /api/profit/close-day → core.UNKNOWN
+ATL-API-0073,POST /api/finance/webhook-receiver/stop,API,CONNECTED_UNTESTED,Control Center HTTP POST /api/finance/webhook-receiver/stop → core.UNKNOWN
+ATL-API-0075,POST /api/finance/revoke-attestation,API,CONNECTED_UNTESTED,Control Center HTTP POST /api/finance/revoke-attestation → core.UNKNOWN
+ATL-API-0083,POST /api/backup/mark-lkg,API,VERIFIED_WORKING,Control Center HTTP POST /api/backup/mark-lkg → core.markLastKnownGood
+ATL-API-0086,POST /api/updates/check,API,VERIFIED_WORKING,Control Center HTTP POST /api/updates/check → core.updateActions.check
+ATL-API-0087,POST /api/updates/test,API,VERIFIED_WORKING,Control Center HTTP POST /api/updates/test → core.updateActions.test
+ATL-API-0088,POST /api/updates/install,API,PARTIAL,Control Center HTTP POST /api/updates/install → core.updateActions.install
+ATL-API-0093,POST /api/model-registry/action,API,CONNECTED_UNTESTED,Control Center HTTP POST /api/model-registry/action → core.UNKNOWN
+ATL-API-0094,POST /api/security/action,API,CONNECTED_UNTESTED,Control Center HTTP POST /api/security/action → core.UNKNOWN
+ATL-API-0095,POST /api/agents30/action,API,CONNECTED_UNTESTED,Control Center HTTP POST /api/agents30/action → core.UNKNOWN
+ATL-API-0097,POST /api/chat-providers/action,API,CONNECTED_UNTESTED,Control Center HTTP POST /api/chat-providers/action → core.UNKNOWN
+ATL-API-0098,POST /api/trading/action,API,CONNECTED_UNTESTED,Control Center HTTP POST /api/trading/action → core.UNKNOWN
+ATL-API-0099,POST /api/research/action,API,VERIFIED_WORKING,Control Center HTTP POST /api/research/action → core.researchAction
+ATL-API-0104,POST /api/observations/action,API,VERIFIED_WORKING,Control Center HTTP POST /api/observations/action → core.observationsAction
+ATL-API-0109,POST /api/prototypes/action,API,CONNECTED_UNTESTED,Control Center HTTP POST /api/prototypes/action → core.UNKNOWN
+ATL-API-0111,POST /api/mcp/call,API,CONNECTED_UNTESTED,Control Center HTTP POST /api/mcp/call → core.UNKNOWN
+ATL-API-0112,POST /api/mcp/stop,API,CONNECTED_UNTESTED,Control Center HTTP POST /api/mcp/stop → core.UNKNOWN
+ATL-API-0113,POST /api/plugins/invoke,API,CONNECTED_UNTESTED,Control Center HTTP POST /api/plugins/invoke → core.UNKNOWN
+ATL-API-0114,POST /api/plugins/install,API,CONNECTED_UNTESTED,Control Center HTTP POST /api/plugins/install → core.UNKNOWN
+ATL-API-0115,POST /api/plugins/rollback,API,CONNECTED_UNTESTED,Control Center HTTP POST /api/plugins/rollback → core.UNKNOWN
+ATL-API-0116,POST /api/plugins/uninstall,API,CONNECTED_UNTESTED,Control Center HTTP POST /api/plugins/uninstall → core.UNKNOWN
+ATL-API-0117,POST /api/plugins/disable,API,VERIFIED_WORKING,Control Center HTTP POST /api/plugins/disable → core.pluginActions.disable
+ATL-API-0119,POST /api/plugins/reset,API,VERIFIED_WORKING,Control Center HTTP POST /api/plugins/reset → core.pluginActions.resetQuarantine
+ATL-API-0121,POST /api/updates/auto,API,CONNECTED_UNTESTED,Control Center HTTP POST /api/updates/auto → core.updateActions.setAuto
+ATL-API-0122,POST /api/updates/unfreeze,API,VERIFIED_WORKING,Control Center HTTP POST /api/updates/unfreeze → core.updateActions.unfreeze
+ATL-AVA-0002,a11y-worker,AVA,STRUCTURAL_ONLY,Worker entry for the accessibility audit: the engine runs off the request thread so a pathological input can be killed by a timeout instead of hanging the Control Center.
+ATL-BRN-0003,brain/business-factory,BRN,VERIFIED_WORKING,"Business Factory (V7.3 Brain §10): turns a legitimate, repeatable opportunity into a DRAFT service package."
+ATL-BRN-0032,registrations/_util,BRN,CONNECTED_UNTESTED,"Shared helpers for module registrations. A registration NEVER copies logic: it wires a module's real exports into the broker with a schema, an owner-authority operation class and a self-test."
+ATL-BRN-0033,registrations/agents,BRN,VERIFIED_WORKING,"Registrations: the agent / tool layer (capability registry, toolbox, tool fabric, connectors, factories, ledgers). Everything here is about the FIXED 30 agents (5 SEARCH + 25 EXECUTION):"
+ATL-BRN-0036,registrations/discovery,BRN,VERIFIED_WORKING,Registrations: global discovery building blocks. The hosted source allowlist is DENY BY DEFAULT (empty until the owner signs a source and its country); the adapters in this repository are
+ATL-BRN-0037,registrations/models,BRN,VERIFIED_WORKING,Registrations: the AI Model Manager (registry > egress policy > gateway/resilience > billing guard) and the model-evolution lifecycle. Nothing here calls a model on its own and nothing is
+ATL-BRN-0040,registrations/security,BRN,VERIFIED_WORKING,"Registrations: containment, untrusted-file intake and verified payment events. All capabilities are READ-ONLY views: no file content, no secret and no money movement is reachable through them."
+ATL-BRN-0041,registrations/tools,BRN,VERIFIED_WORKING,"Registrations: developer-assist analyzers, small knowledge/inbox tools and the runtime process itself."
+ATL-BRN-0042,registrations/workflow,BRN,VERIFIED_WORKING,"Registrations: workflow, ledger, recovery and health modules. Each wraps the module's REAL exports; stateless modules are exposed as deterministic capabilities,"
+ATL-DEV-0005,dev-assist-common,DEV,VERIFIED_WORKING,"Shared, deterministic building blocks for the W2 developer-assist engines (test-intelligence, architecture-assessor, doc-sync, data-quality, migration-planner)."
+ATL-INT-0012,browser-extension/content-script.js,INT,STRUCTURAL_ONLY,ATLASZ Local Assistant - content script. Injected ONLY on demand into the active tab (chrome.scripting + activeTab) after the owner clicks a
+ATL-INT-0013,browser-extension/lib/request.js,INT,PARTIAL,"Pure request-building logic shared by the service worker (background.js) and the Node tests. No browser API, no network here."
+ATL-INT-0014,browser-extension/sidepanel.css,INT,STRUCTURAL_ONLY,UNKNOWN
+ATL-INT-0015,browser-extension/sidepanel.html,INT,STRUCTURAL_ONLY,UNKNOWN
+ATL-INT-0016,browser-extension/sidepanel.js,INT,STRUCTURAL_ONLY,Side panel UI. Renders model output with textContent only (never as HTML). The token input is cleared right after it is handed to the
+ATL-INT-0022,SEARCH forrás: hn.algolia.com (runtime kérés),INT,EXTERNAL_BLOCKER,Külső szolgáltatás-kapcsolat: SEARCH forrás: hn.algolia.com (runtime kérés) (host: hn.algolia.com)
+ATL-INT-0023,MCP stdio szerverek (külső folyamat),INT,EXTERNAL_BLOCKER,Külső szolgáltatás-kapcsolat: MCP stdio szerverek (külső folyamat) (host: stdio)
+ATL-INT-0024,Chat platform: WhatsApp Business,INT,EXTERNAL_BLOCKER,Külső szolgáltatás-kapcsolat: Chat platform: WhatsApp Business (host: UNKNOWN)
+ATL-INT-0025,Chat platform: Telegram,INT,EXTERNAL_BLOCKER,Külső szolgáltatás-kapcsolat: Chat platform: Telegram (host: UNKNOWN)
+ATL-INT-0026,Chat platform: Slack,INT,EXTERNAL_BLOCKER,Külső szolgáltatás-kapcsolat: Chat platform: Slack (host: UNKNOWN)
+ATL-INT-0027,Chat platform: Discord,INT,EXTERNAL_BLOCKER,Külső szolgáltatás-kapcsolat: Chat platform: Discord (host: UNKNOWN)
+ATL-INT-0028,Chat platform: Microsoft Teams,INT,EXTERNAL_BLOCKER,Külső szolgáltatás-kapcsolat: Chat platform: Microsoft Teams (host: UNKNOWN)
+ATL-INT-0029,Chat platform: Google Chat,INT,EXTERNAL_BLOCKER,Külső szolgáltatás-kapcsolat: Chat platform: Google Chat (host: UNKNOWN)
+ATL-INT-0030,Chat platform: Signal,INT,EXTERNAL_BLOCKER,Külső szolgáltatás-kapcsolat: Chat platform: Signal (host: UNKNOWN)
+ATL-INT-0031,Chat platform: Facebook Messenger,INT,EXTERNAL_BLOCKER,Külső szolgáltatás-kapcsolat: Chat platform: Facebook Messenger (host: UNKNOWN)
+ATL-INT-0032,Chat platform: Instagram DMs,INT,EXTERNAL_BLOCKER,Külső szolgáltatás-kapcsolat: Chat platform: Instagram DMs (host: UNKNOWN)
+ATL-INT-0033,Chat platform: LINE,INT,EXTERNAL_BLOCKER,Külső szolgáltatás-kapcsolat: Chat platform: LINE (host: UNKNOWN)
+ATL-INT-0034,Chat platform: Viber,INT,EXTERNAL_BLOCKER,Külső szolgáltatás-kapcsolat: Chat platform: Viber (host: UNKNOWN)
+ATL-INT-0035,Chat platform: WeChat,INT,EXTERNAL_BLOCKER,Külső szolgáltatás-kapcsolat: Chat platform: WeChat (host: UNKNOWN)
+ATL-INT-0036,Chat platform: SMS via a gateway,INT,EXTERNAL_BLOCKER,Külső szolgáltatás-kapcsolat: Chat platform: SMS via a gateway (host: UNKNOWN)
+ATL-INT-0037,Chat platform: Email,INT,EXTERNAL_BLOCKER,Külső szolgáltatás-kapcsolat: Chat platform: Email (host: UNKNOWN)
+ATL-INT-0038,Chat platform: Matrix,INT,EXTERNAL_BLOCKER,Külső szolgáltatás-kapcsolat: Chat platform: Matrix (host: UNKNOWN)
+ATL-INT-0039,Chat platform: Apple Messages / iMessage,INT,EXTERNAL_BLOCKER,Külső szolgáltatás-kapcsolat: Chat platform: Apple Messages / iMessage (host: UNKNOWN)
+ATL-INT-0040,Chat platform: Nextcloud Talk,INT,EXTERNAL_BLOCKER,Külső szolgáltatás-kapcsolat: Chat platform: Nextcloud Talk (host: UNKNOWN)
+ATL-INT-0041,Chat platform: Nostr,INT,EXTERNAL_BLOCKER,Külső szolgáltatás-kapcsolat: Chat platform: Nostr (host: UNKNOWN)
+ATL-INT-0042,Chat platform: Tor Messenger,INT,EXTERNAL_BLOCKER,Külső szolgáltatás-kapcsolat: Chat platform: Tor Messenger (host: UNKNOWN)
+ATL-INT-0043,Chat platform: Zalo (Official Account),INT,EXTERNAL_BLOCKER,Külső szolgáltatás-kapcsolat: Chat platform: Zalo (Official Account) (host: UNKNOWN)
+ATL-INT-0044,Chat platform: Zalo Personal,INT,EXTERNAL_BLOCKER,Külső szolgáltatás-kapcsolat: Chat platform: Zalo Personal (host: UNKNOWN)
+ATL-MDL-0015,AI-szolgáltató: openai (CLOUD),MDL,EXTERNAL_BLOCKER,AI-szolgáltató adapter-profil: AI-szolgáltató: openai (CLOUD); állapot: IMPLEMENTED_TESTED_WITH_FAKE_FETCH (openai-compat)
+ATL-MDL-0016,AI-szolgáltató: anthropic (CLOUD),MDL,EXTERNAL_BLOCKER,AI-szolgáltató adapter-profil: AI-szolgáltató: anthropic (CLOUD); állapot: IMPLEMENTED_TESTED_WITH_FAKE_FETCH (anthropic)
+ATL-MDL-0017,AI-szolgáltató: google (CLOUD),MDL,EXTERNAL_BLOCKER,AI-szolgáltató adapter-profil: AI-szolgáltató: google (CLOUD); állapot: IMPLEMENTED_TESTED_WITH_FAKE_FETCH (gemini)
+ATL-MDL-0018,AI-szolgáltató: xai (CLOUD),MDL,EXTERNAL_BLOCKER,AI-szolgáltató adapter-profil: AI-szolgáltató: xai (CLOUD); állapot: IMPLEMENTED_TESTED_WITH_FAKE_FETCH (openai-compat)
+ATL-MDL-0019,AI-szolgáltató: merlin (CLOUD),MDL,MISSING,AI-szolgáltató adapter-profil: AI-szolgáltató: merlin (CLOUD); állapot: NO_ADAPTER (placeholder host; owner must give the real API host/spec)
+ATL-MDL-0020,AI-szolgáltató: deepseek (CLOUD),MDL,EXTERNAL_BLOCKER,AI-szolgáltató adapter-profil: AI-szolgáltató: deepseek (CLOUD); állapot: IMPLEMENTED_TESTED_WITH_FAKE_FETCH (openai-compat)
+ATL-MDL-0021,AI-szolgáltató: mistral (CLOUD),MDL,EXTERNAL_BLOCKER,AI-szolgáltató adapter-profil: AI-szolgáltató: mistral (CLOUD); állapot: IMPLEMENTED_TESTED_WITH_FAKE_FETCH (openai-compat)
+ATL-MDL-0022,AI-szolgáltató: openrouter (CLOUD),MDL,EXTERNAL_BLOCKER,AI-szolgáltató adapter-profil: AI-szolgáltató: openrouter (CLOUD); állapot: IMPLEMENTED_TESTED_WITH_FAKE_FETCH (openai-compat)
+ATL-MDL-0023,AI-szolgáltató: minimax (CLOUD),MDL,EXTERNAL_BLOCKER,AI-szolgáltató adapter-profil: AI-szolgáltató: minimax (CLOUD); állapot: IMPLEMENTED_TESTED_WITH_FAKE_FETCH (openai-compat)
+ATL-MDL-0024,AI-szolgáltató: glm (CLOUD),MDL,EXTERNAL_BLOCKER,AI-szolgáltató adapter-profil: AI-szolgáltató: glm (CLOUD); állapot: IMPLEMENTED_TESTED_WITH_FAKE_FETCH (openai-compat)
+ATL-MDL-0025,AI-szolgáltató: perplexity (CLOUD),MDL,EXTERNAL_BLOCKER,AI-szolgáltató adapter-profil: AI-szolgáltató: perplexity (CLOUD); állapot: IMPLEMENTED_TESTED_WITH_FAKE_FETCH (openai-compat)
+ATL-MDL-0026,AI-szolgáltató: huggingface (CLOUD),MDL,EXTERNAL_BLOCKER,AI-szolgáltató adapter-profil: AI-szolgáltató: huggingface (CLOUD); állapot: IMPLEMENTED_TESTED_WITH_FAKE_FETCH (openai-compat)
+ATL-MDL-0027,AI-szolgáltató: ollama-local (LOCAL),MDL,EXTERNAL_BLOCKER,"AI-szolgáltató adapter-profil: AI-szolgáltató: ollama-local (LOCAL); állapot: IMPLEMENTED_TESTED (loopback Ollama adapter, fake fetch)"
+ATL-OPS-0018,owner-control/recovery-source-map,OPS,VERIFIED_WORKING,"ATLASZ recovery source mapping (V7.3 §50). Resolves each recovery category to a REAL local directory, or leaves it NOT_CONFIGURED with the exact"
+ATL-OPS-0031,atlasz-runtime/agent-child.js,OPS,VERIFIED_WORKING,UNKNOWN
+ATL-OPS-0035,atlasz-runtime/supervisor.js,OPS,PARTIAL,UNKNOWN
+ATL-OPS-0036,atlasz-runtime/worker.js,OPS,PARTIAL,UNKNOWN
+ATL-RES-0002,backtest,RES,VERIFIED_WORKING,Unified programme M6: reproducible backtesting and strategy validation for the ORB research engine.
+ATL-RES-0009,market-data,RES,VERIFIED_WORKING,Unified programme M6: market-data model for the research subsystem. Local only: this module never opens a network connection and has no live provider.
+ATL-RES-0013,orb-strategy,RES,VERIFIED_WORKING,Unified programme M6: Opening Range Breakout (ORB) research engine - one state machine shared by the backtester and the paper trader.
+ATL-RES-0015,paper-trader,RES,VERIFIED_WORKING,"Unified programme M6: autonomous PAPER trading. Everything here is simulated money (currency ""SIM-USD""); there is no broker, exchange, wallet or network code, and no way to create one through this module."
+ATL-SCH-0005,Master felügyeleti tick (tick-loop + watchdog),SCH,PARTIAL,Master felügyeleti tick (tick-loop + watchdog)
+ATL-SCH-0006,Tartós ütemező (C12),SCH,PARTIAL,Tartós ütemező (C12)
+ATL-SCH-0007,Napi felderítési ütemező (discoveryScheduler),SCH,BROKEN,Napi felderítési ütemező (discoveryScheduler)
+ATL-SCH-0008,"Egészség-monitor, kör-megszakítók",SCH,PARTIAL,"Egészség-monitor, kör-megszakítók"
+ATL-SCH-0009,Watchdog (szívverés / lefagyás-észlelés),SCH,PARTIAL,Watchdog (szívverés / lefagyás-észlelés)
+ATL-SCH-0010,"Runtime supervisor (OS-folyamatok, SEARCH worker-ek)",SCH,PARTIAL,"Runtime supervisor (OS-folyamatok, SEARCH worker-ek)"
+ATL-SCH-0011,Fizetési webhook vevő (nem auto-indul),SCH,PARTIAL,Fizetési webhook vevő (nem auto-indul)
+ATL-SCH-0012,Safe Mode + crash-loop védelem,SCH,PARTIAL,Safe Mode + crash-loop védelem
+ATL-SCH-0013,Indítási önellenőrzés,SCH,PARTIAL,Indítási önellenőrzés
+ATL-SCH-0014,Korlátos önjavító hurok,SCH,PARTIAL,Korlátos önjavító hurok
+ATL-SCH-0015,Mentés / visszaállítási próba,SCH,PARTIAL,Mentés / visszaállítási próba
+ATL-SCH-0016,Ransomware kanári-monitor,SCH,PARTIAL,Ransomware kanári-monitor
+ATL-SEC-0001,agent-tool-policy-ext,SEC,VERIFIED_WORKING,Agent tool policy EXTENSION for the module-broker tools (owner decision D12 is still PENDING: the owner reviews this table; until then it is deliberately minimal and every row is
+ATL-SEC-0013,enterprise-control-plane,SEC,VERIFIED_WORKING,"(nincs leíró fejléc; a forrás export-jai alapján) registerAgentControl, authorize, setKillSwitch, controlPlaneStatus"
+ATL-SEC-0018,history-scan-patterns,SEC,STRUCTURAL_ONLY,"Patterns for the Git-history secret scan (scripts/secret-history-scan.mjs). Distinct from secret-patterns.mjs, which is the runtime REDACTOR."
+ATL-SEC-0028,owner-control/owner-control-system,SEC,VERIFIED_WORKING,"ATLASZ Multi-layer Owner Control & Safety System — assembly (V7.3 Owner Control §1). Wires the EXISTING owner-auth, emergency-stop,"
+ATL-SEC-0035,safe-keys,SEC,VERIFIED_WORKING,"Property-name safety for stores keyed by user-supplied ids. A name such as ""__proto__"", ""constructor"" or ""toString"" must never be usable as a tenant/id/key:"
+ATL-UIX-0011,atlasz-control-center/revenue-ops.mjs,UIX,VERIFIED_WORKING,"Revenue Operations dashboard: the 14 owner metrics computed ONLY from what the Money Engine, the Revenue Persistence store, the approval queue and the workforce really recorded."
+ATL-UIX-0013,atlasz-control-center/trading-panel.mjs,UIX,VERIFIED_WORKING,Unified programme M6: Live Trading & Crypto panel of the Control Center. Thin layer over market-data / orb-strategy / backtest / paper-trader.
+ATL-UIX-0015,Nézet: Daily Profit Target (profit),UIX,VERIFIED_WORKING,"Control Center nézet: Nézet: Daily Profit Target (profit); route-ok: /api/profit/daily, /api/live"
+ATL-UIX-0016,Nézet: Opportunity Pipeline (pipeline),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Opportunity Pipeline (pipeline); route-ok: /api/opportunity-pipeline
+ATL-UIX-0017,Nézet: Operations Dashboard (ops),UIX,VERIFIED_WORKING,"Control Center nézet: Nézet: Operations Dashboard (ops); route-ok: /api/operations, /api/live"
+ATL-UIX-0018,Nézet: Live Agent Activity (activity),UIX,VERIFIED_WORKING,"Control Center nézet: Nézet: Live Agent Activity (activity); route-ok: /api/agents/activity, /api/live"
+ATL-UIX-0019,Nézet: Trading & Crypto (simulated) (trading),UIX,VERIFIED_WORKING,"Control Center nézet: Nézet: Trading & Crypto (simulated) (trading); route-ok: /api/trading, /api/live"
+ATL-UIX-0020,Nézet: Revenue & Business (business),UIX,VERIFIED_WORKING,"Control Center nézet: Nézet: Revenue & Business (business); route-ok: /api/revenue-dashboard, /api/live"
+ATL-UIX-0021,Nézet: Revenue Operations (revenueops),UIX,VERIFIED_WORKING,"Control Center nézet: Nézet: Revenue Operations (revenueops); route-ok: /api/revenue-ops, /api/live"
+ATL-UIX-0022,Nézet: AURÓRA (aurora),UIX,VERIFIED_WORKING,"Control Center nézet: Nézet: AURÓRA (aurora); route-ok: /api/aurora/briefing, /api/aurora/voice"
+ATL-UIX-0023,Nézet: Security & Supervision (supervision),UIX,BROKEN,"Control Center nézet: Nézet: Security & Supervision (supervision); route-ok: /api/agents/supervision, /api/security/incidents, /api/intake/status"
+ATL-UIX-0024,Nézet: Home (home),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Home (home); route-ok: /api/brief
+ATL-UIX-0025,Nézet: Accessibility audit (a11y),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Accessibility audit (a11y); route-ok: 
+ATL-UIX-0026,Nézet: Tasks / Reminders (pcc),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Tasks / Reminders (pcc); route-ok: /api/pcc
+ATL-UIX-0027,Nézet: Observation Memory (observations),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Observation Memory (observations); route-ok: /api/observations
+ATL-UIX-0028,Nézet: Multimodal (media),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Multimodal (media); route-ok: /api/media
+ATL-UIX-0029,Nézet: Code Sandbox (sandbox),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Code Sandbox (sandbox); route-ok: /api/sandbox
+ATL-UIX-0030,Nézet: Workbench (workbench),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Workbench (workbench); route-ok: /api/workbench
+ATL-UIX-0031,Nézet: Projects & Workflows (projects),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Projects & Workflows (projects); route-ok: /api/workbench/action
+ATL-UIX-0032,Nézet: Research Ledger (research),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Research Ledger (research); route-ok: /api/research
+ATL-UIX-0033,Nézet: Knowledge Projects (knowledge),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Knowledge Projects (knowledge); route-ok: /api/knowledge
+ATL-UIX-0034,Nézet: Memory (memory),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Memory (memory); route-ok: /api/memory
+ATL-UIX-0035,Nézet: Models & Providers (modelreg),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Models & Providers (modelreg); route-ok: /api/model-registry
+ATL-UIX-0036,Nézet: Security Center (security),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Security Center (security); route-ok: /api/security
+ATL-UIX-0037,Nézet: 30 Agents (workforce) (agents30),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: 30 Agents (workforce) (agents30); route-ok: /api/agents30
+ATL-UIX-0038,Nézet: API Key Vault (vault),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: API Key Vault (vault); route-ok: /api/vault
+ATL-UIX-0039,Nézet: Chat Providers (chatproviders),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Chat Providers (chatproviders); route-ok: /api/chat-providers
+ATL-UIX-0040,Nézet: OWNER SAFETY / CONTROL (owner_safety),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: OWNER SAFETY / CONTROL (owner_safety); route-ok: /api/owner-safety
+ATL-UIX-0041,Nézet: Overview (overview),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Overview (overview); route-ok: 
+ATL-UIX-0042,Nézet: Plugins / Themes (plugins),UIX,VERIFIED_WORKING,"Control Center nézet: Nézet: Plugins / Themes (plugins); route-ok: /api/plugins, /api/mcp, /api/repos, /api/prototypes"
+ATL-UIX-0043,Nézet: Revenue / Costs / Profit (finance),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Revenue / Costs / Profit (finance); route-ok: /api/finance
+ATL-UIX-0044,Nézet: Evidence / Audit (evidence),UIX,VERIFIED_WORKING,"Control Center nézet: Nézet: Evidence / Audit (evidence); route-ok: /api/evidence, /api/stream"
+ATL-UIX-0045,Nézet: Agents (5+25) (agents),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Agents (5+25) (agents); route-ok: 
+ATL-UIX-0046,Nézet: Jobs / Opportunities (jobs),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Jobs / Opportunities (jobs); route-ok: /api/opportunities
+ATL-UIX-0047,Nézet: Money Engine (money),UIX,VERIFIED_WORKING,"Control Center nézet: Nézet: Money Engine (money); route-ok: /api/money-engine, /api/money-jobs, /api/money-agents, /api/money-recurring"
+ATL-UIX-0048,Nézet: CRM / Graph / Inbox (crm_inbox),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: CRM / Graph / Inbox (crm_inbox); route-ok: /api/crm-inbox
+ATL-UIX-0049,Nézet: Approvals (approvals),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Approvals (approvals); route-ok: /api/approvals
+ATL-UIX-0050,Nézet: Model / Tool health (providers),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Model / Tool health (providers); route-ok: 
+ATL-UIX-0051,Nézet: Errors & Blockers (errors),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Errors & Blockers (errors); route-ok: /api/doctor
+ATL-UIX-0052,Nézet: Owner Controls (owner),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Owner Controls (owner); route-ok: 
+ATL-UIX-0053,Nézet: Backup / Restore / LKG (backup),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Backup / Restore / LKG (backup); route-ok: /api/backups
+ATL-UIX-0054,Nézet: System Doctor (doctor),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: System Doctor (doctor); route-ok: /api/doctor
+ATL-UIX-0055,Nézet: Update Center (updates),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Update Center (updates); route-ok: /api/updates
+ATL-UIX-0056,Nézet: Voice (voice),UIX,PARTIAL,Control Center nézet: Nézet: Voice (voice); route-ok: /api/voice
+ATL-UIX-0057,Nézet: Documents (documents),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Documents (documents); route-ok: /api/documents
+ATL-UIX-0058,Nézet: Inbox (inbox),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Inbox (inbox); route-ok: /api/inbox
+ATL-UIX-0059,Nézet: Connectors (connectors),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Connectors (connectors); route-ok: /api/connectors
+ATL-UIX-0060,Nézet: Tech Watch (techwatch),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Tech Watch (techwatch); route-ok: /api/techwatch
+ATL-UIX-0061,Nézet: Brain · Status (brain_status),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Brain · Status (brain_status); route-ok: /api/brain
+ATL-UIX-0062,Nézet: Brain · Orchestrator (brain_orchestrator),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Brain · Orchestrator (brain_orchestrator); route-ok: /api/brain
+ATL-UIX-0063,Nézet: Brain · Planning (brain_planning),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Brain · Planning (brain_planning); route-ok: /api/brain
+ATL-UIX-0064,Nézet: Brain · Capability Graph (brain_capabilities),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Brain · Capability Graph (brain_capabilities); route-ok: /api/brain
+ATL-UIX-0065,Nézet: Brain · Knowledge (brain_knowledge),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Brain · Knowledge (brain_knowledge); route-ok: /api/brain
+ATL-UIX-0066,Nézet: Brain · Simulation (brain_simulation),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Brain · Simulation (brain_simulation); route-ok: /api/brain
+ATL-UIX-0067,Nézet: Brain · Verification (brain_verification),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Brain · Verification (brain_verification); route-ok: /api/brain
+ATL-UIX-0068,Nézet: Brain · Security (brain_security),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Brain · Security (brain_security); route-ok: /api/brain
+ATL-UIX-0069,Nézet: Brain · Opportunities (brain_opportunities),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Brain · Opportunities (brain_opportunities); route-ok: /api/brain
+ATL-UIX-0070,Nézet: Brain · Business Factory (brain_factory),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Brain · Business Factory (brain_factory); route-ok: /api/brain
+ATL-UIX-0071,Nézet: Brain · Black Box (brain_blackbox),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Brain · Black Box (brain_blackbox); route-ok: /api/brain
+ATL-UIX-0072,Nézet: Brain · Recovery (brain_recovery),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Brain · Recovery (brain_recovery); route-ok: /api/brain
+ATL-UIX-0073,Nézet: Brain · Behavior Anomalies (brain_behavior),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Brain · Behavior Anomalies (brain_behavior); route-ok: /api/brain
+ATL-UIX-0074,Nézet: Brain · Health (brain_health),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Brain · Health (brain_health); route-ok: /api/brain
+ATL-UIX-0075,Nézet: Owner Command (brain_command),UIX,VERIFIED_WORKING,Control Center nézet: Nézet: Owner Command (brain_command); route-ok: /api/brain
+ATL-WFL-0024,Üzleti szakasz 1: DISCOVER,WFL,OWNER_APPROVAL_REQUIRED,14 szakaszos üzleti folyamat 1. szakasza: DISCOVER (belépési bizonyíték-kritériumok)
+ATL-WFL-0025,Üzleti szakasz 2: VERIFY,WFL,PARTIAL,14 szakaszos üzleti folyamat 2. szakasza: VERIFY (belépési bizonyíték-kritériumok)
+ATL-WFL-0026,Üzleti szakasz 3: QUALIFY,WFL,PARTIAL,14 szakaszos üzleti folyamat 3. szakasza: QUALIFY (belépési bizonyíték-kritériumok)
+ATL-WFL-0027,Üzleti szakasz 4: ESTIMATE,WFL,PARTIAL,14 szakaszos üzleti folyamat 4. szakasza: ESTIMATE (belépési bizonyíték-kritériumok)
+ATL-WFL-0028,Üzleti szakasz 5: PLAN,WFL,PARTIAL,14 szakaszos üzleti folyamat 5. szakasza: PLAN (belépési bizonyíték-kritériumok)
+ATL-WFL-0029,Üzleti szakasz 6: OWNER_APPROVAL,WFL,PARTIAL,14 szakaszos üzleti folyamat 6. szakasza: OWNER_APPROVAL (belépési bizonyíték-kritériumok)
+ATL-WFL-0030,Üzleti szakasz 7: EXECUTE,WFL,PARTIAL,14 szakaszos üzleti folyamat 7. szakasza: EXECUTE (belépési bizonyíték-kritériumok)
+ATL-WFL-0031,Üzleti szakasz 8: QUALITY_ASSURANCE,WFL,PARTIAL,14 szakaszos üzleti folyamat 8. szakasza: QUALITY_ASSURANCE (belépési bizonyíték-kritériumok)
+ATL-WFL-0033,Üzleti szakasz 10: DELIVER,WFL,PARTIAL,14 szakaszos üzleti folyamat 10. szakasza: DELIVER (belépési bizonyíték-kritériumok)
+ATL-WFL-0034,Üzleti szakasz 11: INVOICE,WFL,PARTIAL,14 szakaszos üzleti folyamat 11. szakasza: INVOICE (belépési bizonyíték-kritériumok)
+ATL-WFL-0035,Üzleti szakasz 12: PAYMENT_VERIFICATION,WFL,EXTERNAL_BLOCKER,14 szakaszos üzleti folyamat 12. szakasza: PAYMENT_VERIFICATION (belépési bizonyíték-kritériumok)
+ATL-WFL-0036,Üzleti szakasz 13: RECONCILIATION,WFL,EXTERNAL_BLOCKER,14 szakaszos üzleti folyamat 13. szakasza: RECONCILIATION (belépési bizonyíték-kritériumok)

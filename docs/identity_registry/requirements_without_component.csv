@@ -1,0 +1,212 @@
+﻿atl_id,legacy_id,chapter,part,kind,status,deferred,source_text,missing,fix,external,owner_decision
+ATL-REQ-0001,C01A-L45,1,A,HEADING,PARTIAL,False,## 1. ALAPKÖVETELMÉNYEK,,,,
+ATL-REQ-0019,C01B-L69,1,B,HEADING,PARTIAL,False,"# 1. AZ ATLASZ AURÓRA ALAPRENDSZERE, ARCHITEKTÚRÁJA ÉS TULAJDONOSI IRÁNYÍTÁSA",,,,
+ATL-REQ-0025,C01B-L81,1,B,CONTEXT,PARTIAL,False,Kötelező sorrend:,,,,
+ATL-REQ-0049,C01B-L118,1,B,HEADING,PARTIAL,False,## 1.4. Tulajdonosi jogok,,,,
+ATL-REQ-0050,C01B-L120,1,B,CONTEXT,PARTIAL,False,A tulajdonos határozza meg:,,,,
+ATL-REQ-0059,C01B-L130,1,B,REQUIREMENT,OWNER_APPROVAL_REQUIRED,True,- A rendszer kereskedelmi értékesítését.,Nincs kereskedelmi értékesítési folyamat/licenc.,Tulajdonosi döntés után külön projekt.,,Kereskedelmi értékesítés döntése
+ATL-REQ-0061,C02A-L145,2,A,HEADING,PARTIAL,False,## 2. AURÓRA SZEMÉLYISÉG ÉS ÉRZELMI INTELLIGENCIA,,,,
+ATL-REQ-0083,C02B-L173,2,B,HEADING,PARTIAL,False,"# 2. AURÓRA HUMAN CORE, ÉRZELMI INTELLIGENCIA ÉS SZEMÉLYISÉG",,,,
+ATL-REQ-0097,C02B-L194,2,B,REQUIREMENT,MISSING,False,- Az indokolatlan ismétlések és fölösleges kérdések csökkentése.,Állapotmentes Aurora; nincs ismétléscsökkentés.,Munkamenet-állapot.,,
+ATL-REQ-0098,C02B-L196,2,B,HEADING,PARTIAL,False,## 2.2. Character Core,,,,
+ATL-REQ-0111,C02B-L215,2,B,HEADING,PARTIAL,False,## 2.3. Emotional Intelligence,,,,
+ATL-REQ-0113,C02B-L219,2,B,CONTEXT,PARTIAL,False,Például különbséget kell tudnia tenni:,,,,
+ATL-REQ-0119,C02B-L226,2,B,REQUIREMENT,MISSING,False,- Humor és komoly utasítás.,Humor vs komoly megkülönböztetés.,Cue/osztályozó.,,
+ATL-REQ-0120,C02B-L227,2,B,REQUIREMENT,MISSING,False,- Barátságos beszélgetés és üzleti tárgyalás között.,Regiszter-felismerés.,Osztályozó.,,
+ATL-REQ-0123,C02B-L233,2,B,HEADING,PARTIAL,False,## 2.4. Emotional Context Engine,,,,
+ATL-REQ-0133,C02B-L248,2,B,HEADING,PARTIAL,False,## 2.5. Compassion és Help Engine,,,,
+ATL-REQ-0140,C02B-L258,2,B,REQUIREMENT,MISSING,False,- Mit próbált meg.,Próbálkozások naplója a válaszban.,Kötés a task-ledgerhez.,,
+ATL-REQ-0143,C02B-L263,2,B,HEADING,PARTIAL,False,## 2.6. Human Impact Engine,,,,
+ATL-REQ-0151,C02B-L275,2,B,HEADING,PARTIAL,False,## 2.7. Tone Adapter,,,,
+ATL-REQ-0154,C02B-L280,2,B,REQUIREMENT,MISSING,False,- Professzionális üzleti kommunikáció.,Mód.,Mód.,,
+ATL-REQ-0155,C02B-L281,2,B,REQUIREMENT,MISSING,False,- Technikai fejlesztői kommunikáció.,Mód.,Mód.,,
+ATL-REQ-0158,C02B-L284,2,B,REQUIREMENT,MISSING,False,"- Kreatív, művészeti vagy zenei beszélgetés.",Mód.,Mód.,,
+ATL-REQ-0159,C02B-L286,2,B,HEADING,PARTIAL,False,## 2.8. Interaction Memory,,,,
+ATL-REQ-0167,C02B-L298,2,B,HEADING,VERIFIED_WORKING,False,## 2.9. Az érzelmi képességek valós jelentése,,,,
+ATL-REQ-0314,C05A-L542,5,A,REQUIREMENT,MISSING,False,- Digitális avatár lehetősége.,Nincs digitális avatár.,Avatár render komponens (2D/SVG vagy canvas) az AURÓRA nézetben.,,Avatár stílus/irány jóváhagyása
+ATL-REQ-0315,C05A-L543,5,A,REQUIREMENT,MISSING,True,- Humanoid megjelenítés mint további fejlesztési cél.,Nincs.,Külön fejlesztési projekt.,,Indítja-e a tulajdonos
+ATL-REQ-0316,C05A-L544,5,A,REQUIREMENT,MISSING,True,- Beszédhez igazodó szájmozgás mint tervezett funkció.,Nincs szájmozgás.,Avatár + TTS boundary/viseme események összekötése.,,
+ATL-REQ-0322,C05A-L550,5,A,REQUIREMENT,MISSING,True,"- Későbbi fizikai robotintegráció lehetősége, külön projektként.",Nincs robot interfész.,Külön projekt.,,Robot projekt indítása tulajdonosi döntés
+ATL-REQ-0331,C05B-L569,5,B,REQUIREMENT,MISSING,False,- Ikonokat.,Nincs ikon testreszabás.,Ikonkészlet absztrakció.,,
+ATL-REQ-0333,C05B-L571,5,B,REQUIREMENT,MISSING,False,- AURÓRA megjelenítését.,Auróra megjelenítés nincs.,Avatár (5.2) után.,,
+ATL-REQ-0337,C05B-L577,5,B,HEADING,MISSING,False,## 5.2. AURÓRA avatár,Avatár egyáltalán nincs.,Avatár modul,,
+ATL-REQ-0338,C05B-L579,5,B,REQUIREMENT,MISSING,False,A cél egy vizuálisan megjelenő digitális asszisztens.,Nincs vizuális digitális asszisztens (csak szöveges/hangos).,Avatár modul.,,
+ATL-REQ-0339,C05B-L581,5,B,CONTEXT,MISSING,False,Lehetséges képességek:,,,,
+ATL-REQ-0340,C05B-L583,5,B,REQUIREMENT,MISSING,False,- Arcmegjelenítés.,Arcmegjelenítés nincs.,Avatár modul (külön fejlesztés).,,
+ATL-REQ-0341,C05B-L584,5,B,REQUIREMENT,MISSING,True,- Beszéd közbeni szájmozgás.,Szájmozgás beszéd közben nincs.,Avatár modul (külön fejlesztés).,,
+ATL-REQ-0342,C05B-L585,5,B,REQUIREMENT,MISSING,False,- Arckifejezések.,Arckifejezés nincs.,Avatár modul (külön fejlesztés).,,
+ATL-REQ-0343,C05B-L586,5,B,REQUIREMENT,MISSING,False,- Fejmozgás.,Fejmozgás nincs.,Avatár modul (külön fejlesztés).,,
+ATL-REQ-0344,C05B-L587,5,B,REQUIREMENT,MISSING,False,- Egyszerű gesztusok.,Gesztusok nincs.,Avatár modul (külön fejlesztés).,,
+ATL-REQ-0345,C05B-L588,5,B,REQUIREMENT,MISSING,True,- Hang és animáció összehangolása.,Hang+animáció összehangolás nincs.,Avatár modul (külön fejlesztés).,,
+ATL-REQ-0346,C05B-L590,5,B,REQUIREMENT,MISSING,True,A fejlettebb humanoid megjelenítés külön fejlesztési feladat.,Nincs.,Külön projekt.,,Indítás tulajdonosi döntés
+ATL-REQ-0349,C05B-L596,5,B,CONTEXT,PARTIAL,False,Például:,,,,
+ATL-REQ-0356,C05B-L606,5,B,HEADING,MISSING,True,## 5.4. Jövőbeli robotkapcsolat,Nincs.,"Külön projekt, külön engedélyezett vezérlőrendszerrel.",,Indítás/engedély tulajdonosi
+ATL-REQ-0357,C05B-L608,5,B,REQUIREMENT,MISSING,True,"AURÓRA később robotikai interfészhez is kapcsolódhat, ha megfelelő hardver és külön engedélyezett vezérlőrendszer rendelkezésre áll.",Nincs.,Külön projekt.,,Külön engedély + hardver
+ATL-REQ-0358,C05B-L610,5,B,REQUIREMENT,MISSING,True,A robotikai működés nem része automatikusan a jelenlegi Windows desktop rendszernek.,Nincs kódolt határ-ellenőrzés.,Nem szükséges amíg nincs robot-modul; döntés kérdése.,,
+ATL-REQ-0420,C06B-L701,6,B,CONTEXT,PARTIAL,False,A kártya mutassa:,,,,
+ATL-REQ-0433,C06B-L718,6,B,CONTEXT,PARTIAL,False,A modellválasztó feladata:,,,,
+ATL-REQ-0444,C06B-L733,6,B,CONTEXT,MOCK_ONLY,False,"Például Ollama segítségével, kompatibilis modellekkel.",,,,
+ATL-REQ-0449,C06B-L740,6,B,REQUIREMENT,MISSING,False,- VRAM.,VRAM nincs; mért pontosság nem ellenőrizhető ezen a Linux gépen.,route+UI bekötés; VRAM-mérés,,
+ATL-REQ-0450,C06B-L741,6,B,REQUIREMENT,MISSING,False,- Tárhely.,Tárhely nincs; mért pontosság nem ellenőrizhető ezen a Linux gépen.,route+UI bekötés; Tárhely-mérés,,
+ATL-REQ-0455,C06B-L749,6,B,CONTEXT,VERIFIED_WORKING,False,Egy AI-modell sem:,,,,
+ATL-REQ-0469,C07A-L777,7,A,REQUIREMENT,MISSING,False,- Success Pattern Library.,Success Pattern Library nem létezik.,Sikermintázat-tár a verified HISTORICAL_RESULT-okból (knowledge-brain bővítés).,,
+ATL-REQ-0480,C07A-L788,7,A,REQUIREMENT,MISSING,False,- MEMORY.md.,MEMORY.md fájl nem létezik/nem generálódik.,Generált MEMORY.md index a memory-store-ból (owner-olvasható összefoglaló).,,
+ATL-REQ-0481,C07A-L789,7,A,REQUIREMENT,MISSING,False,- Napi memórianaplók.,Napi memórianapló (memory/YYYY-MM-DD.md) nincs.,Napi napló generátor a memory auditból + verified-work jegyzetekből.,,
+ATL-REQ-0504,C07B-L822,7,B,CONTEXT,PARTIAL,False,A rendszer támogathatja:,,,,
+ATL-REQ-0505,C07B-L824,7,B,REQUIREMENT,MISSING,False,- `MEMORY.md`.,MEMORY.md nincs.,Generált index fájl.,,
+ATL-REQ-0506,C07B-L825,7,B,REQUIREMENT,MISSING,False,- `memory/YYYY-MM-DD.md`.,memory/YYYY-MM-DD.md nincs.,Napi napló generátor.,,
+ATL-REQ-0510,C07B-L831,7,B,CONTEXT,PARTIAL,False,Használható:,,,,
+ATL-REQ-0550,C08A-L894,8,A,REQUIREMENT,MISSING,False,- AI-fejlesztés.,Teljes képesség hiányzik; model-gateway csak szolgáltatás-útvonal.,Executor + modell-hozzáférés.,,
+ATL-REQ-0557,C08A-L901,8,A,REQUIREMENT,MISSING,False,- Prezentációk.,Prezentáció-készítés nincs.,PPTX generátor + modell.,,
+ATL-REQ-0563,C08A-L907,8,A,REQUIREMENT,MISSING,False,- 3D-munkafolyamatok.,3D munkafolyamat nincs.,Eszköz (Blender stb.) + executor.,,
+ATL-REQ-0564,C08A-L908,8,A,REQUIREMENT,MISSING,False,- SEO.,SEO elemző/executor nincs.,SEO audit executor.,,
+ATL-REQ-0600,C08B-L955,8,B,CONTEXT,EXTERNAL_BLOCKER,False,Kereshetnek például:,,,,
+ATL-REQ-0612,C08B-L971,8,B,CONTEXT,PARTIAL,False,Minden talált lehetőségről vizsgálni kell:,,,,
+ATL-REQ-0632,C08B-L1000,8,B,CONTEXT,PARTIAL,False,Képességeik feladatfüggők lehetnek:,,,,
+ATL-REQ-0646,C08B-L1018,8,B,CONTEXT,PARTIAL,False,Vizsgálja:,,,,
+ATL-REQ-0656,C08B-L1032,8,B,CONTEXT,PARTIAL,False,Ezek:,,,,
+ATL-REQ-0664,C08B-L1043,8,B,CONTEXT,PARTIAL,False,A rendszer biztosítson:,,,,
+ATL-REQ-0694,C09A-L1087,9,A,REQUIREMENT,MISSING,False,- Licencelés.,Nincs licencelesi bevetel-forma.,Modell + szamlazas a licencbevetelhez.,,Licenc-uzleti modell dontes
+ATL-REQ-0698,C09A-L1091,9,A,REQUIREMENT,MISSING,False,- Jutalékos üzleti modellek.,Nincs jutalek-szamitas / affiliate modell.,Modell + elszamolas.,,Uzleti modell dontes
+ATL-REQ-0949,C12A-L1455,12,A,REQUIREMENT,MISSING,False,- Google Contacts.,Nincs Google Contacts kód.,Google Contacts descriptor + adapter + vault-kulcs + teszt + UI.,Google People API OAuth token,
+ATL-REQ-0957,C12A-L1463,12,A,REQUIREMENT,MISSING,False,- Clearbit.,Nincs Clearbit kód.,Clearbit descriptor + adapter + vault-kulcs + teszt + UI.,Clearbit fiók/API hozzáférés,
+ATL-REQ-0958,C12A-L1464,12,A,REQUIREMENT,MISSING,False,- Apollo.,Nincs Apollo kód.,Apollo descriptor + adapter + vault-kulcs + teszt + UI.,Apollo fiók/API hozzáférés,
+ATL-REQ-0959,C12A-L1465,12,A,REQUIREMENT,MISSING,False,- Lusha.,Nincs Lusha kód.,Lusha descriptor + adapter + vault-kulcs + teszt + UI.,Lusha fiók/API hozzáférés,
+ATL-REQ-0960,C12A-L1466,12,A,REQUIREMENT,MISSING,False,- Resend.,Nincs Resend kód.,Resend descriptor + adapter + vault-kulcs + teszt + UI.,Resend fiók/API hozzáférés,
+ATL-REQ-0961,C12A-L1467,12,A,REQUIREMENT,MISSING,False,- Close.,Nincs Close kód.,Close descriptor + adapter + vault-kulcs + teszt + UI.,Close fiók/API hozzáférés,
+ATL-REQ-0964,C12A-L1470,12,A,REQUIREMENT,MISSING,False,- BuildingConnected.,Nincs BuildingConnected kód.,BuildingConnected descriptor + adapter + vault-kulcs + teszt + UI.,BuildingConnected fiók/API hozzáférés,
+ATL-REQ-0965,C12A-L1471,12,A,REQUIREMENT,MISSING,False,- Metricool.,Nincs Metricool kód.,Metricool descriptor + adapter + vault-kulcs + teszt + UI.,Metricool fiók/API hozzáférés,
+ATL-REQ-0966,C12A-L1472,12,A,REQUIREMENT,MISSING,False,- Socialmonials.,Nincs Socialmonials kód.,Socialmonials descriptor + adapter + vault-kulcs + teszt + UI.,Socialmonials fiók/API hozzáférés,
+ATL-REQ-0967,C12A-L1473,12,A,REQUIREMENT,MISSING,False,- WordPress / CMS.,Nincs WordPress / CMS kód.,WordPress / CMS descriptor + adapter + vault-kulcs + teszt + UI.,WordPress / CMS fiók/API hozzáférés,
+ATL-REQ-0987,C12A-L1497,12,A,REQUIREMENT,MISSING,False,- Nano Banana.,Nincs Nano Banana kód.,Nano Banana adapter az image/video/audio slotba + kulcs + teszt + UI.,Nano Banana fiók/API (fizetős lehet),JOCI: költségvállalás/engedély
+ATL-REQ-0988,C12A-L1498,12,A,REQUIREMENT,MISSING,False,- HeyGen.,Nincs HeyGen kód.,HeyGen adapter az image/video/audio slotba + kulcs + teszt + UI.,HeyGen fiók/API (fizetős lehet),JOCI: költségvállalás/engedély
+ATL-REQ-0989,C12A-L1499,12,A,REQUIREMENT,MISSING,False,- Runway.,Nincs Runway kód.,Runway adapter az image/video/audio slotba + kulcs + teszt + UI.,Runway fiók/API (fizetős lehet),JOCI: költségvállalás/engedély
+ATL-REQ-0990,C12A-L1500,12,A,REQUIREMENT,MISSING,False,- LTX Studio.,Nincs LTX Studio kód.,LTX Studio adapter az image/video/audio slotba + kulcs + teszt + UI.,LTX Studio fiók/API (fizetős lehet),JOCI: költségvállalás/engedély
+ATL-REQ-0991,C12A-L1501,12,A,REQUIREMENT,MISSING,False,- Veo.,Nincs Veo kód.,Veo adapter az image/video/audio slotba + kulcs + teszt + UI.,Veo fiók/API (fizetős lehet),JOCI: költségvállalás/engedély
+ATL-REQ-0992,C12A-L1502,12,A,REQUIREMENT,MISSING,False,- Suno.,Nincs Suno kód.,Suno adapter az image/video/audio slotba + kulcs + teszt + UI.,Suno fiók/API (fizetős lehet),JOCI: költségvállalás/engedély
+ATL-REQ-0993,C12A-L1503,12,A,REQUIREMENT,MISSING,False,- CapCut.,Nincs CapCut kód.,CapCut adapter az image/video/audio slotba + kulcs + teszt + UI.,CapCut fiók/API (fizetős lehet),JOCI: költségvállalás/engedély
+ATL-REQ-0994,C12A-L1504,12,A,REQUIREMENT,MISSING,False,- DaVinci Resolve.,Nincs DaVinci Resolve kód.,DaVinci Resolve adapter az image/video/audio slotba + kulcs + teszt + UI.,DaVinci Resolve fiók/API (fizetős lehet),JOCI: költségvállalás/engedély
+ATL-REQ-0995,C12A-L1505,12,A,REQUIREMENT,MISSING,False,- Shutter Encoder.,Nincs Shutter Encoder kód.,Shutter Encoder adapter az image/video/audio slotba + kulcs + teszt + UI.,Shutter Encoder fiók/API (fizetős lehet),JOCI: költségvállalás/engedély
+ATL-REQ-1020,C12B-L1542,12,B,REQUIREMENT,MISSING,False,- Google Contacts.,Nincs Google Contacts kód.,Google Contacts descriptor + adapter + vault-kulcs + teszt + UI.,Google People API OAuth token,
+ATL-REQ-1028,C12B-L1550,12,B,REQUIREMENT,MISSING,False,"- Clearbit, ha elérhető és támogatott.",Nincs Clearbit kód.,Clearbit descriptor + adapter + vault-kulcs + teszt + UI.,Clearbit fiók/API hozzáférés,
+ATL-REQ-1029,C12B-L1551,12,B,REQUIREMENT,MISSING,False,"- Apollo, ha elérhető és engedélyezett.",Nincs Apollo kód.,Apollo descriptor + adapter + vault-kulcs + teszt + UI.,Apollo fiók/API hozzáférés,
+ATL-REQ-1030,C12B-L1552,12,B,REQUIREMENT,MISSING,False,"- Lusha, ha elérhető és engedélyezett.",Nincs Lusha kód.,Lusha descriptor + adapter + vault-kulcs + teszt + UI.,Lusha fiók/API hozzáférés,
+ATL-REQ-1031,C12B-L1553,12,B,REQUIREMENT,MISSING,False,"- Resend, ha elérhető és engedélyezett.",Nincs Resend kód.,Resend descriptor + adapter + vault-kulcs + teszt + UI.,Resend fiók/API hozzáférés,
+ATL-REQ-1032,C12B-L1554,12,B,REQUIREMENT,MISSING,False,"- Close, kizárólag megfelelő jogosultságokkal.",Nincs Close kód.,Close descriptor + adapter + vault-kulcs + teszt + UI.,Close fiók/API hozzáférés,
+ATL-REQ-1035,C12B-L1557,12,B,REQUIREMENT,MISSING,False,- BuildingConnected.,Nincs BuildingConnected kód.,BuildingConnected descriptor + adapter + vault-kulcs + teszt + UI.,BuildingConnected fiók/API hozzáférés,
+ATL-REQ-1036,C12B-L1558,12,B,REQUIREMENT,MISSING,False,- Metricool.,Nincs Metricool kód.,Metricool descriptor + adapter + vault-kulcs + teszt + UI.,Metricool fiók/API hozzáférés,
+ATL-REQ-1037,C12B-L1559,12,B,REQUIREMENT,MISSING,False,- Socialmonials.,Nincs Socialmonials kód.,Socialmonials descriptor + adapter + vault-kulcs + teszt + UI.,Socialmonials fiók/API hozzáférés,
+ATL-REQ-1038,C12B-L1560,12,B,REQUIREMENT,MISSING,False,- WordPress.,Nincs WordPress / CMS kód.,WordPress / CMS descriptor + adapter + vault-kulcs + teszt + UI.,WordPress / CMS fiók/API hozzáférés,
+ATL-REQ-1061,C12B-L1591,12,B,REQUIREMENT,MISSING,False,- Nano Banana.,Nincs Nano Banana kód.,Nano Banana adapter az image/video/audio slotba + kulcs + teszt + UI.,Nano Banana fiók/API (fizetős lehet),JOCI: költségvállalás/engedély
+ATL-REQ-1062,C12B-L1592,12,B,REQUIREMENT,MISSING,False,- HeyGen.,Nincs HeyGen kód.,HeyGen adapter az image/video/audio slotba + kulcs + teszt + UI.,HeyGen fiók/API (fizetős lehet),JOCI: költségvállalás/engedély
+ATL-REQ-1063,C12B-L1593,12,B,REQUIREMENT,MISSING,False,- Runway.,Nincs Runway kód.,Runway adapter az image/video/audio slotba + kulcs + teszt + UI.,Runway fiók/API (fizetős lehet),JOCI: költségvállalás/engedély
+ATL-REQ-1064,C12B-L1594,12,B,REQUIREMENT,MISSING,False,- LTX Studio.,Nincs LTX Studio kód.,LTX Studio adapter az image/video/audio slotba + kulcs + teszt + UI.,LTX Studio fiók/API (fizetős lehet),JOCI: költségvállalás/engedély
+ATL-REQ-1065,C12B-L1595,12,B,REQUIREMENT,MISSING,False,- Veo.,Nincs Veo kód.,Veo adapter az image/video/audio slotba + kulcs + teszt + UI.,Veo fiók/API (fizetős lehet),JOCI: költségvállalás/engedély
+ATL-REQ-1066,C12B-L1596,12,B,REQUIREMENT,MISSING,False,- Suno.,Nincs Suno kód.,Suno adapter az image/video/audio slotba + kulcs + teszt + UI.,Suno fiók/API (fizetős lehet),JOCI: költségvállalás/engedély
+ATL-REQ-1067,C12B-L1597,12,B,REQUIREMENT,MISSING,False,- CapCut.,Nincs CapCut kód.,CapCut adapter az image/video/audio slotba + kulcs + teszt + UI.,CapCut fiók/API (fizetős lehet),JOCI: költségvállalás/engedély
+ATL-REQ-1068,C12B-L1598,12,B,REQUIREMENT,MISSING,False,- DaVinci Resolve.,Nincs DaVinci Resolve kód.,DaVinci Resolve adapter az image/video/audio slotba + kulcs + teszt + UI.,DaVinci Resolve fiók/API (fizetős lehet),JOCI: költségvállalás/engedély
+ATL-REQ-1069,C12B-L1599,12,B,REQUIREMENT,MISSING,False,- Shutter Encoder.,Nincs Shutter Encoder kód.,Shutter Encoder adapter az image/video/audio slotba + kulcs + teszt + UI.,Shutter Encoder fiók/API (fizetős lehet),JOCI: költségvállalás/engedély
+ATL-REQ-1081,C13A-L1627,13,A,HEADING,PARTIAL,False,## 13. TELJES BIZTONSÁGI RENDSZER,Lásd egyes sorok.,Lásd egyes sorok.,,
+ATL-REQ-1106,C13A-L1653,13,A,REQUIREMENT,MISSING,False,- Container Scanning.,Image/dependency scan teljesen hiányzik.,CI lépés (trivy/grype) a Dockerfile.worker image-re + npm audit/OSV.,Külső scanner / CI futtató,Scanner eszköz és CI hely kiválasztása.
+ATL-REQ-1125,C13B-L1677,13,B,HEADING,PARTIAL,False,# 13. TELJES BIZTONSÁGI RENDSZER,Lásd egyes sorok.,Lásd egyes sorok.,,
+ATL-REQ-1205,C13B-L1788,13,B,REQUIREMENT,MISSING,False,- Konténer- és függőségvizsgálat.,Teljes hiány.,"npm audit/OSV + SBOM + trivy/grype a Dockerfile.worker image-re, CI-ben vagy security-gates G13-ként.",Külső advisory adatbázis / scanner,
+ATL-REQ-1240,C14B-L1843,14,B,CONTEXT,PARTIAL,False,Az ATLASZ legyen képes felismerni és kezelni a működési hibákat.,,,,
+ATL-REQ-1241,C14B-L1845,14,B,HEADING,PARTIAL,False,## 14.1. Watchdog,,,,
+ATL-REQ-1242,C14B-L1847,14,B,CONTEXT,PARTIAL,False,A Watchdog ellenőrizze:,,,,
+ATL-REQ-1250,C14B-L1858,14,B,CONTEXT,PARTIAL,False,A System Doctor feladata a hibák diagnosztizálása.,,,,
+ATL-REQ-1251,C14B-L1860,14,B,CONTEXT,PARTIAL,False,Például:,,,,
+ATL-REQ-1267,C14B-L1884,14,B,CONTEXT,PARTIAL,False,Frissítés előtt szükséges:,,,,
+ATL-REQ-1273,C14B-L1893,14,B,CONTEXT,PARTIAL,False,Meg kell akadályozni:,,,,
+ATL-REQ-1295,C15A-L1930,15,A,REQUIREMENT,MISSING,False,- PDF-készítés.,PDF-készítés nincs.,PDF writer (pl. beépített minimális vagy engedélyezett függőség).,,
+ATL-REQ-1296,C15A-L1931,15,A,REQUIREMENT,MISSING,False,- PDF-szerkesztés.,PDF-szerkesztés nincs.,PDF módosító réteg (eredeti megőrzésével).,,
+ATL-REQ-1297,C15A-L1932,15,A,REQUIREMENT,MISSING,False,- PDF-egyesítés és felosztás.,PDF egyesítés/felosztás nincs.,PDF merge/split.,,
+ATL-REQ-1311,C15A-L1946,15,A,REQUIREMENT,MISSING,False,- Biztonságos fájlkonvertálás.,Biztonságos konvertálás nincs.,Sandboxolt konvertáló (restricted-node) eredeti megőrzésével.,,
+ATL-REQ-1315,C15B-L1956,15,B,CONTEXT,PARTIAL,False,Az ATLASZ képes legyen különféle dokumentumok feldolgozására és előállítására.,,,,
+ATL-REQ-1391,C16B-L2067,16,B,REQUIREMENT,EXTERNAL_BLOCKER,False,- Folyamatok ellenőrzése.,Provider + ellenőrző logika.,,computer-use provider,
+ATL-REQ-1394,C16B-L2073,16,B,CONTEXT,EXTERNAL_BLOCKER,True,A rendszer később kezelhet:,,,,
+ATL-REQ-1397,C16B-L2077,16,B,REQUIREMENT,EXTERNAL_BLOCKER,True,- Alkalmazásokat.,Provider.,,desktop provider,
+ATL-REQ-1410,C17A-L2104,17,A,REQUIREMENT,MISSING,False,- Könyvelőnek átadható dokumentumcsomag.,"Könyvelői csomag (főkönyv-export, számlák, nyugták, összesítők).",Export modul (CSV/PDF) + owner jóváhagyás.,,Átadás jóváhagyása
+ATL-REQ-1430,C17B-L2135,17,B,REQUIREMENT,MISSING,False,- Jogosult input tax credit adatok előkészítése.,ITC adatok.,Bejövő számla + ITC modul.,CRA szabályok,
+ATL-REQ-1431,C17B-L2136,17,B,REQUIREMENT,MISSING,False,- Időszakos összesítés.,Időszakos összesítés.,,,
+ATL-REQ-1436,C17B-L2143,17,B,REQUIREMENT,MISSING,False,- PST-köteles tranzakciók vizsgálata.,Osztályozó.,,BC szabályok,
+ATL-REQ-1438,C17B-L2145,17,B,REQUIREMENT,MISSING,False,- Megfelelő időszakos összesítés.,Összesítés.,,,
+ATL-REQ-1462,C18A-L2187,18,A,REQUIREMENT,MISSING,False,- Website Manager.,Website Manager teljes egészében hiányzik.,"Új modul + csatlakozó (owner-jóváhagyott fiókokkal), tesztekkel és UI-val.",Szolgáltatói API-k/fiókok,Szükséges-e ez a képesség most (külön projekt?)
+ATL-REQ-1463,C18A-L2188,18,A,REQUIREMENT,MISSING,False,- WordPress / CMS.,WordPress / CMS teljes egészében hiányzik.,"Új modul + csatlakozó (owner-jóváhagyott fiókokkal), tesztekkel és UI-val.",Szolgáltatói API-k/fiókok,Szükséges-e ez a képesség most (külön projekt?)
+ATL-REQ-1464,C18A-L2189,18,A,REQUIREMENT,MISSING,False,- Domain / DNS / SSL.,Domain / DNS / SSL teljes egészében hiányzik.,"Új modul + csatlakozó (owner-jóváhagyott fiókokkal), tesztekkel és UI-val.",Szolgáltatói API-k/fiókok,Szükséges-e ez a képesség most (külön projekt?)
+ATL-REQ-1466,C18A-L2191,18,A,REQUIREMENT,MISSING,False,- SEO.,SEO teljes egészében hiányzik.,"Új modul + csatlakozó (owner-jóváhagyott fiókokkal), tesztekkel és UI-val.",Szolgáltatói API-k/fiókok,Szükséges-e ez a képesség most (külön projekt?)
+ATL-REQ-1467,C18A-L2192,18,A,REQUIREMENT,MISSING,False,- Web Analytics.,Web Analytics teljes egészében hiányzik.,"Új modul + csatlakozó (owner-jóváhagyott fiókokkal), tesztekkel és UI-val.",Szolgáltatói API-k/fiókok,Szükséges-e ez a képesség most (külön projekt?)
+ATL-REQ-1468,C18A-L2193,18,A,REQUIREMENT,MISSING,False,- Geocoding.,Geocoding hiányzik.,Engedélyezett térképszolgáltatás (pl. OSM/Google) adapter + UI térkép.,Térkép/geokódoló API,Térképszolgáltató kiválasztása
+ATL-REQ-1469,C18A-L2194,18,A,REQUIREMENT,MISSING,False,- Route Planning.,Route Planning hiányzik.,Engedélyezett térképszolgáltatás (pl. OSM/Google) adapter + UI térkép.,Térkép/geokódoló API,Térképszolgáltató kiválasztása
+ATL-REQ-1470,C18A-L2195,18,A,REQUIREMENT,MISSING,False,- Opportunity Map.,Opportunity Map hiányzik.,Engedélyezett térképszolgáltatás (pl. OSM/Google) adapter + UI térkép.,Térkép/geokódoló API,Térképszolgáltató kiválasztása
+ATL-REQ-1476,C18A-L2201,18,A,REQUIREMENT,MISSING,False,- Music Workflows.,Hiányzik.,Zenei provider + munkafolyamat.,Zenei AI provider,Külön projekt?
+ATL-REQ-1485,C18B-L2217,18,B,CONTEXT,PARTIAL,False,Az ATLASZ képes legyen:,,,,
+ATL-REQ-1493,C18B-L2228,18,B,CONTEXT,PARTIAL,False,A rendszer vizsgálhassa:,,,,
+ATL-REQ-1495,C18B-L2231,18,B,REQUIREMENT,MISSING,False,- Versenytársak.,Hiányzik.,Versenytárs-gyűjtő + összehasonlítás.,Adatforrások,
+ATL-REQ-1501,C18B-L2238,18,B,HEADING,MISSING,False,## 18.3. Térképek és helyadatok,Teljes szakasz hiányzik.,Térképadapter.,,
+ATL-REQ-1502,C18B-L2240,18,B,CONTEXT,MISSING,False,Engedélyezett térképszolgáltatásokkal:,,,,
+ATL-REQ-1503,C18B-L2242,18,B,REQUIREMENT,MISSING,False,- Címek keresése.,Hiányzik.,Engedélyezett térképszolgáltatás adapter + UI.,Térkép API,Térképszolgáltató
+ATL-REQ-1504,C18B-L2243,18,B,REQUIREMENT,MISSING,False,- Helyszínek megjelenítése.,Hiányzik.,Engedélyezett térképszolgáltatás adapter + UI.,Térkép API,Térképszolgáltató
+ATL-REQ-1505,C18B-L2244,18,B,REQUIREMENT,MISSING,False,- Útvonalak.,Hiányzik.,Engedélyezett térképszolgáltatás adapter + UI.,Térkép API,Térképszolgáltató
+ATL-REQ-1506,C18B-L2245,18,B,REQUIREMENT,MISSING,False,- Területi kutatás.,Hiányzik.,Engedélyezett térképszolgáltatás adapter + UI.,Térkép API,Térképszolgáltató
+ATL-REQ-1507,C18B-L2246,18,B,REQUIREMENT,MISSING,False,- Üzleti helyszínek vizsgálata.,Hiányzik.,Engedélyezett térképszolgáltatás adapter + UI.,Térkép API,Térképszolgáltató
+ATL-REQ-1509,C18B-L2250,18,B,CONTEXT,STRUCTURAL_ONLY,False,Az ATLASZ támogathatja:,,,,
+ATL-REQ-1510,C18B-L2252,18,B,REQUIREMENT,STRUCTURAL_ONLY,False,- Képgenerálás.,Lásd sameAs.,Lásd sameAs.,Képgeneráló provider,
+ATL-REQ-1513,C18B-L2255,18,B,REQUIREMENT,MISSING,False,- Storyboard.,Hiányzik.,Storyboard-generátor (modell + képadapter).,LLM/kép provider,
+ATL-REQ-1517,C18B-L2259,18,B,REQUIREMENT,MISSING,False,- Zenei projekttervezés.,Hiányzik.,Zenei tervező modul (modell).,LLM,
+ATL-REQ-1519,C18B-L2262,18,B,HEADING,MISSING,False,## 18.5. A MASTER BRAIN szerepe a kreatív feladatokban,Nincs ilyen modul/Brain-képesség.,Kreatív-elemző képesség a Brain-ben.,,
+ATL-REQ-1520,C18B-L2264,18,B,CONTEXT,MISSING,False,A rendszer a bemásolt szövegből vagy dalszövegből felismerhesse:,,,,
+ATL-REQ-1521,C18B-L2266,18,B,REQUIREMENT,MISSING,False,- A hangulatot.,Hiányzik.,"LLM-alapú kreatív elemző a Brain-ben, szerkezetes kimenettel.",LLM provider,
+ATL-REQ-1522,C18B-L2267,18,B,REQUIREMENT,MISSING,False,- A témát.,Hiányzik.,"LLM-alapú kreatív elemző a Brain-ben, szerkezetes kimenettel.",LLM provider,
+ATL-REQ-1523,C18B-L2268,18,B,REQUIREMENT,MISSING,False,- A műfaji jelzéseket.,Hiányzik.,"LLM-alapú kreatív elemző a Brain-ben, szerkezetes kimenettel.",LLM provider,
+ATL-REQ-1524,C18B-L2269,18,B,REQUIREMENT,MISSING,False,- A vizuális stílusra utaló részleteket.,Hiányzik.,"LLM-alapú kreatív elemző a Brain-ben, szerkezetes kimenettel.",LLM provider,
+ATL-REQ-1525,C18B-L2270,18,B,REQUIREMENT,MISSING,False,- A tempóra vonatkozó információkat.,Hiányzik.,"LLM-alapú kreatív elemző a Brain-ben, szerkezetes kimenettel.",LLM provider,
+ATL-REQ-1526,C18B-L2271,18,B,REQUIREMENT,MISSING,False,- A történet szereplőit.,Hiányzik.,"LLM-alapú kreatív elemző a Brain-ben, szerkezetes kimenettel.",LLM provider,
+ATL-REQ-1527,C18B-L2272,18,B,REQUIREMENT,MISSING,False,- A jelenetek logikai sorrendjét.,Hiányzik.,"LLM-alapú kreatív elemző a Brain-ben, szerkezetes kimenettel.",LLM provider,
+ATL-REQ-1528,C18B-L2274,18,B,REQUIREMENT,MISSING,False,"Ezek alapján javasolhat képi, zenei vagy filmes stílust.",Hiányzik.,Elemzés utáni stílusjavaslat-lépés.,LLM provider,
+ATL-REQ-1529,C18B-L2276,18,B,CONTEXT,MISSING,False,"A javaslatot a megfelelő médiaeszközök használhatják fel, amennyiben az integráció ténylegesen működik.",,,,
+ATL-REQ-1534,C19A-L2294,19,A,REQUIREMENT,MISSING,False,- Smart Cache.,Hiányzik.,Eredmény-/válasz-cache invalidálással.,,
+ATL-REQ-1556,C19A-L2316,19,A,REQUIREMENT,VERIFIED_WORKING,False,- Unit Tests.,,,,
+ATL-REQ-1561,C19B-L2326,19,B,HEADING,PARTIAL,False,"# 19. TELJESÍTMÉNY, KÖLTSÉGFIGYELÉS ÉS RENDSZERMEGFIGYELÉS",Erőforrás-metrikák és külső riasztási csatorna hiányzik.,Lásd alszakaszok.,,
+ATL-REQ-1562,C19B-L2328,19,B,HEADING,PARTIAL,False,## 19.1. Teljesítményadatok,CPU/RAM/GPU hiányzik.,Rendszermetrika-gyűjtő.,,
+ATL-REQ-1563,C19B-L2330,19,B,CONTEXT,PARTIAL,False,A rendszer mérje:,,,,
+ATL-REQ-1564,C19B-L2332,19,B,REQUIREMENT,MISSING,False,- CPU-terhelés.,CPU-terhelés mérése hiányzik.,os.loadavg/cpus mintavétel + dashboard.,,
+ATL-REQ-1575,C19B-L2345,19,B,CONTEXT,PARTIAL,False,Külön jelenjen meg:,,,,
+ATL-REQ-1584,C19B-L2357,19,B,CONTEXT,PARTIAL,False,A rendszer tartson nyilván:,,,,
+ATL-REQ-1592,C19B-L2367,19,B,HEADING,PARTIAL,False,## 19.4. Riasztások,Nincs push/e-mail csatorna; több riasztás csak állapot.,Értesítési csatorna.,,
+ATL-REQ-1593,C19B-L2369,19,B,CONTEXT,PARTIAL,False,Figyelmeztessen például:,,,,
+ATL-REQ-1643,C21A-L2458,21,A,REQUIREMENT,OWNER_APPROVAL_REQUIRED,False,- Egyszeri telepítési modell.,Modell definíció és számlázási sablon nincs.,"Tulajdonos dönt, majd számla/szerződés sablon.",,Egyszeri telepítési modell és díj
+ATL-REQ-1649,C21B-L2471,21,B,CONTEXT,OWNER_APPROVAL_REQUIRED,False,"Ennek feltétele, hogy a tulajdonos saját rendszere előbb stabilan és bizonyíthatóan működjön.",Tulajdonosi elfogadás.,Lásd C21A-L2451.,,Stabilitás elfogadása
+ATL-REQ-1661,C21B-L2488,21,B,HEADING,OWNER_APPROVAL_REQUIRED,False,## 21.2. Értékesítési modell,Modell döntés.,Tulajdonosi döntés.,,Értékesítési modell
+ATL-REQ-1662,C21B-L2490,21,B,CONTEXT,OWNER_APPROVAL_REQUIRED,False,Lehetséges:,Lásd listaelemek.,Lásd listaelemek.,,Értékesítési modell
+ATL-REQ-1663,C21B-L2492,21,B,REQUIREMENT,OWNER_APPROVAL_REQUIRED,False,- Egyszeri telepítési díj.,"Modell, ár.",Tulajdonosi döntés.,,Egyszeri telepítési díj
+ATL-REQ-1675,C21B-L2508,21,B,REQUIREMENT,MISSING,False,- Ügyféltámogatás.,Teljes ügyféltámogatási folyamat.,Támogatási jegy/SLA modul (ha az owner kéri).,,Támogatási modell
+ATL-REQ-1677,C21B-L2510,21,B,REQUIREMENT,MISSING,False,- Adatvédelmi megfelelés.,Megfelelőségi folyamat és jogi dokumentumok.,Jogi felülvizsgálat + export/törlés kérelem kezelő.,Jogi tanácsadó,Mely joghatóságra
+ATL-REQ-1714,C22B-L2583,22,B,REQUIREMENT,MISSING,False,- Nem módosítható a `main` ág.,main ág védelem.,GitHub branch protection + pre-push hook (a tulajdonos oldalán).,GitHub branch protection,Branch-védelmi szabály
+ATL-REQ-1720,C23A-L2601,23,A,HEADING,PARTIAL,False,## 23. KÖTELEZŐ HIÁNYELLENŐRZÉS,"Egységes, naprakész ellenőrzési státusz; registry meta még ad6c483/87 tesztet említ.",Registry meta és UNIFIED_AUDIT frissítése HEAD 246dd68 / 2237 teszt szerint.,,
+ATL-REQ-1734,C23A-L2620,23,A,CONTEXT,PARTIAL,False,**VÉGE — ATLASZ AURÓRA V7.3 TELJES ÖSSZESÍTETT RENDSZERLELTÁR**,"Egységes, naprakész ellenőrzési státusz; registry meta még ad6c483/87 tesztet említ.",Registry meta és UNIFIED_AUDIT frissítése HEAD 246dd68 / 2237 teszt szerint.,,
+ATL-REQ-1735,C23B-L2626,23,B,HEADING,PARTIAL,False,"# 23. TELJES KÖVETELMÉNYELLENŐRZÉS, TESZTELÉS ÉS VÉGSŐ ELFOGADÁS",LIVE_VERIFIED=0; több kapu nyitott.,Lásd 23.6/23.7.,,
+ATL-REQ-1737,C23B-L2630,23,B,HEADING,PARTIAL,False,## 23.1. Követelmény-nyilvántartás,"implementation_location 755/983, tests 714/983, owner_decision 26/983, nincs next-action mező.","Hiányzó mezők pótlása, next_action oszlop.",,
+ATL-REQ-1738,C23B-L2632,23,B,CONTEXT,PARTIAL,False,Minden követelményhez legyen:,"implementation_location 755/983, tests 714/983, owner_decision 26/983, nincs next-action mező.","Hiányzó mezők pótlása, next_action oszlop.",,
+ATL-REQ-1749,C23B-L2645,23,B,HEADING,PARTIAL,False,## 23.2. Állapotkategóriák,Nincs egységes 10 állapotos életciklus-mező.,lifecycle_state generálása.,,
+ATL-REQ-1750,C23B-L2647,23,B,CONTEXT,PARTIAL,False,A következő állapotokat külön kell kezelni:,Nincs egységes 10 állapotos életciklus-mező.,lifecycle_state generálása.,,
+ATL-REQ-1761,C23B-L2669,23,B,HEADING,PARTIAL,False,## 23.3. Kötelező tesztek,"Windows, valós végpont, élő modell, külső pentest.",Lásd soronként.,,
+ATL-REQ-1762,C23B-L2671,23,B,REQUIREMENT,VERIFIED_WORKING,False,- Egységtesztek.,,,,
+ATL-REQ-1775,C23B-L2685,23,B,HEADING,PARTIAL,False,## 23.4. Független ellenőrzés,Külső/emberi független audit.,Külső review.,,
+ATL-REQ-1776,C23B-L2687,23,B,CONTEXT,PARTIAL,False,A fejlesztő által írt sikerjelentés önmagában nem elegendő.,Külső/emberi független audit.,Külső review.,,
+ATL-REQ-1777,C23B-L2689,23,B,CONTEXT,PARTIAL,False,Szükséges:,Külső/emberi független audit.,Külső review.,,
+ATL-REQ-1779,C23B-L2692,23,B,REQUIREMENT,VERIFIED_WORKING,False,- A tesztek ellenőrzése.,,,,
+ATL-REQ-1784,C23B-L2698,23,B,HEADING,PARTIAL,False,## 23.5. Legutóbbi ismert fejlesztési állapot,Elavult állapotleírás.,Checkpoint frissítés.,,
+ATL-REQ-1785,C23B-L2700,23,B,CONTEXT,PARTIAL,False,A tulajdonos által átadott legfrissebb Batch 8 jelentés szerint:,Elavult állapotleírás.,Checkpoint frissítés.,,
+ATL-REQ-1786,C23B-L2702,23,B,REQUIREMENT,VERIFIED_WORKING,False,- Fejlesztési ág: `atlasz-v73-integration`.,,,,
+ATL-REQ-1787,C23B-L2703,23,B,REQUIREMENT,VERIFIED_WORKING,False,- Commit: `7fd895f`.,,,,
+ATL-REQ-1788,C23B-L2704,23,B,REQUIREMENT,PARTIAL,False,- Jelentett automatikus teszteredmény: 2205/2205.,2205 pontos reprodukálása nem történt.,Commit checkout + futtatás.,,
+ATL-REQ-1797,C23B-L2714,23,B,CONTEXT,PARTIAL,False,"Ez jelentett állapot, nem függetlenül ellenőrzött GitHub-audit.",Elavult állapotleírás.,Checkpoint frissítés.,,
+ATL-REQ-1798,C23B-L2716,23,B,HEADING,PARTIAL,False,## 23.6. Ismert nyitott feladatok,Lásd soronként.,,,
+ATL-REQ-1813,C23B-L2733,23,B,HEADING,PARTIAL,False,## 23.7. Végső elfogadási feltételek,Lásd soronként.,,,
+ATL-REQ-1814,C23B-L2735,23,B,CONTEXT,PARTIAL,False,"Az ATLASZ AURÓRA V7.3 csak akkor minősíthető teljesen elkészült rendszernek, ha:",Lásd soronként.,,,
+ATL-REQ-1830,C23B-L2755,23,B,HEADING,PARTIAL,False,# VÉGSŐ TULAJDONOSI ALAPELVEK,,,,
+ATL-REQ-1854,C23B-L2805,23,B,CONTEXT,PARTIAL,False,**DOKUMENTUM VÉGE**,LIVE_VERIFIED=0; több kapu nyitott.,Lásd 23.6/23.7.,,
+ATL-REQ-1855,C23B-L2807,23,B,CONTEXT,PARTIAL,False,**ATLASZ AURÓRA V7.3 – 23 FEJEZETES RÉSZLETES MASTER KÖVETELMÉNYLISTA**,LIVE_VERIFIED=0; több kapu nyitott.,Lásd 23.6/23.7.,,
+ATL-REQ-1856,C23B-L2809,23,B,CONTEXT,PARTIAL,False,**Fejezetek száma: 23**,LIVE_VERIFIED=0; több kapu nyitott.,Lásd 23.6/23.7.,,
+ATL-REQ-1857,C23B-L2811,23,B,CONTEXT,PARTIAL,False,"**Rendeltetés: megőrzés, összehasonlítás, fejlesztési ellenőrzés és későbbi műszaki audit.**",LIVE_VERIFIED=0; több kapu nyitott.,Lásd 23.6/23.7.,,
+ATL-REQ-1858,C23B-L2816,23,B,HEADING,PARTIAL,False,# FORRÁSMEGŐRZÉSI ELLENŐRZÉS,Eredeti tételes források.,Átadás.,,
